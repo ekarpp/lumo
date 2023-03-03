@@ -23,5 +23,5 @@ fn main() {
             ));
         }
     }
-    image::saver::save(&image);
+    image.save();
 }
