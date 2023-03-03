@@ -1,22 +1,27 @@
-extern crate image;
+extern crate glam;
+
+mod image;
 
 const WIDTH: usize = 256;
 const HEIGHT: usize = WIDTH;
 
 fn main() {
-
-    let mut img: [u8; WIDTH*HEIGHT*3] = [0; WIDTH*HEIGHT*3];
+    let mut image = image::Image {
+        buffer: Vec::with_capacity(WIDTH*HEIGHT),
+        width: WIDTH,
+        height: HEIGHT
+    };
 
     for y in 0..HEIGHT
     {
         for x in 0..WIDTH
         {
-            let px = x + y*WIDTH;
-            img[3*px + 0] = y as u8;
-            img[3*px + 1] = x as u8;
-            img[3*px + 2] = 123;
+            image.buffer.push(glam::f32::Vec3::new(
+                x as f32 / WIDTH as f32,
+                y as f32 / HEIGHT as f32,
+                0.5
+            ));
         }
     }
-    image::save_buffer("image.png", &img, WIDTH as u32, HEIGHT as u32, image::ColorType::Rgb8);
-
+    image::saver::save(&image);
 }
