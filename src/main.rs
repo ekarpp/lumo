@@ -2,8 +2,8 @@ extern crate glam;
 
 mod image;
 
-const WIDTH: usize = 256;
-const HEIGHT: usize = WIDTH;
+const WIDTH: usize = 3840;
+const HEIGHT: usize = 2160;
 
 fn main() {
     let mut image = image::Image {
