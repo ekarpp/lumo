@@ -36,7 +36,7 @@ impl Scene {
     }
 }
 
-pub fn def() -> Scene {
+pub fn default() -> Scene {
     Scene {
         light: Vec3::new(-0.25, 0.35, -0.2),
         ambient: Vec3::splat(0.15),

@@ -11,8 +11,8 @@ fn main() {
         height: HEIGHT
     };
 
-    let cam = tracer::camera::def();
-    let scene = tracer::scene::def();
+    let cam = tracer::camera::default();
+    let scene = tracer::scene::default();
 
     let mut start = std::time::SystemTime::now();
     for y in (0..HEIGHT).rev() {
