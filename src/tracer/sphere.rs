@@ -4,6 +4,7 @@ use crate::tracer::hit::Hit;
 
 pub struct Sphere {
     pub origin: Vec3,
+    pub color: Vec3,
     pub radius: f32
 }
 
