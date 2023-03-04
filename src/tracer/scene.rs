@@ -2,6 +2,7 @@ use glam::f32::Vec3;
 use crate::tracer::sphere::Sphere;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
+use crate::tracer::material::Default;
 
 pub struct Scene {
     pub light: Vec3,
@@ -43,11 +44,13 @@ pub fn def() -> Scene {
             Sphere{
                 origin: Vec3::new(0.0, -100.5, -1.0),
                 color: Vec3::new(124.0, 252.0, 0.0) / 256.0,
+                material: Box::new(Default {}),
                 radius: 100.0
             },
             Sphere{
                 origin: Vec3::new(0.0, 0.0, -1.0),
                 color: Vec3::new(136.0, 8.0, 8.0) / 256.0,
+                material: Box::new(Default {}),
                 radius: 0.5
             }
         ]
