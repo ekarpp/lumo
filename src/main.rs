@@ -9,7 +9,7 @@ const HEIGHT: usize = 2160;
 
 fn main() {
     let mut image = image::Image {
-        buffer: Vec::with_capacity(WIDTH*HEIGHT),
+        buffer: vec![DVec3::ZERO; WIDTH*HEIGHT],
         width: WIDTH,
         height: HEIGHT
     };
@@ -23,14 +23,14 @@ fn main() {
     let scene = tracer::scene::Scene::default();
 
     let mut start = std::time::SystemTime::now();
-    for y in (0..HEIGHT).rev() {
+    for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let u = x as f64
                 / (WIDTH-1) as f64;
-            let v = y as f64
+            let v = (HEIGHT - 1 - y) as f64
                 / (HEIGHT-1) as f64;
             let r = cam.ray_at(u, v);
-            image.buffer.push(r.color(&scene, 0));
+            image.buffer[x + y*WIDTH] = r.color(&scene, 0);
         }
         let percent = 100.0 * (HEIGHT - 1 - y) as f64 / (HEIGHT - 1) as f64;
         print!("{} % done \r", percent as u32);
