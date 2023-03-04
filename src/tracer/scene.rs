@@ -34,43 +34,43 @@ impl Scene {
         }
         false
     }
-}
 
-pub fn default() -> Scene {
-    Scene {
-        light: DVec3::new(-0.25, 0.35, -0.2),
-        ambient: DVec3::splat(0.15),
-        objects: vec![
-            Sphere {
-                origin: DVec3::new(0.0, -100.5, -1.0),
-                color: DVec3::new(124.0, 252.0, 0.0) / 255.9,
-                material: Box::new(Default {}),
-                radius: 100.0
-            },
-            Sphere {
-                origin: DVec3::new(0.0, 0.0, -1.0),
-                color: DVec3::new(136.0, 8.0, 8.0) / 255.9,
-                material: Box::new(Default {}),
-                radius: 0.5
-            },
-            Sphere {
-                origin: DVec3::new(-0.9, 0.0, -1.0),
-                color: DVec3::splat(211.0) / 255.9,
-                material: Box::new(Mirror {}),
-                radius: 0.1
-            },
-            Sphere {
-                origin: DVec3::new(-0.4, -0.12, -0.5),
-                color: DVec3::splat(211.0) / 255.9,
-                material: Box::new(Glass {}),
-                radius: 0.1
-            },
-            Sphere {
-                origin: DVec3::new(0.4, 0.0, -0.5),
-                color: DVec3::splat(211.0) / 255.9,
-                material: Box::new(Glass {}),
-                radius: 0.1
-            }
-        ]
+    pub fn default() -> Scene {
+        Scene {
+            light: DVec3::new(-0.25, 0.35, -0.2),
+            ambient: DVec3::splat(0.15),
+            objects: vec![
+                Sphere {
+                    origin: DVec3::new(0.0, -100.5, -1.0),
+                    color: DVec3::new(124.0, 252.0, 0.0) / 255.9,
+                    material: Box::new(Default {}),
+                    radius: 100.0
+                },
+                Sphere {
+                    origin: DVec3::new(0.0, 0.0, -1.0),
+                    color: DVec3::new(136.0, 8.0, 8.0) / 255.9,
+                    material: Box::new(Default {}),
+                    radius: 0.5
+                },
+                Sphere {
+                    origin: DVec3::new(-0.9, 0.0, -1.0),
+                    color: DVec3::splat(211.0) / 255.9,
+                    material: Box::new(Mirror {}),
+                    radius: 0.1
+                },
+                Sphere {
+                    origin: DVec3::new(-0.4, -0.12, -0.5),
+                    color: DVec3::ZERO,
+                    material: Box::new(Glass {}),
+                    radius: 0.1
+                },
+                Sphere {
+                    origin: DVec3::new(0.4, 0.0, -0.5),
+                    color: DVec3::ZERO,
+                    material: Box::new(Glass {}),
+                    radius: 0.1
+                }
+            ]
+        }
     }
 }

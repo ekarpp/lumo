@@ -20,7 +20,7 @@ fn main() {
         DVec3::new(0.0, 0.0, -1.0), // towards (+ focal length)
         DVec3::new(0.0, 1.0, 0.0) // up
     );
-    let scene = tracer::scene::default();
+    let scene = tracer::scene::Scene::default();
 
     let mut start = std::time::SystemTime::now();
     for y in (0..HEIGHT).rev() {
