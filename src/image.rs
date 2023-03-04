@@ -27,7 +27,7 @@ impl Image {
     }
 
     pub fn save(&self) {
-        let path = Path::new("image.png");
+        let path = Path::new("cover.png");
         let file = File::create(path).unwrap();
         let ref mut w = BufWriter::new(file);
 
