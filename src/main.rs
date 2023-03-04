@@ -1,5 +1,3 @@
-extern crate glam;
-
 mod image;
 mod tracer;
 
@@ -15,15 +13,32 @@ fn main() {
 
     let cam = tracer::camera::def();
     let scene = tracer::scene::def();
-    for y in (0..HEIGHT).rev()
-    {
-        for x in 0..WIDTH
-        {
-            let u = x as f32 / (WIDTH-1) as f32;
-            let v = y as f32 / (HEIGHT-1) as f32;
+
+    let mut start = std::time::SystemTime::now();
+    for y in (0..HEIGHT).rev() {
+        for x in 0..WIDTH {
+            let u = x as f32
+                / (WIDTH-1) as f32;
+            let v = y as f32
+                / (HEIGHT-1) as f32;
             let r = cam.ray_at(u, v);
             image.buffer.push(r.color(&scene));
         }
+        let percent = 100.0 * (HEIGHT - 1 - y) as f32 / (HEIGHT - 1) as f32;
+        print!("{} % done \r", percent as u32);
     }
+    let mut diff = start.elapsed();
+    match diff {
+        Ok(v) => println!("rendering done in {v:?}"),
+        Err(e) => println!("rendering done, error measuring duration {e:?}"),
+    }
+
+    start = std::time::SystemTime::now();
     image.save();
+    diff = start.elapsed();
+
+    match diff {
+        Ok(v) => println!("created png in {v:?}"),
+        Err(e) => println!("png done, error measuring duration {e:?}"),
+    }
 }
