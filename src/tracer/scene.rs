@@ -28,7 +28,8 @@ impl Scene {
     pub fn hit_shadow(&self, r: &Ray) -> bool {
         for sphere in &self.objects {
             let h = sphere.hit(r);
-            if h.is_some() {
+            // h.is_some_and
+            if h.filter(|x| !x.sphere.material.is_translucent()).is_some() {
                 return true;
             }
         }
