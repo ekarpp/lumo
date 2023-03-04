@@ -5,6 +5,7 @@ use crate::tracer::ray::Ray;
 
 pub struct Scene {
     pub light: Vec3,
+    pub ambient: Vec3,
     objects: Vec<Sphere>
 }
 
@@ -37,6 +38,7 @@ impl Scene {
 pub fn def() -> Scene {
     Scene {
         light: Vec3::new(-0.25, 0.35, -0.2),
+        ambient: Vec3::splat(0.15),
         objects: vec![
             Sphere{
                 origin: Vec3::new(0.0, -100.5, -1.0),
