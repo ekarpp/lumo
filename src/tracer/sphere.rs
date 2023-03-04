@@ -27,6 +27,7 @@ impl Sphere {
         let eps = 0.001;
         if t < eps {
             t = (-b + disc_root) / (2.0*a);
+
             if t < eps {
                 return None;
             }

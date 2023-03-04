@@ -8,8 +8,11 @@ pub struct Hit<'a> {
     pub p: Vec3,
     /* vector to light */
     pub l: Vec3,
-    /* sphere normal at hit point */
-    pub n: Vec3
+    /* sphere normal at hit point. pointing away from origin*/
+    pub n: Vec3,
+    /* is the hit inside the sphere? */
+    pub inside: bool
+
 }
 
 impl Hit<'_> {
@@ -19,7 +22,8 @@ impl Hit<'_> {
             sphere: sphere,
             p: Vec3::ZERO,
             l: Vec3::ZERO,
-            n: Vec3::ZERO
+            n: Vec3::ZERO,
+            inside: false
         }
     }
 }

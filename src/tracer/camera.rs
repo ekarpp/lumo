@@ -23,14 +23,18 @@ impl Camera {
 }
 
 pub fn default() -> Camera {
+    /* viewport height */
     let h = 2.0;
+    /* viewport width */
     let w = h * 16.0 / 9.0;
+    /* focal length */
     let f = 1.0;
+    let origin = Vec3::ZERO;
 
     Camera {
         vp_height: h,
         vp_width: w,
-        origin: Vec3::ZERO,
-        bot_left_corner: -0.5*Vec3::new(w, h, 2.0*f)
+        origin: origin,
+        bot_left_corner: origin - 0.5*Vec3::new(w, h, 2.0*f)
     }
 }
