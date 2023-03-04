@@ -1,0 +1,17 @@
+name: rust_tracer_pipe
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v3
+    - name: cargo check
+      uses: actions-rs/cargo@v1
+      with:
+        command: check
