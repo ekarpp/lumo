@@ -12,7 +12,7 @@ impl Ray {
     }
 
     pub fn color(&self, scene: &Scene, depth: u32) -> DVec3 {
-        if depth > 4 {
+        if depth > 50 {
             return DVec3::ZERO;
         }
 
@@ -47,7 +47,7 @@ impl Ray {
                     Some(r) => color += r.color(scene, depth+1),
                     None => (),
                 }
-                match h.sphere.material.transmit(&h) {
+                match h.sphere.material.refract(&h) {
                     Some(r) => color += r.color(scene, depth+1),
                     None => (),
                 }
