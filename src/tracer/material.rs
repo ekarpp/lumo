@@ -5,7 +5,7 @@ use crate::tracer::ray::Ray;
 pub trait Material {
     fn shade(&self, h: &Hit) -> DVec3;
     fn reflect(&self, h: &Hit) -> Option<Ray>;
-    fn transmit(&self, h: &Hit) -> Option<Ray>;
+    fn refract(&self, h: &Hit) -> Option<Ray>;
 }
 
 pub struct Default {}
@@ -23,7 +23,7 @@ impl Material for Default {
         None
     }
 
-    fn transmit(&self, _h: &Hit) -> Option<Ray> {
+    fn refract(&self, _h: &Hit) -> Option<Ray> {
         None
     }
 }
@@ -42,7 +42,47 @@ impl Material for Mirror {
         })
     }
 
-    fn transmit(&self, _h: &Hit) -> Option<Ray> {
+    fn refract(&self, _h: &Hit) -> Option<Ray> {
         None
+    }
+}
+
+pub struct Glass {}
+
+impl Material for Glass {
+    fn shade(&self, _h: &Hit) -> DVec3 {
+        DVec3::ZERO
+    }
+
+    fn reflect(&self, _h: &Hit) -> Option<Ray> {
+        None
+    }
+
+    fn refract(&self, h: &Hit) -> Option<Ray> {
+        const ETA: f64 = 1.5;
+        let eta = if h.inside { ETA } else { 1.0 / ETA };
+
+        /* Snell-Descartes law */
+        let up = h.p.normalize();
+        let cos_in = h.n.dot(-up);
+        let sin_in = (1.0 - cos_in*cos_in).sqrt();
+        if sin_in < 1.0 / eta {
+            // REFLECT
+            return Some(Ray {
+                origin: h.p + crate::EPSILON * h.n,
+                dir: h.p - 2.0 * h.n * h.p.dot(h.n)
+            });
+        }
+
+        let dir = eta*up + h.n*
+            (eta*cos_in - (1.0 - eta*eta*sin_in*sin_in).sqrt());
+        Some(Ray {
+            origin: h.p + if h.inside {
+                -crate::EPSILON*h.n
+            } else {
+                crate::EPSILON*h.n
+            },
+            dir: dir
+        })
     }
 }
