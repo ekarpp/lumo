@@ -1,28 +1,28 @@
-use glam::f32::Vec3;
+use glam::f64::DVec3;
 use crate::tracer::sphere::Sphere;
 
 pub struct Hit<'a> {
-    pub t: f32,
+    pub t: f64,
     pub sphere: &'a Sphere,
     /* hit point */
-    pub p: Vec3,
+    pub p: DVec3,
     /* vector to light */
-    pub l: Vec3,
+    pub l: DVec3,
     /* sphere normal at hit point. pointing away from origin*/
-    pub n: Vec3,
+    pub n: DVec3,
     /* is the hit inside the sphere? */
     pub inside: bool
 
 }
 
 impl Hit<'_> {
-    pub fn new(t: f32, sphere: &Sphere) -> Hit {
+    pub fn new(t: f64, sphere: &Sphere) -> Hit {
         Hit {
             t: t,
             sphere: sphere,
-            p: Vec3::ZERO,
-            l: Vec3::ZERO,
-            n: Vec3::ZERO,
+            p: DVec3::ZERO,
+            l: DVec3::ZERO,
+            n: DVec3::ZERO,
             inside: false
         }
     }

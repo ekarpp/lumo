@@ -1,12 +1,12 @@
-use glam::f32::Vec3;
+use glam::f64::DVec3;
 use crate::tracer::sphere::Sphere;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::{Default, Mirror};
 
 pub struct Scene {
-    pub light: Vec3,
-    pub ambient: Vec3,
+    pub light: DVec3,
+    pub ambient: DVec3,
     objects: Vec<Sphere>
 }
 
@@ -38,24 +38,24 @@ impl Scene {
 
 pub fn default() -> Scene {
     Scene {
-        light: Vec3::new(-0.25, 0.35, -0.2),
-        ambient: Vec3::splat(0.15),
+        light: DVec3::new(-0.25, 0.35, -0.2),
+        ambient: DVec3::splat(0.15),
         objects: vec![
             Sphere {
-                origin: Vec3::new(0.0, -100.5, -1.0),
-                color: Vec3::new(124.0, 252.0, 0.0) / 256.0,
+                origin: DVec3::new(0.0, -100.5, -1.0),
+                color: DVec3::new(124.0, 252.0, 0.0) / 256.0,
                 material: Box::new(Default {}),
                 radius: 100.0
             },
             Sphere {
-                origin: Vec3::new(0.0, 0.0, -1.0),
-                color: Vec3::new(136.0, 8.0, 8.0) / 256.0,
+                origin: DVec3::new(0.0, 0.0, -1.0),
+                color: DVec3::new(136.0, 8.0, 8.0) / 256.0,
                 material: Box::new(Default {}),
                 radius: 0.5
             },
             Sphere {
-                origin: Vec3::new(-0.9, 0.0, -1.0),
-                color: Vec3::ZERO,
+                origin: DVec3::new(-0.9, 0.0, -1.0),
+                color: DVec3::splat(211.0) / 255.9,
                 material: Box::new(Mirror {}),
                 radius: 0.1
             }

@@ -1,19 +1,19 @@
-use glam::f32::Vec3;
+use glam::f64::DVec3;
 use crate::tracer::scene::Scene;
 
 pub struct Ray {
-    pub origin: Vec3,
-    pub dir: Vec3
+    pub origin: DVec3,
+    pub dir: DVec3
 }
 
 impl Ray {
-    pub fn at(&self, t: f32) -> Vec3 {
+    pub fn at(&self, t: f64) -> DVec3 {
         self.origin + t*self.dir
     }
 
-    pub fn color(&self, scene: &Scene, depth: u32) -> Vec3 {
-        if depth > 1 {
-            return Vec3::ZERO;
+    pub fn color(&self, scene: &Scene, depth: u32) -> DVec3 {
+        if depth > 4 {
+            return DVec3::ZERO;
         }
 
         match scene.hit(self) {
@@ -22,7 +22,7 @@ impl Ray {
                 h.p = self.at(h.t);
 
                 /* unit sphere normal */
-                h.n = (h.p - h.sphere.origin) / h.sphere.radius;
+                h.n = (h.p - h.sphere.origin).normalize();
 
                 h.inside = h.n.dot(self.dir) > 0.0;
                 if h.inside {
@@ -33,7 +33,7 @@ impl Ray {
                 h.l = scene.light - h.p;
 
                 let ray_to_light = Ray {
-                    origin: h.p,
+                    origin: h.p + crate::EPSILON*h.n,
                     dir: h.l
                 };
 
@@ -57,8 +57,8 @@ impl Ray {
             None => {
                 /* add different scene types? night, day, etc.. */
                 let u = self.dir.normalize();
-                let t: f32 = 0.5*(u.y + 1.0);
-                Vec3::splat(1.0 - t)*Vec3::ONE + t*Vec3::ZERO
+                let t: f64 = 0.5*(u.y + 1.0);
+                DVec3::splat(1.0 - t)*DVec3::ONE + t*DVec3::ZERO
             }
         }
     }

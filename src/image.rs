@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::BufWriter;
 
 pub struct Image {
-    pub buffer: Vec<glam::f32::Vec3>,
+    pub buffer: Vec<glam::f64::DVec3>,
     pub width: usize,
     pub height: usize
 }
