@@ -22,7 +22,7 @@ fn main() {
             let v = y as f32
                 / (HEIGHT-1) as f32;
             let r = cam.ray_at(u, v);
-            image.buffer.push(r.color(&scene));
+            image.buffer.push(r.color(&scene, 0));
         }
         let percent = 100.0 * (HEIGHT - 1 - y) as f32 / (HEIGHT - 1) as f32;
         print!("{} % done \r", percent as u32);
