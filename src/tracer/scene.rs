@@ -66,7 +66,7 @@ pub fn default() -> Scene {
                 radius: 0.1
             },
             Sphere {
-                origin: DVec3::new(0.6, 0.0, -1.0),
+                origin: DVec3::new(0.4, 0.0, -0.5),
                 color: DVec3::splat(211.0) / 255.9,
                 material: Box::new(Glass {}),
                 radius: 0.1

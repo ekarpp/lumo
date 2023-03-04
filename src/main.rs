@@ -1,3 +1,5 @@
+use glam::f64::DVec3;
+
 mod image;
 mod tracer;
 
@@ -12,7 +14,12 @@ fn main() {
         height: HEIGHT
     };
 
-    let cam = tracer::camera::default();
+    let cam = tracer::camera::Camera::new(
+        WIDTH as f64 / HEIGHT as f64,
+        DVec3::ZERO, // origin
+        DVec3::new(0.0, 0.0, -1.0), // towards (+ focal length)
+        DVec3::new(0.0, 1.0, 0.0) // up
+    );
     let scene = tracer::scene::default();
 
     let mut start = std::time::SystemTime::now();
