@@ -21,15 +21,16 @@ impl Sphere {
         }
         let disc_root = disc.sqrt();
         let mut t = (-b - disc_root) / (2.0*a);
-        if t < 0.0 {
+        let eps = 0.001;
+        if t < eps {
             t = (-b + disc_root) / (2.0*a);
-            if t < 0.0 {
+            if t < eps {
                 return None;
             }
         }
         Some(Hit{
             t: t,
-            normal: (r.at(t) - self.origin).normalize()
+            sphere: self
         })
     }
 }
