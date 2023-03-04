@@ -37,7 +37,8 @@ impl Ray {
                     dir: h.l
                 };
 
-                let mut color = h.sphere.material.color()*scene.ambient;
+                // ambient??
+                let mut color = DVec3::ZERO;
 
                 if !scene.hit_shadow(&ray_to_light) {
                     color += h.sphere.material.shade(&h);
