@@ -11,7 +11,11 @@ impl Ray {
         self.origin + t*self.dir
     }
 
-    pub fn color(&self, scene: &Scene) -> Vec3 {
+    pub fn color(&self, scene: &Scene, depth: u32) -> Vec3 {
+        if depth > 9 {
+            return Vec3::ZERO;
+        }
+
         match scene.hit(self) {
             Some(mut h) => {
                 /* point where ray meets sphere */
@@ -34,8 +38,14 @@ impl Ray {
                     color += h.sphere.material.shade(&h);
                 }
 
-                color += h.sphere.material.reflect(&h);
-                color += h.sphere.material.transmit(&h);
+                match h.sphere.material.reflect(&h) {
+                    Some(r) => color += r.color(scene, depth+1),
+                    None => (),
+                }
+                match h.sphere.material.transmit(&h) {
+                    Some(r) => color += r.color(scene, depth+1),
+                    None => (),
+                }
 
                 color
             }
