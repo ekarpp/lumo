@@ -2,68 +2,78 @@ use glam::f64::DVec3;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 
-pub trait Material {
-    fn shade(&self, h: &Hit) -> DVec3;
-    fn reflect(&self, h: &Hit) -> Option<Ray>;
-    fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray>;
-    fn is_translucent(&self) -> bool;
+pub enum Material {
+    Default(Default),
+    Mirror(Mirror),
+    Glass(Glass)
 }
 
-pub struct Default {}
+impl Material {
+    pub fn shade(&self, h: &Hit) -> DVec3 {
+        match self {
+            Material::Default(d) => d.shade(h),
+            _ => DVec3::ZERO,
+        }
+    }
 
-impl Material for Default {
-    fn shade(&self, h: &Hit) -> DVec3 {
+    pub fn reflect(&self, h: &Hit) -> Option<Ray> {
+        match self {
+            Material::Mirror(m) => m.reflect(h),
+            _ => None,
+        }
+    }
+
+    pub fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
+        match self {
+            Material::Glass(g) => g.refract(h, r),
+            _ => None,
+        }
+    }
+
+    pub fn is_translucent(&self) -> bool {
+        match self {
+            Material::Glass(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn color(&self) -> DVec3 {
+        match self {
+            Material::Default(d) => d.color,
+            _ => DVec3::ZERO,
+        }
+    }
+}
+
+pub struct Default {
+    pub color: DVec3
+}
+
+impl Default {
+    pub fn shade(&self, h: &Hit) -> DVec3 {
         crate::tracer::phong::phong_shading(
             h,
             DVec3::splat(0.9),
             3.0
         )
     }
-
-    fn reflect(&self, _h: &Hit) -> Option<Ray> {
-        None
-    }
-
-    fn refract(&self, _h: &Hit, _r: &Ray) -> Option<Ray> {
-        None
-    }
-
-    fn is_translucent(&self) -> bool { false }
 }
 
 pub struct Mirror {}
 
-impl Material for Mirror {
-    fn shade(&self, _h: &Hit) -> DVec3 {
-        DVec3::ZERO
-    }
-
-    fn reflect(&self, h: &Hit) -> Option<Ray> {
+impl Mirror {
+    pub fn reflect(&self, h: &Hit) -> Option<Ray> {
         Some(Ray {
             origin: h.p,
             dir: h.p - 2.0 * h.n * h.p.dot(h.n)
         })
     }
-
-    fn refract(&self, _h: &Hit, _r: &Ray) -> Option<Ray> {
-        None
-    }
-
-    fn is_translucent(&self) -> bool { false }
 }
 
 pub struct Glass {}
 
-impl Material for Glass {
-    fn shade(&self, _h: &Hit) -> DVec3 {
-        DVec3::ZERO
-    }
-
-    fn reflect(&self, _h: &Hit) -> Option<Ray> {
-        None
-    }
-
-    fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
+impl Glass {
+    pub fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
         const ETA: f64 = 1.5;
         let eta = if h.inside { ETA } else { 1.0 / ETA };
 
@@ -87,6 +97,4 @@ impl Material for Glass {
             dir: dir
         })
     }
-
-    fn is_translucent(&self) -> bool { true }
 }

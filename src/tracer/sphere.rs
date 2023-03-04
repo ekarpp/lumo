@@ -5,8 +5,7 @@ use crate::tracer::material::Material;
 
 pub struct Sphere {
     pub origin: DVec3,
-    pub color: DVec3,
-    pub material: Box<dyn Material>,
+    pub material: Material,
     pub radius: f64
 }
 

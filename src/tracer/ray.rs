@@ -37,7 +37,7 @@ impl Ray {
                     dir: h.l
                 };
 
-                let mut color = h.sphere.color*scene.ambient;
+                let mut color = h.sphere.material.color()*scene.ambient;
 
                 if !scene.hit_shadow(&ray_to_light) {
                     color += h.sphere.material.shade(&h);

@@ -15,7 +15,7 @@ pub fn phong_shading(h: &Hit, spec_coeff: DVec3, q: f64) -> DVec3 {
     let r = l - 2.0 * h.n * l.dot(h.n);
 
 
-    (h.n.dot(l).max(0.0) * h.sphere.color
+    (h.n.dot(l).max(0.0) * h.sphere.material.color()
      /* compute the specular lobe */
      + r.dot(h.p).max(0.0).powf(q) * spec_coeff)
         /* scale by reciprocal of squared distance to light */
