@@ -14,16 +14,7 @@ fn main() {
     };
 
     let cam = tracer::camera::def();
-    let scene = vec![
-        tracer::sphere::Sphere{
-            origin: glam::f32::Vec3::new(0.0, -100.5, -1.0),
-            radius: 100.0
-        },
-        tracer::sphere::Sphere{
-            origin: glam::f32::Vec3::new(0.0, 0.0, -1.0),
-            radius: 0.5
-        }
-    ];
+    let scene = tracer::scene::def();
     for y in (0..HEIGHT).rev()
     {
         for x in 0..WIDTH

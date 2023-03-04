@@ -1,6 +1,5 @@
 use glam::f32::Vec3;
-use crate::tracer::sphere::Sphere;
-use crate::tracer::hit::Hit;
+use crate::tracer::scene::Scene;
 
 pub struct Ray {
     pub origin: Vec3,
@@ -12,20 +11,23 @@ impl Ray {
         self.origin + t*self.dir
     }
 
-    pub fn color(&self, scene: &Vec<Sphere>) -> Vec3 {
-        let mut closest_hit: Option<Hit> = None;
-        for sphere in scene {
-            let h = sphere.hit(self);
-            if closest_hit.is_none() {
-                closest_hit = h;
-            }
-            else if h.is_some() && h < closest_hit {
-                closest_hit = h;
-            }
-        }
+    pub fn color(&self, scene: &Scene) -> Vec3 {
+        match scene.hit(self) {
+            Some(h) => {
+                let p = self.at(h.t);
+                let mut norm = (p - h.sphere.origin).normalize();
 
-        match closest_hit {
-            Some(h) => h.normal,
+                let ray_to_light = Ray {
+                    origin: p,
+                    dir: scene.light - p
+                };
+
+                if scene.hit_shadow(&ray_to_light) {
+                    norm *= 0.5;
+                }
+
+                norm
+            }
             None => {
                 let u = self.dir.normalize();
                 let t: f32 = 0.5*(u.y + 1.0);
