@@ -1,5 +1,6 @@
 use glam::f64::DVec3;
 
+use crate::tracer::scene::Scene;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::illumination::{phong_illum, reflect_ray, refract_ray};
@@ -11,12 +12,14 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn shade(&self, h: &Hit) -> DVec3 {
+    pub fn shade(&self, h: &Hit, s: &Scene) -> Option<DVec3> {
+        /* see phong_illum */
         let q = 3.0;
-        let spec_coeff = DVec3::splat(0.9);
+        let sc = DVec3::splat(0.9);
+
         match self {
-            Material::Default(c) => phong_illum(c.clone(), h, spec_coeff, q),
-            _ => DVec3::ZERO,
+            Material::Default(c) => Some(phong_illum(c.clone(), h, sc, q, s)),
+            _ => None,
         }
     }
 

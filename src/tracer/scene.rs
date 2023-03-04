@@ -25,15 +25,15 @@ impl Scene {
         closest_hit
     }
 
-    pub fn hit_shadow(&self, r: &Ray) -> bool {
+    pub fn hit_light(&self, r: &Ray) -> bool {
         for sphere in &self.objects {
             let h = sphere.hit(r);
             // h.is_some_and
             if h.filter(|x| !x.sphere.material.is_translucent()).is_some() {
-                return true;
+                return false;
             }
         }
-        false
+        true
     }
 
     pub fn default() -> Scene {

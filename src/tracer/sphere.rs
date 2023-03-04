@@ -10,6 +10,10 @@ pub struct Sphere {
 }
 
 impl Sphere {
+    pub fn normal_at(&self, p: DVec3) -> DVec3 {
+        (p - self.origin) / self.radius
+    }
+
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"

@@ -32,7 +32,7 @@ fn main() {
             let r = cam.ray_at(u, v);
             image.buffer[x + y*WIDTH] = r.color(&scene, 0);
         }
-        let percent = 100.0 * (HEIGHT - 1 - y) as f64 / (HEIGHT - 1) as f64;
+        let percent = 100.0 * y as f64 / (HEIGHT - 1) as f64;
         print!("{} % done \r", percent as u32);
     }
     let mut diff = start.elapsed();
