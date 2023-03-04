@@ -36,14 +36,16 @@ impl Scene {
 
 pub fn def() -> Scene {
     Scene {
-        light: Vec3::new(-2.0, 1.0, -1.0),
+        light: Vec3::new(-0.0, 0.5, -0.5),
         objects: vec![
             Sphere{
                 origin: Vec3::new(0.0, -100.5, -1.0),
+                color: Vec3::new(124.0, 252.0, 0.0) / 256.0,
                 radius: 100.0
             },
             Sphere{
                 origin: Vec3::new(0.0, 0.0, -1.0),
+                color: Vec3::new(136.0, 8.0, 8.0) / 256.0,
                 radius: 0.5
             }
         ]
