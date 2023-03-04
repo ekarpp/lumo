@@ -16,32 +16,35 @@ impl Ray {
             Some(h) => {
                 /* point where ray meets sphere */
                 let p = self.at(h.t);
+
                 /* sphere normal*/
                 let n = (p - h.sphere.origin).normalize();
 
                 /* vector to light from hit point */
                 let l = scene.light - p;
+
                 /* l mirrored around sphere normal */
                 let r = p - 2.0 * n * p.dot(n).max(0.0);
-
-                let color = h.sphere.color;
-                let spec_coeff = Vec3::splat(0.9);
-                let ambient_coeff = Vec3::splat(0.75);
-                let q = 0.25;
-                let phong = color*ambient_coeff + (n.dot(l).max(0.0) * color
-                    + r.dot(-p).max(0.0).powf(q) * spec_coeff)
-                    / l.length_squared();
 
                 let ray_to_light = Ray {
                     origin: p,
                     dir: l
                 };
 
+                let color = h.sphere.color;
+                let spec_coeff = Vec3::splat(0.9);
+                let ambient_coeff = Vec3::splat(0.25);
+                let q = 0.005;
+                let phong = color*ambient_coeff;
+
 
                 if scene.hit_shadow(&ray_to_light) {
+                    phong
+                } else {
+                    phong + (n.dot(l).max(0.0) * color
+                             + r.dot(-p).max(0.0).powf(q) * spec_coeff)
+                        / l.length_squared()
                 }
-
-                phong
             }
             None => {
                 let u = self.dir.normalize();

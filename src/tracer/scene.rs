@@ -36,7 +36,7 @@ impl Scene {
 
 pub fn def() -> Scene {
     Scene {
-        light: Vec3::new(-0.0, 0.5, -0.5),
+        light: Vec3::new(-0.25, 0.35, -0.2),
         objects: vec![
             Sphere{
                 origin: Vec3::new(0.0, -100.5, -1.0),
