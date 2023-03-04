@@ -22,7 +22,7 @@ impl Camera {
     }
 }
 
-pub fn def() -> Camera {
+pub fn default() -> Camera {
     let h = 2.0;
     let w = h * 16.0 / 9.0;
     let f = 1.0;
