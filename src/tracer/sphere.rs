@@ -1,5 +1,6 @@
 use glam::f32::Vec3;
 use crate::tracer::ray::Ray;
+use crate::tracer::hit::Hit;
 
 pub struct Sphere {
     pub origin: Vec3,
@@ -7,7 +8,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn hit(&self, r: &Ray) -> f32 {
+    pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"
         let a = r.dir.dot(r.dir);
@@ -16,10 +17,19 @@ impl Sphere {
         let disc = b*b - 4.0*a*c;
 
         if disc < 0.0 {
-            return -1.0;
+            return None;
         }
         let disc_root = disc.sqrt();
-        let roots = [(-b + disc_root) / (2.0*a), (-b - disc_root) / (2.0*a)];
-        if roots[0] > roots[1] { roots[1] } else { roots[0] }
+        let mut t = (-b - disc_root) / (2.0*a);
+        if t < 0.0 {
+            t = (-b + disc_root) / (2.0*a);
+            if t < 0.0 {
+                return None;
+            }
+        }
+        Some(Hit{
+            t: t,
+            normal: (r.at(t) - self.origin).normalize()
+        })
     }
 }
