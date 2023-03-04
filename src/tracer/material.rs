@@ -6,6 +6,7 @@ pub trait Material {
     fn shade(&self, h: &Hit) -> DVec3;
     fn reflect(&self, h: &Hit) -> Option<Ray>;
     fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray>;
+    fn is_translucent(&self) -> bool;
 }
 
 pub struct Default {}
@@ -26,6 +27,8 @@ impl Material for Default {
     fn refract(&self, _h: &Hit, _r: &Ray) -> Option<Ray> {
         None
     }
+
+    fn is_translucent(&self) -> bool { false }
 }
 
 pub struct Mirror {}
@@ -45,6 +48,8 @@ impl Material for Mirror {
     fn refract(&self, _h: &Hit, _r: &Ray) -> Option<Ray> {
         None
     }
+
+    fn is_translucent(&self) -> bool { false }
 }
 
 pub struct Glass {}
@@ -82,4 +87,6 @@ impl Material for Glass {
             dir: dir
         })
     }
+
+    fn is_translucent(&self) -> bool { true }
 }
