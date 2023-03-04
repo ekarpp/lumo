@@ -12,7 +12,7 @@ impl Ray {
     }
 
     pub fn color(&self, scene: &Scene, depth: u32) -> Vec3 {
-        if depth > 9 {
+        if depth > 1 {
             return Vec3::ZERO;
         }
 
@@ -22,7 +22,12 @@ impl Ray {
                 h.p = self.at(h.t);
 
                 /* unit sphere normal */
-                h.n = (h.p - h.sphere.origin).normalize();
+                h.n = (h.p - h.sphere.origin) / h.sphere.radius;
+
+                h.inside = h.n.dot(self.dir) > 0.0;
+                if h.inside {
+                    h.n = -h.n;
+                }
 
                 /* vector to light from hit point */
                 h.l = scene.light - h.p;
