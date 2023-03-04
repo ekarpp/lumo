@@ -1,9 +1,9 @@
-use glam::f32::Vec3;
+use glam::f64::DVec3;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 
 pub trait Material {
-    fn shade(&self, h: &Hit) -> Vec3;
+    fn shade(&self, h: &Hit) -> DVec3;
     fn reflect(&self, h: &Hit) -> Option<Ray>;
     fn transmit(&self, h: &Hit) -> Option<Ray>;
 }
@@ -11,10 +11,10 @@ pub trait Material {
 pub struct Default {}
 
 impl Material for Default {
-    fn shade(&self, h: &Hit) -> Vec3 {
+    fn shade(&self, h: &Hit) -> DVec3 {
         crate::tracer::phong::phong_shading(
             h,
-            Vec3::splat(0.9),
+            DVec3::splat(0.9),
             3.0
         )
     }
@@ -31,14 +31,14 @@ impl Material for Default {
 pub struct Mirror {}
 
 impl Material for Mirror {
-    fn shade(&self, _h: &Hit) -> Vec3 {
-        Vec3::ZERO
+    fn shade(&self, _h: &Hit) -> DVec3 {
+        DVec3::ZERO
     }
 
     fn reflect(&self, h: &Hit) -> Option<Ray> {
-        Some(Ray{
-            origin: h.p + 0.001 * h.n,
-            dir: h.p - 2.0 * h.p.dot(h.n).max(0.0) * h.n
+        Some(Ray {
+            origin: h.p + crate::EPSILON * h.n,
+            dir: h.p - 2.0 * h.n * h.p.dot(h.n)
         })
     }
 

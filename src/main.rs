@@ -1,6 +1,7 @@
 mod image;
 mod tracer;
 
+const EPSILON: f64 = 0.001;
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;
 
@@ -17,14 +18,14 @@ fn main() {
     let mut start = std::time::SystemTime::now();
     for y in (0..HEIGHT).rev() {
         for x in 0..WIDTH {
-            let u = x as f32
-                / (WIDTH-1) as f32;
-            let v = y as f32
-                / (HEIGHT-1) as f32;
+            let u = x as f64
+                / (WIDTH-1) as f64;
+            let v = y as f64
+                / (HEIGHT-1) as f64;
             let r = cam.ray_at(u, v);
             image.buffer.push(r.color(&scene, 0));
         }
-        let percent = 100.0 * (HEIGHT - 1 - y) as f32 / (HEIGHT - 1) as f32;
+        let percent = 100.0 * (HEIGHT - 1 - y) as f64 / (HEIGHT - 1) as f64;
         print!("{} % done \r", percent as u32);
     }
     let mut diff = start.elapsed();
