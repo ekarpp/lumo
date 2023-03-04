@@ -5,15 +5,19 @@ pub struct Camera {
     vp_height: f32,
     vp_width: f32,
     origin: Vec3,
-    bot_left_corner: Vec3
+    pub bot_left_corner: Vec3
 }
 
 impl Camera {
-    pub fn ray_at(&self, x: f32, y: f32) -> Ray {
+    pub fn ray_at(&self, u: f32, v: f32) -> Ray {
         Ray {
             origin: self.origin,
-            dir: self.bot_left_corner
-                + Vec3::new(x*self.vp_width, y*self.vp_height, 0.0) - self.origin
+            dir: self.bot_left_corner - self.origin
+                + Vec3::new(
+                    u*self.vp_width,
+                    v*self.vp_height,
+                    0.0
+                )
         }
     }
 }
@@ -27,6 +31,6 @@ pub fn def() -> Camera {
         vp_height: h,
         vp_width: w,
         origin: Vec3::ZERO,
-        bot_left_corner: Vec3::ZERO - 0.5*Vec3::new(w, h, 2.0*f)
+        bot_left_corner: -0.5*Vec3::new(w, h, 2.0*f)
     }
 }
