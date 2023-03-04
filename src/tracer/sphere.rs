@@ -1,10 +1,12 @@
 use glam::f32::Vec3;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
+use crate::tracer::material::Material;
 
 pub struct Sphere {
     pub origin: Vec3,
     pub color: Vec3,
+    pub material: Box<dyn Material>,
     pub radius: f32
 }
 
@@ -29,9 +31,6 @@ impl Sphere {
                 return None;
             }
         }
-        Some(Hit{
-            t: t,
-            sphere: self
-        })
-    }
+        Some(Hit::new(t, self))
+     }
 }

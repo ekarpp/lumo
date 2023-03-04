@@ -1,8 +1,27 @@
+use glam::f32::Vec3;
 use crate::tracer::sphere::Sphere;
 
 pub struct Hit<'a> {
     pub t: f32,
-    pub sphere: &'a Sphere
+    pub sphere: &'a Sphere,
+    /* hit point */
+    pub p: Vec3,
+    /* vector to light */
+    pub l: Vec3,
+    /* sphere normal at hit point */
+    pub n: Vec3
+}
+
+impl Hit<'_> {
+    pub fn new(t: f32, sphere: &Sphere) -> Hit {
+        Hit {
+            t: t,
+            sphere: sphere,
+            p: Vec3::ZERO,
+            l: Vec3::ZERO,
+            n: Vec3::ZERO
+        }
+    }
 }
 
 impl PartialEq for Hit<'_> {
