@@ -3,6 +3,9 @@ use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 
+#[cfg(test)]
+mod tests;
+
 pub trait Object {
     // unit length normal at p
     fn normal_at(&self, p: DVec3) -> DVec3;

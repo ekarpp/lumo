@@ -45,7 +45,7 @@ impl Scene {
     }
 
     pub fn default() -> Scene {
-        let l = DVec3::new(-0.2, 0.2, -0.4);
+        let l = DVec3::new(-0.3, 0.2, -0.1);
         let debug = Sphere::new(
             l,
             crate::DEBUG_R,
