@@ -4,6 +4,9 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
 
+#[cfg(test)]
+mod scene_tests;
+
 pub struct Scene {
     pub light: DVec3,
     pub ambient: DVec3,
