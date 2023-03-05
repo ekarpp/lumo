@@ -1,5 +1,7 @@
 Ray tracer written in rust
 
+![](https://github.com/ekarpp/rust_tracer/blob/master/cover.png?raw=true)
+
 Things that could be done:
 - command line args (for resolution, ...)
 - random scene generator
@@ -16,7 +18,3 @@ Things that could be done:
 - custom camera lens
 - DoF
 - ...
-
-
-
-![Hey](https://github.com/ekarpp/rust_tracer/blob/master/cover.png?raw=true)
