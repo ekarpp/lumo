@@ -3,7 +3,7 @@ use glam::f64::DVec3;
 use crate::tracer::scene::Scene;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::illumination::{phong_illum, reflect_ray, refract_ray};
+use crate::tracer::illumination;
 
 pub enum Material {
     Default(DVec3),
@@ -18,21 +18,24 @@ impl Material {
         let sc = DVec3::splat(0.9);
 
         match self {
-            Material::Default(c) => Some(phong_illum(c.clone(), h, sc, q, s)),
+            // return opt directlY??
+            Material::Default(c) => Some(
+                illumination::phong_illum(c.clone(), h, sc, q, s)
+            ),
             _ => None,
         }
     }
 
     pub fn reflect(&self, h: &Hit) -> Option<Ray> {
         match self {
-            Material::Mirror => reflect_ray(h),
+            Material::Mirror => illumination::reflect_ray(h),
             _ => None,
         }
     }
 
     pub fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
         match self {
-            Material::Glass => refract_ray(h, r),
+            Material::Glass => illumination::refract_ray(h, r),
             _ => None,
         }
     }

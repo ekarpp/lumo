@@ -37,17 +37,14 @@ fn main() {
         let percent = 100.0 * y as f64 / (HEIGHT - 1) as f64;
         print!("{} % done \r", percent as u32);
     }
-    let mut diff = start.elapsed();
-    match diff {
+    match start.elapsed() {
         Ok(v) => println!("rendering done in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 
     start = std::time::SystemTime::now();
     image.save();
-    diff = start.elapsed();
-
-    match diff {
+    match start.elapsed() {
         Ok(v) => println!("created png in {v:?}"),
         Err(e) => println!("png done, error measuring duration {e:?}"),
     }
