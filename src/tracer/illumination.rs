@@ -52,24 +52,23 @@ pub fn reflect_ray(h: &Hit) -> Option<Ray> {
 }
 
 pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
-
-    /* TODO: CLEANUP AND VERIFY OK */
     const ETA: f64 = 1.5;
+
     let inside = h.n.dot(r.dir) > 0.0;
-    let eta = if inside { ETA } else { 1.0 / ETA };
+    let eta_ratio = if inside { ETA } else { 1.0 / ETA };
     let norm = if inside { -h.n } else { h.n };
 
     /* Snell-Descartes law */
     let up = r.dir.normalize();
     let cos_in = norm.dot(-up).min(1.0);
-    let sin_out = (1.0 - cos_in*cos_in)*eta*eta;
+    let sin_out = (1.0 - cos_in*cos_in)*eta_ratio*eta_ratio;
 
     if sin_out > 1.0 {
         return reflect_ray(h);
     }
 
-    let dir = eta*up + norm *
-        (eta*cos_in - (1.0 - sin_out).sqrt());
+    let dir = eta_ratio*up + norm *
+        (eta_ratio*cos_in - (1.0 - sin_out).sqrt());
 
     Some(Ray {
         origin: h.p,
