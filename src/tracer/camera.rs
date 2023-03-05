@@ -11,10 +11,10 @@ pub struct Camera {
 
 impl Camera {
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
-        Ray {
-            origin: self.origin,
-            dir: self.blc + x*self.horiz + y*self.vert - self.origin
-        }
+        Ray::new(
+            self.origin,
+            self.blc + x*self.horiz + y*self.vert - self.origin
+        )
     }
 
     pub fn new(ar: f64, from: DVec3, towards: DVec3, up: DVec3) -> Camera {
