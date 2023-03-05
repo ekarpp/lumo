@@ -22,23 +22,23 @@ impl Ray {
                 h.p = self.at(h.t);
 
                 /* unit sphere normal */
-                h.n = h.sphere.normal_at(h.p);
+                h.n = h.object.normal_at(h.p);
 
                 let mut color = DVec3::ZERO;
 
                 /* better way than passing scene? */
-                match h.sphere.material.shade(&h, scene) {
+                match h.object.material().shade(&h, scene) {
                     Some(c) => color += c,
                     None => (),
                 }
 
-                match h.sphere.material.reflect(&h) {
+                match h.object.material().reflect(&h) {
                     Some(r) => color += r.color(scene, depth+1),
                     None => (),
                 }
 
                 /* better way than passing self? */
-                match h.sphere.material.refract(&h, self) {
+                match h.object.material().refract(&h, self) {
                     Some(r) => color += r.color(scene, depth+1),
                     None => (),
                 }

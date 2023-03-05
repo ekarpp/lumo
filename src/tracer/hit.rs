@@ -1,9 +1,9 @@
 use glam::f64::DVec3;
-use crate::tracer::sphere::Sphere;
+use crate::tracer::object::Object;
 
 pub struct Hit<'a> {
     pub t: f64,
-    pub sphere: &'a Sphere,
+    pub object: &'a dyn Object,
     /* hit point */
     pub p: DVec3,
     /* sphere normal at hit point.
@@ -12,12 +12,12 @@ pub struct Hit<'a> {
 }
 
 impl Hit<'_> {
-    pub fn new(t: f64, sphere: &Sphere) -> Hit {
+    pub fn new(t: f64, object: &dyn Object) -> Hit {
         Hit {
             t: t,
-            sphere: sphere,
+            object: object,
             p: DVec3::ZERO,
-            n: DVec3::ZERO
+            n: DVec3::ZERO,
         }
     }
 }

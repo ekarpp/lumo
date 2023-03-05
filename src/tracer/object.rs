@@ -3,18 +3,36 @@ use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 
+pub trait Object {
+    fn normal_at(&self, p: DVec3) -> DVec3;
+    fn hit(&self, r: &Ray) -> Option<Hit>;
+    fn material(&self) -> &Material;
+}
+
 pub struct Sphere {
     pub origin: DVec3,
-    pub material: Material,
-    pub radius: f64
+    pub radius: f64,
+    material: Material,
 }
 
 impl Sphere {
-    pub fn normal_at(&self, p: DVec3) -> DVec3 {
+    pub fn new(origin: DVec3, mat: Material, r: f64) -> Box<Sphere> {
+        Box::new(Sphere {
+            origin: origin,
+            radius: r,
+            material: mat,
+        })
+    }
+}
+
+impl Object for Sphere {
+    fn material(&self) -> &Material { &self.material }
+
+    fn normal_at(&self, p: DVec3) -> DVec3 {
         (p - self.origin) / self.radius
     }
 
-    pub fn hit(&self, r: &Ray) -> Option<Hit> {
+    fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"
         // .dot faster than .length_squared, recheck
