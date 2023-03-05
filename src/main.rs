@@ -18,8 +18,8 @@ fn main() {
         DVec3::new(0.0, 1.0, 0.0) // up
     );
 
-    let mut start = std::time::SystemTime::now();
-    let buff = (0..HEIGHT).into_par_iter().flat_map(|y| {
+    let start_img = std::time::SystemTime::now();
+    let image_buffer = (0..HEIGHT).into_par_iter().flat_map(|y| {
         (0..WIDTH).map(|x| {
             let u = x as f64
                 / (WIDTH-1) as f64;
@@ -29,21 +29,21 @@ fn main() {
             r.color(&scene, 0)
         }).collect::<Vec<DVec3>>()
     }).collect::<Vec<DVec3>>();
-    match start.elapsed() {
+    match start_img.elapsed() {
         Ok(v) => println!("rendering done in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 
     let image = image::Image {
-        buffer: buff,
+        buffer: image_buffer,
         width: WIDTH,
         height: HEIGHT,
         fname: String::from("cover.png"),
     };
 
-    start = std::time::SystemTime::now();
+    let start_png = std::time::SystemTime::now();
     image.save();
-    match start.elapsed() {
+    match start_png.elapsed() {
         Ok(v) => println!("created png in {v:?}"),
         Err(e) => println!("png done, error measuring duration {e:?}"),
     }
