@@ -14,7 +14,7 @@ pub fn phong_illum(
     q: f64,
     scene: &Scene
 ) -> DVec3 {
-    /* shaded color */
+    /* shaded color, just ambient for now */
     let mut shaded = color * scene.ambient;
 
     /* vector to light from hit point */
@@ -30,14 +30,16 @@ pub fn phong_illum(
         let lu = l.normalize();
 
         /* l mirrored around sphere normal */
-        /* l points in the "wrong direction" but later on, so does h.p,
+        /* r points in the wrong direction but later on, so does h.p,
          * so they cancel out */
         let r = lu - 2.0 * h.n * lu.dot(h.n);
-        shaded += (h.n.dot(lu).max(0.0) * color
-                   /* compute the specular lobe */
-                   + r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff)
-        /* scale by reciprocal of squared distance to light */
-            / l.length_squared()
+        shaded += (
+            /* diffuse reflection */
+            h.n.dot(lu).max(0.0) * color
+            /* specular reflection */
+                + r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff)
+            /* scale by reciprocal of squared distance to light */
+            / l.length_squared();
     }
 
     shaded
