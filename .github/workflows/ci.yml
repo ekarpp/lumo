@@ -3,13 +3,13 @@ name: rust_tracer_pipe
 on: push
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
 
     steps:
     - name: checkout repo
       uses: actions/checkout@v3
-    - name: cargo check
+    - name: cargo test
       uses: actions-rs/cargo@v1
       with:
-        command: check
+        command: test
