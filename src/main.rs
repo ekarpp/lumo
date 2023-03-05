@@ -11,16 +11,17 @@ fn main() {
     let mut image = image::Image {
         buffer: vec![DVec3::ZERO; WIDTH*HEIGHT],
         width: WIDTH,
-        height: HEIGHT
+        height: HEIGHT,
+        fname: String::from("cover.png"),
     };
 
+    let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         WIDTH as f64 / HEIGHT as f64,
         DVec3::ZERO, // origin
         DVec3::new(0.0, 0.0, -1.0), // towards (+ focal length)
         DVec3::new(0.0, 1.0, 0.0) // up
     );
-    let scene = tracer::scene::Scene::default();
 
     let mut start = std::time::SystemTime::now();
     for y in 0..HEIGHT {
