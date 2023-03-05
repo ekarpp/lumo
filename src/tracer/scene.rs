@@ -1,5 +1,5 @@
 use glam::f64::DVec3;
-use crate::tracer::object::{Object, Sphere};
+use crate::tracer::object::{Object, Sphere, Plane};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
@@ -27,10 +27,17 @@ impl Scene {
     }
 
     pub fn hit_light(&self, r: &Ray) -> bool {
-        for sphere in &self.objects {
-            let h = sphere.hit(r);
+        let block_light = |h: &Hit| -> bool {
+            !h.object.material().is_translucent()
+                && (h.p - r.origin).length_squared() <
+                (self.light - r.origin).length_squared()
+        };
+
+
+        for object in &self.objects {
+            let h = object.hit(r);
             // h.is_some_and
-            if h.filter(|x| !x.object.material().is_translucent()).is_some() {
+            if object.debug_light() && h.filter(block_light).is_some() {
                 return false;
             }
         }
@@ -38,39 +45,71 @@ impl Scene {
     }
 
     pub fn default() -> Scene {
+        let l = DVec3::new(-0.2, 0.2, -0.4);
+        let debug = Sphere::new(
+            l,
+            crate::DEBUG_R,
+            Material::Default(DVec3::ONE)
+        );
         Scene {
-            light: DVec3::new(-0.25, 0.35, -0.2),
+            light: l,
             ambient: DVec3::splat(0.15),
             objects: vec![
-                Sphere::new(
-                    DVec3::new(0.0, -100.5, -1.0),
+                debug,
+                // floor
+                Plane::new(
+                    DVec3::new(0.0, -0.5, 0.0),
+                    DVec3::new(0.0, 1.0, 0.0),
                     Material::Default(
-                        DVec3::new(124.0, 252.0, 0.0) / 255.9
-                    ),
-                    100.0
+                        DVec3::ONE
+                    )
+                ),
+                // right
+                Plane::new(
+                    DVec3::new(3.0, 0.0, -3.0),
+                    DVec3::new(-1.0, 0.0, 1.0),
+                    Material::Default(
+                        DVec3::new(0.0, 0.0, 1.0)
+                    )
+                ),
+                // left
+                Plane::new(
+                    DVec3::new(-3.0, 0.0, -3.0),
+                    DVec3::new(1.0, 0.0, 1.0),
+                    Material::Default(
+                        DVec3::new(1.0, 0.0, 0.0)
+                    )
+                ),
+                // behind
+                Plane::new(
+                    DVec3::new(0.0, 0.0, 1.0),
+                    DVec3::new(0.0, 0.0, -1.0),
+                    Material::Default(
+                        DVec3::new(1.0, 0.0, 1.0)
+                    )
                 ),
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
+                    0.5,
                     Material::Default(
                         DVec3::new(136.0, 8.0, 8.0) / 255.9
-                    ),
-                    0.5
+                    )
                 ),
                 Sphere::new(
                     DVec3::new(-0.9, 0.0, -1.0),
-                    Material::Mirror,
-                    0.1
+                    0.1,
+                    Material::Mirror
                 ),
                 Sphere::new(
                     DVec3::new(-0.4, -0.12, -0.5),
-                    Material::Glass,
-                    0.1
+                    0.1,
+                    Material::Glass
                 ),
                 Sphere::new(
                     DVec3::new(0.4, 0.0, -0.5),
-                    Material::Glass,
-                    0.1
-                )
+                    0.1,
+                    Material::Glass
+                ),
             ]
         }
     }

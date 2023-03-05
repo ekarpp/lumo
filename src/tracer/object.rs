@@ -4,9 +4,55 @@ use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 
 pub trait Object {
+    // unit length normal at p
     fn normal_at(&self, p: DVec3) -> DVec3;
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
+    fn debug_light(&self) -> bool;
+}
+
+pub struct Plane {
+    norm: DVec3,
+    material: Material,
+    d: f64, // for hit calc, store instead of point
+}
+
+impl Plane {
+    pub fn new(p: DVec3, n: DVec3, m: Material) -> Box<Plane> {
+        let norm = n.normalize();
+        Box::new(Plane {
+            norm: norm,
+            material: m,
+            d: p.dot(-norm),
+        })
+    }
+}
+
+impl Object for Plane {
+    fn debug_light(&self) -> bool { true }
+    fn material(&self) -> &Material { &self.material }
+    // check that point is on plane?? or assume we are smart
+    fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
+
+    fn hit(&self, r: &Ray) -> Option<Hit> {
+        /* check if plane and ray are parallel. use epsilon instead?
+         * or fail only if we get div by zero?? */
+        if self.norm.dot(r.dir) == 0.0 {
+            return None;
+        }
+
+        let t = -(self.d + self.norm.dot(r.origin)) / self.norm.dot(r.dir);
+        if t < crate::EPSILON {
+            None
+        } else {
+            Some(Hit::new(
+                t,
+                self,
+                r.at(t),
+                self.normal_at(r.at(t))
+            ))
+        }
+    }
 }
 
 pub struct Sphere {
@@ -16,7 +62,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(origin: DVec3, mat: Material, r: f64) -> Box<Sphere> {
+    pub fn new(origin: DVec3, r: f64, mat: Material) -> Box<Sphere> {
         Box::new(Sphere {
             origin: origin,
             radius: r,
@@ -26,6 +72,7 @@ impl Sphere {
 }
 
 impl Object for Sphere {
+    fn debug_light(&self) -> bool { self.radius != crate::DEBUG_R }
     fn material(&self) -> &Material { &self.material }
 
     fn normal_at(&self, p: DVec3) -> DVec3 {
@@ -52,6 +99,11 @@ impl Object for Sphere {
                 return None;
             }
         }
-        Some(Hit::new(t, self))
+        Some(Hit::new(
+            t,
+            self,
+            r.at(t),
+            self.normal_at(r.at(t))
+        ))
      }
 }

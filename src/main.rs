@@ -6,6 +6,7 @@ mod tracer;
 const EPSILON: f64 = 0.001;
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;
+const DEBUG_R: f64 = 0.005;
 
 fn main() {
     let mut image = image::Image {
@@ -18,8 +19,8 @@ fn main() {
     let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         WIDTH as f64 / HEIGHT as f64,
-        DVec3::ZERO, // origin
-        DVec3::new(0.0, 0.0, -1.0), // towards (+ focal length)
+        DVec3::new(0.0, 0.0, 0.0), // origin
+        DVec3::new(0.0, 0.0, -100.0), // towards
         DVec3::new(0.0, 1.0, 0.0) // up
     );
 
