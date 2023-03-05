@@ -17,13 +17,7 @@ impl Ray {
         }
 
         match scene.hit(self) {
-            Some(mut h) => {
-                /* point where ray meets sphere */
-                h.p = self.at(h.t);
-
-                /* unit sphere normal */
-                h.n = h.object.normal_at(h.p);
-
+            Some(h) => {
                 let mut color = DVec3::ZERO;
 
                 /* better way than passing scene? */
@@ -46,10 +40,14 @@ impl Ray {
                 color
             }
             None => {
+                // for debug
+                DVec3::new(0.0, 1.0, 0.0)
                 /* add different scene types? night, day, etc.. */
+                /*
                 let u = self.dir.normalize();
                 let t: f64 = 0.5*(u.y + 1.0);
                 (1.0 - t)*DVec3::ONE + t*DVec3::ZERO
+                */
             }
         }
     }

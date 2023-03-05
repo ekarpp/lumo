@@ -4,7 +4,7 @@ use crate::tracer::object::Object;
 pub struct Hit<'a> {
     pub t: f64,
     pub object: &'a dyn Object,
-    /* hit point */
+    /* point where ray hit object */
     pub p: DVec3,
     /* sphere normal at hit point.
      * if inside points towards origin otherwise not */
@@ -12,12 +12,14 @@ pub struct Hit<'a> {
 }
 
 impl Hit<'_> {
-    pub fn new(t: f64, object: &dyn Object) -> Hit {
+    // return as option??
+    pub fn new(t: f64, o: &dyn Object, p: DVec3, n: DVec3) -> Hit {
+        /* p and n not always needed. computing for every hit slows rendering */
         Hit {
             t: t,
-            object: object,
-            p: DVec3::ZERO,
-            n: DVec3::ZERO,
+            object: o,
+            p: p,
+            n: n,
         }
     }
 }

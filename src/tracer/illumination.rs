@@ -30,13 +30,12 @@ pub fn phong_illum(
         let lu = l.normalize();
 
         /* l mirrored around sphere normal */
-        /* l points in the "wrong direction" but later on, so does h.pp,
+        /* l points in the "wrong direction" but later on, so does h.p,
          * so they cancel out */
         let r = lu - 2.0 * h.n * lu.dot(h.n);
-
         shaded += (h.n.dot(lu).max(0.0) * color
                    /* compute the specular lobe */
-                   + r.dot(h.p).max(0.0).powf(q) * spec_coeff)
+                   + r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff)
         /* scale by reciprocal of squared distance to light */
             / l.length_squared()
     }
