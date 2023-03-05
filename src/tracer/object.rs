@@ -8,7 +8,7 @@ mod sphere_tests;
 #[cfg(test)]
 mod plane_tests;
 
-pub trait Object {
+pub trait Object: Sync {
     // unit length normal at p
     fn normal_at(&self, p: DVec3) -> DVec3;
     fn hit(&self, r: &Ray) -> Option<Hit>;

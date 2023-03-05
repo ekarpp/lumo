@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 glam = "0.23.0"
 png = "0.17.7"
+rayon = "1.7.0"

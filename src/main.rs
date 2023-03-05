@@ -1,4 +1,5 @@
 use glam::f64::DVec3;
+use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
 mod image;
 mod tracer;
@@ -9,13 +10,6 @@ const HEIGHT: usize = 2160;
 const DEBUG_R: f64 = 0.005;
 
 fn main() {
-    let mut image = image::Image {
-        buffer: vec![DVec3::ZERO; WIDTH*HEIGHT],
-        width: WIDTH,
-        height: HEIGHT,
-        fname: String::from("cover.png"),
-    };
-
     let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         WIDTH as f64 / HEIGHT as f64,
@@ -25,22 +19,27 @@ fn main() {
     );
 
     let mut start = std::time::SystemTime::now();
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
+    let buff = (0..HEIGHT).into_par_iter().flat_map(|y| {
+        (0..WIDTH).map(|x| {
             let u = x as f64
                 / (WIDTH-1) as f64;
             let v = (HEIGHT - 1 - y) as f64
                 / (HEIGHT-1) as f64;
             let r = cam.ray_at(u, v);
-            image.buffer[x + y*WIDTH] = r.color(&scene, 0);
-        }
-        let percent = 100.0 * y as f64 / (HEIGHT - 1) as f64;
-        print!("{} % done \r", percent as u32);
-    }
+            r.color(&scene, 0)
+        }).collect::<Vec<DVec3>>()
+    }).collect::<Vec<DVec3>>();
     match start.elapsed() {
         Ok(v) => println!("rendering done in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
+
+    let image = image::Image {
+        buffer: buff,
+        width: WIDTH,
+        height: HEIGHT,
+        fname: String::from("cover.png"),
+    };
 
     start = std::time::SystemTime::now();
     image.save();
