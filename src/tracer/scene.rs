@@ -2,7 +2,7 @@ use glam::f64::DVec3;
 use crate::tracer::sphere::Sphere;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::material::{Default, Mirror, Glass};
+use crate::tracer::material::Material;
 
 pub struct Scene {
     pub light: DVec3,
@@ -15,6 +15,7 @@ impl Scene {
         let mut closest_hit: Option<Hit> = None;
         for sphere in &self.objects {
             let h = sphere.hit(r);
+            // make cleaner?
             if closest_hit.is_none() {
                 closest_hit = h;
             }
@@ -25,15 +26,15 @@ impl Scene {
         closest_hit
     }
 
-    pub fn hit_shadow(&self, r: &Ray) -> bool {
+    pub fn hit_light(&self, r: &Ray) -> bool {
         for sphere in &self.objects {
             let h = sphere.hit(r);
             // h.is_some_and
             if h.filter(|x| !x.sphere.material.is_translucent()).is_some() {
-                return true;
+                return false;
             }
         }
-        false
+        true
     }
 
     pub fn default() -> Scene {
@@ -43,32 +44,31 @@ impl Scene {
             objects: vec![
                 Sphere {
                     origin: DVec3::new(0.0, -100.5, -1.0),
-                    color: DVec3::new(124.0, 252.0, 0.0) / 255.9,
-                    material: Box::new(Default {}),
+                    material: Material::Default(
+                        DVec3::new(124.0, 252.0, 0.0) / 255.9
+                    ),
                     radius: 100.0
                 },
                 Sphere {
                     origin: DVec3::new(0.0, 0.0, -1.0),
-                    color: DVec3::new(136.0, 8.0, 8.0) / 255.9,
-                    material: Box::new(Default {}),
+                    material: Material::Default(
+                        DVec3::new(136.0, 8.0, 8.0) / 255.9
+                    ),
                     radius: 0.5
                 },
                 Sphere {
                     origin: DVec3::new(-0.9, 0.0, -1.0),
-                    color: DVec3::splat(211.0) / 255.9,
-                    material: Box::new(Mirror {}),
+                    material: Material::Mirror,
                     radius: 0.1
                 },
                 Sphere {
                     origin: DVec3::new(-0.4, -0.12, -0.5),
-                    color: DVec3::ZERO,
-                    material: Box::new(Glass {}),
+                    material: Material::Glass,
                     radius: 0.1
                 },
                 Sphere {
                     origin: DVec3::new(0.4, 0.0, -0.5),
-                    color: DVec3::ZERO,
-                    material: Box::new(Glass {}),
+                    material: Material::Glass,
                     radius: 0.1
                 }
             ]
