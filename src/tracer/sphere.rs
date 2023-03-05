@@ -17,6 +17,7 @@ impl Sphere {
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"
+        // .dot faster than .length_squared, recheck
         let a = r.dir.dot(r.dir);
         let half_b = tmp.dot(r.dir);
         let c = tmp.dot(tmp) - self.radius*self.radius;

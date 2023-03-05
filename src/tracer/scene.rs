@@ -15,6 +15,7 @@ impl Scene {
         let mut closest_hit: Option<Hit> = None;
         for sphere in &self.objects {
             let h = sphere.hit(r);
+            // make cleaner?
             if closest_hit.is_none() {
                 closest_hit = h;
             }

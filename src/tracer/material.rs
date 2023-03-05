@@ -13,7 +13,7 @@ pub enum Material {
 
 impl Material {
     pub fn shade(&self, h: &Hit, s: &Scene) -> Option<DVec3> {
-        /* see phong_illum */
+        /* see phong_illum for meaning */
         let q = 3.0;
         let sc = DVec3::splat(0.9);
 
