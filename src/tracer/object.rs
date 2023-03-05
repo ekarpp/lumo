@@ -4,7 +4,9 @@ use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 
 #[cfg(test)]
-mod tests;
+mod sphere_tests;
+#[cfg(test)]
+mod plane_tests;
 
 pub trait Object {
     // unit length normal at p
