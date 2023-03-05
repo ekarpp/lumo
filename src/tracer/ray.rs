@@ -7,6 +7,13 @@ pub struct Ray {
 }
 
 impl Ray {
+    pub fn new(o: DVec3, d: DVec3) -> Ray {
+        Ray {
+            origin: o,
+            dir: d,
+        }
+    }
+
     pub fn at(&self, t: f64) -> DVec3 {
         self.origin + t*self.dir
     }
