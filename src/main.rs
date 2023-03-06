@@ -68,15 +68,15 @@ fn main() {
         Some(w) => w,
         None => WIDTH,
     };
-    /* pixel width, w-1? */
-    let pw = 1.0 / img_width as f64;
+    /* pixel width */
+    let pw = 1.0 / (img_width - 1) as f64;
 
     let img_height = match cli_args.height {
         Some(h) => h,
         None => HEIGHT,
     };
-    /* pixel height, h-1? */
-    let ph = 1.0 / img_height as f64;
+    /* pixel height */
+    let ph = 1.0 / (img_height - 1) as f64;
 
     match cli_args.threads {
         Some(t) => rayon::ThreadPoolBuilder::new().num_threads(t)
