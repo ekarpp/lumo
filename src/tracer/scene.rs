@@ -1,8 +1,11 @@
-use glam::f64::DVec3;
+use std::iter;
+use std::f64::consts;
+use crate::{DVec3, DQuat, DAffine3};
 use crate::tracer::object::{Object, Sphere, Plane};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
+use crate::rand_utils;
 
 #[cfg(test)]
 mod scene_tests;
@@ -44,6 +47,45 @@ impl Scene {
             }
         }
         true
+    }
+
+    pub fn random() -> Scene {
+        let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
+            DVec3::new(0.0, -0.5, 0.0),
+            DVec3::new(0.0, 1.0, 0.0),
+            Material::Default(
+                DVec3::ONE,
+            ),
+        ));
+
+        let n = 10;
+        let objects: Vec<Box<dyn Object>> = (0..n)
+            .map(|_| -> Box<dyn Object> {
+                let m = match rand_utils::rand_f64() {
+                    x if x < 0.1 => Material::Glass,
+                    x if x < 0.9 => Material::Default(rand_utils::rand_dvec3()),
+                    _ => Material::Mirror,
+                };
+                let o = rand_utils::rand_dvec3() - DVec3::new(0.5, 0.75, 2.0);
+                Sphere::new(
+                    o,
+                    (o.y + 0.5).abs(),
+                    m
+                )
+            }).chain(ground).collect();
+
+        let s = DVec3::new(1.0, 0.2, 0.5);
+        let la = DAffine3::from_scale_rotation_translation(
+            s,
+            DQuat::from_rotation_z(consts::PI),
+            DVec3::new(-s.x / 2.0, 0.5, -2.0)
+        );
+
+        Scene {
+            light: la.transform_point3(rand_utils::rand_dvec3()),
+            ambient: DVec3::splat(rand_utils::rand_f64()) * 0.5,
+            objects: objects,
+        }
     }
 
     pub fn default() -> Scene {

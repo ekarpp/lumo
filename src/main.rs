@@ -1,8 +1,11 @@
-use glam::f64::DVec3;
+use glam::f64::{DVec3, DMat3, DAffine3, DQuat};
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
+use crate::tracer::scene::Scene;
+use crate::tracer::camera::Camera;
 
 mod image;
 mod tracer;
+mod rand_utils;
 
 const EPSILON: f64 = 0.001;
 const WIDTH: usize = 3840;
@@ -11,9 +14,13 @@ const HEIGHT: usize = 2160;
 #[derive(argh::FromArgs)]
 /// Just a ray tracer :)
 struct TracerCli {
-    /// use anti-aliasing (not implemented!)
+    /// toggle anti-aliasing (4xSSAA)
     #[argh(switch, short='a')]
     alias: bool,
+
+    /// render randomly generated scene
+    #[argh(switch, short='r')]
+    rnd_scene: bool,
 
     /// filename for rendered image (defaults to render.png)
     #[argh(option, short='o')]
@@ -74,8 +81,12 @@ fn main() {
              vfov,
     );
 
-    let scene = tracer::scene::Scene::default();
-    let cam = tracer::camera::Camera::new(
+    let scene = if cli_args.rnd_scene {
+        Scene::random()
+    } else {
+        Scene::default()
+    };
+    let cam = Camera::new(
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
         DVec3::new(0.0, 0.0, 0.0), // origin
