@@ -109,15 +109,15 @@ impl Scene {
 
         let s = DVec3::new(1.0, 0.2, 0.5);
         /* affine transformation for possible positions of point light */
-        let light_aff = DAffine3::from_scale_rotation_translation(
+        let _light_aff = DAffine3::from_scale_rotation_translation(
             s,
             DQuat::from_rotation_z(consts::PI),
             DVec3::new(-s.x / 2.0, 0.5, -2.0)
         );
 
         Scene {
-            light: DVec3::new(0.0, 3.0, 0.0),//light_aff.transform_point3(rand_utils::rand_dvec3()),
-            ambient: DVec3::splat(0.5),//DVec3::splat(rand_utils::rand_f64()) * 1.5,
+            light: DVec3::new(0.0, 3.0, 0.0),
+            ambient: DVec3::splat(rand_utils::rand_f64()) * 0.7,
             objects: objects,
         }
     }
@@ -140,9 +140,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
-                    Material::Phong(Texture::Solid(
-                        DVec3::new(0.0, 0.0, 1.0)
-                    )),
+                    Material::Phong(Texture::Checkerboard),
                 ),
                 // left
                 Plane::new(
