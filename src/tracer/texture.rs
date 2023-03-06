@@ -11,8 +11,8 @@ impl Texture {
         match self {
             Solid(c) => c.clone(),
             Checkerboard => {
-                // very dependant on s
-                let s = 17.0;
+                // if looks bad, try to tune s
+                let s = 13.0;
                 if (s*p.x).sin() * (s*p.y).sin() * (s*p.z).sin() > 0.0 {
                     DVec3::ZERO
                 } else {
