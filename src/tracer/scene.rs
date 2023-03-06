@@ -54,7 +54,7 @@ impl Scene {
         let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
             DVec3::new(0.0, ground_y, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
-            Material::Default(
+            Material::Phong(
                 DVec3::ONE,
             ),
         ));
@@ -82,7 +82,7 @@ impl Scene {
             .map(|_| -> Box<dyn Object> {
                 let m = match rand_utils::rand_f64() {
                     x if x < 0.1 => Material::Glass,
-                    x if x < 0.9 => Material::Default(rand_utils::rand_dvec3()),
+                    x if x < 0.9 => Material::Phong(rand_utils::rand_dvec3()),
                     _ => Material::Mirror,
                 };
                 let o = sphere_aff.transform_point3(rand_utils::rand_dvec3());
@@ -118,7 +118,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Default(
+                    Material::Phong(
                         DVec3::ONE
                     )
                 ),
@@ -126,7 +126,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
-                    Material::Default(
+                    Material::Phong(
                         DVec3::new(0.0, 0.0, 1.0)
                     )
                 ),
@@ -134,7 +134,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(-3.0, 0.0, -3.0),
                     DVec3::new(1.0, 0.0, 1.0),
-                    Material::Default(
+                    Material::Phong(
                         DVec3::new(1.0, 0.0, 0.0)
                     )
                 ),
@@ -142,14 +142,14 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, 0.0, 1.0),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::Default(
+                    Material::Phong(
                         DVec3::new(1.0, 0.0, 1.0)
                     )
                 ),
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
                     0.5,
-                    Material::Default(
+                    Material::Phong(
                         DVec3::new(136.0, 8.0, 8.0) / 255.9
                     )
                 ),

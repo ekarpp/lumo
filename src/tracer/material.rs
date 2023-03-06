@@ -6,7 +6,7 @@ use crate::tracer::ray::Ray;
 use crate::tracer::illumination;
 
 pub enum Material {
-    Default(DVec3),
+    Phong(DVec3),
     Mirror,
     Glass,
 }
@@ -19,7 +19,7 @@ impl Material {
 
         match self {
             // return opt directlY??
-            Material::Default(c) => Some(
+            Material::Phong(c) => Some(
                 illumination::phong_illum(c.clone(), h, sc, q, s)
             ),
             _ => None,
