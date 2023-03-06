@@ -16,6 +16,10 @@ struct TracerCli {
     #[argh(switch, short='a')]
     alias: bool,
 
+    /// vertical field-of-view in degrees (defaults to 90)
+    #[argh(option, short='f')]
+    vfov: Option<f64>,
+
     /// number of threads used (defaults to all)
     #[argh(option, short='t')]
     threads: Option<usize>,
@@ -52,19 +56,27 @@ fn main() {
         None => (),
     };
 
-    println!("rendering {} x {} image using {} thread(s) with anti-aliasing {}",
+    let vfov = match cli_args.vfov {
+        Some(f) => f,
+        None => 90.0,
+    };
+
+    println!("rendering {} x {} image using {} thread(s) \
+              with anti-aliasing {} and vfov {} deg",
              img_width,
              img_height,
              rayon::current_num_threads(),
-             if cli_args.alias { "enabled" } else { "disabled" }
+             if cli_args.alias { "enabled" } else { "disabled" },
+             vfov,
     );
 
     let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         img_width as f64 / img_height as f64,
+        vfov,
         DVec3::new(0.0, 0.0, 0.0), // origin
         DVec3::new(0.0, 0.0, -100.0), // towards
-        DVec3::new(0.0, 1.0, 0.0) // up
+        DVec3::new(0.0, 1.0, 0.0), // up
     );
 
     let start_img = std::time::SystemTime::now();
