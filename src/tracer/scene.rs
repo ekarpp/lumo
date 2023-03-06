@@ -5,6 +5,7 @@ use crate::tracer::object::{Object, Sphere, Plane};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
+use crate::tracer::texture::Texture;
 use crate::rand_utils;
 
 #[cfg(test)]
@@ -54,9 +55,7 @@ impl Scene {
         let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
             DVec3::new(0.0, ground_y, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
-            Material::Phong(
-                DVec3::ONE,
-            ),
+            Material::Phong(Texture::Solid(DVec3::ONE)),
         ));
 
         /* affine transformation for the origin of random spheres
@@ -82,7 +81,7 @@ impl Scene {
             .map(|_| -> Box<dyn Object> {
                 let m = match rand_utils::rand_f64() {
                     x if x < 0.1 => Material::Glass,
-                    x if x < 0.9 => Material::Phong(rand_utils::rand_dvec3()),
+                    x if x < 0.9 => Material::Phong(Texture::Solid(rand_utils::rand_dvec3())),
                     _ => Material::Mirror,
                 };
                 let o = sphere_aff.transform_point3(rand_utils::rand_dvec3());
@@ -118,55 +117,55 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Phong(
+                    Material::Phong(Texture::Solid(
                         DVec3::ONE
-                    )
+                    )),
                 ),
                 // right
                 Plane::new(
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
-                    Material::Phong(
+                    Material::Phong(Texture::Solid(
                         DVec3::new(0.0, 0.0, 1.0)
-                    )
+                    )),
                 ),
                 // left
                 Plane::new(
                     DVec3::new(-3.0, 0.0, -3.0),
                     DVec3::new(1.0, 0.0, 1.0),
-                    Material::Phong(
+                    Material::Phong(Texture::Solid(
                         DVec3::new(1.0, 0.0, 0.0)
-                    )
+                    )),
                 ),
                 // behind
                 Plane::new(
                     DVec3::new(0.0, 0.0, 1.0),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::Phong(
+                    Material::Phong(Texture::Solid(
                         DVec3::new(1.0, 0.0, 1.0)
-                    )
+                    )),
                 ),
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
                     0.5,
-                    Material::Phong(
+                    Material::Phong(Texture::Solid(
                         DVec3::new(136.0, 8.0, 8.0) / 255.9
-                    )
+                    )),
                 ),
                 Sphere::new(
                     DVec3::new(-0.9, 0.0, -1.0),
                     0.1,
-                    Material::Mirror
+                    Material::Mirror,
                 ),
                 Sphere::new(
                     DVec3::new(-0.4, -0.12, -0.5),
                     0.1,
-                    Material::Glass
+                    Material::Glass,
                 ),
                 Sphere::new(
                     DVec3::new(0.4, 0.0, -0.5),
                     0.1,
-                    Material::Glass
+                    Material::Glass,
                 ),
             ]
         }
