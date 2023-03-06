@@ -13,7 +13,6 @@ pub trait Object: Sync {
     fn normal_at(&self, p: DVec3) -> DVec3;
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
-    fn debug_light(&self) -> bool;
 }
 
 pub struct Plane {
@@ -34,7 +33,6 @@ impl Plane {
 }
 
 impl Object for Plane {
-    fn debug_light(&self) -> bool { true }
     fn material(&self) -> &Material { &self.material }
     // check that point is on plane?? or assume we are smart
     fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
@@ -77,7 +75,6 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-    fn debug_light(&self) -> bool { self.radius != crate::DEBUG_R }
     fn material(&self) -> &Material { &self.material }
 
     fn normal_at(&self, p: DVec3) -> DVec3 {
