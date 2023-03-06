@@ -1,4 +1,4 @@
-use glam::f64::DVec3;
+use crate::DVec3;
 use rand::Rng;
 
 pub fn rand_f64() -> f64 {

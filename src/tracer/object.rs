@@ -1,4 +1,4 @@
-use glam::f64::DVec3;
+use crate::DVec3;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;

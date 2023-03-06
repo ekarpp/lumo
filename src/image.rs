@@ -1,4 +1,4 @@
-use glam::f64::DVec3;
+use crate::DVec3;
 
 pub struct Image {
     pub buffer: Vec<DVec3>,

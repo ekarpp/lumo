@@ -1,4 +1,4 @@
-use glam::f64::DVec3;
+use crate::DVec3;
 use crate::tracer::object::Object;
 
 pub struct Hit<'a> {
