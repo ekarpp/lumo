@@ -3,10 +3,11 @@ use crate::DVec3;
 use crate::tracer::scene::Scene;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
+use crate::tracer::texture::Texture;
 use crate::tracer::illumination;
 
 pub enum Material {
-    Phong(DVec3),
+    Phong(Texture),
     Mirror,
     Glass,
 }
@@ -19,8 +20,8 @@ impl Material {
 
         match self {
             // return opt directlY??
-            Material::Phong(c) => Some(
-                illumination::phong_illum(c.clone(), h, sc, q, s)
+            Material::Phong(t) => Some(
+                illumination::phong_illum(t, h, sc, q, s)
             ),
             _ => None,
         }

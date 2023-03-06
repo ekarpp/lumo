@@ -2,18 +2,20 @@ use crate::DVec3;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
+use crate::tracer::texture::Texture;
 
 /**
  * spec_coeff: color of specular lobe
  * q: specular reflection exponent, smaller = more profound lobe
  */
 pub fn phong_illum(
-    color: DVec3,
+    texture: &Texture,
     h: &Hit,
     spec_coeff: DVec3,
     q: f64,
     scene: &Scene
 ) -> DVec3 {
+    let color = texture.color_at(h.p);
     /* shaded color, just ambient for now */
     let mut shaded = color * scene.ambient;
 
