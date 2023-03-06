@@ -1,6 +1,6 @@
 use std::iter;
 use std::f64::consts;
-use crate::{DVec3, DQuat, DAffine3};
+use crate::{DVec3, DQuat, DAffine3, DMat3};
 use crate::tracer::object::{Object, Sphere, Plane};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -50,13 +50,32 @@ impl Scene {
     }
 
     pub fn random() -> Scene {
+        let GROUND_Y = -0.5;
         let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
-            DVec3::new(0.0, -0.5, 0.0),
+            DVec3::new(0.0, GROUND_Y, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
             Material::Default(
                 DVec3::ONE,
             ),
         ));
+
+        /* affine transformation for the origin of random spheres
+         * shear+rotate+scale xz-plane to exact view of camera
+         * scale y so we don't get too big spheres
+         * assume 16/9 aspect ratio and 90 vfov */
+        let shear_xz = (consts::PI / 4.0 - (16.0 / 9.0 as f64).atan()).tan();
+        let scale_xz = 10.0;
+        let scale_y = 0.5; // aka max radius
+        let sphere_aff = DAffine3::from_rotation_y(consts::PI)
+            /* multiply rotation by shear&scale xz + scale y */
+            * DAffine3::from_mat3_translation(
+                DMat3::from_cols( // from_rows
+                    DVec3::new(scale_xz, shear_xz, 0.0),
+                    DVec3::new(0.0, scale_y, 0.0),
+                    DVec3::new(0.0, shear_xz, scale_xz),
+                ).transpose(),
+                DVec3::new(0.0, -scale_y / 2.0, 0.0)
+            );
 
         let n = 10;
         let objects: Vec<Box<dyn Object>> = (0..n)
@@ -66,23 +85,24 @@ impl Scene {
                     x if x < 0.9 => Material::Default(rand_utils::rand_dvec3()),
                     _ => Material::Mirror,
                 };
-                let o = rand_utils::rand_dvec3() - DVec3::new(0.5, 0.75, 2.0);
+                let o = sphere_aff.transform_point3(rand_utils::rand_dvec3());
                 Sphere::new(
                     o,
-                    (o.y + 0.5).abs(),
-                    m
+                    (o.y - GROUND_Y).abs(),
+                    m,
                 )
             }).chain(ground).collect();
 
         let s = DVec3::new(1.0, 0.2, 0.5);
-        let la = DAffine3::from_scale_rotation_translation(
+        /* affine transformation for possible positions of point light */
+        let light_aff = DAffine3::from_scale_rotation_translation(
             s,
             DQuat::from_rotation_z(consts::PI),
             DVec3::new(-s.x / 2.0, 0.5, -2.0)
         );
 
         Scene {
-            light: la.transform_point3(rand_utils::rand_dvec3()),
+            light: light_aff.transform_point3(rand_utils::rand_dvec3()),
             ambient: DVec3::splat(rand_utils::rand_f64()) * 0.5,
             objects: objects,
         }
