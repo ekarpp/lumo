@@ -7,7 +7,6 @@ mod tracer;
 const EPSILON: f64 = 0.001;
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;
-const DEBUG_R: f64 = 0.005;
 
 #[derive(argh::FromArgs)]
 /// Just a ray tracer :)

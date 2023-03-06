@@ -36,11 +36,10 @@ impl Scene {
                 (self.light - r.origin).length_squared()
         };
 
-
         for object in &self.objects {
             let h = object.hit(r);
             // h.is_some_and
-            if object.debug_light() && h.filter(block_light).is_some() {
+            if h.filter(block_light).is_some() {
                 return false;
             }
         }
@@ -49,16 +48,10 @@ impl Scene {
 
     pub fn default() -> Scene {
         let l = DVec3::new(-0.3, 0.2, -0.1);
-        let debug = Sphere::new(
-            l,
-            crate::DEBUG_R,
-            Material::Default(DVec3::ONE)
-        );
         Scene {
             light: l,
             ambient: DVec3::splat(0.15),
             objects: vec![
-                debug,
                 // floor
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
