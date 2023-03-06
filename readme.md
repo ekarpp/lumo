@@ -3,7 +3,6 @@ Ray tracer written in rust
 ![](https://github.com/ekarpp/rust_tracer/blob/master/cover.png?raw=true)
 
 Things that could be done:
-- command line args (for resolution, ...)
 - random scene generator
 - acceleration structures
 - anti-aliasing
