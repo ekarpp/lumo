@@ -132,31 +132,25 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Phong(Texture::Solid(
-                        DVec3::ONE
-                    )),
+                    Material::Phong(Texture::Checkerboard),
                 ),
                 // right
                 Plane::new(
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
-                    Material::Phong(Texture::Checkerboard),
+                    Material::Phong(Texture::Solid(DVec3::new(0.0, 0.0, 1.0))),
                 ),
                 // left
                 Plane::new(
                     DVec3::new(-3.0, 0.0, -3.0),
                     DVec3::new(1.0, 0.0, 1.0),
-                    Material::Phong(Texture::Solid(
-                        DVec3::new(1.0, 0.0, 0.0)
-                    )),
+                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
                 ),
                 // behind
                 Plane::new(
                     DVec3::new(0.0, 0.0, 1.0),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::Phong(Texture::Solid(
-                        DVec3::new(1.0, 0.0, 1.0)
-                    )),
+                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
