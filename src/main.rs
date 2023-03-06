@@ -14,7 +14,7 @@ const DEBUG_R: f64 = 0.005;
 struct TracerCli {
     /// use anti-aliasing (not implemented!)
     #[argh(switch, short='a')]
-    _alias: bool,
+    alias: bool,
 
     /// number of threads used (defaults to all)
     #[argh(option, short='t')]
@@ -36,11 +36,15 @@ fn main() {
         Some(w) => w,
         None => WIDTH,
     };
+    /* pixel width, w-1? */
+    let pw = 1.0 / img_width as f64;
 
     let img_height = match cli_args.height {
         Some(h) => h,
         None => HEIGHT,
     };
+    /* pixel height, h-1? */
+    let ph = 1.0 / img_height as f64;
 
     match cli_args.threads {
         Some(t) => rayon::ThreadPoolBuilder::new().num_threads(t)
@@ -48,10 +52,11 @@ fn main() {
         None => (),
     };
 
-    println!("rendering {} x {} image using {} thread(s)",
+    println!("rendering {} x {} image using {} thread(s) with anti-aliasing {}",
              img_width,
              img_height,
-             rayon::current_num_threads()
+             rayon::current_num_threads(),
+             if cli_args.alias { "enabled" } else { "disabled" }
     );
 
     let scene = tracer::scene::Scene::default();
@@ -63,16 +68,19 @@ fn main() {
     );
 
     let start_img = std::time::SystemTime::now();
-    let image_buffer = (0..img_height).into_par_iter().flat_map(|y| {
+    let image_buffer: Vec<DVec3> = (0..img_height).into_par_iter().flat_map(|y| {
         (0..img_width).map(|x| {
-            let u = x as f64
-                / (img_width-1) as f64;
-            let v = (img_height - 1 - y) as f64
-                / (img_height-1) as f64;
-            let r = cam.ray_at(u, v);
-            r.color(&scene, 0)
+            let u = x as f64 * pw;
+            let v = (img_height - 1 - y) as f64 * ph;
+            if cli_args.alias {
+                /* must be cleaner way to do this. should avoid Vec */
+                cam.ss_rays_at(pw, ph, u, v).iter()
+                    .fold(DVec3::ZERO, |acc, r| acc + r.color(&scene, 0)) / 4.0
+            } else {
+                cam.ray_at(u, v).color(&scene, 0)
+            }
         }).collect::<Vec<DVec3>>()
-    }).collect::<Vec<DVec3>>();
+    }).collect();
     match start_img.elapsed() {
         Ok(v) => println!("rendering done in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),

@@ -10,6 +10,21 @@ pub struct Camera {
 }
 
 impl Camera {
+    // 4x supersampling for now
+    pub fn ss_rays_at(&self, pw: f64, ph: f64, x: f64, y: f64) -> Vec<Ray> {
+        let pws = pw / 4.0;
+        let phs = ph / 4.0;
+        let pm = self.blc + x*self.horiz + y*self.vert - self.origin;
+        (0..4).map(|i| {
+            let xd = if i & 1 == 1 { -1.0 } else { 1.0 };
+            let yd = if i & 2 == 2 { -1.0 } else { 1.0 };
+            Ray::new(
+                self.origin,
+                pm + xd*pws + yd*phs
+            )
+        }).collect()
+    }
+
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
         Ray::new(
             self.origin,
