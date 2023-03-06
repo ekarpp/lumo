@@ -48,6 +48,12 @@ fn main() {
         None => (),
     };
 
+    println!("rendering {} x {} image using {} thread(s)",
+             img_width,
+             img_height,
+             rayon::current_num_threads()
+    );
+
     let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         img_width as f64 / img_height as f64,
