@@ -16,6 +16,10 @@ struct TracerCli {
     #[argh(switch, short='a')]
     alias: bool,
 
+    /// filename for rendered image (defaults to render.png)
+    #[argh(option, short='o')]
+    fname: Option<String>,
+
     /// vertical field-of-view in degrees (defaults to 90)
     #[argh(option, short='f')]
     vfov: Option<f64>,
@@ -61,6 +65,7 @@ fn main() {
         None => 90.0,
     };
 
+    // make this a method in the cli struct. try storing def values there too
     println!("rendering {} x {} image using {} thread(s) \
               with anti-aliasing {} and vfov {} deg",
              img_width,
@@ -73,7 +78,7 @@ fn main() {
     let scene = tracer::scene::Scene::default();
     let cam = tracer::camera::Camera::new(
         img_width as f64 / img_height as f64,
-        vfov,
+        cli_args.vfov.unwrap_or(90.0),
         DVec3::new(0.0, 0.0, 0.0), // origin
         DVec3::new(0.0, 0.0, -100.0), // towards
         DVec3::new(0.0, 1.0, 0.0), // up
@@ -102,7 +107,7 @@ fn main() {
         buffer: image_buffer,
         width: img_width,
         height: img_height,
-        fname: String::from("cover.png"),
+        fname: cli_args.fname.unwrap_or(String::from("render.png")),
     };
 
     let start_png = std::time::SystemTime::now();
