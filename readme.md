@@ -5,7 +5,7 @@ Ray tracer written in rust
 Things that could be done:
 - random scene generator
 - acceleration structures
-- anti-aliasing
+- anti-aliasing (currently 4xSSAA)
 - image textures
   - solid textures
 - triangle objects
