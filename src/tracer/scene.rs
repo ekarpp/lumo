@@ -50,9 +50,9 @@ impl Scene {
     }
 
     pub fn random() -> Scene {
-        let GROUND_Y = -0.5;
+        let ground_y = -0.5;
         let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
-            DVec3::new(0.0, GROUND_Y, 0.0),
+            DVec3::new(0.0, ground_y, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
             Material::Default(
                 DVec3::ONE,
@@ -88,7 +88,7 @@ impl Scene {
                 let o = sphere_aff.transform_point3(rand_utils::rand_dvec3());
                 Sphere::new(
                     o,
-                    (o.y - GROUND_Y).abs(),
+                    (o.y - ground_y).abs(),
                     m,
                 )
             }).chain(ground).collect();

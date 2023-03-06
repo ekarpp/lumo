@@ -8,8 +8,11 @@ mod tracer;
 mod rand_utils;
 
 const EPSILON: f64 = 0.001;
+
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;
+const FOV: f64 = 90.0;
+const FNAME: &str = "render.png";
 
 #[derive(argh::FromArgs)]
 /// Just a ray tracer :)
@@ -43,6 +46,21 @@ struct TracerCli {
     height: Option<usize>,
 }
 
+impl TracerCli {
+    pub fn output_cfg(&self) {
+        // make this a method in the cli struct. try storing def values there too
+        println!("rendering {} x {} image using {} thread(s) \
+                  with anti-aliasing {} and vfov at {}° to file \"{}\"",
+                 self.width.unwrap_or(WIDTH),
+                 self.height.unwrap_or(HEIGHT),
+                 rayon::current_num_threads(),
+                 if self.alias { "enabled" } else { "disabled" },
+                 self.vfov.unwrap_or(FOV),
+                 self.fname.as_ref().unwrap_or(&String::from(FNAME)),
+        );
+    }
+}
+
 fn main() {
     let cli_args: TracerCli = argh::from_env();
 
@@ -66,21 +84,6 @@ fn main() {
         None => (),
     };
 
-    let vfov = match cli_args.vfov {
-        Some(f) => f,
-        None => 90.0,
-    };
-
-    // make this a method in the cli struct. try storing def values there too
-    println!("rendering {} x {} image using {} thread(s) \
-              with anti-aliasing {} and vfov {} deg",
-             img_width,
-             img_height,
-             rayon::current_num_threads(),
-             if cli_args.alias { "enabled" } else { "disabled" },
-             vfov,
-    );
-
     let scene = if cli_args.rnd_scene {
         Scene::random()
     } else {
@@ -93,6 +96,8 @@ fn main() {
         DVec3::new(0.0, 0.0, -100.0), // towards
         DVec3::new(0.0, 1.0, 0.0), // up
     );
+
+    cli_args.output_cfg();
 
     let start_img = std::time::SystemTime::now();
     let image_buffer: Vec<DVec3> = (0..img_height).into_par_iter().flat_map(|y| {
@@ -117,7 +122,7 @@ fn main() {
         buffer: image_buffer,
         width: img_width,
         height: img_height,
-        fname: cli_args.fname.unwrap_or(String::from("render.png")),
+        fname: cli_args.fname.unwrap_or(String::from(FNAME)),
     };
 
     let start_png = std::time::SystemTime::now();
