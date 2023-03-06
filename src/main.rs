@@ -49,14 +49,16 @@ struct TracerCli {
 impl TracerCli {
     pub fn output_cfg(&self) {
         // make this a method in the cli struct. try storing def values there too
-        println!("rendering {} x {} image using {} thread(s) \
-                  with anti-aliasing {} and vfov at {}° to file \"{}\"",
+        println!("rendering {} scene to file \"{}\" as a {} x {} image \
+                  using {} thread(s) with anti-aliasing {} and vfov at {}°",
+
+                 if self.rnd_scene { "random" } else { "default" },
+                 self.fname.as_ref().unwrap_or(&String::from(FNAME)),
                  self.width.unwrap_or(WIDTH),
                  self.height.unwrap_or(HEIGHT),
                  rayon::current_num_threads(),
                  if self.alias { "enabled" } else { "disabled" },
                  self.vfov.unwrap_or(FOV),
-                 self.fname.as_ref().unwrap_or(&String::from(FNAME)),
         );
     }
 }
@@ -93,7 +95,7 @@ fn main() {
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
         DVec3::new(0.0, 0.0, 0.0), // origin
-        DVec3::new(0.0, 0.0, -100.0), // towards
+        DVec3::new(0.0, 0.0, -1.0), // towards
         DVec3::new(0.0, 1.0, 0.0), // up
     );
 

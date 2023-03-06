@@ -51,7 +51,9 @@ impl Scene {
     }
 
     pub fn random() -> Scene {
-        let ground_y = -0.5;
+        /* this controls the minumum radius, at least that is the idea.. */
+        let ground_y = -0.1;
+        let scale_y = 0.01;
         let ground: iter::Once<Box<dyn Object>> = iter::once(Plane::new(
             DVec3::new(0.0, ground_y, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
@@ -59,38 +61,51 @@ impl Scene {
         ));
 
         /* affine transformation for the origin of random spheres
-         * shear+rotate+scale xz-plane to exact view of camera
-         * scale y so we don't get too big spheres
+         * shear+rotate+scale xz-plane to exact view of camera.
+         * scale y so we don't get too big spheres.
          * assume 16/9 aspect ratio and 90 vfov */
         let shear_xz = (consts::PI / 4.0 - (16.0 / 9.0 as f64).atan()).tan();
-        let scale_xz = 10.0;
-        let scale_y = 0.5; // aka max radius
-        let sphere_aff = DAffine3::from_rotation_y(consts::PI)
-            /* multiply rotation by shear&scale xz + scale y */
-            * DAffine3::from_mat3_translation(
+        let scale_xz = 1.2;
+        let sphere_aff =
+            /* rotate to camera direction */
+            DAffine3::from_rotation_y(3.0 * consts::PI / 4.0)
+            /* shear to get same hvof as camera */
+            * DAffine3::from_mat3(
                 DMat3::from_cols( // from_rows
-                    DVec3::new(scale_xz, shear_xz, 0.0),
-                    DVec3::new(0.0, scale_y, 0.0),
-                    DVec3::new(0.0, shear_xz, scale_xz),
-                ).transpose(),
-                DVec3::new(0.0, -scale_y / 2.0, 0.0)
-            );
+                    DVec3::new(1.0, 0.0, shear_xz),
+                    DVec3::new(shear_xz, 1.0, shear_xz),
+                    DVec3::new(shear_xz, 0.0, 1.0),
+                ).transpose())
+            * DAffine3::from_scale(
+                DVec3::new(scale_xz, scale_y, scale_xz));
 
-        let n = 10;
-        let objects: Vec<Box<dyn Object>> = (0..n)
-            .map(|_| -> Box<dyn Object> {
+        /* divide the unit xz-plane to dim x dim divisions.
+         * place a sphere at random location in each division */
+        let dim = 15;
+        let txd = 1.0 / dim as f64;
+
+        let objects: Vec<Box<dyn Object>> = (1..dim).flat_map(|z| {
+            (1..dim).map(|x| -> Box<dyn Object> {
                 let m = match rand_utils::rand_f64() {
-                    x if x < 0.1 => Material::Glass,
-                    x if x < 0.9 => Material::Phong(Texture::Solid(rand_utils::rand_dvec3())),
+                    f if f < 0.1 => Material::Glass,
+                    f if f < 0.9 => Material::Phong(
+                        Texture::Solid(rand_utils::rand_dvec3())
+                    ),
                     _ => Material::Mirror,
                 };
-                let o = sphere_aff.transform_point3(rand_utils::rand_dvec3());
+                /* scale xz-plane first to division size, then
+                 * translate to a correct position */
+                let o = sphere_aff.transform_point3(
+                    DVec3::ZERO * DVec3::new(txd, 1.0, txd)
+                        + DVec3::new(txd*x as f64, 0.0, txd*z as f64)
+                );
                 Sphere::new(
                     o,
                     (o.y - ground_y).abs(),
                     m,
                 )
-            }).chain(ground).collect();
+            }).collect::<Vec<Box<dyn Object>>>()
+        }).chain(ground).collect();
 
         let s = DVec3::new(1.0, 0.2, 0.5);
         /* affine transformation for possible positions of point light */
@@ -101,8 +116,8 @@ impl Scene {
         );
 
         Scene {
-            light: light_aff.transform_point3(rand_utils::rand_dvec3()),
-            ambient: DVec3::splat(rand_utils::rand_f64()) * 0.5,
+            light: DVec3::new(0.0, 3.0, 0.0),//light_aff.transform_point3(rand_utils::rand_dvec3()),
+            ambient: DVec3::splat(0.5),//DVec3::splat(rand_utils::rand_f64()) * 1.5,
             objects: objects,
         }
     }
