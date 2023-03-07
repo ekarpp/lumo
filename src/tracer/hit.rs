@@ -12,11 +12,10 @@ pub struct Hit<'a> {
     pub norm: DVec3,
 }
 
-impl<'a, 'b> Hit<'_> {
-    /* why can't use Self type here?? cus self cant have lifetime?? */
-    pub fn new(t: f64, o: &'a dyn Object, r: &'b Ray) -> Option<Hit<'a>> {
+impl<'a, 'b> Hit<'a> {
+    pub fn new(t: f64, o: &'a dyn Object, r: &'b Ray) -> Option<Self> {
         /* p and n not always needed. computing for every hit slows rendering */
-        Some(Hit {
+        Some(Self {
             t: t,
             object: o,
             p: r.at(t),
