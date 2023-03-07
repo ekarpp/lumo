@@ -19,13 +19,51 @@ pub trait Object: Sync {
 
 /* FIGURE OUT BEING INSIDE. CANT BE INSIDE PLANES OR TRIANGLES. (OR RECTANGLES)*/
 
+pub struct Rectangle {
+    tria: (Triangle, Triangle),
+    material: Material,
+}
+
+impl Rectangle {
+    /* assume it actually is a rectangle */
+    pub fn new(a: DVec3, b: DVec3, c: DVec3, d: DVec3, m: Material)
+               -> Box<Self>
+    {
+        /* figure out the correct order of points... */
+        let t1 = Triangle::new(a, b, c, Material::Blank);
+        let t2 = Triangle::new(a, d, c, Material::Blank);
+        Box::new(Self {
+            tria: (*t1, *t2),
+            material: m,
+        })
+    }
+}
+
+impl Object for Rectangle {
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn normal_at(&self, p: DVec3) -> DVec3 {
+        self.tria.0.normal_at(p)
+    }
+
+    fn hit(&self, r: &Ray) -> Option<Hit> {
+        self.tria.0.hit(r).or_else(|| self.tria.1.hit(r))
+            .and_then(|mut h: Hit| {
+                h.object = self;
+                Some(h)
+            })
+    }
+}
+
 /* barycentir interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
 pub struct Triangle {
     a: DVec3,
     b: DVec3,
     c: DVec3,
-    n: DVec3,
+    norm: DVec3,
     material: Material,
 }
 
@@ -38,7 +76,7 @@ impl Triangle {
             a: a,
             b: b,
             c: c,
-            n: norm,
+            norm: norm,
             material: m,
         })
     }
@@ -47,7 +85,7 @@ impl Triangle {
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_at(&self, _p: DVec3) -> DVec3 { self.n }
+    fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
 
     /* barycentric triangle intersection with Cramer's rule */
     /* some bug here that makes the order of points matter, in matrix stuff? */
