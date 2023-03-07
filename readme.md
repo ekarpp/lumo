@@ -5,8 +5,6 @@ Ray tracer written in rust
 Things that could be done:
 - (random scene generator)
 - acceleration structures
-- anti-aliasing (currently 4xSSAA)
-  - just set random sample n per pixel in CLI
 - rectangles and boxes
 - multiple lights
   - different kinds of light

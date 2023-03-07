@@ -12,15 +12,16 @@ const EPSILON: f64 = 0.001;
 
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;
+const NUM_SAMPLES: usize = 1;
 const FOV: f64 = 90.0;
 const FNAME: &str = "render.png";
 
 #[derive(argh::FromArgs)]
 /// Just a ray tracer :)
 struct TracerCli {
-    /// toggle anti-aliasing (4xSSAA)
-    #[argh(switch, short='a')]
-    alias: bool,
+    /// number of random samples per pixel (defaults to 1)
+    #[argh(option, short='s')]
+    samples: Option<usize>,
 
     /// filename for rendered image (defaults to render.png)
     #[argh(option, short='o')]
@@ -46,13 +47,12 @@ struct TracerCli {
 impl TracerCli {
     pub fn output_cfg(&self) {
         println!("rendering scene to file \"{}\" as a {} x {} image \
-                  using {} thread(s) with anti-aliasing {} and vfov at {}°",
-
+                  using {} thread(s) with {} sample(s) per pixel and vfov at {}°",
                  self.fname.as_ref().unwrap_or(&String::from(FNAME)),
                  self.width.unwrap_or(WIDTH),
                  self.height.unwrap_or(HEIGHT),
                  rayon::current_num_threads(),
-                 if self.alias { "enabled" } else { "disabled" },
+                 self.samples.unwrap_or(NUM_SAMPLES),
                  self.vfov.unwrap_or(FOV),
         );
     }
@@ -66,14 +66,19 @@ fn main() {
         None => WIDTH,
     };
     /* pixel width */
-    let pw = 1.0 / (img_width - 1) as f64;
+    let px_width = 1.0 / (img_width - 1) as f64;
 
     let img_height = match cli_args.height {
         Some(h) => h,
         None => HEIGHT,
     };
     /* pixel height */
-    let ph = 1.0 / (img_height - 1) as f64;
+    let px_height = 1.0 / (img_height - 1) as f64;
+
+    let n_samples = match cli_args.samples {
+        Some(n) => n,
+        None => NUM_SAMPLES,
+    };
 
     match cli_args.threads {
         Some(t) => rayon::ThreadPoolBuilder::new().num_threads(t)
@@ -95,15 +100,15 @@ fn main() {
     let start_img = std::time::SystemTime::now();
     let image_buffer: Vec<DVec3> = (0..img_height).into_par_iter().flat_map(|y| {
         (0..img_width).map(|x| {
-            let u = x as f64 * pw;
-            let v = (img_height - 1 - y) as f64 * ph;
-            if cli_args.alias {
-                /* must be cleaner way to do this. should avoid Vec */
-                cam.ss_rays_at(pw, ph, u, v).iter()
-                    .fold(DVec3::ZERO, |acc, r| acc + r.color(&scene, 0)) / 4.0
-            } else {
-                cam.ray_at(u, v).color(&scene, 0)
-            }
+            let u = x as f64 * px_width;
+            let v = (img_height - 1 - y) as f64 * px_height;
+
+            (0..n_samples).map(|_| {
+                let randx = rand_utils::rand_f64();
+                let randy = rand_utils::rand_f64();
+                cam.ray_at(u + randx*px_width, v + randy*px_height)
+            }).fold(DVec3::ZERO, |acc, r| acc + r.color(&scene, 0))
+                / n_samples as f64
         }).collect::<Vec<DVec3>>()
     }).collect();
     match start_img.elapsed() {

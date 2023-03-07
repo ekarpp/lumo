@@ -12,7 +12,11 @@ fn get_rng() -> MyRng {
 /* should figure better way to rng creation??
  * (thread_rng() always creates new?) */
 
-/* n normalized random dvec3 in a vec */
+pub fn rand_f64() -> f64 {
+    get_rng().gen()
+}
+
+/* return n normalized random dvec3 in a vector */
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
     let mut rng = get_rng();
     (0..n).map(|_| rand_unit_sphere(&mut rng)).collect()

@@ -12,15 +12,15 @@ pub struct Hit<'a> {
 }
 
 impl Hit<'_> {
-    // return as option??
-    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Self {
+    /* why can't use Self type here?? */
+    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Option<Hit> {
         /* p and n not always needed. computing for every hit slows rendering */
-        Self {
+        Some(Hit {
             t: t,
             object: o,
             p: p,
             n: o.normal_at(p),
-        }
+        })
     }
 }
 
