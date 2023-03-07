@@ -1,6 +1,8 @@
 use crate::perlin::Perlin;
 use crate::DVec3;
-use crate::tracer::object::{Object, Sphere, Plane, Triangle, Rectangle};
+
+use crate::tracer::object::{Object, Plane, Rectangle};
+use crate::tracer::object::{sphere::Sphere, triangle::Triangle};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
