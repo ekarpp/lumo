@@ -5,11 +5,7 @@ use crate::tracer::material::Material;
 use crate::tracer::object::triangle::Triangle;
 
 #[cfg(test)]
-mod sphere_tests;
-#[cfg(test)]
 mod plane_tests;
-#[cfg(test)]
-mod triangle_tests;
 
 pub mod sphere;
 pub mod triangle;

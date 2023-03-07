@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod sphere_tests;
+
 pub struct Sphere {
     pub origin: DVec3,
     pub radius: f64,

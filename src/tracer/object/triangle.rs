@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod triangle_tests;
+
 /* barycentric interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
 pub struct Triangle {
