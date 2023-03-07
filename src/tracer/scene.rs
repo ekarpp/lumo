@@ -60,7 +60,12 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Phong(Texture::Checkerboard),
+                    Material::Phong(Texture::Checkerboard(
+                        Box::new(Texture::Solid(DVec3::ZERO)),
+                        Box::new(Texture::Marble(
+                            Perlin::new(DVec3::ONE)
+                        ))
+                    )),
                 ),
                 // right
                 Plane::new(
