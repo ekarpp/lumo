@@ -25,10 +25,12 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    /* assume it actually is a rectangle */
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, d: DVec3, m: Material)
-               -> Box<Self>
+    /* consider otherways of doing rectangles?
+     * (plane aligned, then transform?? [instances in book]) */
+    pub fn new(a: DVec3, b: DVec3, c: DVec3, m: Material) -> Box<Self>
     {
+        /* d is b "mirrored" */
+        let d = b + (a - b) + (c - b);
         /* figure out the correct order of points... */
         let t1 = Triangle::new(a, b, c, Material::Blank);
         let t2 = Triangle::new(a, d, c, Material::Blank);
