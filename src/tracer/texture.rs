@@ -13,6 +13,7 @@ pub enum Texture {
 }
 
 impl Texture {
+    /* should use texture coordinates instead of hit point here */
     pub fn color_at(&self, p: DVec3) -> DVec3 {
         match self {
             Texture::Solid(c) => c.clone(),
