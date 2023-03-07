@@ -2,18 +2,7 @@ use crate::DVec3;
 use rand::Rng;
 use rand::prelude::SliceRandom;
 
-pub fn rand_f64() -> f64 {
-    rand::thread_rng().gen()
-}
-
-pub fn rand_dvec3() -> DVec3 {
-    let mut rng = rand::thread_rng();
-    DVec3::new(
-        rng.gen(),
-        rng.gen(),
-        rng.gen()
-    )
-}
+/* should figure better way to rng creation */
 
 /* n normalized random dvec3 in a vec */
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {

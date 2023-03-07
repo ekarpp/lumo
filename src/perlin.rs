@@ -80,6 +80,6 @@ impl Perlin {
                 let widx = 2.0*w*idx + DVec3::ONE - w - idx;
 
                 widx.x * widx.y * widx.z * g.dot(w - idx)
-            }).reduce(|acc, v| acc + v).unwrap()
+            }).fold(0.0, |acc, v| acc + v)
     }
 }

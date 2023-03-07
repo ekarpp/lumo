@@ -1,4 +1,4 @@
-use glam::{UVec3,f64::{DVec3, DMat3, DAffine3, DQuat}};
+use glam::{UVec3,f64::DVec3};
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
@@ -21,10 +21,6 @@ struct TracerCli {
     /// toggle anti-aliasing (4xSSAA)
     #[argh(switch, short='a')]
     alias: bool,
-
-    /// render randomly generated scene
-    #[argh(switch, short='r')]
-    rnd_scene: bool,
 
     /// filename for rendered image (defaults to render.png)
     #[argh(option, short='o')]
@@ -49,11 +45,9 @@ struct TracerCli {
 
 impl TracerCli {
     pub fn output_cfg(&self) {
-        // make this a method in the cli struct. try storing def values there too
-        println!("rendering {} scene to file \"{}\" as a {} x {} image \
+        println!("rendering scene to file \"{}\" as a {} x {} image \
                   using {} thread(s) with anti-aliasing {} and vfov at {}°",
 
-                 if self.rnd_scene { "random" } else { "default" },
                  self.fname.as_ref().unwrap_or(&String::from(FNAME)),
                  self.width.unwrap_or(WIDTH),
                  self.height.unwrap_or(HEIGHT),
@@ -87,11 +81,7 @@ fn main() {
         None => (),
     };
 
-    let scene = if cli_args.rnd_scene {
-        Scene::random()
-    } else {
-        Scene::default()
-    };
+    let scene = Scene::default();
     let cam = Camera::new(
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
