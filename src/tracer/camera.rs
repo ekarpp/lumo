@@ -33,7 +33,7 @@ impl Camera {
     }
 
     pub fn new(ar: f64, vfov: f64, from: DVec3, towards: DVec3, up: DVec3,)
-               -> Camera {
+               -> Self {
         let h = (vfov.to_radians() / 2.0).tan();
         /* viewport height */
         let vph = 2.0 * h;
@@ -47,7 +47,7 @@ impl Camera {
         let horiz = x * vpw;
         let vert = y * vph;
 
-        Camera {
+        Self {
             origin: from,
             horiz: horiz,
             vert: vert,

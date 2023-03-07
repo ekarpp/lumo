@@ -50,9 +50,9 @@ impl Scene {
         true
     }
 
-    pub fn default() -> Scene {
+    pub fn default() -> Self {
         let l = DVec3::new(-0.3, 0.2, -0.1);
-        Scene {
+        Self {
             light: l,
             ambient: DVec3::splat(0.15),
             objects: vec![

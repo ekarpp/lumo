@@ -23,8 +23,8 @@ pub struct Perlin {
 }
 
 impl Perlin {
-    pub fn new(c: DVec3) -> Perlin {
-        Perlin {
+    pub fn new(c: DVec3) -> Self {
+        Self {
             color: c,
             rng_dvec3: rand_utils::rand_vec_dvec3(POINTS),
             perm: PermutationXyz {
@@ -86,6 +86,7 @@ impl Perlin {
         ((6.0*x - 15.0)*x + 10.0)*x*x*x
     }
 
+    /* trilinear interpolation */
     fn interp(&self, gradients: Vec<DVec3>, w: DVec3) -> f64 {
         (0..2).cartesian_product(0..2)
             .cartesian_product(0..2).zip(gradients).map(|(((x,y),z), g)| {

@@ -13,9 +13,9 @@ pub struct Hit<'a> {
 
 impl Hit<'_> {
     // return as option??
-    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Hit {
+    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Self {
         /* p and n not always needed. computing for every hit slows rendering */
-        Hit {
+        Self {
             t: t,
             object: o,
             p: p,
@@ -25,13 +25,13 @@ impl Hit<'_> {
 }
 
 impl PartialEq for Hit<'_> {
-    fn eq(&self, other: &Hit) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.t == other.t
     }
 }
 
 impl PartialOrd for Hit<'_> {
-    fn partial_cmp(&self, other: &Hit) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.t.partial_cmp(&other.t)
     }
 }

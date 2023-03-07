@@ -9,8 +9,8 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn new(o: DVec3, d: DVec3) -> Ray {
-        Ray {
+    pub fn new(o: DVec3, d: DVec3) -> Self {
+        Self {
             origin: o,
             dir: d,
         }

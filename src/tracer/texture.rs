@@ -1,6 +1,5 @@
 use crate::DVec3;
 use crate::perlin::Perlin;
-use Texture::*;
 
 const CHECKER_SCALE: f64 = 13.0;
 
@@ -16,9 +15,9 @@ pub enum Texture {
 impl Texture {
     pub fn color_at(&self, p: DVec3) -> DVec3 {
         match self {
-            Solid(c) => c.clone(),
-            Marble(pn) => pn.color_at(p),
-            Checkerboard(t1, t2, s) => {
+            Texture::Solid(c) => c.clone(),
+            Texture::Marble(pn) => pn.color_at(p),
+            Texture::Checkerboard(t1, t2, s) => {
                 if self.checkers_phase(p * (*s)) > 0.0 {
                     t1.color_at(p)
                 } else {
