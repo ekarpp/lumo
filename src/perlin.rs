@@ -3,8 +3,12 @@ use crate::rand_utils;
 use itertools::Itertools;
 
 const POINTS: usize = 256;
-const FREQ: f64 = 3.0;
-const AMP: f64 = 15.0;
+
+const SCALE: f64 = 4.0;
+const FREQ: f64 = 60.0;
+const AMP: f64 = 20.0;
+const OCTAVES: usize = 6;
+const GAIN: f64 = 0.5;
 
 struct PermutationXyz {
     x: Vec<usize>,
@@ -32,37 +36,46 @@ impl Perlin {
     }
 
     pub fn color_at(&self, p: DVec3) -> DVec3 {
-        self.color * 0.5 *
-            (1.0 + (FREQ * (p.y + AMP *
-                             self.turbulence(0.0, p.abs(), 0))).sin())
+        self.color
+            * self._scale_turb(p.x,self.turbulence(0.0, SCALE*p.abs(), 0))
 
     }
 
-    fn turbulence(&self, acc: f64, p: DVec3, depth: usize) -> f64 {
-        if depth > 10 {
-            return acc.abs();
-        }
-        let w = 0.5_f64.powf(depth as f64);
+    fn _scale_turb(&self, px: f64, t: f64) -> f64 {
+        1.0 - (0.5 + 0.5*(FREQ * px + AMP * t).sin()).powf(6.0)
+    }
 
-        self.turbulence(acc + w*self.noise_at(p), 2.0 * p, depth + 1)
+    fn turbulence(&self, acc: f64, p: DVec3, depth: usize) -> f64 {
+        if depth >= OCTAVES {
+            return acc;
+        }
+        let w = GAIN.powf(depth as f64);
+
+        self.turbulence(acc + w*self.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
 
     fn noise_at(&self, p: DVec3) -> f64 {
         let weight = p.fract();
-        let x = p.x.floor() as usize;
-        let y = p.y.floor() as usize;
-        let z = p.z.floor() as usize;
+        let floor = p.floor();
 
         let gradients = (0..2).cartesian_product(0..2)
             .cartesian_product(0..2).map(|((i,j),k)| {
                 self.rng_dvec3[
-                    self.perm.x[(x + i) % POINTS]
-                        ^ self.perm.y[(y + j) % POINTS]
-                        ^ self.perm.z[(z + k) % POINTS]
+                    self._hash(
+                        floor.x as usize + i,
+                        floor.y as usize + j,
+                        floor.z as usize + k
+                    )
                 ]
         }).collect();
 
         self.interp(gradients, self._smootherstep(weight))
+    }
+
+    fn _hash(&self, x: usize, y: usize, z: usize) -> usize {
+        self.perm.x[x % POINTS]
+            ^ self.perm.y[y % POINTS]
+            ^ self.perm.z[z % POINTS]
     }
 
     fn _hermite_cubic(&self, x: DVec3) -> DVec3 {
