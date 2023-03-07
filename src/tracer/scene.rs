@@ -61,10 +61,17 @@ impl Scene {
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
                     Material::Phong(Texture::Checkerboard(
-                        Box::new(Texture::Solid(DVec3::ZERO)),
+                        Box::new(Texture::Checkerboard(
+                            Box::new(Texture::Solid(DVec3::ZERO)),
+                            Box::new(Texture::Solid(DVec3::ONE)),
+                            2.0,
+                        )),
+                        /* share same perlin between all textures?
+                         * could make cool checkers that way */
                         Box::new(Texture::Marble(
-                            Perlin::new(DVec3::ONE)
-                        ))
+                            Perlin::new(DVec3::splat(192.0) / 255.9)
+                        )),
+                        1.0,
                     )),
                 ),
                 // right

@@ -8,7 +8,8 @@ pub enum Texture {
     Solid(DVec3),
     /* box avoids having to define lifetime all the way to objects.
      * should texture be a struct instead? */
-    Checkerboard(Box<Texture>, Box<Texture>),
+    /* f64 for scale to make recursion work */
+    Checkerboard(Box<Texture>, Box<Texture>, f64),
     Marble(Perlin),
 }
 
@@ -17,8 +18,8 @@ impl Texture {
         match self {
             Solid(c) => c.clone(),
             Marble(pn) => pn.color_at(p),
-            Checkerboard(t1, t2) => {
-                if self.checkers_phase(p) > 0.0 {
+            Checkerboard(t1, t2, s) => {
+                if self.checkers_phase(p * (*s)) > 0.0 {
                     t1.color_at(p)
                 } else {
                     t2.color_at(p)
