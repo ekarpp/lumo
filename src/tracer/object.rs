@@ -15,20 +15,104 @@ fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
     if n.dot(r.dir) > 0.0 { -n } else { n }
 }
 
+/* given a triangle, mirror the middle point around to get a rectangle.
+ * this is a dumb way... the triangle order matters now.*/
+fn _triangle_to_rect(abc: DMat3) -> DVec3 {
+    abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
+}
+
 pub trait Object: Sync {
-    // unit length normal at p
-    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3;
+    /* unit length normal for r at p. only called during hit creation
+     * => no need to implement for rectangle or cuboid. */
+    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { DVec3::ZERO }
     fn inside(&self, _r: &Ray) -> bool { false }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
 }
 
 pub struct Cuboid {
+    rectangles: [Rectangle; 6],
+    material: Material,
+}
+
+impl Cuboid {
+    /* be lazy and construct from two rectangles */
+    /* this is overall really hacky. might just want to create one for
+     * unit cube and apply affines to it. */
+    pub fn new(r1: DMat3, r2: DMat3, m: Material) -> Box<Self> {
+        let d1 = _triangle_to_rect(r1);
+        Box::new(Self {
+            material: m,
+            rectangles: [
+                /* directions given assuming unit cube */
+                *Rectangle::new(
+                    r1, /* xz-plane */
+                    Material::Blank,
+                ),
+                *Rectangle::new(
+                    DMat3::from_cols(
+                        r2.col(1),
+                        r1.col(1),
+                        r1.col(2),
+                    ), /* yz-plane */
+                    Material::Blank,
+                ),
+                *Rectangle::new(
+                    DMat3::from_cols(
+                        r1.col(0),
+                        r1.col(1),
+                        r2.col(1),
+                    ), /* xy-plane */
+                    Material::Blank,
+                ),
+                *Rectangle::new(
+                    DMat3::from_cols(
+                        r2.col(0),
+                        r1.col(0),
+                        d1,
+                    ), /* yz-plane + 1z*/
+                    Material::Blank,
+                ),
+                *Rectangle::new(
+                    DMat3::from_cols(
+                        r2.col(2),
+                        r1.col(2),
+                        d1,
+                    ), /* xy-plane + 1x */
+                    Material::Blank,
+                ),
+                *Rectangle::new(
+                    r2, /* y-plane + 1y*/
+                    Material::Blank,
+                ),
+            ],
+        })
+    }
+}
+
+impl Object for Cuboid {
+    fn material(&self) -> &Material { &self.material }
+
+    fn hit(&self, r: &Ray) -> Option<Hit> {
+        self.rectangles.iter().map(|rect| rect.hit(r))
+            .fold(None, |closest, hit| {
+                if closest.is_none() || (hit.is_some() && hit < closest) {
+                    hit
+                } else {
+                    closest
+                }
+            })
+            .and_then(|mut hit| {
+                /* change us as the object to get correct texture for rendering */
+                hit.object = self;
+                Some(hit)
+            })
+    }
 
 }
 
 pub struct Rectangle {
-    tria: (Triangle, Triangle),
+    triangles: (Triangle, Triangle),
     material: Material,
 }
 
@@ -36,15 +120,17 @@ impl Rectangle {
     /* consider otherways of doing rectangles?
      * (plane aligned, then transform?? [instances in book])
      * seemed boring, check if ray hits plane then check if inside rect */
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, m: Material) -> Box<Self>
+    pub fn new(abc: DMat3, m: Material) -> Box<Self>
     {
         /* d is b "mirrored" */
-        let d = b + (a - b) + (c - b);
+        let d = _triangle_to_rect(abc);
         /* figure out the correct order of points... */
-        let t1 = Triangle::new(a, b, c, Material::Blank);
-        let t2 = Triangle::new(a, d, c, Material::Blank);
+        let t1 = Triangle::new(
+            abc.col(0), abc.col(1), abc.col(2), Material::Blank
+        );
+        let t2 = Triangle::new(abc.col(0), d, abc.col(2), Material::Blank);
         Box::new(Self {
-            tria: (*t1, *t2),
+            triangles: (*t1, *t2),
             material: m,
         })
     }
@@ -53,15 +139,12 @@ impl Rectangle {
 impl Object for Rectangle {
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
-        self.tria.0.normal_for_at(r, p)
-    }
-
     fn hit(&self, r: &Ray) -> Option<Hit> {
-        self.tria.0.hit(r).or_else(|| self.tria.1.hit(r))
-            .and_then(|mut h: Hit| {
-                h.object = self;
-                Some(h)
+        self.triangles.0.hit(r).or_else(|| self.triangles.1.hit(r))
+            .and_then(|mut hit| {
+                /* change us as the object to get correct texture for rendering */
+                hit.object = self;
+                Some(hit)
             })
     }
 }
