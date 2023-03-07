@@ -9,7 +9,8 @@ fn get_rng() -> MyRng {
     rand::thread_rng()
 }
 
-/* should figure better way to rng creation */
+/* should figure better way to rng creation??
+ * (thread_rng() always creates new?) */
 
 /* n normalized random dvec3 in a vec */
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {

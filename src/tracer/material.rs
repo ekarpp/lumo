@@ -5,7 +5,6 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use crate::tracer::illumination;
-use Material::*;
 
 pub enum Material {
     Phong(Texture),
@@ -22,28 +21,28 @@ impl Material {
 
         match self {
             // return opt directlY??
-            Phong(t) => Some(illumination::phong_illum(t, h, sc, q, s)),
+            Self::Phong(t) => Some(illumination::phong_illum(t, h, sc, q, s)),
             _ => None,
         }
     }
 
     pub fn reflect(&self, h: &Hit) -> Option<Ray> {
         match self {
-            Mirror => illumination::reflect_ray(h),
+            Self::Mirror => illumination::reflect_ray(h),
             _ => None,
         }
     }
 
     pub fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
         match self {
-            Glass => illumination::refract_ray(h, r),
+            Self::Glass => illumination::refract_ray(h, r),
             _ => None,
         }
     }
 
     pub fn is_translucent(&self) -> bool {
         match self {
-            Glass => true,
+            Self::Glass => true,
             _ => false,
         }
     }

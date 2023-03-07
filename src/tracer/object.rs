@@ -26,7 +26,8 @@ pub struct Rectangle {
 
 impl Rectangle {
     /* consider otherways of doing rectangles?
-     * (plane aligned, then transform?? [instances in book]) */
+     * (plane aligned, then transform?? [instances in book])
+     * seemed boring, check if ray hits plane then check if inside rect */
     pub fn new(a: DVec3, b: DVec3, c: DVec3, m: Material) -> Box<Self>
     {
         /* d is b "mirrored" */
@@ -90,11 +91,9 @@ impl Object for Triangle {
     fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
 
     /* barycentric triangle intersection with Cramer's rule */
-    /* some bug here that makes the order of points matter, in matrix stuff? */
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* can store a-c, a-b, and a instead. saves some computation.
-         * compiler should do it?
-         * need more if also want gamma and beta (for interp?) */
+         * compiler should do it? */
 
         let mat_a = DMat3::from_cols(
             self.a - self.b,
@@ -153,9 +152,9 @@ pub struct Plane {
 
 impl Plane {
     /* assume n != 0 */
-    pub fn new(p: DVec3, n: DVec3, m: Material) -> Box<Plane> {
+    pub fn new(p: DVec3, n: DVec3, m: Material) -> Box<Self> {
         let norm = n.normalize();
-        Box::new(Plane {
+        Box::new(Self {
             norm: norm,
             material: m,
             d: p.dot(-norm),
@@ -196,8 +195,8 @@ pub struct Sphere {
 
 impl Sphere {
     /* assume r != 0 */
-    pub fn new(origin: DVec3, r: f64, mat: Material) -> Box<Sphere> {
-        Box::new(Sphere {
+    pub fn new(origin: DVec3, r: f64, mat: Material) -> Box<Self> {
+        Box::new(Self {
             origin: origin,
             radius: r,
             material: mat,
