@@ -33,8 +33,7 @@ pub fn phong_illum(
         let lu = l.normalize();
 
         /* diffuse term */
-        shaded += h.n.dot(lu).max(0.0) * color;
-
+        shaded += h.norm.dot(lu).max(0.0) * color;
 
         /*
         /* l mirrored around sphere normal. pointing from light to hit point */
@@ -44,7 +43,7 @@ pub fn phong_illum(
 
         /* halfway vector between camera and light. (Blinn-Phong model) */
         let halfway = (lu - h.p.normalize()) / (lu - h.p.normalize()).length();
-        shaded += h.n.dot(halfway).max(0.0).powf(q) * spec_coeff;
+        shaded += h.norm.dot(halfway).max(0.0).powf(q) * spec_coeff;
 
         /* scale diffuse and specular by squared distance to light */
         shaded /= l.length_squared();
@@ -57,27 +56,24 @@ pub fn phong_illum(
 pub fn reflect_ray(h: &Hit) -> Option<Ray> {
     Some(Ray {
         origin: h.p,
-        dir: h.p - 2.0 * h.n * h.p.dot(h.n)
+        dir: h.p - 2.0 * h.norm * h.p.dot(h.norm)
     })
 }
 
 pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
     const ETA: f64 = 1.5;
-
-    let inside = h.n.dot(r.dir) > 0.0;
-    let eta_ratio = if inside { ETA } else { 1.0 / ETA };
-    let norm = if inside { -h.n } else { h.n };
+    let eta_ratio = if h.object.inside(r) { ETA } else { 1.0 / ETA };
 
     /* Snell-Descartes law */
     let up = r.dir.normalize();
-    let cos_in = norm.dot(-up).min(1.0);
+    let cos_in = h.norm.dot(-up).min(1.0);
     let sin_out = (1.0 - cos_in*cos_in)*eta_ratio*eta_ratio;
 
     if sin_out > 1.0 {
         return reflect_ray(h);
     }
 
-    let dir = eta_ratio*up + norm *
+    let dir = eta_ratio*up + h.norm *
         (eta_ratio*cos_in - (1.0 - sin_out).sqrt());
 
     Some(Ray {
