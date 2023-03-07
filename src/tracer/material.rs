@@ -11,6 +11,7 @@ pub enum Material {
     Phong(Texture),
     Mirror,
     Glass,
+    Blank, // used for recursive objects. make translucent?
 }
 
 impl Material {

@@ -1,6 +1,6 @@
 use crate::perlin::Perlin;
 use crate::DVec3;
-use crate::tracer::object::{Object, Sphere, Plane, Triangle};
+use crate::tracer::object::{Object, Sphere, Plane, Triangle, Rectangle};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
@@ -64,7 +64,7 @@ impl Scene {
                         Box::new(Texture::Checkerboard(
                             Box::new(Texture::Solid(DVec3::ZERO)),
                             Box::new(Texture::Solid(DVec3::ONE)),
-                            2.0,
+                            4.0,
                         )),
                         /* share same perlin between all textures?
                          * could make cool checkers that way */
@@ -79,6 +79,13 @@ impl Scene {
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
                     Material::Phong(Texture::Solid(DVec3::new(0.0, 0.0, 1.0))),
+                ),
+                Rectangle::new(
+                    DVec3::new(1.2, 0.2, -0.8),
+                    DVec3::new(0.8, 0.6, -0.4),
+                    DVec3::new(0.4, 0.6, -0.8),
+                    DVec3::new(0.8, 0.2, -1.2),
+                    Material::Mirror,
                 ),
                 // left
                 Plane::new(
