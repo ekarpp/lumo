@@ -18,7 +18,7 @@ pub fn phong_illum(
     let color = texture.color_at(h.p);
 
     /* shaded color, just ambient for now */
-    let mut shaded = color * scene.ambient;
+    let mut shaded = DVec3::ZERO;
 
     /* vector to light from hit point */
     let l = scene.light - h.p;
@@ -32,20 +32,26 @@ pub fn phong_illum(
         /* unit length vector to light from hit point */
         let lu = l.normalize();
 
-        /* l mirrored around sphere normal */
-        /* r points in the wrong direction but later on, so does h.p,
-         * so they cancel out */
-        let r = lu - 2.0 * h.n * lu.dot(h.n);
-        shaded += (
-            /* diffuse reflection */
-            h.n.dot(lu).max(0.0) * color
-            /* specular reflection */
-                + r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff)
-            /* scale by reciprocal of squared distance to light */
-            / l.length_squared();
+        /* diffuse term */
+        shaded += h.n.dot(lu).max(0.0) * color;
+
+
+        /*
+        /* l mirrored around sphere normal. pointing from light to hit point */
+        let r = 2.0 * h.n * lu.dot(h.n) - lu;
+        shaded += -r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff;
+         */
+
+        /* halfway vector between camera and light. (Blinn-Phong model) */
+        let halfway = (lu - h.p.normalize()) / (lu - h.p.normalize()).length();
+        shaded += h.n.dot(halfway).max(0.0).powf(q) * spec_coeff;
+
+        /* scale diffuse and specular by squared distance to light */
+        shaded /= l.length_squared();
     }
 
-    shaded
+    /* add ambient term */
+    shaded + color * scene.ambient
 }
 
 pub fn reflect_ray(h: &Hit) -> Option<Ray> {
