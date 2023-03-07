@@ -1,25 +1,26 @@
 use crate::DVec3;
 use crate::tracer::object::Object;
+use crate::tracer::ray::Ray;
 
 pub struct Hit<'a> {
     pub t: f64,
     pub object: &'a dyn Object,
     /* point where ray hit object */
     pub p: DVec3,
-    /* sphere normal at hit point.
-     * if inside points towards origin otherwise not */
-    pub n: DVec3,
+    /* sphere normal at hit point pointing towards incoming ray.
+     * for sphere, points always away from origin */
+    pub norm: DVec3,
 }
 
-impl Hit<'_> {
-    /* why can't use Self type here?? */
-    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Option<Hit> {
+impl<'a, 'b> Hit<'_> {
+    /* why can't use Self type here?? cus self cant have lifetime?? */
+    pub fn new(t: f64, o: &'a dyn Object, r: &'b Ray) -> Option<Hit<'a>> {
         /* p and n not always needed. computing for every hit slows rendering */
         Some(Hit {
             t: t,
             object: o,
-            p: p,
-            n: o.normal_at(p),
+            p: r.at(t),
+            norm: o.normal_for_at(r, r.at(t)),
         })
     }
 }

@@ -10,14 +10,22 @@ mod plane_tests;
 #[cfg(test)]
 mod triangle_tests;
 
+/* make sure normal points the right way for triangle/plane/sphere */
+fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
+    if n.dot(r.dir) > 0.0 { -n } else { n }
+}
+
 pub trait Object: Sync {
     // unit length normal at p
-    fn normal_at(&self, p: DVec3) -> DVec3;
+    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3;
+    fn inside(&self, _r: &Ray) -> bool { false }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
 }
 
-/* FIGURE OUT BEING INSIDE. CANT BE INSIDE PLANES OR TRIANGLES. (OR RECTANGLES)*/
+pub struct Cuboid {
+
+}
 
 pub struct Rectangle {
     tria: (Triangle, Triangle),
@@ -43,12 +51,10 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
-    fn material(&self) -> &Material {
-        &self.material
-    }
+    fn material(&self) -> &Material { &self.material }
 
-    fn normal_at(&self, p: DVec3) -> DVec3 {
-        self.tria.0.normal_at(p)
+    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
+        self.tria.0.normal_for_at(r, p)
     }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -60,7 +66,7 @@ impl Object for Rectangle {
     }
 }
 
-/* barycentir interpolation ~ different texture at each point of triangle */
+/* barycentric interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
 pub struct Triangle {
     a: DVec3,
@@ -88,7 +94,9 @@ impl Triangle {
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
+    fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
+        _orient_normal(self.norm, r)
+    }
 
     /* barycentric triangle intersection with Cramer's rule */
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -138,7 +146,7 @@ impl Object for Triangle {
             Hit::new(
                 t,
                 self,
-                r.at(t),
+                r,
             )
         }
     }
@@ -165,7 +173,9 @@ impl Plane {
 impl Object for Plane {
     fn material(&self) -> &Material { &self.material }
     // check that point is on plane?? or assume we are smart
-    fn normal_at(&self, _p: DVec3) -> DVec3 { self.norm }
+    fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
+        _orient_normal(self.norm, r)
+    }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
@@ -181,7 +191,7 @@ impl Object for Plane {
             Hit::new(
                 t,
                 self,
-                r.at(t),
+                r,
             )
         }
     }
@@ -205,10 +215,15 @@ impl Sphere {
 }
 
 impl Object for Sphere {
+    fn inside(&self, r: &Ray) -> bool {
+        self.origin.distance_squared(r.origin + crate::EPSILON*r.dir)
+            < self.radius*self.radius
+    }
+
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_at(&self, p: DVec3) -> DVec3 {
-        (p - self.origin) / self.radius
+    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
+        _orient_normal((p - self.origin) / self.radius, r)
     }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -234,7 +249,7 @@ impl Object for Sphere {
         Hit::new(
             t,
             self,
-            r.at(t),
+            r,
         )
      }
 }
