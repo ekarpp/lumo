@@ -7,6 +7,8 @@ use crate::tracer::material::Material;
 mod sphere_tests;
 #[cfg(test)]
 mod plane_tests;
+#[cfg(test)]
+mod triangle_tests;
 
 pub trait Object: Sync {
     // unit length normal at p
@@ -15,8 +17,7 @@ pub trait Object: Sync {
     fn material(&self) -> &Material;
 }
 
-/* FIGURE OUT BEING INSIDE. CANT BE INSIDE PLANES OR TRIANGLES. (OR RECTANGLES) */
-
+/* FIGURE OUT BEING INSIDE. CANT BE INSIDE PLANES OR TRIANGLES. (OR RECTANGLES)*/
 
 /* barycentir interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
@@ -60,16 +61,15 @@ impl Object for Triangle {
             self.a - self.c,
             r.dir
         );
+
         let det_a = mat_a.determinant();
 
-        if det_a < crate::EPSILON {
+        if det_a.abs() < crate::EPSILON {
             return None;
         }
 
         let vec_b = self.a - r.origin;
 
-        let vec_x = mat_a.inverse() * vec_b;
-/*
         let beta = DMat3::from_cols(
             vec_b,
             mat_a.col(1),
@@ -81,21 +81,18 @@ impl Object for Triangle {
             vec_b,
             mat_a.col(2),
         ).determinant() / det_a;
-         */
-        let beta = vec_x.x;
-        let gamma = vec_x.y;
+
         if beta < 0.0 || gamma < 0.0
             || beta + gamma > 1.0 {
             return None;
         }
-/*
+
         let t = DMat3::from_cols(
             mat_a.col(0),
             mat_a.col(1),
             vec_b,
         ).determinant() / det_a;
-         */
-        let t = vec_x.z;
+
         if t < crate::EPSILON {
             None
         } else {
