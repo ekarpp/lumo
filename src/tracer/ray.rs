@@ -1,6 +1,8 @@
 use crate::DVec3;
 use crate::tracer::scene::Scene;
 
+const MAX_DEPTH: usize = 10;
+
 pub struct Ray {
     pub origin: DVec3,
     pub dir: DVec3
@@ -18,8 +20,8 @@ impl Ray {
         self.origin + t*self.dir
     }
 
-    pub fn color(&self, scene: &Scene, depth: u32) -> DVec3 {
-        if depth > 10 {
+    pub fn color(&self, scene: &Scene, depth: usize) -> DVec3 {
+        if depth >= MAX_DEPTH {
             return DVec3::ZERO;
         }
 
