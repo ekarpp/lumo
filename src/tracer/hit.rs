@@ -13,13 +13,13 @@ pub struct Hit<'a> {
 
 impl Hit<'_> {
     // return as option??
-    pub fn new(t: f64, o: &dyn Object, p: DVec3, n: DVec3) -> Hit {
+    pub fn new(t: f64, o: &dyn Object, p: DVec3) -> Hit {
         /* p and n not always needed. computing for every hit slows rendering */
         Hit {
             t: t,
             object: o,
             p: p,
-            n: n,
+            n: o.normal_at(p),
         }
     }
 }

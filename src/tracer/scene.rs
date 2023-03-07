@@ -1,6 +1,6 @@
 use crate::perlin::Perlin;
 use crate::DVec3;
-use crate::tracer::object::{Object, Sphere, Plane};
+use crate::tracer::object::{Object, Sphere, Plane, Triangle};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::material::Material;
@@ -91,6 +91,12 @@ impl Scene {
                     Material::Phong(Texture::Solid(
                         DVec3::new(136.0, 8.0, 8.0) / 255.9
                     )),
+                ),
+                Triangle::new(
+                    DVec3::new(-1.5, 1.5, -2.5),
+                    DVec3::new(-1.8, 1.8, -2.0),
+                    DVec3::new(-1.2, 1.8, -2.0),
+                    Material::Phong(Texture::Marble(Perlin::new(DVec3::ONE))),
                 ),
                 Sphere::new(
                     DVec3::new(-0.9, 0.0, -1.0),
