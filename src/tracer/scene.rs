@@ -1,5 +1,6 @@
 use std::iter;
 use std::f64::consts;
+use crate::perlin::Perlin;
 use crate::{DVec3, DQuat, DAffine3, DMat3};
 use crate::tracer::object::{Object, Sphere, Plane};
 use crate::tracer::hit::Hit;
@@ -18,6 +19,8 @@ pub struct Scene {
 }
 
 impl Scene {
+    pub fn size(&self) -> usize { self.objects.len() }
+
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let mut closest_hit: Option<Hit> = None;
         for sphere in &self.objects {
@@ -170,9 +173,11 @@ impl Scene {
                     Material::Glass,
                 ),
                 Sphere::new(
-                    DVec3::new(0.4, 0.0, -0.5),
+                    DVec3::new(0.4, -0.2, -0.5),
                     0.1,
-                    Material::Glass,
+                    Material::Phong(Texture::Marble(Perlin::new(
+                        DVec3::new(255.0, 182.0, 193.0) / 255.9
+                    ))),
                 ),
             ]
         }
