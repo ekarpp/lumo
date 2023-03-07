@@ -135,11 +135,11 @@ impl Object for Triangle {
         if t < crate::EPSILON {
             None
         } else {
-            Some(Hit::new(
+            Hit::new(
                 t,
                 self,
                 r.at(t),
-            ))
+            )
         }
     }
 }
@@ -178,11 +178,11 @@ impl Object for Plane {
         if t < crate::EPSILON {
             None
         } else {
-            Some(Hit::new(
+            Hit::new(
                 t,
                 self,
                 r.at(t),
-            ))
+            )
         }
     }
 }
@@ -231,10 +231,10 @@ impl Object for Sphere {
                 return None;
             }
         }
-        Some(Hit::new(
+        Hit::new(
             t,
             self,
             r.at(t),
-        ))
+        )
      }
 }
