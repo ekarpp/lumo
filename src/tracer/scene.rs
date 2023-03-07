@@ -21,35 +21,28 @@ impl Scene {
     pub fn size(&self) -> usize { self.objects.len() }
 
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
-        let mut closest_hit: Option<Hit> = None;
-        for sphere in &self.objects {
-            let h = sphere.hit(r);
-            // make cleaner?
-            if closest_hit.is_none() {
-                closest_hit = h;
-            }
-            else if h.is_some() && h < closest_hit {
-                closest_hit = h;
-            }
-        }
-        closest_hit
+        self.objects.iter().map(|obj| obj.hit(r))
+            .fold(None, |closest, hit| {
+                if closest.is_none() || (hit.is_some() && hit < closest) {
+                    hit
+                } else {
+                    closest
+                }
+            })
     }
 
     pub fn hit_light(&self, r: &Ray) -> bool {
-        let block_light = |h: &Hit| -> bool {
-            !h.object.material().is_translucent()
-                && (h.p - r.origin).length_squared() <
-                (self.light - r.origin).length_squared()
+        let no_block_light = |obj: &&Box<dyn Object>| -> bool {
+            obj.hit(r).filter(|hit| {
+                !hit.object.is_translucent()
+                    /* check if object is behind light */
+                    && (hit.p - r.origin).length_squared() <
+                    (self.light - r.origin).length_squared()
+            }).is_none()
         };
 
-        for object in &self.objects {
-            let h = object.hit(r);
-            // h.is_some_and
-            if h.filter(block_light).is_some() {
-                return false;
-            }
-        }
-        true
+        self.objects.iter().take_while(no_block_light).count()
+            == self.objects.len()
     }
 
     pub fn default() -> Self {

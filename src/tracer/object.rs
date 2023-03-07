@@ -28,6 +28,7 @@ pub trait Object: Sync {
     fn inside(&self, _r: &Ray) -> bool { false }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
+    fn is_translucent(&self) -> bool { self.material().is_translucent() }
 }
 
 pub struct Cuboid {
