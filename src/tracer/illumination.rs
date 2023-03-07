@@ -16,6 +16,7 @@ pub fn phong_illum(
     scene: &Scene
 ) -> DVec3 {
     let color = texture.color_at(h.p);
+
     /* shaded color, just ambient for now */
     let mut shaded = color * scene.ambient;
 

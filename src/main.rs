@@ -1,10 +1,11 @@
-use glam::f64::{DVec3, DMat3, DAffine3, DQuat};
+use glam::{UVec3,f64::{DVec3, DMat3, DAffine3, DQuat}};
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
 mod image;
 mod tracer;
+mod perlin;
 mod rand_utils;
 
 const EPSILON: f64 = 0.001;
@@ -116,7 +117,8 @@ fn main() {
         }).collect::<Vec<DVec3>>()
     }).collect();
     match start_img.elapsed() {
-        Ok(v) => println!("rendering done in {v:?}"),
+        Ok(v) => println!("rendered scene with {} objects in {v:?}",
+                          scene.size()),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 
