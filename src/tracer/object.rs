@@ -2,6 +2,7 @@ use crate::{DVec3, DMat3};
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
+use crate::tracer::object::triangle::Triangle;
 
 #[cfg(test)]
 mod sphere_tests;
@@ -9,6 +10,9 @@ mod sphere_tests;
 mod plane_tests;
 #[cfg(test)]
 mod triangle_tests;
+
+pub mod sphere;
+pub mod triangle;
 
 /* make sure normal points the right way for triangle/plane/sphere */
 fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
@@ -66,92 +70,6 @@ impl Object for Rectangle {
     }
 }
 
-/* barycentric interpolation ~ different texture at each point of triangle */
-/* normal inside?? */
-pub struct Triangle {
-    a: DVec3,
-    b: DVec3,
-    c: DVec3,
-    norm: DVec3,
-    material: Material,
-}
-
-impl Triangle {
-    /* assume non-degenerate */
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, m: Material) -> Box<Self> {
-        let norm = -(b - a).cross(c - a).normalize();
-
-        Box::new(Self {
-            a: a,
-            b: b,
-            c: c,
-            norm: norm,
-            material: m,
-        })
-    }
-}
-
-impl Object for Triangle {
-    fn material(&self) -> &Material { &self.material }
-
-    fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
-        _orient_normal(self.norm, r)
-    }
-
-    /* barycentric triangle intersection with Cramer's rule */
-    fn hit(&self, r: &Ray) -> Option<Hit> {
-        /* can store a-c, a-b, and a instead. saves some computation.
-         * compiler should do it? */
-
-        let mat_a = DMat3::from_cols(
-            self.a - self.b,
-            self.a - self.c,
-            r.dir
-        );
-
-        let det_a = mat_a.determinant();
-
-        if det_a.abs() < crate::EPSILON {
-            return None;
-        }
-
-        let vec_b = self.a - r.origin;
-
-        let beta = DMat3::from_cols(
-            vec_b,
-            mat_a.col(1),
-            mat_a.col(2),
-        ).determinant() / det_a;
-
-        let gamma = DMat3::from_cols(
-            mat_a.col(0),
-            vec_b,
-            mat_a.col(2),
-        ).determinant() / det_a;
-
-        if beta < 0.0 || gamma < 0.0
-            || beta + gamma > 1.0 {
-            return None;
-        }
-
-        let t = DMat3::from_cols(
-            mat_a.col(0),
-            mat_a.col(1),
-            vec_b,
-        ).determinant() / det_a;
-
-        if t < crate::EPSILON {
-            None
-        } else {
-            Hit::new(
-                t,
-                self,
-                r,
-            )
-        }
-    }
-}
-
 pub struct Plane {
     norm: DVec3,
     material: Material,
@@ -195,61 +113,4 @@ impl Object for Plane {
             )
         }
     }
-}
-
-pub struct Sphere {
-    pub origin: DVec3,
-    pub radius: f64,
-    material: Material,
-}
-
-impl Sphere {
-    /* assume r != 0 */
-    pub fn new(origin: DVec3, r: f64, mat: Material) -> Box<Self> {
-        Box::new(Self {
-            origin: origin,
-            radius: r,
-            material: mat,
-        })
-    }
-}
-
-impl Object for Sphere {
-    fn inside(&self, r: &Ray) -> bool {
-        self.origin.distance_squared(r.origin + crate::EPSILON*r.dir)
-            < self.radius*self.radius
-    }
-
-    fn material(&self) -> &Material { &self.material }
-
-    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
-        _orient_normal((p - self.origin) / self.radius, r)
-    }
-
-    fn hit(&self, r: &Ray) -> Option<Hit> {
-        let tmp = r.origin - self.origin;
-        // coefficients of "hit quadratic"
-        // .dot faster than .length_squared, recheck
-        let a = r.dir.dot(r.dir);
-        let half_b = tmp.dot(r.dir);
-        let c = tmp.dot(tmp) - self.radius*self.radius;
-        let disc = half_b*half_b - a*c;
-
-        if disc < 0.0 {
-            return None;
-        }
-        let disc_root = disc.sqrt();
-        let mut t = (-half_b - disc_root) / a;
-        if t < crate::EPSILON {
-            t = (-half_b + disc_root) / a;
-            if t < crate::EPSILON {
-                return None;
-            }
-        }
-        Hit::new(
-            t,
-            self,
-            r,
-        )
-     }
 }
