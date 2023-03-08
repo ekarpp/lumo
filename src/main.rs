@@ -1,11 +1,11 @@
 use glam::{UVec3, f64::{DVec3, DMat3}};
-use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
 mod image;
 mod tracer;
 mod perlin;
+mod renderer;
 mod rand_utils;
 
 const EPSILON: f64 = 0.001;
@@ -98,19 +98,15 @@ fn main() {
     cli_args.output_cfg();
 
     let start_img = std::time::SystemTime::now();
-    let image_buffer: Vec<DVec3> = (0..img_height).into_par_iter().flat_map(|y| {
-        (0..img_width).map(|x| {
-            let u = x as f64 * px_width;
-            let v = (img_height - 1 - y) as f64 * px_height;
-
-            (0..n_samples).map(|_| {
-                let randx = rand_utils::rand_f64();
-                let randy = rand_utils::rand_f64();
-                cam.ray_at(u + randx*px_width, v + randy*px_height)
-            }).fold(DVec3::ZERO, |acc, r| acc + r.color(&scene, 0))
-                / n_samples as f64
-        }).collect::<Vec<DVec3>>()
-    }).collect();
+    let image_buffer: Vec<DVec3> = renderer::_render(
+        img_height,
+        px_height,
+        img_width,
+        px_width,
+        n_samples,
+        &cam,
+        &scene,
+    );
     match start_img.elapsed() {
         Ok(v) => println!("rendered scene with {} objects in {v:?}",
                           scene.size()),

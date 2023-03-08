@@ -8,35 +8,25 @@ use crate::tracer::illumination;
 
 pub enum Material {
     Phong(Texture),
+    Light(Texture),
     Mirror,
     Glass,
     Blank, // used for recursive objects. make translucent?
 }
 
 impl Material {
-    pub fn shade(&self, h: &Hit, s: &Scene) -> Option<DVec3> {
+
+    pub fn color(&self, h: &Hit, s: &Scene, r: &Ray) -> DVec3 {
         /* see phong_illum for meaning */
         let q = 5.0;
         let sc = DVec3::splat(0.15);
 
         match self {
-            // return opt directlY??
-            Self::Phong(t) => Some(illumination::phong_illum(t, h, sc, q, s)),
-            _ => None,
-        }
-    }
-
-    pub fn reflect(&self, h: &Hit) -> Option<Ray> {
-        match self {
-            Self::Mirror => illumination::reflect_ray(h),
-            _ => None,
-        }
-    }
-
-    pub fn refract(&self, h: &Hit, r: &Ray) -> Option<Ray> {
-        match self {
-            Self::Glass => illumination::refract_ray(h, r),
-            _ => None,
+            Self::Phong(t) => illumination::phong_illum(t, h, sc, q, s),
+            Self::Light(t) => t.color_at(h.p),
+            Self::Mirror => illumination::reflect_ray(h, r).color(s),
+            Self::Glass => illumination::refract_ray(h, r).color(s),
+            _ => DVec3::ZERO,
         }
     }
 
