@@ -1,11 +1,11 @@
-use crate::DVec3;
+use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use rand::prelude::SliceRandom;
 
 type MyRng = ThreadRng;
-fn get_rng() -> MyRng {
+fn _get_rng() -> MyRng {
     rand::thread_rng()
 }
 
@@ -13,13 +13,25 @@ fn get_rng() -> MyRng {
  * (thread_rng() always creates new?) */
 
 pub fn rand_f64() -> f64 {
-    get_rng().gen()
+    _get_rng().gen()
 }
 
 /* return n normalized random dvec3 in a vector */
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
-    let mut rng = get_rng();
+    let mut rng = _get_rng();
     (0..n).map(|_| rand_unit_sphere(&mut rng)).collect()
+}
+
+/* uniform random DVec2 in unit disk */
+fn rand_unit_disk() -> DVec2 {
+    /* sampling unit square and checking if inside circle might be faster */
+    let r = rand_f64().sqrt();
+    let theta = 2.0 * consts::PI * rand_f64();
+
+    DVec2::new(
+        r * theta.cos(),
+        r * theta.sin(),
+    )
 }
 
 /* uniform random DVec3 in unit sphere */
@@ -37,6 +49,6 @@ fn rand_unit_sphere(rng: &mut MyRng) -> DVec3 {
 /* random permutation of 0..n */
 pub fn perm_n(n: usize) -> Vec<usize> {
     let mut v: Vec<usize> = (0..n).collect();
-    v.shuffle(&mut get_rng());
+    v.shuffle(&mut _get_rng());
     v
 }
