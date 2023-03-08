@@ -37,7 +37,10 @@ impl Scene {
         }
     }
 
-    pub fn size(&self) -> usize { self.objects.len() }
+    /* might want to print x of this, y of that, ... */
+    pub fn size(&self) -> usize {
+        self.objects.iter().fold(0, |acc, obj| acc + obj.size())
+    }
 
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         self.objects.iter().map(|obj| obj.hit(r))
