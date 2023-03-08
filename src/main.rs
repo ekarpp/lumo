@@ -1,4 +1,4 @@
-use glam::{UVec3, f64::{DVec3, DMat3}};
+use glam::{UVec3, f64::{DVec3, DMat3, DVec2}};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
