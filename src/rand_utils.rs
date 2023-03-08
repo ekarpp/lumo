@@ -18,15 +18,14 @@ pub fn rand_f64() -> f64 {
 
 /* return n normalized random dvec3 in a vector */
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
-    let mut rng = _get_rng();
-    (0..n).map(|_| rand_unit_sphere(&mut rng)).collect()
+    (0..n).map(|_| rand_unit_sphere()).collect()
 }
 
 /* uniform random DVec2 in unit disk */
 fn rand_unit_disk() -> DVec2 {
     /* sampling unit square and checking if inside circle might be faster */
     let r = rand_f64().sqrt();
-    let theta = 2.0 * consts::PI * rand_f64();
+    let theta = 2.0 * PI * rand_f64();
 
     DVec2::new(
         r * theta.cos(),
@@ -35,9 +34,9 @@ fn rand_unit_disk() -> DVec2 {
 }
 
 /* uniform random DVec3 in unit sphere */
-fn rand_unit_sphere(rng: &mut MyRng) -> DVec3 {
-    let r1: f64 = rng.gen();
-    let r2: f64 = rng.gen();
+fn rand_unit_sphere() -> DVec3 {
+    let r1 = rand_f64();
+    let r2 = rand_f64();
 
     DVec3::new(
         (2.0*PI*r1).cos()*2.0*(r2*(1.0 - r2)).sqrt(),
