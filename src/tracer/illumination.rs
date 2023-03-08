@@ -17,34 +17,35 @@ pub fn phong_illum(
 ) -> DVec3 {
     let color = texture.color_at(h.p);
 
-    /* shaded color, just ambient for now */
-    let mut shaded = DVec3::ZERO;
-
-    if scene.in_light(h.p) {
-        /* vector to light from hit point */
-        let l = scene.to_light(h.p);
-        /* unit length vector to light from hit point */
-        let lu = l.normalize();
-
-        /* diffuse term */
-        shaded += h.norm.dot(lu).max(0.0) * color;
-
-        /*
-        /* l mirrored around sphere normal. pointing from light to hit point */
-        let r = 2.0 * h.n * lu.dot(h.n) - lu;
-        shaded += -r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff;
-         */
-
-        /* halfway vector between camera and light. (Blinn-Phong model) */
-	/* h.p points in "wrong direction". do these need normalization? */
-        let halfway = (l - h.p).normalize();
-        shaded += h.norm.dot(halfway).max(0.0).powf(q) * spec_coeff;
-
-        /* scale diffuse and specular by squared distance to light */
-        shaded /= l.length_squared();
+    if !scene.in_light(h.p) {
+        color * scene.ambient
+    } else {
+        color * scene.ambient
+            + _diffuse_specular(color, h, scene.to_light(h.p), spec_coeff, q)
     }
+}
 
-    shaded + color * scene.ambient
+fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3, spec_coeff: DVec3, q: f64)
+                     -> DVec3 {
+    /* unit length vector to light from hit point */
+    let lu = l.normalize();
+
+    /*
+    /* l mirrored around sphere normal. pointing from light to hit point */
+    let r = 2.0 * h.n * lu.dot(h.n) - lu;
+    shaded += -r.dot(h.p.normalize()).max(0.0).powf(q) * spec_coeff;
+     */
+
+    /* halfway vector between camera and light. (Blinn-Phong model) */
+    /* h.p points in "wrong direction". do these need normalization? */
+    let halfway = (l - h.p).normalize();
+
+    /* specular term */
+    (h.norm.dot(halfway).max(0.0).powf(q) * spec_coeff
+       /* diffuse term */
+     + h.norm.dot(lu).max(0.0) * color)
+        /* scale by squared distance to light */
+        / l.length_squared()
 }
 
 pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
