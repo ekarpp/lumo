@@ -34,7 +34,7 @@ fn rand_unit_disk() -> DVec2 {
 }
 
 /* uniform random DVec3 in unit sphere */
-fn rand_unit_sphere() -> DVec3 {
+pub fn rand_unit_sphere() -> DVec3 {
     let r1 = rand_f64();
     let r2 = rand_f64();
 

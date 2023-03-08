@@ -1,5 +1,6 @@
-use crate::perlin::Perlin;
 use crate::{DVec3, DMat3};
+use crate::perlin::Perlin;
+use crate::rand_utils;
 
 use crate::tracer::object::{Object, Plane, Rectangle, Cuboid};
 use crate::tracer::object::sphere::Sphere;
@@ -12,12 +13,23 @@ use crate::tracer::texture::Texture;
 mod scene_tests;
 
 pub struct Scene {
-    pub light: DVec3,
     pub ambient: DVec3,
+    light: Sphere,
     objects: Vec<Box<dyn Object>>,
 }
 
+const LIGHT_R: f64 = 0.1;
+
 impl Scene {
+    pub fn new(l: DVec3, amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
+        Self {
+            ambient: amb,
+            /* use Material::Light later on */
+            light: *Sphere::new(l, LIGHT_R, Material::Blank),
+            objects: objs,
+        }
+    }
+
     pub fn size(&self) -> usize { self.objects.len() }
 
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -31,13 +43,38 @@ impl Scene {
             })
     }
 
+    pub fn to_light(&self, p: DVec3) -> DVec3 {
+        self.light.origin - p + LIGHT_R * rand_utils::rand_unit_sphere()
+    }
+
+    pub fn in_light(&self, p: DVec3) -> bool {
+        let ray_to_light = Ray::new(
+            p,
+            /* for now, just choose a random point in the light sphere */
+            self.to_light(p),
+            0,
+        );
+
+        let no_block_light = |obj: &&Box<dyn Object>| -> bool {
+            obj.hit(&ray_to_light).filter(|hit| {
+                !hit.object.is_translucent()
+                    /* check if object is behind light */
+                    && (hit.p - ray_to_light.origin).length_squared() <
+                    (self.light.origin - ray_to_light.origin).length_squared()
+            }).is_none()
+        };
+
+        self.objects.iter().take_while(no_block_light).count()
+            == self.objects.len()
+    }
+
     pub fn hit_light(&self, r: &Ray) -> bool {
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
             obj.hit(r).filter(|hit| {
                 !hit.object.is_translucent()
                     /* check if object is behind light */
                     && (hit.p - r.origin).length_squared() <
-                    (self.light - r.origin).length_squared()
+                    (self.light.origin - r.origin).length_squared()
             }).is_none()
         };
 
@@ -47,10 +84,10 @@ impl Scene {
 
     pub fn default() -> Self {
         let l = DVec3::new(-0.3, 0.2, -0.1);
-        Self {
-            light: l,
-            ambient: DVec3::splat(0.15),
-            objects: vec![
+        Self::new(
+            l,
+            DVec3::splat(0.15),
+            vec![
                 // floor
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
@@ -139,6 +176,6 @@ impl Scene {
                     ))),
                 ),
             ]
-        }
+        )
     }
 }
