@@ -20,16 +20,9 @@ pub fn phong_illum(
     /* shaded color, just ambient for now */
     let mut shaded = DVec3::ZERO;
 
-    /* vector to light from hit point */
-    let l = scene.light - h.p;
-
-    let ray_to_light = Ray::new(
-        h.p,
-        l,
-        0,
-    );
-
-    if scene.hit_light(&ray_to_light) {
+    if scene.in_light(h.p) {
+        /* vector to light from hit point */
+        let l = scene.to_light(h.p);
         /* unit length vector to light from hit point */
         let lu = l.normalize();
 
@@ -51,7 +44,6 @@ pub fn phong_illum(
         shaded /= l.length_squared();
     }
 
-    /* add ambient term */
     shaded + color * scene.ambient
 }
 
