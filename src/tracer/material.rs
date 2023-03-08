@@ -12,6 +12,7 @@ pub enum Material {
     Mirror,
     Glass,
     Blank, // used for recursive objects. make translucent?
+    /* yes, can use it as black background with plane */
 }
 
 impl Material {
@@ -28,7 +29,7 @@ impl Material {
 
     pub fn is_translucent(&self) -> bool {
         match self {
-            Self::Glass => true,
+            Self::Glass | Self::Blank => true,
             _ => false,
         }
     }

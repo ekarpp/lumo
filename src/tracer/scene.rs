@@ -128,6 +128,17 @@ impl Scene {
                         Perlin::new(DVec3::new(0.0, 0.0, 1.0))
                     )),
                 ),
+                // background
+                Plane::new(
+                    DVec3::new(0.0, 0.0, 0.1),
+                    DVec3::new(0.0, 0.0, -1.0),
+                    Material::Blank,
+                ),
+                Sphere::new(
+                    DVec3::new(-0.4, -0.6, -1.2),
+                    0.2,
+                    Material::Mirror,
+                ),
             ],
         )
     }
