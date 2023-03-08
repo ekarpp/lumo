@@ -1,7 +1,7 @@
 use crate::DVec3;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::scene::Scene;
+use crate::tracer::scene::{SHADOW_RAYS, Scene};
 use crate::tracer::texture::Texture;
 
 /**
@@ -17,11 +17,10 @@ pub fn phong_illum(
 ) -> DVec3 {
     let color = texture.color_at(h.p);
 
-    match scene.ratio_in_light(h.p) {
-        None => color * scene.ambient,
-        Some(r) => color * scene.ambient
-            + r * _diffuse_specular(color, h, scene.to_light(h.p), spec_coeff, q),
-    }
+    color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
+        _diffuse_specular(color, h, r.dir, spec_coeff, q)
+    }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
+    /* not desirable to use shadow_rays here */
 }
 
 fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3, spec_coeff: DVec3, q: f64)

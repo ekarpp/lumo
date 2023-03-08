@@ -22,7 +22,7 @@ pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
 }
 
 /* uniform random DVec2 in unit disk */
-fn rand_unit_disk() -> DVec2 {
+pub fn rand_unit_disk() -> DVec2 {
     /* sampling unit square and checking if inside circle might be faster */
     let r = rand_f64().sqrt();
     let theta = 2.0 * PI * rand_f64();
