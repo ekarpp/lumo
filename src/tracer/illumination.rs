@@ -17,11 +17,10 @@ pub fn phong_illum(
 ) -> DVec3 {
     let color = texture.color_at(h.p);
 
-    if !scene.in_light(h.p) {
-        color * scene.ambient
-    } else {
-        color * scene.ambient
-            + _diffuse_specular(color, h, scene.to_light(h.p), spec_coeff, q)
+    match scene.ratio_in_light(h.p) {
+        None => color * scene.ambient,
+        Some(r) => color * scene.ambient
+            + r * _diffuse_specular(color, h, scene.to_light(h.p), spec_coeff, q),
     }
 }
 

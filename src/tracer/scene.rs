@@ -19,13 +19,20 @@ pub struct Scene {
 }
 
 const LIGHT_R: f64 = 0.1;
+/* refactor ALL parameters in crate to one single place */
+const SHADOW_RAYS: usize = 5;
 
 impl Scene {
     pub fn new(l: DVec3, amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
         Self {
             ambient: amb,
-            /* use Material::Light later on */
-            light: *Sphere::new(l, LIGHT_R, Material::Blank),
+            light: *Sphere::new(
+                l,
+                LIGHT_R,
+                /* Material::Light has no implementation.
+                 * shading does not call material, yet */
+                Material::Light(Texture::Solid(DVec3::ONE)),
+            ),
             objects: objs,
         }
     }
@@ -47,25 +54,17 @@ impl Scene {
         self.light.origin - p + LIGHT_R * rand_utils::rand_unit_sphere()
     }
 
-    pub fn in_light(&self, p: DVec3) -> bool {
-        let ray_to_light = Ray::new(
-            p,
-            /* for now, just choose a random point in the light sphere */
-            self.to_light(p),
-            0,
-        );
+    pub fn ratio_in_light(&self, p: DVec3) -> Option<f64> {
+        let num_ok = (0..SHADOW_RAYS).map(|_| Ray::new(p, self.to_light(p), 0))
+            .filter(|r: &Ray| self.hit_light(r))
+            /* probably better ways */
+            .fold(0, |acc, _| acc + 1);
 
-        let no_block_light = |obj: &&Box<dyn Object>| -> bool {
-            obj.hit(&ray_to_light).filter(|hit| {
-                !hit.object.is_translucent()
-                    /* check if object is behind light */
-                    && (hit.p - ray_to_light.origin).length_squared() <
-                    (self.light.origin - ray_to_light.origin).length_squared()
-            }).is_none()
-        };
-
-        self.objects.iter().take_while(no_block_light).count()
-            == self.objects.len()
+        if num_ok == 0 {
+            None
+        } else {
+            Some(num_ok as f64 / SHADOW_RAYS as f64)
+        }
     }
 
     pub fn hit_light(&self, r: &Ray) -> bool {
