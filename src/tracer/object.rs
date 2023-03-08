@@ -29,6 +29,7 @@ pub trait Object: Sync {
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
+    fn size(&self) -> usize { 1 }
 }
 
 pub struct Cuboid {
@@ -92,6 +93,8 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
+    fn size(&self) -> usize { 6 }
+
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -138,6 +141,8 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
+    fn size(&self) -> usize { 2 }
+
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
