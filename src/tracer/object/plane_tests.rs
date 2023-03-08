@@ -12,7 +12,8 @@ fn plane() -> Box<Plane> {
 fn no_self_intersect() {
     let r = Ray::new(
         DVec3::ZERO,
-        DVec3::ONE
+        DVec3::ONE,
+        0,
     );
     assert!(plane().hit(&r).is_none());
 }
@@ -21,7 +22,8 @@ fn no_self_intersect() {
 fn no_intersect_behind() {
     let r = Ray::new(
         DVec3::ONE,
-        DVec3::ONE
+        DVec3::ONE,
+        0,
     );
     assert!(plane().hit(&r).is_none());
 }
@@ -30,7 +32,8 @@ fn no_intersect_behind() {
 fn intersects() {
     let r = Ray::new(
         -DVec3::ONE,
-        DVec3::ONE
+        DVec3::ONE,
+        0,
     );
     assert!(plane().hit(&r).is_some());
 }
@@ -41,7 +44,8 @@ fn no_hit_crash_parallel() {
     let r = Ray::new(
         -DVec3::ONE,
         // pray it works
-        p.norm.cross(DVec3::new(1.23, 4.56, 7.89))
+        p.norm.cross(DVec3::new(1.23, 4.56, 7.89)),
+        0,
     );
     assert!(p.hit(&r).is_none());
 }
