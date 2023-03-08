@@ -13,7 +13,8 @@ impl Camera {
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
         Ray::new(
             self.origin,
-            self.blc + x*self.horiz + y*self.vert - self.origin
+            self.blc + x*self.horiz + y*self.vert - self.origin,
+            0,
         )
     }
 

@@ -23,10 +23,11 @@ pub fn phong_illum(
     /* vector to light from hit point */
     let l = scene.light - h.p;
 
-    let ray_to_light = Ray {
-        origin: h.p,
-        dir: l
-    };
+    let ray_to_light = Ray::new(
+        h.p,
+        l,
+        0,
+    );
 
     if scene.hit_light(&ray_to_light) {
         /* unit length vector to light from hit point */
@@ -53,14 +54,15 @@ pub fn phong_illum(
     shaded + color * scene.ambient
 }
 
-pub fn reflect_ray(h: &Hit) -> Option<Ray> {
-    Some(Ray {
-        origin: h.p,
-        dir: h.p - 2.0 * h.norm * h.p.dot(h.norm)
-    })
+pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
+    Ray::new(
+        h.p,
+        h.p - 2.0 * h.norm * h.p.dot(h.norm),
+        r.depth,
+    )
 }
 
-pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
+pub fn refract_ray(h: &Hit, r: &Ray) -> Ray {
     const ETA: f64 = 1.5;
     let eta_ratio = if h.object.inside(r) { ETA } else { 1.0 / ETA };
 
@@ -70,14 +72,15 @@ pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
     let sin_out = (1.0 - cos_in*cos_in)*eta_ratio*eta_ratio;
 
     if sin_out > 1.0 {
-        return reflect_ray(h);
+        return reflect_ray(h, r);
     }
 
     let dir = eta_ratio*up + h.norm *
         (eta_ratio*cos_in - (1.0 - sin_out).sqrt());
 
-    Some(Ray {
-        origin: h.p,
-        dir: dir
-    })
+    Ray::new(
+        h.p,
+        dir,
+        r.depth,
+    )
 }
