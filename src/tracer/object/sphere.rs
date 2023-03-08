@@ -18,6 +18,49 @@ impl Sphere {
             material: mat,
         })
     }
+
+    /* sample random ray in cone from h.p towards self */
+    /* other objects might want random from sphere instead.. */
+    pub fn sample_shadow(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+        let x = h.p;
+        /* uvw-basis orthonormal basis,
+         * where w is the direction from x to origin of this sphere.
+         * w not normalized. */
+        let w = self.origin - x;
+        let v = w.cross(h.norm).normalize();
+        let u = w.cross(v).normalize();
+
+        let sin_theta_max2 = self.radius * self.radius / w.length_squared();
+        let cos_theta_max = (1.0 - sin_theta_max2).sqrt();
+
+        /* sample random point in unit disk. transform sampled
+         *  point to the uvw-basis and add w.
+         * (scaled by the cosine of the maximum cone angle).
+         *
+         * starting from x, we get the direction towards
+         * a random point on the hemisphere of this sphere
+         * that is visible from x.
+         * could do better and sample from the area of the hemisphere. */
+        let dir = DMat3::from_cols(u, v, w.normalize())
+            * rand_disk.extend(0.0)
+            + w * cos_theta_max;
+
+        Ray::new(
+            x,
+            dir,
+            0,
+        )
+
+        /*
+        let sin_theta_max_sq = self.radius * self.radius / w.length_squared();
+        let cos_theta_max = (1.0 - sin_theta_max_sq).sqrt();
+
+        let r1 = rand_utils::rand_f64();
+        let cos_theta = (1.0 - r1) + r1*cos_theta_max;
+        let sin_theta = (1.0 - cos_theta).sqrt();
+        let phi = rand_utils::rand_angle();
+        */
+    }
 }
 
 impl Object for Sphere {

@@ -5,6 +5,7 @@ const MAX_DEPTH: usize = 10;
 
 pub struct Ray {
     pub origin: DVec3,
+    /* NORMALIZED ?? */
     pub dir: DVec3,
     pub depth: usize,
 }

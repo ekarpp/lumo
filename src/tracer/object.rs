@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3};
+use crate::{DVec3, DMat3, DVec2};
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;

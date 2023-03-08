@@ -20,7 +20,7 @@ pub struct Scene {
 
 const LIGHT_R: f64 = 0.1;
 /* refactor ALL parameters in crate to one single place */
-const SHADOW_RAYS: usize = 5;
+pub const SHADOW_RAYS: usize = 50;
 
 impl Scene {
     pub fn new(l: DVec3, amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
@@ -50,21 +50,11 @@ impl Scene {
             })
     }
 
-    pub fn to_light(&self, p: DVec3) -> DVec3 {
-        self.light.origin - p + LIGHT_R * rand_utils::rand_unit_sphere()
-    }
-
-    pub fn ratio_in_light(&self, p: DVec3) -> Option<f64> {
-        let num_ok = (0..SHADOW_RAYS).map(|_| Ray::new(p, self.to_light(p), 0))
-            .filter(|r: &Ray| self.hit_light(r))
-            /* probably better ways */
-            .fold(0, |acc, _| acc + 1);
-
-        if num_ok == 0 {
-            None
-        } else {
-            Some(num_ok as f64 / SHADOW_RAYS as f64)
-        }
+    pub fn rays_to_light(&self, h: &Hit) -> Vec<Ray> {
+        (0..SHADOW_RAYS).map(|_| {
+            /* we want to do better than uniformly at random from disk */
+            self.light.sample_shadow(h, rand_utils::rand_unit_disk())
+        }).filter(|r: &Ray| self.hit_light(r)).collect()
     }
 
     pub fn hit_light(&self, r: &Ray) -> bool {
@@ -83,6 +73,7 @@ impl Scene {
 
     pub fn default() -> Self {
         let l = DVec3::new(-0.3, 0.2, -0.1);
+
         Self::new(
             l,
             DVec3::splat(0.15),
