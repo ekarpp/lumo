@@ -1,7 +1,6 @@
 use crate::DVec3;
 use crate::perlin::Perlin;
-
-const CHECKER_SCALE: f64 = 13.0;
+use crate::consts::CHECKER_SCALE;
 
 pub enum Texture {
     Solid(DVec3),
@@ -29,7 +28,7 @@ impl Texture {
     }
 
     fn checkers_phase(&self, p: DVec3) -> f64 {
-        let t = CHECKER_SCALE*p;
-        (t.x).sin() * (t.y).sin() * (t.z).sin()
+        let ps = CHECKER_SCALE*p;
+        (ps.x).sin() * (ps.y).sin() * (ps.z).sin()
     }
 }

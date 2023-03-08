@@ -17,12 +17,8 @@ pub enum Material {
 impl Material {
 
     pub fn color(&self, h: &Hit, s: &Scene, r: &Ray) -> DVec3 {
-        /* see phong_illum for meaning */
-        let q = 5.0;
-        let sc = DVec3::splat(0.15);
-
         match self {
-            Self::Phong(t) => illumination::phong_illum(t, h, sc, q, s),
+            Self::Phong(t) => illumination::phong_illum(t, h, s),
             Self::Light(t) => t.color_at(h.p),
             Self::Mirror => illumination::reflect_ray(h, r).color(s),
             Self::Glass => illumination::refract_ray(h, r).color(s),

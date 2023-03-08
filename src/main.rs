@@ -4,11 +4,10 @@ use crate::tracer::camera::Camera;
 
 mod image;
 mod tracer;
+mod consts;
 mod perlin;
 mod renderer;
 mod rand_utils;
-
-const EPSILON: f64 = 0.001;
 
 const WIDTH: usize = 3840;
 const HEIGHT: usize = 2160;

@@ -1,13 +1,13 @@
 use crate::{DVec3, DMat3};
-use crate::perlin::Perlin;
 use crate::rand_utils;
-
-use crate::tracer::object::{Object, Plane, Rectangle, Cuboid};
-use crate::tracer::object::sphere::Sphere;
+use crate::perlin::Perlin;
+use crate::consts::SHADOW_RAYS;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::material::Material;
 use crate::tracer::texture::Texture;
+use crate::tracer::material::Material;
+use crate::tracer::object::sphere::Sphere;
+use crate::tracer::object::{Object, Plane, Rectangle, Cuboid};
 
 #[cfg(test)]
 mod scene_tests;
@@ -18,9 +18,8 @@ pub struct Scene {
     objects: Vec<Box<dyn Object>>,
 }
 
+/* temporary constant */
 const LIGHT_R: f64 = 0.1;
-/* refactor ALL parameters in crate to one single place */
-pub const SHADOW_RAYS: usize = 50;
 
 impl Scene {
     pub fn new(l: DVec3, amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {

@@ -48,7 +48,7 @@ impl Object for Triangle {
 
         let det_a = mat_a.determinant();
 
-        if det_a.abs() < crate::EPSILON {
+        if det_a.abs() < EPSILON {
             return None;
         }
 
@@ -77,7 +77,7 @@ impl Object for Triangle {
             vec_b,
         ).determinant() / det_a;
 
-        if t < crate::EPSILON {
+        if t < EPSILON {
             None
         } else {
             Hit::new(
