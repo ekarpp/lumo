@@ -41,6 +41,10 @@ struct TracerCli {
     /// height of the rendered image (defaults to 2160)
     #[argh(option, short='h')]
     height: Option<usize>,
+
+    /// render box scene?
+    #[argh(switch, short='b')]
+    boxx: bool,
 }
 
 impl TracerCli {
@@ -85,7 +89,11 @@ fn main() {
         None => (),
     };
 
-    let scene = Scene::default();
+    let scene = if cli_args.boxx {
+        Scene::box_scene()
+    } else {
+        Scene::default()
+    };
     let cam = Camera::new(
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
