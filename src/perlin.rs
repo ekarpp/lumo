@@ -1,14 +1,8 @@
 use crate::{DVec3, UVec3};
 use crate::rand_utils;
+use crate::consts::{PERLIN_POINTS, PERLIN_AMP, PERLIN_FREQ};
+use crate::consts::{PERLIN_OCTAVES, PERLIN_SCALE, PERLIN_GAIN};
 use itertools::Itertools;
-
-const POINTS: usize = 256;
-
-const SCALE: f64 = 4.0;
-const FREQ: f64 = 60.0;
-const AMP: f64 = 20.0;
-const OCTAVES: usize = 6;
-const GAIN: f64 = 0.5;
 
 struct PermutationXyz {
     x: Vec<usize>,
@@ -26,30 +20,31 @@ impl Perlin {
     pub fn new(c: DVec3) -> Self {
         Self {
             color: c,
-            rng_dvec3: rand_utils::rand_vec_dvec3(POINTS),
+            rng_dvec3: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
             perm: PermutationXyz {
-                x: rand_utils::perm_n(POINTS),
-                y: rand_utils::perm_n(POINTS),
-                z: rand_utils::perm_n(POINTS),
+                x: rand_utils::perm_n(PERLIN_POINTS),
+                y: rand_utils::perm_n(PERLIN_POINTS),
+                z: rand_utils::perm_n(PERLIN_POINTS),
             },
         }
     }
 
     pub fn color_at(&self, p: DVec3) -> DVec3 {
-        self.color
-            * self._scale_turb(p.x,self.turbulence(0.0, SCALE*p.abs(), 0))
-
+        self.color * self._scale_turb(
+            p.x,
+            self.turbulence(0.0, PERLIN_SCALE*p.abs(), 0)
+        )
     }
 
     fn _scale_turb(&self, px: f64, t: f64) -> f64 {
-        1.0 - (0.5 + 0.5*(FREQ * px + AMP * t).sin()).powf(6.0)
+        1.0 - (0.5 + 0.5*(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powf(6.0)
     }
 
     fn turbulence(&self, acc: f64, p: DVec3, depth: usize) -> f64 {
-        if depth >= OCTAVES {
+        if depth >= PERLIN_OCTAVES {
             return acc;
         }
-        let w = GAIN.powf(depth as f64);
+        let w = PERLIN_GAIN.powf(depth as f64);
 
         self.turbulence(acc + w*self.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
@@ -73,9 +68,9 @@ impl Perlin {
     }
 
     fn _hash(&self, x: usize, y: usize, z: usize) -> usize {
-        self.perm.x[x % POINTS]
-            ^ self.perm.y[y % POINTS]
-            ^ self.perm.z[z % POINTS]
+        self.perm.x[x % PERLIN_POINTS]
+            ^ self.perm.y[y % PERLIN_POINTS]
+            ^ self.perm.z[z % PERLIN_POINTS]
     }
 
     fn _hermite_cubic(&self, x: DVec3) -> DVec3 {

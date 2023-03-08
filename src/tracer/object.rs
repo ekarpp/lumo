@@ -1,4 +1,5 @@
 use crate::{DVec3, DMat3, DVec2};
+use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
@@ -188,7 +189,7 @@ impl Object for Plane {
         }
 
         let t = -(self.d + self.norm.dot(r.origin)) / self.norm.dot(r.dir);
-        if t < crate::EPSILON {
+        if t < EPSILON {
             None
         } else {
             Hit::new(

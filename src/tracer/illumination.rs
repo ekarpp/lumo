@@ -1,30 +1,24 @@
 use crate::DVec3;
+use crate::consts::{SHADOW_RAYS, LOBE_Q, SPECULAR_COEFF, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::scene::{SHADOW_RAYS, Scene};
+use crate::tracer::scene::Scene;
 use crate::tracer::texture::Texture;
 
 /**
  * spec_coeff: color of specular lobe
  * q: specular reflection exponent, smaller = more profound lobe
  */
-pub fn phong_illum(
-    texture: &Texture,
-    h: &Hit,
-    spec_coeff: DVec3,
-    q: f64,
-    scene: &Scene
-) -> DVec3 {
+pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
     let color = texture.color_at(h.p);
 
     color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
-        _diffuse_specular(color, h, r.dir, spec_coeff, q)
+        _diffuse_specular(color, h, r.dir)
     }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
     /* not desirable to use shadow_rays here */
 }
 
-fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3, spec_coeff: DVec3, q: f64)
-                     -> DVec3 {
+fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {
     /* unit length vector to light from hit point */
     let lu = l.normalize();
 
@@ -39,7 +33,7 @@ fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3, spec_coeff: DVec3, q: f64)
     let halfway = (l - h.p).normalize();
 
     /* specular term */
-    (h.norm.dot(halfway).max(0.0).powf(q) * spec_coeff
+    (h.norm.dot(halfway).max(0.0).powf(LOBE_Q) * SPECULAR_COEFF
        /* diffuse term */
      + h.norm.dot(lu).max(0.0) * color)
         /* scale by squared distance to light */
@@ -55,7 +49,6 @@ pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
 }
 
 pub fn refract_ray(h: &Hit, r: &Ray) -> Ray {
-    const ETA: f64 = 1.5;
     let eta_ratio = if h.object.inside(r) { ETA } else { 1.0 / ETA };
 
     /* Snell-Descartes law */

@@ -50,22 +50,12 @@ impl Sphere {
             dir,
             0,
         )
-
-        /*
-        let sin_theta_max_sq = self.radius * self.radius / w.length_squared();
-        let cos_theta_max = (1.0 - sin_theta_max_sq).sqrt();
-
-        let r1 = rand_utils::rand_f64();
-        let cos_theta = (1.0 - r1) + r1*cos_theta_max;
-        let sin_theta = (1.0 - cos_theta).sqrt();
-        let phi = rand_utils::rand_angle();
-        */
     }
 }
 
 impl Object for Sphere {
     fn inside(&self, r: &Ray) -> bool {
-        self.origin.distance_squared(r.origin + crate::EPSILON*r.dir)
+        self.origin.distance_squared(r.origin + EPSILON*r.dir)
             < self.radius*self.radius
     }
 
@@ -89,9 +79,9 @@ impl Object for Sphere {
         }
         let disc_root = disc.sqrt();
         let mut t = (-half_b - disc_root) / a;
-        if t < crate::EPSILON {
+        if t < EPSILON {
             t = (-half_b + disc_root) / a;
-            if t < crate::EPSILON {
+            if t < EPSILON {
                 return None;
             }
         }
