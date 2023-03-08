@@ -43,7 +43,8 @@ pub fn phong_illum(
          */
 
         /* halfway vector between camera and light. (Blinn-Phong model) */
-        let halfway = (lu - h.p.normalize()) / (lu - h.p.normalize()).length();
+	/* h.p points in "wrong direction". do these need normalization? */
+        let halfway = (l - h.p).normalize();
         shaded += h.norm.dot(halfway).max(0.0).powf(q) * spec_coeff;
 
         /* scale diffuse and specular by squared distance to light */
