@@ -2,7 +2,7 @@ use crate::{DVec3, DMat3, DAffine3};
 use std::f64::consts::PI;
 use crate::rand_utils;
 use crate::perlin::Perlin;
-use crate::consts::SHADOW_RAYS;
+use crate::consts::{SHADOW_RAYS, EPSILON};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
@@ -15,7 +15,8 @@ mod scene_tests;
 
 pub struct Scene {
     pub ambient: DVec3,
-    light: Sphere,
+    /* vec of indices to objects that are lights */
+    lights: Vec<usize>,
     objects: Vec<Box<dyn Object>>,
 }
 
@@ -23,16 +24,15 @@ pub struct Scene {
 const LIGHT_R: f64 = 0.1;
 
 impl Scene {
-    pub fn new(l: DVec3, amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
+        let lights = (0..objs.len()).map(|i: usize| match objs[i].material() {
+            Material::Light(_) => i,
+            _ => objs.len(),
+        }).filter(|i: &usize| *i != objs.len()).collect();
+
         Self {
             ambient: amb,
-            light: *Sphere::new(
-                l,
-                LIGHT_R,
-                /* Material::Light has no implementation.
-                 * shading does not call material, yet */
-                Material::Light(Texture::Solid(DVec3::ONE)),
-            ),
+            lights: lights,
             objects: objs,
         }
     }
@@ -54,19 +54,25 @@ impl Scene {
     }
 
     pub fn rays_to_light(&self, h: &Hit) -> Vec<Ray> {
-        (0..SHADOW_RAYS).map(|_| {
-            /* we want to do better than uniformly at random from disk */
-            self.light.sample_shadow_ray(h, rand_utils::rand_unit_disk())
-        }).filter(|r: &Ray| self.hit_light(r)).collect()
+        self.lights.iter().flat_map(|light_idx: &usize| {
+            (0..SHADOW_RAYS).map(|_| {
+                /* we want to do better than uniformly at random from disk */
+                self.objects[*light_idx]
+                    .sample_shadow_ray(h, rand_utils::rand_unit_disk())
+            }).filter(|r: &Ray| self.hit_light(r, &*self.objects[*light_idx]))
+                .collect::<Vec<Ray>>()
+        }).collect()
     }
 
-    pub fn hit_light(&self, r: &Ray) -> bool {
+    pub fn hit_light(&self, r: &Ray, l: &dyn Object) -> bool {
+        let l_distance_sq =
+            (l.hit(r).map_or(DVec3::ZERO, |h| h.p) - r.origin).length_squared();
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
             obj.hit(r).filter(|hit| {
                 !hit.object.is_translucent()
                 /* check if object is behind light */
                     && (hit.p - r.origin).length_squared() <
-                    (self.light.origin - r.origin).length_squared()
+                    l_distance_sq
             }).is_none()
         };
 
@@ -75,13 +81,19 @@ impl Scene {
     }
 
     pub fn box_scene() -> Self {
-        let l = DVec3::new(0.0, 1.0, -1.0);
         /* y ground */
         let yg = -0.8;
         Self::new(
-            l,
             DVec3::splat(0.1),
             vec![
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-0.1, -(yg + EPSILON), yg - 0.1),
+                        DVec3::new(-0.1, -(yg + EPSILON), yg - 0.3),
+                        DVec3::new(0.1, -(yg + EPSILON), yg - 0.3),
+                    ),
+                    Material::Light(Texture::Solid(DVec3::ONE))
+                ),
                 /* floor */
                 Rectangle::new(
                     DMat3::from_cols(
@@ -158,12 +170,14 @@ impl Scene {
     }
 
         pub fn default() -> Self {
-            let l = DVec3::new(-0.3, 0.2, -0.1);
-
             Self::new(
-                l,
                 DVec3::splat(0.15),
                 vec![
+                    Sphere::new(
+                        DVec3::new(-0.3, 0.2, -0.1),
+                        LIGHT_R,
+                        Material::Light(Texture::Solid(DVec3::ONE)),
+                    ),
                     // floor
                     Plane::new(
                         DVec3::new(0.0, -0.5, 0.0),
