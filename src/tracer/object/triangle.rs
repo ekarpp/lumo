@@ -35,6 +35,10 @@ impl Object for Triangle {
         _orient_normal(self.norm, r)
     }
 
+    fn area(&self) -> f64 {
+        (self.b - self.a).cross(self.c - self.a).length() / 2.0
+    }
+
     /* barycentric triangle intersection with Cramer's rule */
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* can store a-c, a-b, and a instead. saves some computation.

@@ -34,6 +34,11 @@ pub trait Object: Sync {
     fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray;
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
+    fn area(&self) -> f64;
+    fn pdf(&self, r: &Ray, p: DVec3) -> f64 {
+        r.origin.distance_squared(p) /
+            (self.normal_for_at(r, p).dot(-r.dir) * self.area())
+    }
 }
 
 pub struct Cuboid {
@@ -121,6 +126,10 @@ impl Object for Cuboid {
     fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
     fn size(&self) -> usize { 12 }
 
+    fn area(&self) -> f64 {
+        self.rectangles.iter().map(|r| r.area()).sum()
+    }
+
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -169,6 +178,8 @@ impl Rectangle {
 impl Object for Rectangle {
     fn size(&self) -> usize { 2 }
 
+    fn area(&self) -> f64 { 2.0*self.triangles.0.area() }
+
     fn material(&self) -> &Material { &self.material }
 
     fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
@@ -209,6 +220,8 @@ impl Plane {
 
 impl Object for Plane {
     fn material(&self) -> &Material { &self.material }
+
+    fn area(&self) -> f64 { f64::INFINITY }
 
     // check that point is on plane?? or assume we are smart
     fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
