@@ -4,7 +4,7 @@ use crate::DVec3;
 pub const EPSILON: f64 = 0.001;
 
 /* number of shadow rays per intersection point */
-pub const SHADOW_RAYS: usize = 4*4;
+pub const SHADOW_RAYS: usize = 8*8;//4*4;
 
 /* refraction pub constant of glass */
 pub const ETA: f64 = 1.5;
@@ -17,7 +17,7 @@ pub const RAY_MAX_DEPTH: usize = 10;
 pub const LOBE_Q: f64 = 5.0;
 
 /* intensity of the specular lobe */
-pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.0);
+pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.2);
 
 /**
  * TEXTURES

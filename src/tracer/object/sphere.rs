@@ -60,35 +60,51 @@ impl Object for Sphere {
     }
 
     /* sample random ray in cone from h.p towards self */
-    /* other objects might want random from sphere instead.. */
     fn sample_shadow_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
-        let x = h.p;
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere.
          * w not normalized. */
-        let w = self.origin - x;
+        let w = (self.origin - h.p).normalize();
         let v = w.cross(h.norm).normalize();
-        let u = w.cross(v).normalize();
+        let u = w.cross(v);
 
-        let sin_theta_max2 = self.radius * self.radius / w.length_squared();
+        let dist_light = h.p.distance(self.origin);
+
+        /* theta_max = solid angle */
+        let sin_theta_max2 = self.radius * self.radius
+            / (dist_light * dist_light);
         let cos_theta_max = (1.0 - sin_theta_max2).sqrt();
 
-        /* sample random point in unit disk. transform sampled
-         *  point to the uvw-basis and add w.
-         * (scaled by the cosine of the maximum cone angle). */
-        let r = rand_sq.x.sqrt();
-        let theta = 2.0 * PI * rand_sq.y;
+        let cos_theta = (1.0 - rand_sq.x) + rand_sq.x * cos_theta_max;
+        let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+
+        /* distance from hit point to sampled point on sphere */
+        let dist_sp = dist_light * cos_theta
+            - (self.radius*self.radius
+               - dist_light*dist_light*sin_theta*sin_theta).max(0.0).sqrt();
+
+        /* (alpha, phi) spherical coordinates of point in -uvw basis */
+        let cos_alpha = (dist_light*dist_light + self.radius*self.radius
+                         - dist_sp*dist_sp) / (2.0*dist_light*self.radius);
+        let sin_alpha = (1.0 - cos_alpha*cos_alpha).max(0.0).sqrt();
+        let phi = 2.0 * PI * rand_sq.y;
+
+        let pt_sphere = DVec3::new(
+            self.radius * cos_alpha * phi.sin(),
+            self.radius * sin_alpha * phi.sin(),
+            self.radius * phi.cos(),
+        );
+
         /* starting from x, we get the direction towards
          * a random point on the hemisphere of this sphere
          * that is visible from x.
          * could do better and sample from the area of the hemisphere. */
-        let dir = DMat3::from_cols(u, v, w.normalize())
-            * DVec3::new(r * theta.cos(), r * theta.sin(), 0.0)
-            + w * cos_theta_max;
+        let dir = -DMat3::from_cols(u, v, w)
+            * pt_sphere;
 
         Ray::new(
-            x,
-            dir,
+            h.p,
+            dir.normalize() * dist_light,
             0,
         )
     }
