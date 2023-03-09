@@ -17,7 +17,7 @@ pub const RAY_MAX_DEPTH: usize = 10;
 pub const LOBE_Q: f64 = 5.0;
 
 /* intensity of the specular lobe */
-pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.2);
+pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.0);
 
 /**
  * TEXTURES
