@@ -157,7 +157,7 @@ impl Scene {
 
         pub fn default() -> Self {
             Self::new(
-                DVec3::splat(0.15),
+                DVec3::splat(0.0),
                 vec![
                     Sphere::new(
                         DVec3::new(-0.3, 0.2, -0.1),
