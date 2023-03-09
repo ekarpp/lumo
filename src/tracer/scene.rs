@@ -86,7 +86,7 @@ impl Scene {
             let yg = -0.8;
             let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
             Self::new(
-                DVec3::splat(0.1),
+                DVec3::splat(0.0),
                 vec![
                     Sphere::new(
                         DVec3::new(-0.4, -0.6, -1.2),
