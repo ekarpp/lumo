@@ -16,7 +16,6 @@ pub enum Material {
 }
 
 impl Material {
-
     pub fn color(&self, h: &Hit, s: &Scene, r: &Ray) -> DVec3 {
         match self {
             Self::Phong(t) => illumination::phong_illum(t, h, s),

@@ -18,39 +18,6 @@ impl Sphere {
             material: mat,
         })
     }
-
-    /* sample random ray in cone from h.p towards self */
-    /* other objects might want random from sphere instead.. */
-    pub fn sample_shadow(&self, h: &Hit, rand_disk: DVec2) -> Ray {
-        let x = h.p;
-        /* uvw-basis orthonormal basis,
-         * where w is the direction from x to origin of this sphere.
-         * w not normalized. */
-        let w = self.origin - x;
-        let v = w.cross(h.norm).normalize();
-        let u = w.cross(v).normalize();
-
-        let sin_theta_max2 = self.radius * self.radius / w.length_squared();
-        let cos_theta_max = (1.0 - sin_theta_max2).sqrt();
-
-        /* sample random point in unit disk. transform sampled
-         *  point to the uvw-basis and add w.
-         * (scaled by the cosine of the maximum cone angle).
-         *
-         * starting from x, we get the direction towards
-         * a random point on the hemisphere of this sphere
-         * that is visible from x.
-         * could do better and sample from the area of the hemisphere. */
-        let dir = DMat3::from_cols(u, v, w.normalize())
-            * rand_disk.extend(0.0)
-            + w * cos_theta_max;
-
-        Ray::new(
-            x,
-            dir,
-            0,
-        )
-    }
 }
 
 impl Object for Sphere {
@@ -90,5 +57,38 @@ impl Object for Sphere {
             self,
             r,
         )
-     }
+    }
+
+    /* sample random ray in cone from h.p towards self */
+    /* other objects might want random from sphere instead.. */
+    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+        let x = h.p;
+        /* uvw-basis orthonormal basis,
+         * where w is the direction from x to origin of this sphere.
+         * w not normalized. */
+        let w = self.origin - x;
+        let v = w.cross(h.norm).normalize();
+        let u = w.cross(v).normalize();
+
+        let sin_theta_max2 = self.radius * self.radius / w.length_squared();
+        let cos_theta_max = (1.0 - sin_theta_max2).sqrt();
+
+        /* sample random point in unit disk. transform sampled
+         *  point to the uvw-basis and add w.
+         * (scaled by the cosine of the maximum cone angle).
+         *
+         * starting from x, we get the direction towards
+         * a random point on the hemisphere of this sphere
+         * that is visible from x.
+         * could do better and sample from the area of the hemisphere. */
+        let dir = DMat3::from_cols(u, v, w.normalize())
+            * rand_disk.extend(0.0)
+            + w * cos_theta_max;
+
+        Ray::new(
+            x,
+            dir,
+            0,
+        )
+    }
 }
