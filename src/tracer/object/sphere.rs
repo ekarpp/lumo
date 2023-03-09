@@ -61,7 +61,7 @@ impl Object for Sphere {
 
     /* sample random ray in cone from h.p towards self */
     /* other objects might want random from sphere instead.. */
-    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+    fn sample_shadow_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
         let x = h.p;
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere.
@@ -75,14 +75,15 @@ impl Object for Sphere {
 
         /* sample random point in unit disk. transform sampled
          *  point to the uvw-basis and add w.
-         * (scaled by the cosine of the maximum cone angle).
-         *
-         * starting from x, we get the direction towards
+         * (scaled by the cosine of the maximum cone angle). */
+        let r = rand_sq.x.sqrt();
+        let theta = 2.0 * PI * rand_sq.y;
+        /* starting from x, we get the direction towards
          * a random point on the hemisphere of this sphere
          * that is visible from x.
          * could do better and sample from the area of the hemisphere. */
         let dir = DMat3::from_cols(u, v, w.normalize())
-            * rand_disk.extend(0.0)
+            * DVec3::new(r * theta.cos(), r * theta.sin(), 0.0)
             + w * cos_theta_max;
 
         Ray::new(

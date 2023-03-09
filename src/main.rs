@@ -6,6 +6,7 @@ mod image;
 mod tracer;
 mod consts;
 mod perlin;
+mod samplers;
 mod renderer;
 mod rand_utils;
 
