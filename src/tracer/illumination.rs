@@ -7,7 +7,7 @@ use crate::tracer::scene::Scene;
 use crate::tracer::texture::Texture;
 
 pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
-    let color = texture.color_at(h.p);
+    let color = texture.albedo_at(h.p);
 
     color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
         _diffuse_specular(color, h, r.dir)

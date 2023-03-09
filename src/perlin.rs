@@ -11,7 +11,7 @@ struct PermutationXyz {
 }
 
 pub struct Perlin {
-    color: DVec3,
+    albedo: DVec3,
     rng_dvec3: Vec<DVec3>,
     perm: PermutationXyz,
 }
@@ -19,7 +19,7 @@ pub struct Perlin {
 impl Perlin {
     pub fn new(c: DVec3) -> Self {
         Self {
-            color: c,
+            albedo: c,
             rng_dvec3: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
             perm: PermutationXyz {
                 x: rand_utils::perm_n(PERLIN_POINTS),
@@ -29,8 +29,8 @@ impl Perlin {
         }
     }
 
-    pub fn color_at(&self, p: DVec3) -> DVec3 {
-        self.color * self._scale_turb(
+    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
+        self.albedo * self._scale_turb(
             p.x,
             self.turbulence(0.0, PERLIN_SCALE*p.abs(), 0)
         )

@@ -12,16 +12,15 @@ pub enum Texture {
 }
 
 impl Texture {
-    /* should use texture coordinates instead of hit point here */
-    pub fn color_at(&self, p: DVec3) -> DVec3 {
+    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
         match self {
             Texture::Solid(c) => c.clone(),
-            Texture::Marble(pn) => pn.color_at(p),
+            Texture::Marble(pn) => pn.albedo_at(p),
             Texture::Checkerboard(t1, t2, s) => {
                 if self.checkers_phase(p * (*s)) > 0.0 {
-                    t1.color_at(p)
+                    t1.albedo_at(p)
                 } else {
-                    t2.color_at(p)
+                    t2.albedo_at(p)
                 }
             }
         }
