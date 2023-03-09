@@ -28,7 +28,7 @@ fn light_pass_glass() {
         DVec3::new(0.0, 1.0, 0.0),
         0,
     );
-    assert!(s.hit_light(&r, &*s.objects[0]));
+    assert!(s.hit_light(&r));
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn light_no_pass() {
         DVec3::new(0.0, 1.0, 0.0),
         0,
     );
-    assert!(!s.hit_light(&r, &*s.objects[0]));
+    assert!(!s.hit_light(&r));
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn object_behind_light() {
         DVec3::new(0.0, -1.0, 0.0),
         0,
     );
-    assert!(s.hit_light(&r, &*s.objects[0]));
+    assert!(s.hit_light(&r));
 }
 
 #[test]
