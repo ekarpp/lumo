@@ -1,4 +1,5 @@
 use crate::DVec3;
+use std::f64::consts::PI;
 use crate::consts::{SHADOW_RAYS, LOBE_Q, SPECULAR_COEFF, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -10,7 +11,7 @@ pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
 
     color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
         _diffuse_specular(color, h, r.dir)
-    }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
+    }).fold(DVec3::ZERO, |acc, c| acc + c) / (PI * SHADOW_RAYS as f64)
 }
 
 fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {
