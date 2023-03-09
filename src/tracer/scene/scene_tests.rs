@@ -1,4 +1,5 @@
 use super::*;
+use crate::consts::EPSILON;
 
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {

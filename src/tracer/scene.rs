@@ -2,7 +2,7 @@ use crate::{DVec3, DMat3, DAffine3};
 use std::f64::consts::PI;
 use crate::rand_utils;
 use crate::perlin::Perlin;
-use crate::consts::{SHADOW_RAYS, EPSILON};
+use crate::consts::SHADOW_RAYS;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
@@ -58,6 +58,8 @@ impl Scene {
             (0..SHADOW_RAYS).map(|_| {
                 /* we want to do better than uniformly at random from disk */
                 self.objects[*light_idx]
+                /* need to use jitter ~ [0,1] here. sphere can then
+                 * map to disk in their function */
                     .sample_shadow_ray(h, rand_utils::rand_unit_disk())
             }).filter(|r: &Ray| self.hit_light(r, &*self.objects[*light_idx]))
                 .collect::<Vec<Ray>>()
@@ -88,9 +90,9 @@ impl Scene {
             vec![
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-0.1, -(yg + EPSILON), yg - 0.1),
-                        DVec3::new(-0.1, -(yg + EPSILON), yg - 0.3),
-                        DVec3::new(0.1, -(yg + EPSILON), yg - 0.3),
+                        DVec3::new(-0.05, -yg, yg - 0.1),
+                        DVec3::new(-0.05, -yg, yg - 0.2),
+                        DVec3::new(0.05, -yg, yg - 0.2),
                     ),
                     Material::Light(Texture::Solid(DVec3::ONE))
                 ),
