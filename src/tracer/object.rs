@@ -115,7 +115,7 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
-    fn size(&self) -> usize { 6 }
+    fn size(&self) -> usize { 12 }
 
     fn material(&self) -> &Material { &self.material }
 
