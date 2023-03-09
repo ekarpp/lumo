@@ -26,6 +26,8 @@ impl Object for Sphere {
             < self.radius*self.radius
     }
 
+    fn area(&self) -> f64 { 4.0 * PI * self.radius * self.radius }
+
     fn material(&self) -> &Material { &self.material }
 
     fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
