@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3, DVec2};
+use crate::{DVec3, DMat3, DVec2, DAffine3};
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
@@ -39,10 +39,31 @@ pub struct Cuboid {
 }
 
 impl Cuboid {
-    /* be lazy and construct from two rectangles */
+
+    /* applies the aff to the unit cube. some affines might break this */
+    pub fn new(aff: DAffine3, m: Material) -> Box<Self> {
+        /* triangles are parallel to xz-plane, like our camera */
+        Self::from_triangles(
+            DMat3::from_cols(
+                aff.transform_point3(DVec3::new(1.0, 0.0, 0.0)),
+                aff.transform_point3(DVec3::new(0.0, 0.0, 0.0)),
+                aff.transform_point3(DVec3::new(0.0, 0.0, 1.0)),
+            ),
+            DMat3::from_cols(
+                aff.transform_point3(DVec3::new(1.0, 1.0, 0.0)),
+                aff.transform_point3(DVec3::new(0.0, 1.0, 0.0)),
+                aff.transform_point3(DVec3::new(0.0, 1.0, 1.0)),
+            ),
+            m,
+        )
+    }
+
+    /* be lazy and construct from two triangles */
     /* this is overall really hacky. might just want to create one for
      * unit cube and apply affines to it. */
-    pub fn new(r1: DMat3, r2: DMat3, m: Material) -> Box<Self> {
+    /* columns of r1 and r2 define the triangles. the order of columns
+     * matters.*/
+    fn from_triangles(r1: DMat3, r2: DMat3, m: Material) -> Box<Self> {
         let d1 = _triangle_to_rect(r1);
         Box::new(Self {
             material: m,

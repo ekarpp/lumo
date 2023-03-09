@@ -1,4 +1,5 @@
-use crate::{DVec3, DMat3};
+use crate::{DVec3, DMat3, DAffine3};
+use std::f64::consts::PI;
 use crate::rand_utils;
 use crate::perlin::Perlin;
 use crate::consts::SHADOW_RAYS;
@@ -183,16 +184,10 @@ impl Scene {
                         Material::Mirror,
                     ),
                     Cuboid::new(
-                        DMat3::from_cols(
-                            DVec3::new(-0.6, -0.5, -0.7),
-                            DVec3::new(-0.5, -0.5, -0.7),
-                            DVec3::new(-0.5, -0.5, -0.8),
-                        ),
-                        DMat3::from_cols(
-                            DVec3::new(-0.6, -0.4, -0.7),
-                            DVec3::new(-0.5, -0.4, -0.7),
-                            DVec3::new(-0.5, -0.4, -0.8),
-                        ),
+                        DAffine3::from_translation(
+                            DVec3::new(-0.4, -0.5, -0.6))
+                            * DAffine3::from_scale(DVec3::splat(0.15))
+                            * DAffine3::from_rotation_y(PI / 4.0),
                         Material::Phong(Texture::Checkerboard(
                             Box::new(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                             Box::new(Texture::Solid(
