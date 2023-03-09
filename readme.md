@@ -5,11 +5,7 @@ Ray tracer written in rust
 Things that could be done:
 - (random scene generator)
 - acceleration structures
-- rectangles and boxes
-- multiple lights
-  - different kinds of light
-    - surface
-    - cone
+- cone light
 - custom camera lens
 - DoF
 - path tracing
