@@ -5,17 +5,12 @@ use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 use crate::tracer::texture::Texture;
 
-/**
- * spec_coeff: color of specular lobe
- * q: specular reflection exponent, smaller = more profound lobe
- */
 pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
     let color = texture.color_at(h.p);
 
     color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
         _diffuse_specular(color, h, r.dir)
     }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
-    /* not desirable to use shadow_rays here */
 }
 
 fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {

@@ -208,11 +208,14 @@ impl Plane {
 
 impl Object for Plane {
     fn material(&self) -> &Material { &self.material }
+
     // check that point is on plane?? or assume we are smart
     fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
         _orient_normal(self.norm, r)
     }
+
     fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
