@@ -61,105 +61,102 @@ impl Scene {
                 /* need to use jitter ~ [0,1] here. sphere can then
                  * map to disk in their function */
                     .sample_shadow_ray(h, rand_utils::rand_unit_disk())
-            }).filter(|r: &Ray| self.hit_light(r, &*self.objects[*light_idx]))
+            }).filter(|r: &Ray| self.hit_light(r))
                 .collect::<Vec<Ray>>()
         }).collect()
     }
 
-    fn hit_light(&self, r: &Ray, l: &dyn Object) -> bool {
-        let l_distance_sq =
-            (l.hit(r).map_or(DVec3::ZERO, |h| h.p) - r.origin).length_squared();
+    /* r origin in point where we cast shadow ray and direction points
+     * to randomly sampled point on light, p, such that: r.o + r.dir = p */
+    fn hit_light(&self, r: &Ray) -> bool {
+        //println!("{}", r.origin + r.dir);
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
-            obj.hit(r).filter(|hit| {
-                !hit.object.is_translucent()
-                /* check if object is behind light */
-                    && (hit.p - r.origin).length_squared() <
-                    l_distance_sq
+            /* only keep hits that are closer than light and not translucent */
+            obj.hit(r).filter(|h: &Hit| {
+                h.t + EPSILON < 1.0 && !h.object.is_translucent()
+                /* to check if object is behind light the rays are same,
+                 * so we can just compare t's. for our light the t is
+                 * always 1.0 by design of r */
             }).is_none()
         };
 
-        self.objects.iter().take_while(no_block_light).count()
-            == self.objects.len()
-    }
+        self.objects.iter().take_while(no_block_light)
+            .count() == self.objects.len()
+        }
 
-    pub fn box_scene() -> Self {
-        /* y ground */
-        let yg = -0.8;
-        let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
-        Self::new(
-            DVec3::splat(0.1),
-            vec![
-                Sphere::new(
-                    DVec3::new(-0.4, -0.6, -1.2),
-                    0.2,
-                    Material::Mirror,
-                ),
-                /*
-                Sphere::new(
-                    DVec3::new(-0.05, yg + 0.1, yg - 0.2),
-                    0.1,
-                    Material::Glass,
-                ),
-                 */
-                Cuboid::new(
-                    DAffine3::from_translation(
-                        DVec3::new(0.2, yg, 1.7*yg))
-                        * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
-                        * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::Phong(Texture::Marble(
-                        Perlin::new(DVec3::new(240.0, 235.0, 215.0) / 255.9)
-                    ))
-                ),
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(-0.1, -(yg + 100.0*EPSILON), yg - 0.0),
-                        DVec3::new(-0.1, -(yg + 100.0*EPSILON), yg - 0.2),
-                        DVec3::new(0.1, -(yg + 100.0*EPSILON), yg - 0.2),
+        pub fn box_scene() -> Self {
+            /* y ground */
+            let yg = -0.8;
+            let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
+            Self::new(
+                DVec3::splat(0.1),
+                vec![
+                    Sphere::new(
+                        DVec3::new(-0.4, -0.6, -1.2),
+                        0.2,
+                        Material::Mirror,
                     ),
-                    Material::Light(Texture::Solid(DVec3::ONE))
-                ),
-                // roof
-                Plane::new(
-                    DVec3::new(0.0, -yg, 0.0),
-                    DVec3::new(0.0, -1.0, 0.0),
-                    Material::Phong(Texture::Solid(col)),
-                ),
-                /* floor */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(-yg, yg, 0.0),
-                        DVec3::new(yg, yg, 0.0),
-                        DVec3::new(yg, yg, 2.0*yg),
+                    Cuboid::new(
+                        DAffine3::from_translation(
+                            DVec3::new(0.2, yg, 1.7*yg))
+                            * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
+                            * DAffine3::from_rotation_y(PI / 10.0),
+                        Material::Phong(Texture::Marble(
+                            Perlin::new(DVec3::new(240.0, 235.0, 215.0) / 255.9)
+                        ))
                     ),
-                    Material::Phong(Texture::Solid(col)),
-                ),
-                // front wall
-                Plane::new(
-                    DVec3::new(0.0, 0.0, 2.0*yg),
-                    DVec3::new(0.0, 0.0, 1.0),
-                    Material::Phong(Texture::Solid(col)),
-                ),
-                // left wall
-                Plane::new(
-                    DVec3::new(yg, 0.0, 0.0),
-                    DVec3::new(1.0, 0.0, 0.0),
-                    Material::Phong(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
-                ),
-                // right wall
-                Plane::new(
-                    DVec3::new(-yg, 0.0, 0.0),
-                    DVec3::new(-1.0, 0.0, 0.0),
-                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
-                ),
-                // background
-                Plane::new(
-                    DVec3::new(0.0, 0.0, 0.1),
-                    DVec3::new(0.0, 0.0, -1.0),
-                    Material::Blank,
-                ),
-            ],
-        )
-    }
+                    /* if light and roof have same y, then light should come
+                     * before roof in this vector and everything should be ok */
+                    Rectangle::new(
+                        DMat3::from_cols(
+                            DVec3::new(-0.1, -yg, yg - 0.2),
+                            DVec3::new(-0.1, -yg, yg - 0.4),
+                            DVec3::new(0.1, -yg, yg - 0.4),
+                        ),
+                        Material::Light(Texture::Solid(DVec3::ONE)),
+                    ),
+                    // roof
+                    Plane::new(
+                        DVec3::new(0.0, -yg, 0.0),
+                        DVec3::new(0.0, -1.0, 0.0),
+                        Material::Phong(Texture::Solid(col)),
+                    ),
+                    /* floor */
+                    Rectangle::new(
+                        DMat3::from_cols(
+                            DVec3::new(-yg, yg, 0.0),
+                            DVec3::new(yg, yg, 0.0),
+                            DVec3::new(yg, yg, 2.0*yg),
+                        ),
+                        Material::Phong(Texture::Solid(col)),
+                    ),
+                    // front wall
+                    Plane::new(
+                        DVec3::new(0.0, 0.0, 2.0*yg),
+                        DVec3::new(0.0, 0.0, 1.0),
+                        Material::Phong(Texture::Solid(col)),
+                    ),
+                    // left wall
+                    Plane::new(
+                        DVec3::new(yg, 0.0, 0.0),
+                        DVec3::new(1.0, 0.0, 0.0),
+                        Material::Phong(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+                    ),
+                    // right wall
+                    Plane::new(
+                        DVec3::new(-yg, 0.0, 0.0),
+                        DVec3::new(-1.0, 0.0, 0.0),
+                        Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+                    ),
+                    // background
+                    Plane::new(
+                        DVec3::new(0.0, 0.0, 0.1),
+                        DVec3::new(0.0, 0.0, -1.0),
+                        Material::Blank,
+                    ),
+                ],
+            )
+        }
 
         pub fn default() -> Self {
             Self::new(

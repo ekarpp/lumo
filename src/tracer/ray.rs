@@ -4,7 +4,7 @@ use crate::tracer::scene::Scene;
 
 pub struct Ray {
     pub origin: DVec3,
-    /* NORMALIZED ?? */
+    /* should not be normalized. go through code to verify */
     pub dir: DVec3,
     pub depth: usize,
 }

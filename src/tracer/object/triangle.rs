@@ -90,15 +90,15 @@ impl Object for Triangle {
 
     /* bad distribution with disk... */
     fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
-        let x = 0.5*(1.0 + rand_disk.x);
-        let y = 0.5*(1.0 + rand_disk.y);
-        let alpha = 1.0 - x.sqrt();
-        let beta = y * x.sqrt();
-        let gamma = 1.0 - alpha - beta;
+        let r1 = 0.5*(1.0 + rand_disk.x);
+        let r2 = 0.5*(1.0 + rand_disk.y);
+
+        let gamma = 1.0 - (1.0 - r1).sqrt();
+        let beta = r2 * (1.0 - gamma);
 
         Ray::new(
             h.p,
-            alpha*self.a + beta*self.b + gamma*self.c - h.p,
+            self.a + beta * (self.b - self.a) + gamma * (self.c - self.a) - h.p,
             0,
         )
     }
