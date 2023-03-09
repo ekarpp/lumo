@@ -69,7 +69,6 @@ impl Scene {
     /* r origin in point where we cast shadow ray and direction points
      * to randomly sampled point on light, p, such that: r.o + r.dir = p */
     fn hit_light(&self, r: &Ray) -> bool {
-        //println!("{}", r.origin + r.dir);
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
             /* only keep hits that are closer than light and not translucent */
             obj.hit(r).filter(|h: &Hit| {
@@ -96,6 +95,13 @@ impl Scene {
                         0.2,
                         Material::Mirror,
                     ),
+                    /*
+                    Sphere::new(
+                        DVec3::new(-0.05, yg + 0.1, yg - 0.2),
+                        0.1,
+                        Material::Glass,
+                    ),
+                     */
                     Cuboid::new(
                         DAffine3::from_translation(
                             DVec3::new(0.2, yg, 1.7*yg))
