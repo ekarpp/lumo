@@ -3,9 +3,13 @@ use super::*;
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {
     Scene::new(
-        DVec3::new(0.0, 2.0, 0.0),
         DVec3::ZERO,
         vec![
+            Sphere::new(
+                DVec3::new(0.0, 2.0, 0.0),
+                EPSILON,
+                Material::Light(Texture::Solid(DVec3::ONE))
+            ),
             Plane::new(
                 DVec3::new(0.0, 1.0, 0.0),
                 DVec3::new(0.0, -1.0, 0.0),
@@ -23,7 +27,7 @@ fn light_pass_glass() {
         DVec3::new(0.0, 1.0, 0.0),
         0,
     );
-    assert!(s.hit_light(&r));
+    assert!(s.hit_light(&r, &*s.objects[0]));
 }
 
 #[test]
@@ -34,7 +38,7 @@ fn light_no_pass() {
         DVec3::new(0.0, 1.0, 0.0),
         0,
     );
-    assert!(!s.hit_light(&r));
+    assert!(!s.hit_light(&r, &*s.objects[0]));
 }
 
 #[test]
@@ -45,13 +49,12 @@ fn object_behind_light() {
         DVec3::new(0.0, -1.0, 0.0),
         0,
     );
-    assert!(s.hit_light(&r));
+    assert!(s.hit_light(&r, &*s.objects[0]));
 }
 
 #[test]
 fn hits_closest() {
     let s = Scene::new(
-        DVec3::ZERO,
         DVec3::ZERO,
         vec![
             Plane::new(
