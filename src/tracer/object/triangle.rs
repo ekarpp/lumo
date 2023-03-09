@@ -87,4 +87,16 @@ impl Object for Triangle {
             )
         }
     }
+
+    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+        let alpha = 1.0 - rand_disk.x.sqrt();
+        let beta = rand_disk.y * rand_disk.x.sqrt();
+        let gamma = 1.0 - alpha - beta;
+
+        Ray::new(
+            h.p,
+            alpha*self.a + beta*self.b + gamma*self.c - h.p,
+            0,
+        )
+    }
 }

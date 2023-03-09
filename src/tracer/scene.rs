@@ -56,7 +56,7 @@ impl Scene {
     pub fn rays_to_light(&self, h: &Hit) -> Vec<Ray> {
         (0..SHADOW_RAYS).map(|_| {
             /* we want to do better than uniformly at random from disk */
-            self.light.sample_shadow(h, rand_utils::rand_unit_disk())
+            self.light.sample_shadow_ray(h, rand_utils::rand_unit_disk())
         }).filter(|r: &Ray| self.hit_light(r)).collect()
     }
 

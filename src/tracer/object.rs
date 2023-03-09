@@ -1,4 +1,5 @@
 use crate::{DVec3, DMat3, DVec2, DAffine3};
+use crate::rand_utils;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
@@ -26,11 +27,12 @@ pub trait Object: Sync {
     /* unit length normal for r at p. only called during hit creation
      * => no need to implement for rectangle or cuboid. */
     fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { DVec3::ZERO }
-    fn inside(&self, _r: &Ray) -> bool { false }
-    fn hit(&self, r: &Ray) -> Option<Hit>;
-    fn material(&self) -> &Material;
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
+    fn inside(&self, _r: &Ray) -> bool { false }
+    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray;
+    fn hit(&self, r: &Ray) -> Option<Hit>;
+    fn material(&self) -> &Material;
 }
 
 pub struct Cuboid {
@@ -115,6 +117,7 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
+    fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
     fn size(&self) -> usize { 12 }
 
     fn material(&self) -> &Material { &self.material }
@@ -167,6 +170,14 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
+    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+        if rand_utils::rand_f64() > 0.5 {
+            self.triangles.0.sample_shadow_ray(h, rand_disk)
+        } else {
+            self.triangles.1.sample_shadow_ray(h, rand_disk)
+        }
+    }
+
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.triangles.0.hit(r).or_else(|| self.triangles.1.hit(r))
             .and_then(|mut hit| {
@@ -201,7 +212,7 @@ impl Object for Plane {
     fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
         _orient_normal(self.norm, r)
     }
-
+    fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
