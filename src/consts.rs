@@ -4,7 +4,7 @@ use crate::DVec3;
 pub const EPSILON: f64 = 0.001;
 
 /* number of shadow rays per intersection point */
-pub const SHADOW_RAYS: usize = 50;
+pub const SHADOW_RAYS: usize = 64;
 
 /* refraction pub constant of glass */
 pub const ETA: f64 = 1.5;

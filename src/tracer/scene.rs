@@ -2,7 +2,7 @@ use crate::{DVec3, DMat3, DAffine3};
 use std::f64::consts::PI;
 use crate::rand_utils;
 use crate::perlin::Perlin;
-use crate::consts::SHADOW_RAYS;
+use crate::consts::{EPSILON, SHADOW_RAYS};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
@@ -66,7 +66,7 @@ impl Scene {
         }).collect()
     }
 
-    pub fn hit_light(&self, r: &Ray, l: &dyn Object) -> bool {
+    fn hit_light(&self, r: &Ray, l: &dyn Object) -> bool {
         let l_distance_sq =
             (l.hit(r).map_or(DVec3::ZERO, |h| h.p) - r.origin).length_squared();
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
@@ -85,16 +85,44 @@ impl Scene {
     pub fn box_scene() -> Self {
         /* y ground */
         let yg = -0.8;
+        let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
         Self::new(
             DVec3::splat(0.1),
             vec![
+                Sphere::new(
+                    DVec3::new(-0.4, -0.6, -1.2),
+                    0.2,
+                    Material::Mirror,
+                ),
+                /*
+                Sphere::new(
+                    DVec3::new(-0.05, yg + 0.1, yg - 0.2),
+                    0.1,
+                    Material::Glass,
+                ),
+                 */
+                Cuboid::new(
+                    DAffine3::from_translation(
+                        DVec3::new(0.2, yg, 1.7*yg))
+                        * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
+                        * DAffine3::from_rotation_y(PI / 10.0),
+                    Material::Phong(Texture::Marble(
+                        Perlin::new(DVec3::new(240.0, 235.0, 215.0) / 255.9)
+                    ))
+                ),
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-0.05, -yg, yg - 0.1),
-                        DVec3::new(-0.05, -yg, yg - 0.2),
-                        DVec3::new(0.05, -yg, yg - 0.2),
+                        DVec3::new(-0.1, -(yg + 100.0*EPSILON), yg - 0.0),
+                        DVec3::new(-0.1, -(yg + 100.0*EPSILON), yg - 0.2),
+                        DVec3::new(0.1, -(yg + 100.0*EPSILON), yg - 0.2),
                     ),
                     Material::Light(Texture::Solid(DVec3::ONE))
+                ),
+                // roof
+                Plane::new(
+                    DVec3::new(0.0, -yg, 0.0),
+                    DVec3::new(0.0, -1.0, 0.0),
+                    Material::Phong(Texture::Solid(col)),
                 ),
                 /* floor */
                 Rectangle::new(
@@ -103,35 +131,19 @@ impl Scene {
                         DVec3::new(yg, yg, 0.0),
                         DVec3::new(yg, yg, 2.0*yg),
                     ),
-                    Material::Phong(Texture::Checkerboard(
-                        Box::new(Texture::Checkerboard(
-                            Box::new(Texture::Solid(DVec3::ZERO)),
-                            Box::new(Texture::Solid(DVec3::ONE)),
-                            4.0,
-                        )),
-                        Box::new(Texture::Marble(
-                            Perlin::new(DVec3::splat(192.0 / 255.9))
-                        )),
-                        1.0,
-                    )),
+                    Material::Phong(Texture::Solid(col)),
                 ),
                 // front wall
                 Plane::new(
                     DVec3::new(0.0, 0.0, 2.0*yg),
                     DVec3::new(0.0, 0.0, 1.0),
-                    Material::Phong(
-                        Texture::Solid(DVec3::splat(155.0 / 255.9))
-                    ),
+                    Material::Phong(Texture::Solid(col)),
                 ),
                 // left wall
                 Plane::new(
                     DVec3::new(yg, 0.0, 0.0),
                     DVec3::new(1.0, 0.0, 0.0),
-                    Material::Phong(Texture::Checkerboard(
-                        Box::new(Texture::Solid(DVec3::ZERO)),
-                        Box::new(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
-                        1.0,
-                    ))
+                    Material::Phong(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                 ),
                 // right wall
                 Plane::new(
@@ -139,33 +151,11 @@ impl Scene {
                     DVec3::new(-1.0, 0.0, 0.0),
                     Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
-                // roof
-                Plane::new(
-                    DVec3::new(0.0, -yg, 0.0),
-                    DVec3::new(0.0, -1.0, 0.0),
-                    Material::Phong(Texture::Marble(
-                        Perlin::new(DVec3::new(0.0, 0.0, 1.0))
-                    )),
-                ),
                 // background
                 Plane::new(
                     DVec3::new(0.0, 0.0, 0.1),
                     DVec3::new(0.0, 0.0, -1.0),
                     Material::Blank,
-                ),
-                Sphere::new(
-                    DVec3::new(-0.4, -0.6, -1.2),
-                    0.2,
-                    Material::Mirror,
-                ),
-                Cuboid::new(
-                    DAffine3::from_translation(
-                        DVec3::new(0.2, yg, 1.7*yg))
-                        * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
-                        * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::Phong(Texture::Marble(
-                        Perlin::new(DVec3::new(0.0, 192.0, 0.0) / 255.9)
-                    ))
                 ),
             ],
         )
