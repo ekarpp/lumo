@@ -88,13 +88,9 @@ impl Object for Triangle {
         }
     }
 
-    /* bad distribution with disk... */
-    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
-        let r1 = 0.5*(1.0 + rand_disk.x);
-        let r2 = 0.5*(1.0 + rand_disk.y);
-
-        let gamma = 1.0 - (1.0 - r1).sqrt();
-        let beta = r2 * (1.0 - gamma);
+    fn sample_shadow_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+        let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
+        let beta = rand_sq.y * (1.0 - gamma);
 
         Ray::new(
             h.p,

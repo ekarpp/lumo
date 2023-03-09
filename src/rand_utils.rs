@@ -21,16 +21,9 @@ pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
     (0..n).map(|_| rand_unit_sphere()).collect()
 }
 
-/* uniform random DVec2 in unit disk */
-pub fn rand_unit_disk() -> DVec2 {
-    /* sampling unit square and checking if inside circle might be faster */
-    let r = rand_f64().sqrt();
-    let theta = 2.0 * PI * rand_f64();
-
-    DVec2::new(
-        r * theta.cos(),
-        r * theta.sin(),
-    )
+/* uniform random DVec2 in unit square */
+pub fn rand_unit_square() -> DVec2 {
+    DVec2::new(rand_f64(), rand_f64())
 }
 
 /* uniform random DVec3 in unit sphere */

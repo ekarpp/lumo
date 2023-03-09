@@ -4,7 +4,7 @@ use crate::DVec3;
 pub const EPSILON: f64 = 0.001;
 
 /* number of shadow rays per intersection point */
-pub const SHADOW_RAYS: usize = 64;
+pub const SHADOW_RAYS: usize = 4*4;
 
 /* refraction pub constant of glass */
 pub const ETA: f64 = 1.5;
@@ -12,15 +12,19 @@ pub const ETA: f64 = 1.5;
 /* maximum recursion depth of rays */
 pub const RAY_MAX_DEPTH: usize = 10;
 
-/* base scale for the size of checker boxes. bigger = smaller boxes */
-pub const CHECKER_SCALE: f64 = 13.0;
-
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */
 pub const LOBE_Q: f64 = 5.0;
 
 /* intensity of the specular lobe */
-pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.15);
+pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.0);
+
+/**
+ * TEXTURES
+ */
+
+/* base scale for the size of checker boxes. bigger = smaller boxes */
+pub const CHECKER_SCALE: f64 = 13.0;
 
 /* number of points in the perlin noise lattice */
 pub const PERLIN_POINTS: usize = 256;

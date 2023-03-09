@@ -1,6 +1,6 @@
-use crate::{DVec3, DMat3, DAffine3};
+use crate::{DVec3, DMat3, DAffine3, DVec2};
 use std::f64::consts::PI;
-use crate::rand_utils;
+use crate::samplers::{UniformSampler, JitteredSampler};
 use crate::perlin::Perlin;
 use crate::consts::{EPSILON, SHADOW_RAYS};
 use crate::tracer::hit::Hit;
@@ -22,6 +22,8 @@ pub struct Scene {
 
 /* temporary constant */
 const LIGHT_R: f64 = 0.1;
+
+type PixelSampler = JitteredSampler;
 
 impl Scene {
     pub fn new(amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
@@ -55,12 +57,8 @@ impl Scene {
 
     pub fn rays_to_light(&self, h: &Hit) -> Vec<Ray> {
         self.lights.iter().flat_map(|light_idx: &usize| {
-            (0..SHADOW_RAYS).map(|_| {
-                /* we want to do better than uniformly at random from disk */
-                self.objects[*light_idx]
-                /* need to use jitter ~ [0,1] here. sphere can then
-                 * map to disk in their function */
-                    .sample_shadow_ray(h, rand_utils::rand_unit_disk())
+            PixelSampler::new(SHADOW_RAYS).map(|p: DVec2| {
+                self.objects[*light_idx].sample_shadow_ray(h, p)
             }).filter(|r: &Ray| self.hit_light(r))
                 .collect::<Vec<Ray>>()
         }).collect()
@@ -95,21 +93,14 @@ impl Scene {
                         0.2,
                         Material::Mirror,
                     ),
-                    /*
-                    Sphere::new(
-                        DVec3::new(-0.05, yg + 0.1, yg - 0.2),
-                        0.1,
-                        Material::Glass,
-                    ),
-                     */
                     Cuboid::new(
                         DAffine3::from_translation(
                             DVec3::new(0.2, yg, 1.7*yg))
                             * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
                             * DAffine3::from_rotation_y(PI / 10.0),
-                        Material::Phong(Texture::Marble(
-                            Perlin::new(DVec3::new(240.0, 235.0, 215.0) / 255.9)
-                        ))
+                        Material::Phong(
+                            Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
+                        )
                     ),
                     /* if light and roof have same y, then light should come
                      * before roof in this vector and everything should be ok */
