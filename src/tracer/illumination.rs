@@ -6,7 +6,7 @@ use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 use crate::tracer::texture::Texture;
 
-pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
+pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
     let color = texture.albedo_at(h.p);
 
     color * scene.ambient + scene.rays_to_light(h).iter().map(|r: &Ray| {
@@ -14,6 +14,7 @@ pub fn phong_illum(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
     }).fold(DVec3::ZERO, |acc, c| acc + c) / (PI * SHADOW_RAYS as f64)
 }
 
+/* Blinn-Phong model */
 fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {
     /* unit length vector to light from hit point */
     let lu = l.normalize();
@@ -34,6 +35,7 @@ fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {
      + h.norm.dot(lu).max(0.0) * color)
         /* scale by squared distance to light */
         / l.length_squared()
+        /* divide by PDF?? */
 }
 
 pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
