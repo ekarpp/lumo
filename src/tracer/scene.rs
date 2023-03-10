@@ -87,7 +87,7 @@ impl Scene {
             let yg = -0.8;
             let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
             let light_xy = 0.2;
-            let light_z = yg - light_xy;
+            let light_z = yg;
             Self::new(
                 DVec3::splat(0.0),
                 vec![
