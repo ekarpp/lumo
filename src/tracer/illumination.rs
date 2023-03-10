@@ -9,6 +9,8 @@ pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
     let color = texture.albedo_at(h.p);
 
     color * scene.ambient +
+        /* TODO */
+        2.2 *
         scene.rays_to_light(h).iter().map(|r: &Ray| {
             /* TODO */
             _diffuse_specular(color, h, r.dir) / scene.objects[0].pdf(r)

@@ -1,5 +1,6 @@
 use crate::{DVec3, DVec2};
-use crate::samplers::UniformSampler;
+#[allow(unused_imports)]
+use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
