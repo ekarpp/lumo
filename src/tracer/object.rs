@@ -50,6 +50,11 @@ pub trait Object: Sync {
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
 
+    fn scatter_pdf(&self, r: &Ray, h: &Hit) -> f64 {
+        let cos_theta = h.norm.dot(r.dir);
+        if cos_theta < 0.0 { 0.0 } else { cos_theta / PI }
+    }
+
     /* default pdf, uniformly at random from surface. */
     fn pdf(&self, r: &Ray) -> f64 {
         // needs intersection point only with light
