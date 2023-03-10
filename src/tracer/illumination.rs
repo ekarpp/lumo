@@ -10,7 +10,7 @@ pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
 
     color * scene.ambient +
         /* TODO */
-        6.0 *
+        100.0 *
         scene.rays_to_light(h).iter().map(|r: &Ray| {
             /* TODO */
             h.object.scatter_pdf(r, h)

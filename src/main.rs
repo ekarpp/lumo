@@ -89,18 +89,19 @@ fn main() {
             .build_global().unwrap(),
         None => (),
     };
-
+    let fl = 1.0;
     let scene = if cli_args.boxx {
-        Scene::box_scene()
+        Scene::box_scene(fl)
     } else {
         Scene::default()
     };
     let cam = Camera::new(
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
-        DVec3::new(0.0, 0.0, 0.0), // origin
-        DVec3::new(0.0, 0.0, -1.0), // towards
-        DVec3::new(0.0, 1.0, 0.0), // up
+        DVec3::new(0.0, 0.0, 0.0), /* origin */
+        DVec3::new(0.0, 0.0, -1.0), /* towards */
+        DVec3::new(0.0, 1.0, 0.0), /* up */
+        fl, /* focal length */
     );
 
     cli_args.output_cfg();
