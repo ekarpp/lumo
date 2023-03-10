@@ -84,7 +84,7 @@ impl Scene {
 
         pub fn box_scene(focal_length: f64) -> Self {
             /* y ground */
-            let yg = -0.8*focal_length;
+            let yg = -focal_length;
             let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
             let light_z = yg;
             let light_xy = 0.2*focal_length;
@@ -96,9 +96,9 @@ impl Scene {
                      * before roof in this vector and everything should be ok */
                     Rectangle::new(
                         DMat3::from_cols(
-                            DVec3::new(-light_xy, -yg, light_z - light_xy),
-                            DVec3::new(-light_xy, -yg, light_z + light_xy),
-                            DVec3::new(light_xy, -yg, light_z + light_xy),
+                            DVec3::new(-light_xy, -yg, 1.5*light_z + light_xy),
+                            DVec3::new(-light_xy, -yg, 1.5*light_z - light_xy),
+                            DVec3::new(light_xy, -yg, 1.5*light_z - light_xy),
                         ),
                         Material::Light(Texture::Solid(DVec3::ONE)),
                     ),
@@ -109,7 +109,7 @@ impl Scene {
                     ),
                     Cuboid::new(
                         DAffine3::from_translation(
-                            DVec3::new(light_xy, yg, 1.7*light_z))// + 0.7*yg))
+                            DVec3::new(light_xy, yg, 1.7*light_z))
                             * DAffine3::from_scale(
                                 DVec3::new(light_xy, 2.0*light_xy, light_xy))
                             * DAffine3::from_rotation_y(PI / 10.0),
