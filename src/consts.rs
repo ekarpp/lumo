@@ -14,10 +14,12 @@ pub const RAY_MAX_DEPTH: usize = 10;
 
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */
-pub const _LOBE_Q: f64 = 10.0;
+#[allow(dead_code)]
+pub const LOBE_Q: f64 = 10.0;
 
 /* intensity of the specular lobe */
-pub const _SPECULAR_COEFF: DVec3 = DVec3::splat(0.0);
+#[allow(dead_code)]
+pub const SPECULAR_COEFF: DVec3 = DVec3::splat(0.0);
 
 /**
  * TEXTURES
