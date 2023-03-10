@@ -10,7 +10,7 @@ pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
 
     color * scene.ambient +
         /* TODO */
-        2.2 *
+        3.0 *
         scene.rays_to_light(h).iter().map(|r: &Ray| {
             /* TODO */
             _diffuse_specular(color, h, r.dir) / scene.objects[0].pdf(r)
