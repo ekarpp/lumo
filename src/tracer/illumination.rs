@@ -10,10 +10,12 @@ pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
 
     color * scene.ambient +
         /* TODO */
-        3.0 *
+        6.0 *
         scene.rays_to_light(h).iter().map(|r: &Ray| {
             /* TODO */
-            _diffuse_specular(color, h, r.dir) / scene.objects[0].pdf(r)
+            h.object.scatter_pdf(r, h)
+                * _diffuse_specular(color, h, r.dir)
+                / scene.objects[0].pdf(r)
         }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
 }
 

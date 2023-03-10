@@ -6,7 +6,7 @@ use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
-type PxSampler = UniformSampler;
+type PxSampler = JitteredSampler;
 
 pub fn _render(
     img_height: usize,
