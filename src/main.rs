@@ -89,7 +89,7 @@ fn main() {
             .build_global().unwrap(),
         None => (),
     };
-    let fl = 1.0;
+    let fl = 10.0;
     let scene = if cli_args.boxx {
         Scene::box_scene(fl)
     } else {

@@ -39,9 +39,6 @@ impl Camera {
 
         let horiz = x * vpw * focal_length;
         let vert = y * vph * focal_length;
-        println!("{}", from - (horiz + vert) / 2.0 - z*focal_length);
-        println!("{}", horiz);
-        println!("{}", vert);
 
         Self {
             origin: from,
