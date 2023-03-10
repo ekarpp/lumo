@@ -11,6 +11,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
+        //println!("{}", self.blc + x*self.horiz + y*self.vert - self.origin);
         Ray::new(
             self.origin,
             self.blc + x*self.horiz + y*self.vert - self.origin,
@@ -18,26 +19,35 @@ impl Camera {
         )
     }
 
-    pub fn new(ar: f64, vfov: f64, from: DVec3, towards: DVec3, up: DVec3)
-               -> Self {
+    pub fn new(
+        aspect_ratio: f64,
+        vfov: f64,
+        from: DVec3,
+        towards: DVec3,
+        up: DVec3,
+        focal_length: f64
+    ) -> Self {
         let h = (vfov.to_radians() / 2.0).tan();
         /* viewport height */
         let vph = 2.0 * h;
         /* viewport width */
-        let vpw = vph * ar;
+        let vpw = vph * aspect_ratio;
 
         let z = (from - towards).normalize();
         let x = up.cross(z).normalize();
         let y = z.cross(x);
 
-        let horiz = x * vpw;
-        let vert = y * vph;
+        let horiz = x * vpw * focal_length;
+        let vert = y * vph * focal_length;
+        println!("{}", from - (horiz + vert) / 2.0 - z*focal_length);
+        println!("{}", horiz);
+        println!("{}", vert);
 
         Self {
             origin: from,
             horiz: horiz,
             vert: vert,
-            blc: from - (horiz + vert) / 2.0 - z,
+            blc: from - (horiz + vert) / 2.0 - z*focal_length,
         }
     }
 }

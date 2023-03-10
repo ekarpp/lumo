@@ -56,8 +56,8 @@ pub trait Object: Sync {
     }
 
     /* default pdf, uniformly at random from surface. */
+    /* do this in scene.rs */
     fn pdf(&self, r: &Ray) -> f64 {
-        // needs intersection point only with light
         self.hit(r).map_or(0.0, |h| {
             r.origin.distance_squared(h.p) /
                 (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())

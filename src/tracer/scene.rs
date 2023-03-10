@@ -82,12 +82,13 @@ impl Scene {
             .count() == self.objects.len()
         }
 
-        pub fn box_scene() -> Self {
+        pub fn box_scene(focal_length: f64) -> Self {
             /* y ground */
-            let yg = -0.8;
+            let yg = -0.8*focal_length;
             let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
-            let light_xy = 0.2;
             let light_z = yg;
+            let light_xy = 0.2*focal_length;
+            let r = 0.2*focal_length;
             Self::new(
                 DVec3::splat(0.0),
                 vec![
@@ -102,14 +103,15 @@ impl Scene {
                         Material::Light(Texture::Solid(DVec3::ONE)),
                     ),
                     Sphere::new(
-                        DVec3::new(-0.4, -0.6, -1.2),
-                        0.2,
+                        DVec3::new(-2.0*light_xy, yg+r, light_z - 2.0*light_xy),
+                        r,
                         Material::Mirror,
                     ),
                     Cuboid::new(
                         DAffine3::from_translation(
-                            DVec3::new(0.2, yg, 1.7*yg))
-                            * DAffine3::from_scale(DVec3::new(0.2, 0.4, 0.2))
+                            DVec3::new(light_xy, yg, 1.7*light_z))// + 0.7*yg))
+                            * DAffine3::from_scale(
+                                DVec3::new(light_xy, 2.0*light_xy, light_xy))
                             * DAffine3::from_rotation_y(PI / 10.0),
                         Material::Phong(
                             Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
@@ -118,34 +120,43 @@ impl Scene {
                     // roof
                     Plane::new(
                         DVec3::new(0.0, -yg, 0.0),
-                        DVec3::new(0.0, -1.0, 0.0),
+                        DVec3::new(0.0, -10000.0, 0.0),
                         Material::Phong(Texture::Solid(col)),
                     ),
                     /* floor */
                     Rectangle::new(
                         DMat3::from_cols(
-                            DVec3::new(-yg, yg, 0.0),
+                            DVec3::new(-yg, yg, light_z),
+                            DVec3::new(yg, yg, light_z),
+                            DVec3::new(yg, yg, 2.0*light_z),
+                        ),
+                        /* can do texture here */
+                        Material::Phong(Texture::Solid(col)),
+                    ),
+                    Rectangle::new(
+                        DMat3::from_cols(
+                            DVec3::new(-yg, yg, light_z),
+                            DVec3::new(yg, yg, light_z),
                             DVec3::new(yg, yg, 0.0),
-                            DVec3::new(yg, yg, 2.0*yg),
                         ),
                         Material::Phong(Texture::Solid(col)),
                     ),
                     // front wall
                     Plane::new(
-                        DVec3::new(0.0, 0.0, 2.0*yg),
-                        DVec3::new(0.0, 0.0, 1.0),
+                        DVec3::new(0.0, 0.0, 2.0*light_z),
+                        DVec3::new(0.0, 0.0, 100.0),
                         Material::Phong(Texture::Solid(col)),
                     ),
                     // left wall
                     Plane::new(
                         DVec3::new(yg, 0.0, 0.0),
-                        DVec3::new(1.0, 0.0, 0.0),
+                        DVec3::new(10000.0, 0.0, 0.0),
                         Material::Phong(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                     ),
                     // right wall
                     Plane::new(
                         DVec3::new(-yg, 0.0, 0.0),
-                        DVec3::new(-1.0, 0.0, 0.0),
+                        DVec3::new(-1000.0, 0.0, 0.0),
                         Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                     ),
                     // background
