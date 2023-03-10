@@ -45,11 +45,21 @@ pub trait Object: Sync {
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
     fn inside(&self, _r: &Ray) -> bool { false }
-    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray;
+    fn sample_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray;
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
-    fn pdf(&self, _r: &Ray) -> f64 { 1.0 }
+
+    /* default pdf, uniformly at random from surface. */
+    fn pdf(&self, r: &Ray) -> f64 {
+        // needs intersection point only with light
+        self.hit(r).map_or(0.0, |h| {
+            r.origin.distance_squared(h.p) /
+                (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())
+
+        })
+
+    }
 }
 
 pub struct Cuboid {
@@ -134,7 +144,9 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
-    fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+    fn inside(&self, _r: &Ray) -> bool { todo!() }
+    fn sample_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+
     fn size(&self) -> usize { 12 }
 
     fn area(&self) -> f64 {
@@ -193,11 +205,11 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_shadow_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+    fn sample_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
         if rand_utils::rand_f64() > 0.5 {
-            self.triangles.0.sample_shadow_ray(h, rand_disk)
+            self.triangles.0.sample_ray(h, rand_disk)
         } else {
-            self.triangles.1.sample_shadow_ray(h, rand_disk)
+            self.triangles.1.sample_ray(h, rand_disk)
         }
     }
 
@@ -239,7 +251,7 @@ impl Object for Plane {
         _orient_normal(self.norm, r)
     }
 
-    fn sample_shadow_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+    fn sample_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?

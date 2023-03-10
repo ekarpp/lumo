@@ -62,7 +62,7 @@ impl Object for Sphere {
     }
 
     /* sample random ray in cone from h.p towards self */
-    fn sample_shadow_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
         let w = (self.origin - h.p).normalize();

@@ -60,7 +60,7 @@ impl Scene {
     pub fn rays_to_light(&self, h: &Hit) -> Vec<Ray> {
         self.lights.iter().flat_map(|light_idx: &usize| {
             PixelSampler::new(SHADOW_RAYS).map(|p: DVec2| {
-                self.objects[*light_idx].sample_shadow_ray(h, p)
+                self.objects[*light_idx].sample_ray(h, p)
             }).filter(|r: &Ray| self.hit_light(r, &self.objects[*light_idx]))
                 .collect::<Vec<Ray>>()
         }).collect()
@@ -89,6 +89,16 @@ impl Scene {
             Self::new(
                 DVec3::splat(0.0),
                 vec![
+                    /* if light and roof have same y, then light should come
+                     * before roof in this vector and everything should be ok */
+                    Rectangle::new(
+                        DMat3::from_cols(
+                            DVec3::new(-0.1, -yg, yg - 0.2),
+                            DVec3::new(-0.1, -yg, yg - 0.4),
+                            DVec3::new(0.1, -yg, yg - 0.4),
+                        ),
+                        Material::Light(Texture::Solid(DVec3::ONE)),
+                    ),
                     Sphere::new(
                         DVec3::new(-0.4, -0.6, -1.2),
                         0.2,
@@ -102,16 +112,6 @@ impl Scene {
                         Material::Phong(
                             Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
                         )
-                    ),
-                    /* if light and roof have same y, then light should come
-                     * before roof in this vector and everything should be ok */
-                    Rectangle::new(
-                        DMat3::from_cols(
-                            DVec3::new(-0.1, -yg, yg - 0.2),
-                            DVec3::new(-0.1, -yg, yg - 0.4),
-                            DVec3::new(0.1, -yg, yg - 0.4),
-                        ),
-                        Material::Light(Texture::Solid(DVec3::ONE)),
                     ),
                     // roof
                     Plane::new(
