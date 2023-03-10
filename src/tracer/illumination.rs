@@ -10,20 +10,12 @@ pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
 
     color * scene.ambient +
         /* TODO */
-        100.0 *
         scene.rays_to_light(h).iter().map(|r: &Ray| {
             /* TODO */
-            h.object.scatter_pdf(r, h)
-                * _diffuse_specular(color, h, r.dir)
+            color
+                * h.object.scatter_pdf(r, h)
                 / scene.objects[0].pdf(r)
         }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
-}
-
-fn _diffuse_specular(color: DVec3, h: &Hit, l: DVec3) -> DVec3 {
-    /* unit length vector to light from hit point */
-    let lu = l.normalize();
-    h.norm.dot(lu).max(0.0) * color
-        / l.length_squared()
 }
 
 pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
