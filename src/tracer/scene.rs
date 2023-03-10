@@ -86,6 +86,8 @@ impl Scene {
             /* y ground */
             let yg = -0.8;
             let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
+            let light_xy = 0.2;
+            let light_z = yg - light_xy;
             Self::new(
                 DVec3::splat(0.0),
                 vec![
@@ -93,9 +95,9 @@ impl Scene {
                      * before roof in this vector and everything should be ok */
                     Rectangle::new(
                         DMat3::from_cols(
-                            DVec3::new(-0.1, -yg, yg - 0.2),
-                            DVec3::new(-0.1, -yg, yg - 0.4),
-                            DVec3::new(0.1, -yg, yg - 0.4),
+                            DVec3::new(-light_xy, -yg, light_z - light_xy),
+                            DVec3::new(-light_xy, -yg, light_z + light_xy),
+                            DVec3::new(light_xy, -yg, light_z + light_xy),
                         ),
                         Material::Light(Texture::Solid(DVec3::ONE)),
                     ),

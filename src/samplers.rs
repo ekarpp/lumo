@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::DVec2;
 use crate::rand_utils;
 
