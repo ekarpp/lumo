@@ -13,6 +13,20 @@ mod plane_tests;
 pub mod sphere;
 pub mod triangle;
 
+/* w normalized. returns orthonormal uvw-basis */
+fn _uvw_basis(w: DVec3) -> (DVec3, DVec3) {
+    let a = if w.x.abs() > 0.9 {
+        DVec3::new(0.0, 1.0, 0.0)
+    } else {
+        DVec3::new(1.0, 0.0, 0.0)
+    };
+
+    let v = w.cross(a).normalize();
+    let u = w.cross(v);
+
+    (u, v)
+}
+
 /* make sure normal points the right way for triangle/plane/sphere */
 fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
     if n.dot(r.dir) > 0.0 { -n } else { n }
@@ -35,10 +49,7 @@ pub trait Object: Sync {
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
-    fn pdf(&self, r: &Ray, p: DVec3) -> f64 {
-        r.origin.distance_squared(p) /
-            (self.normal_for_at(r, p).dot(-r.dir) * self.area())
-    }
+    fn pdf(&self, _r: &Ray) -> f64 { 1.0 }
 }
 
 pub struct Cuboid {

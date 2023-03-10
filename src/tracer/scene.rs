@@ -1,5 +1,6 @@
 use crate::{DVec3, DMat3, DAffine3, DVec2};
 use std::f64::consts::PI;
+#[allow(unused_imports)]
 use crate::samplers::{UniformSampler, JitteredSampler};
 use crate::perlin::Perlin;
 use crate::consts::{EPSILON, SHADOW_RAYS};
@@ -17,7 +18,8 @@ pub struct Scene {
     pub ambient: DVec3,
     /* vec of indices to objects that are lights */
     lights: Vec<usize>,
-    objects: Vec<Box<dyn Object>>,
+    /* TODO */
+    pub objects: Vec<Box<dyn Object>>,
 }
 
 /* temporary constant */
@@ -59,18 +61,17 @@ impl Scene {
         self.lights.iter().flat_map(|light_idx: &usize| {
             PixelSampler::new(SHADOW_RAYS).map(|p: DVec2| {
                 self.objects[*light_idx].sample_shadow_ray(h, p)
-            }).filter(|r: &Ray| self.hit_light(r))
+            }).filter(|r: &Ray| self.hit_light(r, &self.objects[*light_idx]))
                 .collect::<Vec<Ray>>()
         }).collect()
     }
 
-    /* r origin in point where we cast shadow ray and direction points
-     * to randomly sampled point on light, p, such that: r.o + r.dir = p */
-    fn hit_light(&self, r: &Ray) -> bool {
+    fn hit_light(&self, r: &Ray, light: &Box<dyn Object>) -> bool {
+        let lt = light.hit(r).map_or(f64::INFINITY, |h| h.t);
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
             /* only keep hits that are closer than light and not translucent */
             obj.hit(r).filter(|h: &Hit| {
-                h.t + EPSILON < 1.0 && !h.object.is_translucent()
+                h.t + EPSILON < lt && !h.object.is_translucent()
                 /* to check if object is behind light the rays are same,
                  * so we can just compare t's. for our light the t is
                  * always 1.0 by design of r */
