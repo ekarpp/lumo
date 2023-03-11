@@ -6,20 +6,17 @@ use crate::tracer::scene::Scene;
 use crate::tracer::texture::Texture;
 
 pub fn illuminate(texture: &Texture, h: &Hit, scene: &Scene) -> DVec3 {
-    let color = texture.albedo_at(h.p);
-
-    color * scene.ambient +
-        /* TODO */
-        color * scene.sample_lights_from(h).iter().map(|lh: &Hit| {
-            /* TODO */
-            let r = Ray::new(
-                h.p,
-                lh.p - h.p,
-                0,
-            );
-            h.object.scatter_pdf(&r, h)
-                / lh.object.pdf(&r, lh)
-        }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
+    texture.albedo_at(h.p)
+        * (scene.ambient +
+           scene.sample_lights_from(h).iter().map(|lh: &Hit| {
+               let r = Ray::new(
+                   h.p,
+                   lh.p - h.p,
+                   0,
+               );
+               h.object.scatter_pdf(&r, h)
+                   / lh.object.pdf(&r, lh)
+           }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64)
 }
 
 pub fn reflect_ray(h: &Hit, r: &Ray) -> Ray {
