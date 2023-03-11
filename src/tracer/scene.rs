@@ -115,7 +115,7 @@ impl Scene {
                         * DAffine3::from_scale(
                             DVec3::new(light_xy, 2.0*light_xy, light_xy))
                         * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::Phong(
+                    Material::Diffuse(
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
                     )
                 ),
@@ -123,7 +123,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -yg, 0.0),
                     DVec3::new(0.0, -10000.0, 0.0),
-                    Material::Phong(Texture::Solid(col)),
+                    Material::Diffuse(Texture::Solid(col)),
                 ),
                 /* floor */
                 Rectangle::new(
@@ -133,7 +133,7 @@ impl Scene {
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
                     /* can do texture here */
-                    Material::Phong(Texture::Solid(col)),
+                    Material::Diffuse(Texture::Solid(col)),
                 ),
                 Rectangle::new(
                     DMat3::from_cols(
@@ -141,25 +141,25 @@ impl Scene {
                         DVec3::new(yg, yg, light_z),
                         DVec3::new(yg, yg, 0.0),
                     ),
-                    Material::Phong(Texture::Solid(col)),
+                    Material::Diffuse(Texture::Solid(col)),
                 ),
                 // front wall
                 Plane::new(
                     DVec3::new(0.0, 0.0, 2.0*light_z),
                     DVec3::new(0.0, 0.0, 100.0),
-                    Material::Phong(Texture::Solid(col)),
+                    Material::Diffuse(Texture::Solid(col)),
                 ),
                 // left wall
                 Plane::new(
                     DVec3::new(yg, 0.0, 0.0),
                     DVec3::new(10000.0, 0.0, 0.0),
-                    Material::Phong(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+                    Material::Diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                 ),
                 // right wall
                 Plane::new(
                     DVec3::new(-yg, 0.0, 0.0),
                     DVec3::new(-1000.0, 0.0, 0.0),
-                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+                    Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 // background
                 Plane::new(
@@ -184,7 +184,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, -0.5, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Phong(Texture::Checkerboard(
+                    Material::Diffuse(Texture::Checkerboard(
                         Box::new(Texture::Checkerboard(
                             Box::new(Texture::Solid(DVec3::ZERO)),
                             Box::new(Texture::Solid(DVec3::ONE)),
@@ -202,7 +202,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(3.0, 0.0, -3.0),
                     DVec3::new(-1.0, 0.0, 1.0),
-                    Material::Phong(Texture::Solid(DVec3::new(0.0, 0.0, 1.0))),
+                    Material::Diffuse(Texture::Solid(DVec3::new(0.0, 0.0, 1.0))),
                 ),
                 Rectangle::new(
                     DMat3::from_cols(
@@ -217,7 +217,7 @@ impl Scene {
                         DVec3::new(-0.4, -0.5, -0.6))
                         * DAffine3::from_scale(DVec3::splat(0.15))
                         * DAffine3::from_rotation_y(PI / 4.0),
-                    Material::Phong(Texture::Checkerboard(
+                    Material::Diffuse(Texture::Checkerboard(
                         Box::new(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                         Box::new(Texture::Solid(
                             DVec3::new(50.0, 205.0, 50.0) / 255.9
@@ -229,18 +229,18 @@ impl Scene {
                 Plane::new(
                     DVec3::new(-3.0, 0.0, -3.0),
                     DVec3::new(1.0, 0.0, 1.0),
-                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
+                    Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
                 ),
                 // behind
                 Plane::new(
                     DVec3::new(0.0, 0.0, 1.0),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::Phong(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+                    Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
                     0.5,
-                    Material::Phong(Texture::Solid(
+                    Material::Diffuse(Texture::Solid(
                         DVec3::new(136.0, 8.0, 8.0) / 255.9
                     )),
                 ),
@@ -257,7 +257,7 @@ impl Scene {
                 Sphere::new(
                     DVec3::new(0.4, -0.2, -0.5),
                     0.1,
-                    Material::Phong(Texture::Marble(Perlin::new(
+                    Material::Diffuse(Texture::Marble(Perlin::new(
                         DVec3::new(255.0, 182.0, 193.0) / 255.9
                     ))),
                 ),

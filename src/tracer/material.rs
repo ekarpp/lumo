@@ -7,7 +7,7 @@ use crate::tracer::texture::Texture;
 use crate::tracer::illumination;
 
 pub enum Material {
-    Phong(Texture),
+    Diffuse(Texture),
     Light(Texture),
     Mirror,
     Glass,
@@ -18,7 +18,7 @@ pub enum Material {
 impl Material {
     pub fn color(&self, h: &Hit, s: &Scene, r: &Ray) -> DVec3 {
         match self {
-            Self::Phong(t) => illumination::illuminate(t, h, s),
+            Self::Diffuse(t) => illumination::illuminate(t, h, s),
             Self::Light(t) => t.albedo_at(h.p),
             Self::Mirror => illumination::reflect_ray(h, r).color(s),
             Self::Glass => illumination::refract_ray(h, r).color(s),
