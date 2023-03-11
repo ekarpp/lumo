@@ -26,6 +26,25 @@ pub fn rand_unit_square() -> DVec2 {
     DVec2::new(rand_f64(), rand_f64())
 }
 
+/* concentric map of the unit square to unit disk */
+pub fn unit_square_to_unit_disk(rand_sq: DVec2) -> DVec2 {
+    /* map [0,1]^2 to [-1,1]^2 */
+    let offset = 2.0*rand_sq - DVec2::ONE;
+
+    if offset.x == 0.0 && offset.y == 0.0 {
+        DVec2::ZERO
+    } else {
+        let r = if offset.x.abs() > offset.y.abs() { offset.x } else { offset.y };
+        let theta = if offset.x.abs() > offset.y.abs() {
+            PI * (offset.y / offset.x ) / 4.0
+        } else {
+            2.0 * PI  - PI * (offset.x / offset.y) / 4.0
+        };
+
+        r * DVec2::new(theta.cos(), theta.sin())
+    }
+}
+
 /* uniform random DVec3 in unit sphere */
 pub fn rand_unit_sphere() -> DVec3 {
     let r1 = rand_f64();
