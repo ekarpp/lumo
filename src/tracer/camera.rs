@@ -11,7 +11,6 @@ pub struct Camera {
 
 impl Camera {
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
-        //println!("{}", self.blc + x*self.horiz + y*self.vert - self.origin);
         Ray::new(
             self.origin,
             self.blc + x*self.horiz + y*self.vert - self.origin,

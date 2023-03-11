@@ -4,7 +4,7 @@ use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 
-pub fn diffuse_scatter(h: &Hit, r: &Ray) -> Option<Ray> {
+pub fn diffuse_scatter_ray(h: &Hit, r: &Ray) -> Option<Ray> {
     let (u, v) = onb::uvw_basis(h.norm);
     Some(Ray::new(
         h.p,

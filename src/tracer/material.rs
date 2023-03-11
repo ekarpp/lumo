@@ -1,7 +1,7 @@
 use crate::DVec3;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
-use crate::tracer::illumination;
+use crate::tracer::scattering;
 use crate::tracer::texture::Texture;
 
 pub enum Material {
@@ -32,9 +32,9 @@ impl Material {
 
     pub fn scatter(&self, h: &Hit, r: &Ray) -> Option<Ray> {
         match self {
-            Self::Diffuse(_) => illumination::diffuse_scatter(h, r),
-            Self::Mirror => illumination::reflect_ray(h, r),
-            Self::Glass => illumination::refract_ray(h, r),
+            Self::Glass => scattering::refract_ray(h, r),
+            Self::Mirror => scattering::reflect_ray(h, r),
+            Self::Diffuse(_) => scattering::diffuse_scatter_ray(h, r),
             _ => None,
         }
     }

@@ -1,7 +1,6 @@
 use crate::{DVec3, DVec2};
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
-use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
@@ -24,9 +23,9 @@ pub fn _render(
 
             PxSampler::new(num_samples).map(|rand_sq: DVec2| {
                 cam.ray_at(u + rand_sq.x*px_width, v + rand_sq.y*px_height)
-            }).fold(DVec3::ZERO, |acc: DVec3, r: Ray| {
-                acc + r.color(scene)
-            }) / num_samples as f64
+                    .color(scene)
+            }).fold(DVec3::ZERO, |acc: DVec3, c: DVec3| acc + c)
+                / num_samples as f64
         }).collect::<Vec<DVec3>>()
     }).collect()
 }

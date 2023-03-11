@@ -28,6 +28,8 @@ impl Ray {
         }
 
         match scene.hit(self) {
+            /* bright green background for debug */
+            None => DVec3::new(0.0, 1.0, 0.0),
             Some(h) => {
                 let material = h.object.material();
                 material.emit(&h)
@@ -37,8 +39,6 @@ impl Ray {
                             / h.object.scatter_pdf(&r, &h)
                     })
             }
-            /* bright green background for debug */
-            None => DVec3::new(0.0, 1.0, 0.0),
         }
     }
 }
