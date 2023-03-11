@@ -28,15 +28,17 @@ impl Ray {
         }
 
         match scene.hit(self) {
-            Some(h) => h.object.material().color(&h, scene, self),
-            // bright green for debug
+            Some(h) => {
+                let material = h.object.material();
+                material.emit(&h)
+                    + material.albedo(&h)
+                    * material.scatter(&h, self).map_or(DVec3::ZERO, |r: Ray| {
+                        r.color(scene) * h.object.scatter_pdf(&r, &h)
+                            / h.object.scatter_pdf(&r, &h)
+                    })
+            }
+            /* bright green background for debug */
             None => DVec3::new(0.0, 1.0, 0.0),
-            /*{
-                /* add different scene types? night, day, etc.. */
-                let u = self.dir.normalize();
-                let t: f64 = 0.5*(u.y + 1.0);
-                (1.0 - t)*DVec3::ONE + t*DVec3::ZERO
-            }*/
         }
     }
 }

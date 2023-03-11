@@ -66,7 +66,7 @@ impl Object for Sphere {
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
         let w = (self.origin - h.p).normalize();
-        let (u, v) = _uvw_basis(w);
+        let (u, v) = onb::uvw_basis(w);
 
         let dist_light = h.p.distance_squared(self.origin);
 
@@ -79,7 +79,7 @@ impl Object for Sphere {
 
         Ray::new(
             h.p,
-            _k_to_uvw_basis(DVec3::new(x, y, z), u, v, w),
+            onb::to_uvw_basis(DVec3::new(x, y, z), u, v, w),
             0,
         )
     }

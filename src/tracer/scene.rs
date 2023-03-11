@@ -29,9 +29,11 @@ type PixelSampler = JitteredSampler;
 
 impl Scene {
     pub fn new(amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
-        let lights = (0..objs.len()).map(|i: usize| match objs[i].material() {
-            Material::Light(_) => i,
-            _ => objs.len(),
+        let lights = (0..objs.len()).map(|i: usize| {
+            match objs[i].material() {
+                Material::Light(_) => i,
+                _ => objs.len(),
+            }
         }).filter(|i: &usize| *i != objs.len()).collect();
 
         Self {

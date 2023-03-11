@@ -2,6 +2,7 @@ use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
+mod onb;
 mod image;
 mod tracer;
 mod consts;

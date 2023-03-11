@@ -45,15 +45,27 @@ pub fn unit_square_to_unit_disk(rand_sq: DVec2) -> DVec2 {
     }
 }
 
-/* uniform random DVec3 in unit sphere */
-pub fn rand_unit_sphere() -> DVec3 {
-    let r1 = rand_f64();
-    let r2 = rand_f64();
+/* uniform random DVec3 in hemisphere pointing towards +z */
+pub fn rand_unit_hemisphere() -> DVec3 {
+    let sq = rand_unit_square();
+
+    let phi = 2.0 * PI * sq.x;
 
     DVec3::new(
-        (2.0*PI*r1).cos()*2.0*(r2*(1.0 - r2)).sqrt(),
-        (2.0*PI*r1).sin()*2.0*(r2*(1.0 - r2)).sqrt(),
-        1.0 - 2.0*r2,
+        phi.cos() * sq.y.sqrt(),
+        phi.sin() * sq.y.sqrt(),
+        (1.0 - sq.y).sqrt(),
+    )
+}
+
+/* uniform random DVec3 in unit sphere */
+pub fn rand_unit_sphere() -> DVec3 {
+    let sq = rand_unit_square();
+
+    DVec3::new(
+        (2.0 * PI * sq.x).cos() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
+        (2.0 * PI * sq.x).sin() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
+        1.0 - 2.0 * sq.y,
     )
 }
 
