@@ -77,11 +77,9 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        let dir = x*u + y*v + z*w;
-
         Ray::new(
             h.p,
-            dir.normalize() * dist_light,
+            _k_to_uvw_basis(DVec3::new(x, y, z), u, v, w),
             0,
         )
     }

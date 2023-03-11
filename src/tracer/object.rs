@@ -27,6 +27,11 @@ fn _uvw_basis(w: DVec3) -> (DVec3, DVec3) {
     (u, v)
 }
 
+/* transform k to uvw orthonormal basis */
+fn _k_to_uvw_basis(k: DVec3, u: DVec3, v: DVec3, w: DVec3) -> DVec3 {
+    k.x*u + k.y*v + k.z*w
+}
+
 /* make sure normal points the right way for triangle/plane/sphere */
 fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
     if n.dot(r.dir) > 0.0 { -n } else { n }
