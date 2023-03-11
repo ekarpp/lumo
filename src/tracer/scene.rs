@@ -66,11 +66,13 @@ impl Scene {
         }).collect()
     }
 
-    fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>) -> Option<Hit> {
+    fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
+                     -> Option<Hit> {
         let light_hit = light.hit(r).and_then(|mut h| {
             h.t -= EPSILON;
             Some(h)
         });
+
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
             obj.is_translucent() || obj.hit(r).is_none()
                 || obj.hit(r) > light_hit
@@ -79,11 +81,7 @@ impl Scene {
         let reached_light = self.objects.iter().take_while(no_block_light)
             .count() == self.objects.len();
 
-        if reached_light {
-            light_hit
-        } else {
-            None
-        }
+        if reached_light { light_hit } else { None }
     }
 
     pub fn box_scene(focal_length: f64) -> Self {
