@@ -50,7 +50,7 @@ pub trait Object: Sync {
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
     fn inside(&self, _r: &Ray) -> bool { false }
-    fn sample_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray;
+    fn sample_from(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
@@ -62,13 +62,9 @@ pub trait Object: Sync {
 
     /* default pdf, uniformly at random from surface. */
     /* do this in scene.rs */
-    fn pdf(&self, r: &Ray) -> f64 {
-        self.hit(r).map_or(0.0, |h| {
-            r.origin.distance_squared(h.p) /
-                (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())
-
-        })
-
+    fn pdf(&self, r: &Ray, h: &Hit) -> f64 {
+        r.origin.distance_squared(h.p) /
+            (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())
     }
 }
 
@@ -155,7 +151,6 @@ impl Cuboid {
 
 impl Object for Cuboid {
     fn inside(&self, _r: &Ray) -> bool { todo!() }
-    fn sample_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
 
     fn size(&self) -> usize { 12 }
 
@@ -215,11 +210,11 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_ray(&self, h: &Hit, rand_disk: DVec2) -> Ray {
+    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
         if rand_utils::rand_f64() > 0.5 {
-            self.triangles.0.sample_ray(h, rand_disk)
+            self.triangles.0.sample_from(h, rand_sq)
         } else {
-            self.triangles.1.sample_ray(h, rand_disk)
+            self.triangles.1.sample_from(h, rand_sq)
         }
     }
 
@@ -260,8 +255,6 @@ impl Object for Plane {
     fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
         _orient_normal(self.norm, r)
     }
-
-    fn sample_ray(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
