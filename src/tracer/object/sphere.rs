@@ -62,7 +62,7 @@ impl Object for Sphere {
     }
 
     /* sample random ray in cone from h.p towards self */
-    fn sample_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
         let w = (self.origin - h.p).normalize();
@@ -84,7 +84,7 @@ impl Object for Sphere {
         )
     }
 
-    fn pdf(&self, r: &Ray) -> f64 {
+    fn pdf(&self, r: &Ray, _h: &Hit) -> f64 {
         // check hit here for debug
         let cos_theta_max = (
             1.0 - self.radius*self.radius

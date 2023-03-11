@@ -92,7 +92,7 @@ impl Object for Triangle {
         }
     }
 
-    fn sample_ray(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
