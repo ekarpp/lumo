@@ -22,19 +22,19 @@ pub fn reflect_ray(h: &Hit, r: &Ray) -> Option<Ray> {
 }
 
 pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
-    let eta_ratio = if h.object.inside(r) { ETA } else { 1.0 / ETA };
+    let eta_ratio = if h.object.inside(r) { ETA } else { ETA.recip() };
 
     /* Snell-Descartes law */
     let up = r.dir.normalize();
     let cos_in = h.norm.dot(-up).min(1.0);
-    let sin_out = (1.0 - cos_in*cos_in)*eta_ratio*eta_ratio;
+    let sin_out = (1.0 - cos_in * cos_in) * eta_ratio * eta_ratio;
 
     if sin_out > 1.0 {
         return reflect_ray(h, r);
     }
 
-    let dir = eta_ratio*up + h.norm *
-        (eta_ratio*cos_in - (1.0 - sin_out).sqrt());
+    let dir = eta_ratio * up + h.norm *
+        (eta_ratio * cos_in - (1.0 - sin_out).sqrt());
 
     Some(Ray::new(
         h.p,
