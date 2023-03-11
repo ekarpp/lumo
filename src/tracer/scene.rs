@@ -96,9 +96,9 @@ impl Scene {
                      * before roof in this vector and everything should be ok */
                     Rectangle::new(
                         DMat3::from_cols(
-                            DVec3::new(-light_xy, -yg, 1.5*light_z + light_xy),
-                            DVec3::new(-light_xy, -yg, 1.5*light_z - light_xy),
-                            DVec3::new(light_xy, -yg, 1.5*light_z - light_xy),
+                            DVec3::new(-light_xy, -yg, light_z + light_xy),
+                            DVec3::new(-light_xy, -yg, light_z - light_xy),
+                            DVec3::new(light_xy, -yg, light_z - light_xy),
                         ),
                         Material::Light(Texture::Solid(DVec3::ONE)),
                     ),
