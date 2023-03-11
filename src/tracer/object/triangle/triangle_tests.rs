@@ -1,7 +1,7 @@
 use super::*;
 
 fn get_mat() -> Material {
-    Material::Phong(crate::tracer::texture::Texture::Solid(DVec3::ONE))
+    Material::Diffuse(crate::tracer::texture::Texture::Solid(DVec3::ONE))
 }
 
 #[test]
