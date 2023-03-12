@@ -19,16 +19,15 @@ impl DirectLightingIntegrator {
         }
     }
 
-    fn direct_at(&self, h: &Hit) -> DVec3 {
-        h.object.material().albedo(h)
-            * self.scene.sample_lights_from(h).iter().map(|lh: &Hit| {
-                let r = Ray::new(
-                    h.p,
-                    lh.p - h.p,
-                );
-                h.object.scatter_pdf(&r, h)
-                    / lh.object.pdf(&r, lh)
-            }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
+    fn light_at(&self, h: &Hit) -> DVec3 {
+        self.scene.sample_lights_from(h).iter().map(|lh: &Hit| {
+            let r = Ray::new(
+                h.p,
+                lh.p - h.p,
+            );
+            h.object.scatter_pdf(&r, h)
+                / lh.object.pdf(&r, lh)
+        }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
     }
 }
 
@@ -38,12 +37,12 @@ impl Integrator for DirectLightingIntegrator {
             return DVec3::ZERO;
         }
 
-        /* add some random choose method to scene */
-        let light = self.scene.lights[0];
-
         match self.scene.hit(&r) {
             None => DVec3::new(0.0, 1.0, 0.0),
-            Some(h) => self.direct_at(&h),
+            Some(h) => {
+                h.object.material().emit(&h)
+                    + h.object.material().albedo_at(h.p) * self.light_at(&h)
+            }
 
             /*
             {
