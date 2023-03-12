@@ -59,8 +59,8 @@ pub fn rand_unit_hemisphere() -> DVec3 {
 }
 
 /* cosine weighed random DVec3s on hemisphere pointing towards +z */
-pub fn rand_cos_unit_hemisphere() -> DVec3 {
-    let disk = unit_square_to_unit_disk(rand_unit_square());
+pub fn sq_to_cos_unit_hemisphere(rand_sq: DVec2) -> DVec3 {
+    let disk = unit_square_to_unit_disk(rand_sq);
     let z = (1.0 - disk.x * disk.x - disk.y * disk.y).max(0.0).sqrt();
 
     disk.extend(z)

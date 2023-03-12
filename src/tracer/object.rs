@@ -32,21 +32,19 @@ pub trait Object: Sync {
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
     fn inside(&self, _r: &Ray) -> bool { false }
-    fn sample_from(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+    fn sample_from(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
 
-    fn scatter_pdf(&self, r: &Ray, h: &Hit) -> f64 {
-        let cos_theta = h.norm.dot(r.dir);
-        if cos_theta < 0.0 { 0.0 } else { cos_theta / PI }
-    }
-
     /* default pdf, uniformly at random from surface. */
     /* do this in scene.rs */
-    fn pdf(&self, r: &Ray, h: &Hit) -> f64 {
-        r.origin.distance_squared(h.p) /
-            (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())
+    fn sample_pdf(&self, p: DVec3, norm: DVec3, dir: DVec3) -> f64 {
+        /* TODO: dont calculate hit */
+        self.hit(&Ray::new(p, dir)).map_or(0.0, |h| {
+            p.distance_squared(h.p)
+                / (norm.dot(-dir.normalize()).max(0.0) * self.area())
+        })
     }
 }
 
@@ -192,11 +190,11 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         if rand_utils::rand_f64() > 0.5 {
-            self.triangles.0.sample_from(h, rand_sq)
+            self.triangles.0.sample_from(p, rand_sq)
         } else {
-            self.triangles.1.sample_from(h, rand_sq)
+            self.triangles.1.sample_from(p, rand_sq)
         }
     }
 

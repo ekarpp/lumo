@@ -92,13 +92,10 @@ impl Object for Triangle {
         }
     }
 
-    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
-        Ray::new(
-            h.p,
-            self.a + beta * (self.b - self.a) + gamma * (self.c - self.a) - h.p,
-        )
+        self.a + beta * (self.b - self.a) + gamma * (self.c - self.a) - p
     }
 }
