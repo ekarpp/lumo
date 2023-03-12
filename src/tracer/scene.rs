@@ -17,7 +17,7 @@ mod scene_tests;
 pub struct Scene {
     pub ambient: DVec3,
     /* vec of indices to objects that are lights */
-    lights: Vec<usize>,
+    pub lights: Vec<usize>,
     /* TODO */
     pub objects: Vec<Box<dyn Object>>,
 }
