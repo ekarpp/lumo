@@ -17,7 +17,7 @@ pub struct CosPdf {
 }
 
 impl CosPdf {
-    fn new(norm: DVec3) -> Self {
+    pub fn new(norm: DVec3) -> Self {
         let (u, v) = onb::uvw_basis(norm);
         Self {
             u: u,
@@ -44,14 +44,14 @@ impl Pdf for CosPdf {
 
 /* randomly sample point from the area of the object that is visible from p.
  * norm is the normal at p */
-pub struct ObjectPdf {
-    object: &dyn Object,
+pub struct ObjectPdf<'a> {
+    object: &'a Box<dyn Object>,
     p: DVec3,
     norm: DVec3,
 }
 
-impl ObjectPdf {
-    pub fn new(o: &dyn Object, p: DVec3, norm: DVec3) -> Self {
+impl<'a> ObjectPdf<'a> {
+    pub fn new(o: &'a Box<dyn Object>, p: DVec3, norm: DVec3) -> Self {
         Self {
             object: o,
             p: p,
@@ -60,7 +60,7 @@ impl ObjectPdf {
     }
 }
 
-impl Pdf for ObjectPdf {
+impl Pdf for ObjectPdf<'_> {
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
         self.object.sample_from(self.p, rand_sq)
     }
@@ -81,10 +81,10 @@ impl MixedPdf {
         }
     }
 
-    fn uniform_choose(&self) -> Box<dyn Pdf> {
+    fn uniform_choose(&self) -> &Box<dyn Pdf> {
         let idx = (self.pdfs.len() as f64 * rand_utils::rand_f64())
             .floor() as usize;
-        self.pdfs[idx]
+        &self.pdfs[idx]
     }
 }
 

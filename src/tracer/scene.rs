@@ -59,6 +59,8 @@ impl Scene {
             })
     }
 
+
+/*
     pub fn sample_lights_from(&self, h: &Hit) -> Vec<Hit> {
         self.lights.iter().flat_map(|light_idx: &usize| {
             let light = &self.objects[*light_idx];
@@ -67,8 +69,8 @@ impl Scene {
             }).collect::<Vec<Hit>>()
         }).collect()
     }
-
-    fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
+*/
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
                      -> Option<Hit> {
         let light_hit = light.hit(r).and_then(|mut h| {
             h.t -= EPSILON;
