@@ -17,6 +17,19 @@ pub struct PathTracingIntegrator {
 
 impl Integrator for PathTracingIntegrator {
     fn integrate(&self, r: &Ray, depth: usize) -> DVec3 {
+        self._integrate(r, depth, true)
+    }
+
+}
+
+impl PathTracingIntegrator {
+    pub fn new(s: Scene) -> Self {
+        Self {
+            scene: s,
+        }
+    }
+
+    fn _integrate(&self, r: &Ray, depth: usize, last_specular: bool) -> DVec3 {
         if rand_utils::rand_f64() < PATH_TRACE_RR {
             return DVec3::ZERO;
         }
@@ -26,18 +39,17 @@ impl Integrator for PathTracingIntegrator {
             Some(h) => {
                 let material = h.object.material();
 
-                let emit = if depth == 0 {
-                    material.emit(&h)
-                } else {
-                    DVec3::ZERO
-                };
-
                 match material.bsdf(&h, r) {
-                    None => emit,
+                    None => if last_specular { material.emit(&h) } else { DVec3::ZERO },
                     Some(sr) => {
+                        let is_specular = match material {
+                            Material::Mirror => true,
+                            _ => false,
+                        };
+
                         self.shadow_ray(&h, &sr)
                             + material.albedo_at(h.p)
-                            * self.integrate(&sr.ray, depth + 1)
+                            * self._integrate(&sr.ray, depth + 1, is_specular)
                             * sr.pdf.pdf_val(sr.ray.dir)
                             / (1.0 - PATH_TRACE_RR)
                     }
@@ -45,14 +57,7 @@ impl Integrator for PathTracingIntegrator {
             }
         }
     }
-}
 
-impl PathTracingIntegrator {
-    pub fn new(s: Scene) -> Self {
-        Self {
-            scene: s,
-        }
-    }
 
     fn shadow_ray(&self, h: &Hit, sr: &ScatterRay) -> DVec3 {
         let material = h.object.material();

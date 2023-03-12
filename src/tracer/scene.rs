@@ -106,6 +106,11 @@ impl Scene {
                     r,
                     Material::Mirror,
                 ),
+                Sphere::new(
+                    DVec3::new(light_xy, yg + r, light_z - light_xy),
+                    r,
+                    Material::Glass,
+                ),
                 Cuboid::new(
                     DAffine3::from_translation(
                         DVec3::new(light_xy, yg, 1.7*light_z))
