@@ -1,9 +1,9 @@
-use crate::{DVec3, DMat3, DAffine3, DVec2};
+use crate::{DVec3, DMat3, DAffine3};
 use std::f64::consts::PI;
+use crate::rand_utils;
 #[allow(unused_imports)]
-use crate::samplers::{UniformSampler, JitteredSampler};
 use crate::perlin::Perlin;
-use crate::consts::{EPSILON, SHADOW_RAYS};
+use crate::consts::EPSILON;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
@@ -17,7 +17,7 @@ mod scene_tests;
 pub struct Scene {
     pub ambient: DVec3,
     /* vec of indices to objects that are lights */
-    lights: Vec<usize>,
+    pub lights: Vec<usize>,
     /* TODO */
     pub objects: Vec<Box<dyn Object>>,
 }
@@ -25,13 +25,13 @@ pub struct Scene {
 /* temporary constant */
 const LIGHT_R: f64 = 0.1;
 
-type PixelSampler = JitteredSampler;
-
 impl Scene {
     pub fn new(amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
-        let lights = (0..objs.len()).map(|i: usize| match objs[i].material() {
-            Material::Light(_) => i,
-            _ => objs.len(),
+        let lights = (0..objs.len()).map(|i: usize| {
+            match objs[i].material() {
+                Material::Light(_) => i,
+                _ => objs.len(),
+            }
         }).filter(|i: &usize| *i != objs.len()).collect();
 
         Self {
@@ -39,6 +39,12 @@ impl Scene {
             lights: lights,
             objects: objs,
         }
+    }
+
+    pub fn uniform_random_light(&self) -> &Box<dyn Object> {
+        let rnd = rand_utils::rand_f64();
+        let idx = (rnd * self.lights.len() as f64).floor() as usize;
+        &self.objects[self.lights[idx]]
     }
 
     /* might want to print x of this, y of that, ... */
@@ -57,16 +63,7 @@ impl Scene {
             })
     }
 
-    pub fn sample_lights_from(&self, h: &Hit) -> Vec<Hit> {
-        self.lights.iter().flat_map(|light_idx: &usize| {
-            let light = &self.objects[*light_idx];
-            PixelSampler::new(SHADOW_RAYS).filter_map(|rand_sq: DVec2| {
-                self.hit_light(&light.sample_from(h, rand_sq), &light)
-            }).collect::<Vec<Hit>>()
-        }).collect()
-    }
-
-    fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
                      -> Option<Hit> {
         let light_hit = light.hit(r).and_then(|mut h| {
             h.t -= EPSILON;
@@ -98,9 +95,9 @@ impl Scene {
                  * before roof in this vector and everything should be ok */
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-light_xy, -yg, light_z + light_xy),
-                        DVec3::new(-light_xy, -yg, light_z - light_xy),
-                        DVec3::new(light_xy, -yg, light_z - light_xy),
+                        DVec3::new(-2.0*light_xy, -yg, light_z + 2.0*light_xy),
+                        DVec3::new(-2.0*light_xy, -yg, light_z - 2.0*light_xy),
+                        DVec3::new(2.0*light_xy, -yg, light_z - 2.0*light_xy),
                     ),
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
@@ -120,11 +117,15 @@ impl Scene {
                     )
                 ),
                 // roof
-                Plane::new(
-                    DVec3::new(0.0, -yg, 0.0),
-                    DVec3::new(0.0, -10000.0, 0.0),
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-yg, -yg, 2.0*light_z),
+                        DVec3::new(yg, -yg, 2.0*light_z),
+                        DVec3::new(yg, -yg, 0.0),
+                    ),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
+
                 /* floor */
                 Rectangle::new(
                     DMat3::from_cols(
@@ -132,7 +133,6 @@ impl Scene {
                         DVec3::new(yg, yg, light_z),
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
-                    /* can do texture here */
                     Material::Diffuse(Texture::Solid(col)),
                 ),
                 Rectangle::new(
@@ -144,21 +144,30 @@ impl Scene {
                     Material::Diffuse(Texture::Solid(col)),
                 ),
                 // front wall
-                Plane::new(
-                    DVec3::new(0.0, 0.0, 2.0*light_z),
-                    DVec3::new(0.0, 0.0, 100.0),
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-yg, -yg, 2.0*light_z),
+                        DVec3::new(yg, -yg, 2.0*light_z),
+                        DVec3::new(yg, yg, 2.0*light_z),
+                    ),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
                 // left wall
-                Plane::new(
-                    DVec3::new(yg, 0.0, 0.0),
-                    DVec3::new(10000.0, 0.0, 0.0),
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(yg, -yg, 0.0),
+                        DVec3::new(yg, -yg, 2.0*light_z),
+                        DVec3::new(yg, yg, 2.0*light_z),
+                    ),
                     Material::Diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                 ),
                 // right wall
-                Plane::new(
-                    DVec3::new(-yg, 0.0, 0.0),
-                    DVec3::new(-1000.0, 0.0, 0.0),
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-yg, -yg, 0.0),
+                        DVec3::new(-yg, -yg, 2.0*light_z),
+                        DVec3::new(-yg, yg, 2.0*light_z),
+                    ),
                     Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 // background

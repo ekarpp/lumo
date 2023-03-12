@@ -1,10 +1,8 @@
 use crate::DVec3;
-
-use crate::tracer::scene::Scene;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
+use crate::tracer::bxdfs;
 use crate::tracer::texture::Texture;
-use crate::tracer::illumination;
 
 pub enum Material {
     Diffuse(Texture),
@@ -16,13 +14,28 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn color(&self, h: &Hit, s: &Scene, r: &Ray) -> DVec3 {
+    /* only lights emit */
+    pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {
-            Self::Diffuse(t) => illumination::illuminate(t, h, s),
             Self::Light(t) => t.albedo_at(h.p),
-            Self::Mirror => illumination::reflect_ray(h, r).color(s),
-            Self::Glass => illumination::refract_ray(h, r).color(s),
             _ => DVec3::ZERO,
+        }
+    }
+
+    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
+        match self {
+            Self::Diffuse(t) => t.albedo_at(p),
+            Self::Mirror | Self::Glass => DVec3::ONE,
+            _ => DVec3::ZERO,
+        }
+    }
+
+    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<Ray> {
+        match self {
+            Self::Glass => bxdfs::glass_bsdf(h, r),
+            Self::Mirror => bxdfs::mirror_bsdf(h, r),
+            /*Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),*/
+            _ => None,
         }
     }
 

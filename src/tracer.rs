@@ -1,8 +1,9 @@
-pub mod ray;
 pub mod hit;
-pub mod camera;
+pub mod ray;
+pub mod bxdfs;
 pub mod scene;
+pub mod camera;
 pub mod object;
 pub mod texture;
 pub mod material;
-pub mod illumination;
+pub mod integrators;

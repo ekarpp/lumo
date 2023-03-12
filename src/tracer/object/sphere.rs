@@ -61,14 +61,14 @@ impl Object for Sphere {
         )
     }
 
-    /* sample random ray in cone from h.p towards self */
-    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    /* sample random direction in cone from p towards self */
+    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-basis orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
-        let w = (self.origin - h.p).normalize();
-        let (u, v) = _uvw_basis(w);
+        let w = (self.origin - p).normalize();
+        let (u, v) = onb::uvw_basis(w);
 
-        let dist_light = h.p.distance_squared(self.origin);
+        let dist_light = p.distance_squared(self.origin);
 
         let z = 1.0 + rand_sq.y *
             ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
@@ -77,18 +77,14 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        Ray::new(
-            h.p,
-            _k_to_uvw_basis(DVec3::new(x, y, z), u, v, w),
-            0,
-        )
+        onb::to_uvw_basis(DVec3::new(x, y, z), u, v, w)
     }
 
-    fn pdf(&self, r: &Ray, _h: &Hit) -> f64 {
+    fn sample_pdf(&self, p: DVec3, _dir: DVec3) -> f64 {
         // check hit here for debug
         let cos_theta_max = (
             1.0 - self.radius*self.radius
-                / (self.origin - r.origin).length_squared()
+                / (self.origin - p).length_squared()
         ).sqrt();
 
         (2.0 * PI * (1.0 - cos_theta_max)).recip()

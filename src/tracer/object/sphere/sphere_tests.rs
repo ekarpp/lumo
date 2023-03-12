@@ -14,7 +14,6 @@ fn no_self_intersect() {
     let r = Ray::new(
         DVec3::new(1.0, 0.0, 0.0),
         DVec3::new(0.0, 1.0, 0.0),
-        0,
     );
     assert!(s.hit(&r).is_none());
 }
@@ -26,7 +25,6 @@ fn no_intersect_behind() {
     let r = Ray::new(
         DVec3::new(1.5, 0.0, 0.0),
         DVec3::new(1.0, 0.0, 0.0),
-        0,
     );
     assert!(s.hit(&r).is_none());
 }
@@ -38,7 +36,6 @@ fn does_intersect() {
     let r = Ray::new(
         v,
         -v,
-        0,
     );
     assert!(s.hit(&r).is_some());
 }

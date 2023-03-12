@@ -2,6 +2,8 @@ use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
+mod onb;
+mod pdfs;
 mod image;
 mod tracer;
 mod consts;
@@ -107,6 +109,8 @@ fn main() {
 
     cli_args.output_cfg();
 
+    let scene_size = scene.size();
+
     let start_img = std::time::SystemTime::now();
     let image_buffer: Vec<DVec3> = renderer::_render(
         img_height,
@@ -114,12 +118,12 @@ fn main() {
         img_width,
         px_width,
         n_samples,
-        &cam,
-        &scene,
+        cam,
+        scene,
     );
     match start_img.elapsed() {
         Ok(v) => println!("rendered scene with {} objects in {v:?}",
-                          scene.size()),
+                          scene_size),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 
