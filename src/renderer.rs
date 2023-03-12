@@ -4,6 +4,7 @@ use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
+#[allow(unused_imports)]
 use crate::tracer::integrators::{Integrator, DirectLightingIntegrator, PathTracingIntegrator};
 
 type PxSampler = JitteredSampler;

@@ -80,7 +80,7 @@ impl Object for Sphere {
         onb::to_uvw_basis(DVec3::new(x, y, z), u, v, w)
     }
 
-    fn sample_pdf(&self, p: DVec3, _dir: DVec3) -> f64 {
+    fn sample_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
         // check hit here for debug
         let cos_theta_max = (
             1.0 - self.radius*self.radius
