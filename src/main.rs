@@ -3,6 +3,7 @@ use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
 mod onb;
+mod pdfs;
 mod image;
 mod tracer;
 mod consts;
