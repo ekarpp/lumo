@@ -17,11 +17,11 @@ impl Image {
 
         for y in 0..self.height {
             for x in 0..self.width {
-                let px = self.buffer[x + y*self.width] * 255.9;
+                let px = self.buffer[x + y*self.width];
                 let idx = 3*(x + y*self.width);
-                rgb_img[idx + 0] = px.x as u8;
-                rgb_img[idx + 1] = px.y as u8;
-                rgb_img[idx + 2] = px.z as u8;
+                rgb_img[idx + 0] = (px.x.sqrt() * 256.0) as u8;
+                rgb_img[idx + 1] = (px.y.sqrt() * 256.0) as u8;
+                rgb_img[idx + 2] = (px.z.sqrt() * 256.0) as u8;
             }
         }
 
