@@ -2,11 +2,9 @@ use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use crate::consts::INTEGRATION_MAX_DEPTH;
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
-use crate::samplers::JitteredSampler;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
-use crate::tracer::object::Object;
 
 pub trait Integrator {
     fn integrate(&self, r: &Ray, depth: usize) -> DVec3;
