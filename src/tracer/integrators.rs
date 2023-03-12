@@ -30,7 +30,7 @@ impl PathTracingIntegrator {
     }
 
     fn _integrate(&self, r: &Ray, depth: usize, last_specular: bool) -> DVec3 {
-        if rand_utils::rand_f64() < PATH_TRACE_RR {
+        if depth > 0 && rand_utils::rand_f64() < PATH_TRACE_RR {
             return DVec3::ZERO;
         }
 
@@ -43,7 +43,7 @@ impl PathTracingIntegrator {
                     None => if last_specular { material.emit(&h) } else { DVec3::ZERO },
                     Some(sr) => {
                         let is_specular = match material {
-                            Material::Mirror => true,
+                            Material::Mirror | Material::Glass => true,
                             _ => false,
                         };
 

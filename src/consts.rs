@@ -14,7 +14,7 @@ pub const ETA: f64 = 1.5;
 pub const PATH_TRACE_MAX_DEPTH: usize = 5;
 
 /* terminate path with this probability at each iteration */
-pub const PATH_TRACE_RR: f64 = 0.1;
+pub const PATH_TRACE_RR: f64 = 0.4;
 
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */
