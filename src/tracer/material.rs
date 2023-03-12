@@ -1,6 +1,6 @@
 use crate::DVec3;
 use crate::tracer::hit::Hit;
-use crate::tracer::ray::Ray;
+use crate::tracer::ray::{Ray, ScatterRay};
 use crate::tracer::bxdfs;
 use crate::tracer::texture::Texture;
 
@@ -30,11 +30,11 @@ impl Material {
         }
     }
 
-    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<Ray> {
+    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<ScatterRay> {
         match self {
             Self::Glass => bxdfs::glass_bsdf(h, r),
             Self::Mirror => bxdfs::mirror_bsdf(h, r),
-            /*Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),*/
+            Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),
             _ => None,
         }
     }
