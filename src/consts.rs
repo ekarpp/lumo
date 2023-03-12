@@ -10,7 +10,7 @@ pub const SHADOW_RAYS: usize = 4*4;
 pub const ETA: f64 = 1.5;
 
 /* maximum recursion depth of rays */
-pub const RAY_MAX_DEPTH: usize = 25;
+pub const INTEGRATION_MAX_DEPTH: usize = 25;
 
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */

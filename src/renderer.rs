@@ -26,7 +26,8 @@ pub fn _render(
 
             PxSampler::new(num_samples).map(|rand_sq: DVec2| {
                 integrator.integrate(
-                    cam.ray_at(u + rand_sq.x*px_width, v + rand_sq.y*px_height)
+                    &cam.ray_at(u + rand_sq.x*px_width, v + rand_sq.y*px_height),
+                    0
                 )
             }).fold(DVec3::ZERO, |acc: DVec3, c: DVec3| acc + c)
                 / num_samples as f64

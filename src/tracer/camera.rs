@@ -14,7 +14,6 @@ impl Camera {
         Ray::new(
             self.origin,
             self.blc + x*self.horiz + y*self.vert - self.origin,
-            0,
         )
     }
 

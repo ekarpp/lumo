@@ -1,5 +1,6 @@
 pub mod hit;
 pub mod ray;
+pub mod brdfs;
 pub mod scene;
 pub mod camera;
 pub mod object;

@@ -80,7 +80,6 @@ impl Object for Sphere {
         Ray::new(
             h.p,
             onb::to_uvw_basis(DVec3::new(x, y, z), u, v, w),
-            0,
         )
     }
 

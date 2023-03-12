@@ -4,20 +4,18 @@ use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 
-pub fn diffuse_scatter_ray(h: &Hit, r: &Ray) -> Option<Ray> {
+pub fn diffuse_scatter_ray(h: &Hit, _r: &Ray) -> Option<Ray> {
     let (u, v) = onb::uvw_basis(h.norm);
     Some(Ray::new(
         h.p,
         onb::to_uvw_basis(rand_utils::rand_unit_hemisphere(), u, v, h.norm),
-        r.depth
     ))
 }
 
-pub fn reflect_ray(h: &Hit, r: &Ray) -> Option<Ray> {
+pub fn reflect_ray(h: &Hit, _r: &Ray) -> Option<Ray> {
     Some(Ray::new(
         h.p,
         h.p - 2.0 * h.norm * h.p.dot(h.norm),
-        r.depth,
     ))
 }
 
@@ -39,6 +37,5 @@ pub fn refract_ray(h: &Hit, r: &Ray) -> Option<Ray> {
     Some(Ray::new(
         h.p,
         dir,
-        r.depth,
     ))
 }

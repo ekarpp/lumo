@@ -99,7 +99,6 @@ impl Object for Triangle {
         Ray::new(
             h.p,
             self.a + beta * (self.b - self.a) + gamma * (self.c - self.a) - h.p,
-            0,
         )
     }
 }
