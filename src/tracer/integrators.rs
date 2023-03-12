@@ -25,10 +25,37 @@ impl Integrator for PathTracingIntegrator {
             Some(h) => {
                 let material = h.object.material();
 
+                let emit = if depth == 0 {
+                    material.emit(&h)
+                } else {
+                    DVec3::ZERO
+                };
+
                 match material.bsdf(&h, r) {
                     Some(sr) => self.integrate(&sr, depth + 1),
                     None => {
+                        let light = self.scene.uniform_random_light();
+
+                        let pdf_light = ObjectPdf::new(light, h.p);
+                        let rl = Ray::new(
+                            h.p,
+                            pdf_light.generate_dir(
+                                rand_utils::rand_unit_square()
+                            ),
+                        );
+
                         let pdf_scatter = CosPdf::new(h.norm);
+                        /* if hit light, we dont scatter. move pdfs somerehwer else */
+
+                        let lc = match self.scene.hit_light(&rl, light) {
+                            None => DVec3::ZERO,
+                            Some(hl) => {
+                                material.albedo_at(h.p)
+                                    * pdf_scatter.pdf_val(rl.dir)
+                                    / pdf_light.pdf_val(rl.dir)
+                            }
+                        };
+
                         let r = Ray::new(
                             h.p,
                             pdf_scatter.generate_dir(
@@ -36,7 +63,7 @@ impl Integrator for PathTracingIntegrator {
                             ),
                         );
 
-                        material.emit(&h)
+                        emit + lc
                             + material.albedo_at(h.p)
                             * self.integrate(&r, depth + 1)
                             * h.norm.dot(r.dir.normalize())
