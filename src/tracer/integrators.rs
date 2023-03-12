@@ -57,12 +57,15 @@ impl Integrator for DirectLightingIntegrator {
             None => DVec3::new(0.0, 1.0, 0.0),
             Some(h) => {
                 let material = h.object.material();
-                material.emit(&h)
-                    + material.albedo_at(h.p)
-                    * self.light_at(&h)
-                    * material.bsdf(&h, r).map_or(DVec3::ONE, |r: Ray| {
-                        self.integrate(&r, depth+1)
-                    })
+                match material.bsdf(&h, r) {
+                    Some(sr) => self.integrate(&sr, depth + 1),
+                    None => {
+                        material.emit(&h)
+                            + material.albedo_at(h.p)
+                            * self.light_at(&h)
+
+                    }
+                }
             }
         }
     }
