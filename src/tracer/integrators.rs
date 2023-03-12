@@ -1,6 +1,6 @@
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
-use crate::consts::{SHADOW_RAYS, INTEGRATION_MAX_DEPTH};
+use crate::consts::INTEGRATION_MAX_DEPTH;
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
 use crate::samplers::JitteredSampler;
 use crate::tracer::hit::Hit;
@@ -33,42 +33,17 @@ impl DirectLightingIntegrator {
         let pdf_scatter = CosPdf::new(
             h.norm,
         );
-
         let r = Ray::new(
             h.p,
             pdf_light.generate_dir(rand_utils::rand_unit_square()),
         );
-        /*
-        JitteredSampler::new(SHADOW_RAYS).filter_map(|rand_sq: DVec2| {
-            self.scene.hit_light(
-                &Ray::new(
-                    h.p,
-                    pdf_light.generate_dir(rand_sq),
-                ),
-                &light)
-        }).map(|lh| {
-            pdf_scatter.pdf_val(lh.p - h.p)
-                / pdf_light.pdf_val(lh.p - h.p)
-        }).fold(0.0, |acc, c| acc + c) / SHADOW_RAYS as f64
-        */
-
         match self.scene.hit_light(&r, &light) {
             None => 0.0,
             Some(_lh) => {
-                50.0 * pdf_scatter.pdf_val(r.dir)
+                5.0 * pdf_scatter.pdf_val(r.dir)
                     / pdf_light.pdf_val(r.dir)
             }
         }
-/*
-        self.scene.sample_lights_from(h).iter().map(|lh: &Hit| {
-            let r = Ray::new(
-                h.p,
-                lh.p - h.p,
-            );
-            h.object.scatter_pdf(&r, h)
-                / lh.object.pdf(&r, lh)
-        }).fold(DVec3::ZERO, |acc, c| acc + c) / SHADOW_RAYS as f64
-*/
     }
 }
 
@@ -81,22 +56,14 @@ impl Integrator for DirectLightingIntegrator {
         match self.scene.hit(r) {
             None => DVec3::new(0.0, 1.0, 0.0),
             Some(h) => {
-                h.object.material().emit(&h)
-                    + h.object.material().albedo_at(h.p) * self.light_at(&h)
-            }
-
-            /*
-            {
                 let material = h.object.material();
                 material.emit(&h)
-                    + material.albedo(&h)
-                    * material.scatter(&h, &r).map_or(DVec3::ZERO, |sr: Ray| {
-                        self.integrate(&sr, depth + 1)
-                            * h.object.scatter_pdf(&sr, &h)
-                            / h.object.scatter_pdf(&sr, &h)
+                    + material.albedo_at(h.p)
+                    * self.light_at(&h)
+                    * material.bsdf(&h, r).map_or(DVec3::ONE, |r: Ray| {
+                        self.integrate(&r, depth+1)
                     })
             }
-             */
         }
     }
 }

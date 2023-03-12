@@ -34,7 +34,7 @@ impl Material {
         match self {
             Self::Glass => bxdfs::glass_bsdf(h, r),
             Self::Mirror => bxdfs::mirror_bsdf(h, r),
-            Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),
+            /*Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),*/
             _ => None,
         }
     }

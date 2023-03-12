@@ -28,7 +28,7 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 pub trait Object: Sync {
     /* unit length normal for r at p. only called during hit creation
      * => no need to implement for rectangle or cuboid. */
-    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { DVec3::ZERO }
+    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { todo!() }
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
     fn inside(&self, _r: &Ray) -> bool { false }
@@ -186,7 +186,7 @@ impl Rectangle {
 impl Object for Rectangle {
     fn size(&self) -> usize { 2 }
 
-    fn area(&self) -> f64 { 2.0*self.triangles.0.area() }
+    fn area(&self) -> f64 { 2.0 * self.triangles.0.area() }
 
     fn material(&self) -> &Material { &self.material }
 
