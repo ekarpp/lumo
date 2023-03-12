@@ -10,8 +10,8 @@ pub const SHADOW_RAYS: usize = 4*4;
 /* refraction pub constant of glass */
 pub const ETA: f64 = 1.5;
 
-/* maximum recursion depth of rays */
-pub const INTEGRATION_MAX_DEPTH: usize = 25;
+/* maximum recursion depth of path tracing */
+pub const PATH_TRACE_MAX_DEPTH: usize = 5;
 
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */

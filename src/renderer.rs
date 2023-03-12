@@ -4,10 +4,11 @@ use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
-use crate::tracer::integrators::{Integrator, DirectLightingIntegrator};
+use crate::tracer::integrators::{Integrator, DirectLightingIntegrator, PathTracingIntegrator};
 
 type PxSampler = JitteredSampler;
-type Intgrtr = DirectLightingIntegrator;
+//type Intgrtr = DirectLightingIntegrator;
+type Intgrtr = PathTracingIntegrator;
 
 pub fn _render(
     img_height: usize,
