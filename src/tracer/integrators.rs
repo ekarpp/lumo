@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::DVec3;
 use crate::rand_utils;
 use crate::consts::{PATH_TRACE_RR, PATH_TRACE_MAX_DEPTH};
@@ -54,7 +55,8 @@ impl PathTracingIntegrator {
                         self.shadow_ray(&h, &sr)
                             + material.albedo_at(h.p)
                             * self._integrate(&sr.ray, depth + 1, is_specular)
-                            * sr.pdf.pdf_val(sr.ray.dir)
+                            /* hit ok to pass here?? */
+                            * sr.pdf.pdf_val(sr.ray.dir, &h)
                             / (1.0 - PATH_TRACE_RR)
                     }
                 }
@@ -82,8 +84,8 @@ impl PathTracingIntegrator {
                     None => DVec3::ZERO,
                     Some(hl) => {
                         material.albedo_at(h.p)
-                            * sr.pdf.pdf_val(r.dir)
-                            / pdf_light.pdf_val(r.dir)
+                            * sr.pdf.pdf_val(r.dir, &hl)
+                            / pdf_light.pdf_val(r.dir, &hl)
                     }
                 }
             }
@@ -145,9 +147,9 @@ impl DirectLightingIntegrator {
         );
         match self.scene.hit_light(&r, &light) {
             None => 0.0,
-            Some(_lh) => {
-                5.0 * pdf_scatter.pdf_val(r.dir)
-                    / pdf_light.pdf_val(r.dir)
+            Some(lh) => {
+                pdf_scatter.pdf_val(r.dir, &lh)
+                    / pdf_light.pdf_val(r.dir, &lh)
             }
         }
     }

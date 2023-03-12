@@ -1,12 +1,14 @@
+#![allow(dead_code)]
 use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::onb;
 use crate::rand_utils;
+use crate::tracer::hit::Hit;
 use crate::tracer::object::Object;
 
 pub trait Pdf {
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3;
-    fn pdf_val(&self, dir: DVec3) -> f64;
+    fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64;
 }
 
 /* cosine weighed samples on hemisphere pointing towards w */
@@ -37,7 +39,7 @@ impl Pdf for CosPdf {
         )
     }
 
-    fn pdf_val(&self, dir: DVec3) -> f64 {
+    fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64 {
         self.w.dot(dir.normalize()) * PI.recip()
     }
 }
@@ -63,8 +65,8 @@ impl Pdf for ObjectPdf<'_> {
         self.object.sample_from(self.p, rand_sq)
     }
 
-    fn pdf_val(&self, dir: DVec3) -> f64 {
-        self.object.sample_pdf(self.p, dir)
+    fn pdf_val(&self, dir: DVec3, h: &Hit) -> f64 {
+        self.object.sample_pdf(self.p, dir, h)
     }
 }
 
@@ -91,8 +93,8 @@ impl Pdf for MixedPdf {
         self.uniform_choose().generate_dir(rand_sq)
     }
 
-    fn pdf_val(&self, dir: DVec3) -> f64 {
-        self.pdfs.iter().fold(0.0, |acc, pdf| acc + pdf.pdf_val(dir))
+    fn pdf_val(&self, dir: DVec3, h: &Hit) -> f64 {
+        self.pdfs.iter().fold(0.0, |acc, pdf| acc + pdf.pdf_val(dir, h))
             / self.pdfs.len() as f64
     }
 }
@@ -108,7 +110,7 @@ impl UnitPdf {
 
 impl Pdf for UnitPdf {
     /* just make sure it never gets called */
-    fn generate_dir(&self, rand_sq: DVec2) -> DVec3 { todo!() }
+    fn generate_dir(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
 
-    fn pdf_val(&self, dir: DVec3) -> f64 { 1.0 }
+    fn pdf_val(&self, _dir: DVec3, _h: &Hit) -> f64 { 1.0 }
 }
