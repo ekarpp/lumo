@@ -95,9 +95,9 @@ impl Scene {
                  * before roof in this vector and everything should be ok */
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-2.0*light_xy, -yg, light_z + 2.0*light_xy),
-                        DVec3::new(-2.0*light_xy, -yg, light_z - 2.0*light_xy),
-                        DVec3::new(2.0*light_xy, -yg, light_z - 2.0*light_xy),
+                        DVec3::new(-2.0*light_xy, -yg - EPSILON, light_z + 2.0*light_xy),
+                        DVec3::new(-2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
+                        DVec3::new(2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
                     ),
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
@@ -107,8 +107,8 @@ impl Scene {
                     Material::Mirror,
                 ),
                 Sphere::new(
-                    DVec3::new(light_xy, yg + r, light_z - light_xy),
-                    r,
+                    DVec3::new(0.0, yg + r, light_z - light_xy),
+                    0.5*r,
                     Material::Glass,
                 ),
                 Cuboid::new(
