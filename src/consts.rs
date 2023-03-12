@@ -4,13 +4,14 @@ use crate::DVec3;
 pub const EPSILON: f64 = 0.001;
 
 /* number of shadow rays per intersection point */
+#[allow(dead_code)]
 pub const SHADOW_RAYS: usize = 4*4;
 
 /* refraction pub constant of glass */
 pub const ETA: f64 = 1.5;
 
 /* maximum recursion depth of rays */
-pub const RAY_MAX_DEPTH: usize = 10;
+pub const INTEGRATION_MAX_DEPTH: usize = 25;
 
 /* add these to material itself? */
 /* specular lobe coefficient. smaller = bigger lobe */

@@ -1,5 +1,6 @@
 use crate::{DVec3, DMat3, DVec2, DAffine3};
 use std::f64::consts::PI;
+use crate::onb;
 use crate::rand_utils;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
@@ -12,25 +13,6 @@ mod plane_tests;
 
 pub mod sphere;
 pub mod triangle;
-
-/* w normalized. returns orthonormal uvw-basis */
-fn _uvw_basis(w: DVec3) -> (DVec3, DVec3) {
-    let a = if w.x.abs() > 0.9 {
-        DVec3::new(0.0, 1.0, 0.0)
-    } else {
-        DVec3::new(1.0, 0.0, 0.0)
-    };
-
-    let v = w.cross(a).normalize();
-    let u = w.cross(v);
-
-    (u, v)
-}
-
-/* transform k to uvw orthonormal basis */
-fn _k_to_uvw_basis(k: DVec3, u: DVec3, v: DVec3, w: DVec3) -> DVec3 {
-    k.x*u + k.y*v + k.z*w
-}
 
 /* make sure normal points the right way for triangle/plane/sphere */
 fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
@@ -46,25 +28,23 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 pub trait Object: Sync {
     /* unit length normal for r at p. only called during hit creation
      * => no need to implement for rectangle or cuboid. */
-    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { DVec3::ZERO }
+    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { todo!() }
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     fn size(&self) -> usize { 1 }
     fn inside(&self, _r: &Ray) -> bool { false }
-    fn sample_from(&self, _h: &Hit, _rand_disk: DVec2) -> Ray { todo!() }
+    fn sample_from(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
 
-    fn scatter_pdf(&self, r: &Ray, h: &Hit) -> f64 {
-        let cos_theta = h.norm.dot(r.dir);
-        if cos_theta < 0.0 { 0.0 } else { cos_theta / PI }
-    }
-
     /* default pdf, uniformly at random from surface. */
     /* do this in scene.rs */
-    fn pdf(&self, r: &Ray, h: &Hit) -> f64 {
-        r.origin.distance_squared(h.p) /
-            (h.norm.dot(-r.dir.normalize()).max(0.0) * self.area())
+    fn sample_pdf(&self, p: DVec3, dir: DVec3) -> f64 {
+        /* TODO: dont calculate hit */
+        self.hit(&Ray::new(p, dir)).map_or(0.0, |h| {
+            p.distance_squared(h.p)
+                / (h.norm.dot(-dir.normalize()).max(0.0) * self.area())
+        })
     }
 }
 
@@ -206,15 +186,15 @@ impl Rectangle {
 impl Object for Rectangle {
     fn size(&self) -> usize { 2 }
 
-    fn area(&self) -> f64 { 2.0*self.triangles.0.area() }
+    fn area(&self) -> f64 { 2.0 * self.triangles.0.area() }
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_from(&self, h: &Hit, rand_sq: DVec2) -> Ray {
+    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         if rand_utils::rand_f64() > 0.5 {
-            self.triangles.0.sample_from(h, rand_sq)
+            self.triangles.0.sample_from(p, rand_sq)
         } else {
-            self.triangles.1.sample_from(h, rand_sq)
+            self.triangles.1.sample_from(p, rand_sq)
         }
     }
 

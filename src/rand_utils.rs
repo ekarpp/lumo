@@ -45,15 +45,35 @@ pub fn unit_square_to_unit_disk(rand_sq: DVec2) -> DVec2 {
     }
 }
 
-/* uniform random DVec3 in unit sphere */
-pub fn rand_unit_sphere() -> DVec3 {
-    let r1 = rand_f64();
-    let r2 = rand_f64();
+/* uniform random DVec3 on hemisphere pointing towards +z */
+pub fn rand_unit_hemisphere() -> DVec3 {
+    let sq = rand_unit_square();
+
+    let phi = 2.0 * PI * sq.x;
 
     DVec3::new(
-        (2.0*PI*r1).cos()*2.0*(r2*(1.0 - r2)).sqrt(),
-        (2.0*PI*r1).sin()*2.0*(r2*(1.0 - r2)).sqrt(),
-        1.0 - 2.0*r2,
+        phi.cos() * sq.y.sqrt(),
+        phi.sin() * sq.y.sqrt(),
+        (1.0 - sq.y).sqrt(),
+    )
+}
+
+/* cosine weighed random DVec3s on hemisphere pointing towards +z */
+pub fn sq_to_cos_unit_hemisphere(rand_sq: DVec2) -> DVec3 {
+    let disk = unit_square_to_unit_disk(rand_sq);
+    let z = (1.0 - disk.x * disk.x - disk.y * disk.y).max(0.0).sqrt();
+
+    disk.extend(z)
+}
+
+/* uniform random DVec3 in unit sphere */
+pub fn rand_unit_sphere() -> DVec3 {
+    let sq = rand_unit_square();
+
+    DVec3::new(
+        (2.0 * PI * sq.x).cos() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
+        (2.0 * PI * sq.x).sin() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
+        1.0 - 2.0 * sq.y,
     )
 }
 

@@ -15,7 +15,6 @@ fn point_order_irrelevant() {
     let r = Ray::new(
         DVec3::ZERO,
         DVec3::new(0.0, 0.0, -1.0),
-        0,
     );
 
     (0..6).for_each(|i| {
@@ -44,7 +43,6 @@ fn no_self_intersect() {
     let r = Ray::new(
         DVec3::ZERO,
         DVec3::new(0.0, 0.0, -1.0),
-        0,
     );
     assert!(t.hit(&r).is_none());
 }

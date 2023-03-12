@@ -26,7 +26,6 @@ fn light_pass_glass() {
     let r = Ray::new(
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, 0.0),
-        0,
     );
     assert!(s.hit_light(&r, &s.objects[0]).is_some());
 }
@@ -37,7 +36,6 @@ fn light_no_pass() {
     let r = Ray::new(
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, 0.0),
-        0,
     );
     assert!(s.hit_light(&r, &s.objects[0]).is_none());
 }
@@ -48,7 +46,6 @@ fn object_behind_light() {
     let r = Ray::new(
         DVec3::new(0.0, 3.0, 0.0),
         DVec3::new(0.0, -1.0, 0.0),
-        0,
     );
     assert!(s.hit_light(&r, &s.objects[0]).is_some());
 }
@@ -73,7 +70,6 @@ fn hits_closest() {
     let r = Ray::new(
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, 0.0),
-        0,
     );
     let is_glass = |h: &Hit| -> bool {
         matches!(h.object.material(), Material::Glass)
