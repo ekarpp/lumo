@@ -63,10 +63,9 @@ impl Object for Sphere {
 
     /* sample random direction in cone from p towards self */
     fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
-        /* uvw-basis orthonormal basis,
+        /* uvw-orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
-        let w = (self.origin - p).normalize();
-        let (u, v) = onb::uvw_basis(w);
+        let uvw = Onb::new(self.origin - p);
 
         let dist_light = p.distance_squared(self.origin);
 
@@ -77,7 +76,7 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        onb::to_uvw_basis(DVec3::new(x, y, z), u, v, w)
+        uvw.to_uvw_basis(DVec3::new(x, y, z))
     }
 
     fn sample_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
