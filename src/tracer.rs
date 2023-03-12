@@ -6,3 +6,4 @@ pub mod object;
 pub mod texture;
 pub mod material;
 pub mod scattering;
+pub mod integrators;
