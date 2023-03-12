@@ -1,4 +1,4 @@
-use crate::{DVec3, DVec2};
+use crate::DVec3;
 use crate::rand_utils;
 use crate::consts::INTEGRATION_MAX_DEPTH;
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
@@ -22,7 +22,7 @@ impl DirectLightingIntegrator {
     }
 
     fn light_at(&self, h: &Hit) -> f64 {
-        let light = &self.scene.objects[self.scene.lights[0]];
+        let light = self.scene.uniform_random_light();
 
         let pdf_light = ObjectPdf::new(
             light,
