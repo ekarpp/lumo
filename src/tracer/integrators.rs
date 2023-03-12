@@ -1,6 +1,6 @@
 use crate::DVec3;
 use crate::rand_utils;
-use crate::consts::PATH_TRACE_MAX_DEPTH;
+use crate::consts::{PATH_TRACE_RR, PATH_TRACE_MAX_DEPTH};
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -16,7 +16,7 @@ pub struct PathTracingIntegrator {
 
 impl Integrator for PathTracingIntegrator {
     fn integrate(&self, r: &Ray, depth: usize) -> DVec3 {
-        if depth > PATH_TRACE_MAX_DEPTH {
+        if rand_utils::rand_f64() < PATH_TRACE_RR {
             return DVec3::ZERO;
         }
 
@@ -40,6 +40,7 @@ impl Integrator for PathTracingIntegrator {
                             + material.albedo_at(h.p)
                             * self.integrate(&r, depth + 1)
                             * h.norm.dot(r.dir.normalize())
+                            / (1.0 - PATH_TRACE_RR)
                     }
                 }
             }
