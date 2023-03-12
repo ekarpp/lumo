@@ -121,7 +121,7 @@ impl Scene {
                     DMat3::from_cols(
                         DVec3::new(-yg, -yg, 2.0*light_z),
                         DVec3::new(yg, -yg, 2.0*light_z),
-                        DVec3::new(yg, -yg, light_z + 0.1),
+                        DVec3::new(yg, -yg, 0.0),
                     ),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
@@ -155,7 +155,7 @@ impl Scene {
                 // left wall
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(yg, -yg, light_z),
+                        DVec3::new(yg, -yg, 0.0),
                         DVec3::new(yg, -yg, 2.0*light_z),
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
@@ -164,7 +164,7 @@ impl Scene {
                 // right wall
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-yg, -yg, light_z + 0.1),
+                        DVec3::new(-yg, -yg, 0.0),
                         DVec3::new(-yg, -yg, 2.0*light_z),
                         DVec3::new(-yg, yg, 2.0*light_z),
                     ),
