@@ -96,3 +96,19 @@ impl Pdf for MixedPdf {
             / self.pdfs.len() as f64
     }
 }
+
+/* for glass and mirror. glass might want own pdf.. */
+pub struct UnitPdf {}
+
+impl UnitPdf {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Pdf for UnitPdf {
+    /* just make sure it never gets called */
+    fn generate_dir(&self, rand_sq: DVec2) -> DVec3 { todo!() }
+
+    fn pdf_val(&self, dir: DVec3) -> f64 { 1.0 }
+}

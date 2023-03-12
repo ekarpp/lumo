@@ -3,7 +3,8 @@ use crate::rand_utils;
 use crate::consts::{PATH_TRACE_RR, PATH_TRACE_MAX_DEPTH};
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
 use crate::tracer::hit::Hit;
-use crate::tracer::ray::Ray;
+use crate::tracer::material::Material;
+use crate::tracer::ray::{Ray, ScatterRay};
 use crate::tracer::scene::Scene;
 
 pub trait Integrator {
@@ -32,41 +33,12 @@ impl Integrator for PathTracingIntegrator {
                 };
 
                 match material.bsdf(&h, r) {
-                    Some(sr) => self.integrate(&sr, depth + 1),
-                    None => {
-                        let light = self.scene.uniform_random_light();
-
-                        let pdf_light = ObjectPdf::new(light, h.p);
-                        let rl = Ray::new(
-                            h.p,
-                            pdf_light.generate_dir(
-                                rand_utils::rand_unit_square()
-                            ),
-                        );
-
-                        let pdf_scatter = CosPdf::new(h.norm);
-                        /* if hit light, we dont scatter. move pdfs somerehwer else */
-
-                        let lc = match self.scene.hit_light(&rl, light) {
-                            None => DVec3::ZERO,
-                            Some(hl) => {
-                                material.albedo_at(h.p)
-                                    * pdf_scatter.pdf_val(rl.dir)
-                                    / pdf_light.pdf_val(rl.dir)
-                            }
-                        };
-
-                        let r = Ray::new(
-                            h.p,
-                            pdf_scatter.generate_dir(
-                                rand_utils::rand_unit_square()
-                            ),
-                        );
-
-                        emit + lc
+                    None => emit,
+                    Some(sr) => {
+                        self.shadow_ray(&h, &sr)
                             + material.albedo_at(h.p)
-                            * self.integrate(&r, depth + 1)
-                            * h.norm.dot(r.dir.normalize())
+                            * self.integrate(&sr.ray, depth + 1)
+                            * sr.pdf.pdf_val(sr.ray.dir)
                             / (1.0 - PATH_TRACE_RR)
                     }
                 }
@@ -79,6 +51,34 @@ impl PathTracingIntegrator {
     pub fn new(s: Scene) -> Self {
         Self {
             scene: s,
+        }
+    }
+
+    fn shadow_ray(&self, h: &Hit, sr: &ScatterRay) -> DVec3 {
+        let material = h.object.material();
+        match material {
+            Material::Diffuse(_) => {
+                let light = self.scene.uniform_random_light();
+
+                let pdf_light = ObjectPdf::new(light, h.p);
+                /* ray to sampled point on light */
+                let r = Ray::new(
+                    h.p,
+                    pdf_light.generate_dir(
+                        rand_utils::rand_unit_square()
+                    ),
+                );
+
+                match self.scene.hit_light(&r, light) {
+                    None => DVec3::ZERO,
+                    Some(hl) => {
+                        material.albedo_at(h.p)
+                            * sr.pdf.pdf_val(r.dir)
+                            / pdf_light.pdf_val(r.dir)
+                    }
+                }
+            }
+            _ => DVec3::ZERO,
         }
     }
 }
@@ -99,8 +99,9 @@ impl Integrator for DirectLightingIntegrator {
             Some(h) => {
                 let material = h.object.material();
                 match material.bsdf(&h, r) {
-                    Some(sr) => self.integrate(&sr, depth + 1),
-                    None => {
+                    None => material.emit(&h),
+                    /* mirror broken */
+                    Some(_) => {
                         material.emit(&h)
                             + material.albedo_at(h.p)
                             * self.light_at(&h)
