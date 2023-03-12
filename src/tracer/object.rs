@@ -39,11 +39,11 @@ pub trait Object: Sync {
 
     /* default pdf, uniformly at random from surface. */
     /* do this in scene.rs */
-    fn sample_pdf(&self, p: DVec3, norm: DVec3, dir: DVec3) -> f64 {
+    fn sample_pdf(&self, p: DVec3, dir: DVec3) -> f64 {
         /* TODO: dont calculate hit */
         self.hit(&Ray::new(p, dir)).map_or(0.0, |h| {
             p.distance_squared(h.p)
-                / (norm.dot(-dir.normalize()).max(0.0) * self.area())
+                / (h.norm.dot(-dir.normalize()).max(0.0) * self.area())
         })
     }
 }

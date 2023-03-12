@@ -1,7 +1,8 @@
-use crate::DVec3;
+use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use crate::consts::{SHADOW_RAYS, INTEGRATION_MAX_DEPTH};
 use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
+use crate::samplers::JitteredSampler;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
@@ -28,7 +29,6 @@ impl DirectLightingIntegrator {
         let pdf_light = ObjectPdf::new(
             light,
             h.p,
-            h.norm,
         );
         let pdf_scatter = CosPdf::new(
             h.norm,
@@ -38,11 +38,24 @@ impl DirectLightingIntegrator {
             h.p,
             pdf_light.generate_dir(rand_utils::rand_unit_square()),
         );
+        /*
+        JitteredSampler::new(SHADOW_RAYS).filter_map(|rand_sq: DVec2| {
+            self.scene.hit_light(
+                &Ray::new(
+                    h.p,
+                    pdf_light.generate_dir(rand_sq),
+                ),
+                &light)
+        }).map(|lh| {
+            pdf_scatter.pdf_val(lh.p - h.p)
+                / pdf_light.pdf_val(lh.p - h.p)
+        }).fold(0.0, |acc, c| acc + c) / SHADOW_RAYS as f64
+        */
 
         match self.scene.hit_light(&r, &light) {
             None => 0.0,
             Some(_lh) => {
-                pdf_scatter.pdf_val(r.dir)
+                50.0 * pdf_scatter.pdf_val(r.dir)
                     / pdf_light.pdf_val(r.dir)
             }
         }
@@ -65,7 +78,7 @@ impl Integrator for DirectLightingIntegrator {
             return DVec3::ZERO;
         }
 
-        match self.scene.hit(&r) {
+        match self.scene.hit(r) {
             None => DVec3::new(0.0, 1.0, 0.0),
             Some(h) => {
                 h.object.material().emit(&h)

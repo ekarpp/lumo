@@ -38,7 +38,7 @@ impl Pdf for CosPdf {
     }
 
     fn pdf_val(&self, dir: DVec3) -> f64 {
-        dir.dot(self.w) * PI.recip()
+        self.w.dot(dir.normalize()) * PI.recip()
     }
 }
 
@@ -47,16 +47,14 @@ impl Pdf for CosPdf {
 pub struct ObjectPdf<'a> {
     object: &'a Box<dyn Object>,
     p: DVec3,
-    norm: DVec3,
 }
 
 impl<'a> ObjectPdf<'a> {
-    pub fn new(o: &'a Box<dyn Object>, p: DVec3, norm: DVec3) -> Self {
+    pub fn new(o: &'a Box<dyn Object>, p: DVec3) -> Self {
         Self {
             object: o,
             p: p,
-            norm: norm,
-        }
+         }
     }
 }
 
@@ -66,7 +64,7 @@ impl Pdf for ObjectPdf<'_> {
     }
 
     fn pdf_val(&self, dir: DVec3) -> f64 {
-        self.object.sample_pdf(self.p, self.norm, dir)
+        self.object.sample_pdf(self.p, dir)
     }
 }
 
