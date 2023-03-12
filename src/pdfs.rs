@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
-use crate::onb;
+use crate::onb::Onb;
 use crate::rand_utils;
 use crate::tracer::hit::Hit;
 use crate::tracer::object::Object;
@@ -13,34 +13,24 @@ pub trait Pdf {
 
 /* cosine weighed samples on hemisphere pointing towards w */
 pub struct CosPdf {
-    u: DVec3,
-    v: DVec3,
-    w: DVec3,
+    uvw: Onb,
 }
 
 impl CosPdf {
-    pub fn new(norm: DVec3) -> Self {
-        let (u, v) = onb::uvw_basis(norm);
+    pub fn new(w: DVec3) -> Self {
         Self {
-            u: u,
-            v: v,
-            w: norm,
+            uvw: Onb::new(w),
         }
     }
 }
 
 impl Pdf for CosPdf {
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        onb::to_uvw_basis(
-            rand_utils::sq_to_cos_unit_hemisphere(rand_sq),
-            self.u,
-            self.v,
-            self.w,
-        )
+        self.uvw.to_uvw_basis(rand_utils::sq_to_cos_unit_hemisphere(rand_sq))
     }
 
     fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64 {
-        self.w.dot(dir.normalize()) * PI.recip()
+        self.uvw.w.dot(dir.normalize()) * PI.recip()
     }
 }
 

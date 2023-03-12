@@ -1,6 +1,6 @@
 use crate::{DVec3, DMat3, DVec2, DAffine3};
 use std::f64::consts::PI;
-use crate::onb;
+use crate::onb::Onb;
 use crate::rand_utils;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
