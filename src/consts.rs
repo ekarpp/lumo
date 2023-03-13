@@ -1,7 +1,7 @@
 use crate::DVec3;
 
 /* epsilon to avoid self intersection of objects */
-pub const EPSILON: f64 = 0.001;
+pub const EPSILON: f64 = 0.0001;
 
 /* number of shadow rays per intersection point */
 #[allow(dead_code)]
