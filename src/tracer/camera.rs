@@ -30,21 +30,21 @@ impl Camera {
     ///
     /// # Arguments
     ///
-    /// * `aspect_ratio` - aspect ratio of the image plane
-    /// * `vfov` - vertical field of view, in degrees
-    /// * `from` - camera origin
-    /// * `towards` - camera is looking at this point
-    /// * `up` - defines up direction for the camera
-    /// * `focal_length` - focal length of the camera
+    /// * `aspect_ratio` - Aspect ratio of the image plane
+    /// * `vfov` - Vertical field of view, in degrees
+    /// * `origin` - Camera origin
+    /// * `towards` - Camera is looking at this point
+    /// * `up` - Defines up direction for the camera
+    /// * `focal_length` - Focal length of the camera
     pub fn new(
         aspect_ratio: f64,
         vfov: f64,
-        from: DVec3,
+        origin: DVec3,
         towards: DVec3,
         up: DVec3,
         focal_length: f64
     ) -> Self {
-        assert!(from != towards);
+        assert!(origin != towards);
         assert!(vfov != 0.0);
 
         let h = (vfov.to_radians() / 2.0).tan();
@@ -53,7 +53,7 @@ impl Camera {
         /* viewport width */
         let vpw = vph * aspect_ratio;
 
-        let z = (from - towards).normalize();
+        let z = (origin - towards).normalize();
         let x = up.cross(z).normalize();
         let y = z.cross(x);
 
@@ -61,10 +61,10 @@ impl Camera {
         let vert = y * vph * focal_length;
 
         Self {
-            origin: from,
-            horiz: horiz,
-            vert: vert,
-            blc: from - (horiz + vert) / 2.0 - z*focal_length,
+            origin,
+            horiz,
+            vert,
+            blc: origin - (horiz + vert) / 2.0 - z*focal_length,
         }
     }
 }

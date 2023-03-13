@@ -27,17 +27,17 @@ pub struct Scene {
 const LIGHT_R: f64 = 0.1;
 
 impl Scene {
-    pub fn new(objs: Vec<Box<dyn Object>>) -> Self {
-        let lights = (0..objs.len()).map(|i: usize| {
-            match objs[i].material() {
+    pub fn new(objects: Vec<Box<dyn Object>>) -> Self {
+        let lights = (0..objects.len()).map(|i: usize| {
+            match objects[i].material() {
                 Material::Light(_) => i,
-                _ => objs.len(),
+                _ => objects.len(),
             }
-        }).filter(|i: &usize| *i != objs.len()).collect();
+        }).filter(|i: &usize| *i != objects.len()).collect();
 
         Self {
-            objects: objs,
-            lights: lights,
+            objects,
+            lights,
         }
     }
 

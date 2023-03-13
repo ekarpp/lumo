@@ -8,7 +8,6 @@ pub enum Texture {
     Solid(DVec3),
     /* box avoids having to define lifetime all the way to objects.
      * should texture be a struct instead? */
-    /* f64 for scale to make recursion work */
     /// Checkerboard of textures. Float defines scale,
     /// bigger scale = smaller boxes.
     Checkerboard(Box<Texture>, Box<Texture>, f64),

@@ -17,6 +17,15 @@ pub struct Image {
 }
 
 impl Image {
+    pub fn new(buffer: Vec<DVec3>, width: usize, height: usize, fname: String)
+               -> Self {
+        Self {
+            buffer,
+            width,
+            height,
+            fname,
+        }
+    }
     /// Translates the image buffer of RGB values in range \[0,1\]
     /// to discrete range \[0,256\]. Applies gamma correction.
     fn rgb(&self) -> Vec<u8> {

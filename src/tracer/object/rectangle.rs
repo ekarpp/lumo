@@ -16,21 +16,23 @@ impl Rectangle {
     /// # Arguments
     /// * `abc` - Points `a,b,c` stored in the columns
     /// * `norm_dir` - Direction towards which the normal should point
-    /// * `m` - Material of the rectangle
-    pub fn new(abc: DMat3, norm_dir: DVec3, m: Material) -> Box<Self>
+    /// * `material` - Material of the rectangle
+    pub fn new(abc: DMat3, norm_dir: DVec3, material: Material) -> Box<Self>
     {
-        /* d is b "mirrored" */
-        let d = _triangle_to_rect(abc);
         /* figure out the correct order of points... */
         let t1 = Triangle::new(
             abc.col(0), abc.col(1), abc.col(2), norm_dir, Material::Blank
         );
-        let t2 = Triangle::new(
-            abc.col(0), d, abc.col(2), norm_dir, Material::Blank
-        );
+        let t2 = {
+            /* d is b "mirrored" */
+            let d = _triangle_to_rect(abc);
+            Triangle::new(
+                abc.col(0), d, abc.col(2), norm_dir, Material::Blank
+            )
+        };
         Box::new(Self {
             triangles: (*t1, *t2),
-            material: m,
+            material,
         })
     }
 }

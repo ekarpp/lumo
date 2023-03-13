@@ -13,8 +13,8 @@ pub struct UniformSampler {
 impl UniformSampler {
     pub fn new(samples: usize) -> Self {
         Self {
+            samples,
             state: 0,
-            samples: samples,
         }
     }
 }

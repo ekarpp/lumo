@@ -1,4 +1,5 @@
 use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
+use crate::image::Image;
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
@@ -139,12 +140,12 @@ fn main() {
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 
-    let image = image::Image {
-        buffer: image_buffer,
-        width: img_width,
-        height: img_height,
-        fname: cli_args.fname.unwrap_or(String::from(FNAME)),
-    };
+    let image = Image::new(
+        image_buffer,
+        img_width,
+        img_height,
+        cli_args.fname.unwrap_or(String::from(FNAME)),
+    );
 
     let start_png = std::time::SystemTime::now();
     image.save();

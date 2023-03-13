@@ -11,18 +11,18 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    /* assume r != 0 */
+
     /// # Arguments
-    /// * `o` - Origin of the sphere
-    /// * `r` - Radius of the sphere
-    /// * `mat` - Material of the sphere
-    pub fn new(o: DVec3, r: f64, m: Material) -> Box<Self> {
-        assert!(r != 0.0);
+    /// * `origin` - Origin of the sphere
+    /// * `radius` - Radius of the sphere
+    /// * `material` - Material of the sphere
+    pub fn new(origin: DVec3, radius: f64, material: Material) -> Box<Self> {
+        assert!(radius != 0.0);
 
         Box::new(Self {
-            origin: o,
-            radius: r,
-            material: m,
+            origin,
+            radius,
+            material,
         })
     }
 }
