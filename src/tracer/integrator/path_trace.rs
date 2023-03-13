@@ -27,7 +27,7 @@ pub fn integrate(
                         _ => false,
                     };
 
-                    shadow_ray(scene, &h)
+                    shadow_ray(scene, &h, rand_utils::rand_unit_square())
                         + material.albedo_at(h.p)
                         * integrate(scene, &sr.ray, depth + 1, is_specular)
                     /* hit ok to pass here?? */
