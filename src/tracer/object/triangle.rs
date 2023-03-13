@@ -103,10 +103,14 @@ impl Object for Triangle {
         }
     }
 
-    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
-        self.a + beta * (self.b - self.a) + gamma * (self.c - self.a) - p
+        self.a + beta * (self.b - self.a) + gamma * (self.c - self.a)
+    }
+
+    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+        self.sample_on(rand_sq) - p
     }
 }

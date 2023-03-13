@@ -35,6 +35,14 @@ impl Rectangle {
             material,
         })
     }
+
+    fn choose_triangle(&self) -> &Triangle {
+        if rand_utils::rand_f64() > 0.5 {
+            &self.triangles.0
+        } else {
+            &self.triangles.1
+        }
+    }
 }
 
 impl Object for Rectangle {
@@ -45,11 +53,11 @@ impl Object for Rectangle {
     fn material(&self) -> &Material { &self.material }
 
     fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
-        if rand_utils::rand_f64() > 0.5 {
-            self.triangles.0.sample_towards(p, rand_sq)
-        } else {
-            self.triangles.1.sample_towards(p, rand_sq)
-        }
+        self.choose_triangle().sample_towards(p, rand_sq)
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        self.choose_triangle().sample_on(rand_sq)
     }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
