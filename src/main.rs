@@ -109,8 +109,6 @@ fn main() {
 
     cli_args.output_cfg();
 
-    let scene_size = scene.size();
-
     let start_img = std::time::SystemTime::now();
     let image_buffer: Vec<DVec3> = renderer::_render(
         img_height,
@@ -119,11 +117,11 @@ fn main() {
         px_width,
         n_samples,
         cam,
-        scene,
+        &scene,
     );
     match start_img.elapsed() {
         Ok(v) => println!("rendered scene with {} objects in {v:?}",
-                          scene_size),
+                          scene.size()),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 

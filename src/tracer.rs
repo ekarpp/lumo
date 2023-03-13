@@ -6,4 +6,4 @@ pub mod camera;
 pub mod object;
 pub mod texture;
 pub mod material;
-pub mod integrators;
+pub mod integrator;
