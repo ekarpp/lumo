@@ -57,6 +57,7 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::pdfs::{Pdf, CosPdf, UnitPdf};
 <span class="kw">use </span><span class="kw">crate</span>::rand_utils;
 <span class="kw">use </span><span class="kw">crate</span>::consts::ETA;
@@ -94,10 +95,11 @@
 /// Refracts according to Snell-Descartes law.
 </span><span class="kw">pub fn </span>glass_bsdf(h: <span class="kw-2">&amp;</span>Hit, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;ScatterRay&gt; {
     <span class="kw">let </span>eta_ratio = <span class="kw">if </span>h.object.inside(r) { ETA } <span class="kw">else </span>{ ETA.recip() };
+    <span class="kw">let </span>norm = <span class="kw">if </span>h.object.inside(r) { -h.norm } <span class="kw">else </span>{ h.norm };
 
     <span class="comment">/* Snell-Descartes law */
-    </span><span class="kw">let </span>up = r.dir.normalize();
-    <span class="kw">let </span>cos_in = h.norm.dot(-up).min(<span class="number">1.0</span>);
+    </span><span class="kw">let </span>wo = r.dir.normalize();
+    <span class="kw">let </span>cos_in = norm.dot(-wo).min(<span class="number">1.0</span>);
     <span class="kw">let </span>sin_out = (<span class="number">1.0 </span>- cos_in * cos_in) * eta_ratio * eta_ratio;
 
     <span class="comment">/* total reflection */
@@ -105,7 +107,7 @@
         <span class="kw">return </span>mirror_bsdf(h, r);
     }
 
-    <span class="kw">let </span>dir = eta_ratio * up + h.norm *
+    <span class="kw">let </span>dir = eta_ratio * wo + norm *
         (eta_ratio * cos_in - (<span class="number">1.0 </span>- sin_out).sqrt());
 
     ScatterRay::new(

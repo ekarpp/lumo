@@ -100,21 +100,21 @@
     ///
     /// # Arguments
     ///
-    /// * `aspect_ratio` - aspect ratio of the image plane
-    /// * `vfov` - vertical field of view, in degrees
-    /// * `from` - camera origin
-    /// * `towards` - camera is looking at this point
-    /// * `up` - defines up direction for the camera
-    /// * `focal_length` - focal length of the camera
+    /// * `aspect_ratio` - Aspect ratio of the image plane
+    /// * `vfov` - Vertical field of view, in degrees
+    /// * `origin` - Camera origin
+    /// * `towards` - Camera is looking at this point
+    /// * `up` - Defines up direction for the camera
+    /// * `focal_length` - Focal length of the camera
     </span><span class="kw">pub fn </span>new(
         aspect_ratio: f64,
         vfov: f64,
-        from: DVec3,
+        origin: DVec3,
         towards: DVec3,
         up: DVec3,
         focal_length: f64
     ) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert!</span>(from != towards);
+        <span class="macro">assert!</span>(origin != towards);
         <span class="macro">assert!</span>(vfov != <span class="number">0.0</span>);
 
         <span class="kw">let </span>h = (vfov.to_radians() / <span class="number">2.0</span>).tan();
@@ -123,7 +123,7 @@
         <span class="comment">/* viewport width */
         </span><span class="kw">let </span>vpw = vph * aspect_ratio;
 
-        <span class="kw">let </span>z = (from - towards).normalize();
+        <span class="kw">let </span>z = (origin - towards).normalize();
         <span class="kw">let </span>x = up.cross(z).normalize();
         <span class="kw">let </span>y = z.cross(x);
 
@@ -131,10 +131,10 @@
         <span class="kw">let </span>vert = y * vph * focal_length;
 
         <span class="self">Self </span>{
-            origin: from,
-            horiz: horiz,
-            vert: vert,
-            blc: from - (horiz + vert) / <span class="number">2.0 </span>- z<span class="kw-2">*</span>focal_length,
+            origin,
+            horiz,
+            vert,
+            blc: origin - (horiz + vert) / <span class="number">2.0 </span>- z<span class="kw-2">*</span>focal_length,
         }
     }
 }

@@ -36,6 +36,7 @@ impl Rectangle {
         })
     }
 
+    /// Choose either of the triangles uniformly at random
     fn choose_triangle(&self) -> &Triangle {
         if rand_utils::rand_f64() > 0.5 {
             &self.triangles.0

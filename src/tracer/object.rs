@@ -31,15 +31,20 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
-    /* unit length normal for r at p. only called during hit creation
-     * => no need to implement for rectangle or cuboid. */
+    /// Normal of the object at the point `p`. Does not check if `p` is
+    /// actually on the object.
     fn normal_at(&self, _p: DVec3) -> DVec3 { todo!() }
+
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
-    /// Number of objects this object consists of.
+
+    /// Number of objects the object consists of.
     fn size(&self) -> usize { 1 }
-    /// Is the ray inside this object?
+
+    /// Is the ray inside the object?
     fn inside(&self, _r: &Ray) -> bool { false }
-    /// Sample a random point from our surface that is visible from `p`
+
+    /// Sample a random point from surface of the object that is visible from `p`
+    /// Returns direction from `p` to us. DO THIS BETTER
     fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
 
     /// Random point on the surface of the object
@@ -56,12 +61,23 @@ pub trait Object: Sync {
         )
     }
 
+    /// Does the ray hit the object?
     fn hit(&self, r: &Ray) -> Option<Hit>;
+
     fn material(&self) -> &Material;
+
+    /// Surface area of the object
     fn area(&self) -> f64;
 
-    /* default pdf, uniformly at random from surface. */
-    fn sample_pdf(&self, p: DVec3, dir: DVec3, h: &Hit) -> f64 {
+    /* TODO: THIS SHOULD BE DONE BETTER */
+    /// PDF for sampling points on the surface that are visible from `p`
+    ///
+    /// # Arguments
+    /// * `p` - The point form which the point sampled on the object should
+    /// be visible
+    /// * `dir` - Direction from `p` to the sampled point on surface
+    /// * `h` - Hit on the surface from `p`
+    fn sample_towards_pdf(&self, p: DVec3, dir: DVec3, h: &Hit) -> f64 {
         p.distance_squared(h.p)
             / (h.norm.dot(-dir.normalize()).max(0.0) * self.area())
     }

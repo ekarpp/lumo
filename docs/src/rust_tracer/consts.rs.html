@@ -50,6 +50,7 @@
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::DVec3;
 
 <span class="doccomment">/// Epsilon to avoid self intersection of objects
@@ -63,6 +64,7 @@
 </span><span class="kw">pub const </span>ETA: f64 = <span class="number">1.5</span>;
 
 <span class="doccomment">/// Maximum recursion depth of path tracing. UNUSED, russian roulette instead
+</span><span class="attr">#[allow(dead_code)]
 </span><span class="kw">pub const </span>PATH_TRACE_MAX_DEPTH: usize = <span class="number">5</span>;
 
 <span class="doccomment">/// Russian roulette probability for the path tracer.

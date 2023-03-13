@@ -153,7 +153,9 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
-</pre><pre class="rust"><code><span class="kw">use </span>glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
+<a href="#156" id="156">156</a>
+</pre><pre class="rust"><code><span class="kw">use </span>glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
+<span class="kw">use </span><span class="kw">crate</span>::image::Image;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::scene::Scene;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::camera::Camera;
 
@@ -294,12 +296,12 @@
         <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">println!</span>(<span class="string">&quot;rendering done, error measuring duration {e:?}&quot;</span>),
     }
 
-    <span class="kw">let </span>image = image::Image {
-        buffer: image_buffer,
-        width: img_width,
-        height: img_height,
-        fname: cli_args.fname.unwrap_or(String::from(FNAME)),
-    };
+    <span class="kw">let </span>image = Image::new(
+        image_buffer,
+        img_width,
+        img_height,
+        cli_args.fname.unwrap_or(String::from(FNAME)),
+    );
 
     <span class="kw">let </span>start_png = std::time::SystemTime::now();
     image.save();

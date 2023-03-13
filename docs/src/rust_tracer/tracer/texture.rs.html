@@ -36,7 +36,6 @@
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::DVec3;
 <span class="kw">use </span><span class="kw">crate</span>::perlin::Perlin;
 <span class="kw">use </span><span class="kw">crate</span>::consts::CHECKER_SCALE;
@@ -47,7 +46,6 @@
     </span>Solid(DVec3),
     <span class="comment">/* box avoids having to define lifetime all the way to objects.
      * should texture be a struct instead? */
-    /* f64 for scale to make recursion work */
     </span><span class="doccomment">/// Checkerboard of textures. Float defines scale,
     /// bigger scale = smaller boxes.
     </span>Checkerboard(Box&lt;Texture&gt;, Box&lt;Texture&gt;, f64),

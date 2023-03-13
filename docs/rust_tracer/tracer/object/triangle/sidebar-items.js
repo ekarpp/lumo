@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Triangle",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["Triangle","Triangle specified by three points"]]};

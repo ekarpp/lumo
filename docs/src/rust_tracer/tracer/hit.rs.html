@@ -64,13 +64,13 @@
     /// * `t` - Value of ray at which hit occurred.
     /// * `o` - The object which got hit.
     /// * `r` - The ray which hit the object.
-    </span><span class="kw">pub fn </span>new(t: f64, o: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Object, r: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub fn </span>new(t: f64, object: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Object, r: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="comment">/* p and n not always needed. computing for every hit slows rendering */
         </span><span class="prelude-val">Some</span>(<span class="self">Self </span>{
-            t: t,
-            object: o,
+            t,
+            object,
             p: r.at(t),
-            norm: o.normal_for_at(r, r.at(t)),
+            norm: object.normal_at(r.at(t)),
         })
     }
 }

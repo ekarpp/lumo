@@ -52,8 +52,8 @@
 <span class="kw">impl </span>Ray {
     <span class="kw">pub fn </span>new(origin: DVec3, dir: DVec3) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            origin: origin,
-            dir: dir,
+            origin,
+            dir,
         }
     }
 
@@ -71,10 +71,10 @@
 }
 
 <span class="kw">impl </span>ScatterRay {
-    <span class="kw">pub fn </span>new(r: Ray, pdf: Box&lt;<span class="kw">dyn </span>Pdf&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub fn </span>new(ray: Ray, pdf: Box&lt;<span class="kw">dyn </span>Pdf&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Some</span>(<span class="self">Self </span>{
-            ray: r,
-            pdf: pdf,
+            ray,
+            pdf,
         })
     }
 }

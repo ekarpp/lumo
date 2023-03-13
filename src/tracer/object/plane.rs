@@ -3,19 +3,23 @@ use super::*;
 #[cfg(test)]
 mod plane_tests;
 
+/// Plane defined by a single point and a normal
 pub struct Plane {
+    /// Unidirectional normal
     norm: DVec3,
     material: Material,
-    d: f64, // for hit calc, store instead of point
+    /// `p.dot(-norm)`, used for fast hit calculations
+    d: f64,
 }
 
 impl Plane {
     /* assume n != 0 */
-    pub fn new(p: DVec3, n: DVec3, m: Material) -> Box<Self> {
+    pub fn new(p: DVec3, n: DVec3, material: Material) -> Box<Self> {
+        assert!(n.dot(n) != 0.0);
         let norm = n.normalize();
         Box::new(Self {
-            norm: norm,
-            material: m,
+            norm,
+            material,
             d: p.dot(-norm),
         })
     }
