@@ -20,9 +20,9 @@ impl Triangle {
     ///
     /// # Arguments
     /// * `a,b,c` - Three vertices of the triangle
-    /// * `n` - Direction where normal should point
-    /// * `m` - Material of the triangle
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, n: DVec3, m: Material)
+    /// * `norm_dir` - Direction where normal should point
+    /// * `material` - Material of the triangle
+    pub fn new(a: DVec3, b: DVec3, c: DVec3, norm_dir: DVec3, material: Material)
                -> Box<Self> {
         /* check degeneracy */
         assert!((b - a).cross(c - a).length() != 0.0);
@@ -30,11 +30,11 @@ impl Triangle {
         let norm = (b - a).cross(c - a).normalize();
 
         Box::new(Self {
-            a: a,
-            b: b,
-            c: c,
-            norm: if norm.dot(n) > 0.0 { norm } else { -norm },
-            material: m,
+            a,
+            b,
+            c,
+            material,
+            norm: if norm.dot(norm_dir) > 0.0 { norm } else { -norm },
         })
     }
 }

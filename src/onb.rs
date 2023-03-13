@@ -19,9 +19,9 @@ impl Onb {
         let w = dir.normalize();
         let (u,v) = w.any_orthonormal_pair();
         Self {
-            u: u,
-            v: v,
-            w: w,
+            u,
+            v,
+            w,
         }
     }
 

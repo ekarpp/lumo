@@ -38,8 +38,8 @@ pub fn glass_bsdf(h: &Hit, r: &Ray) -> Option<ScatterRay> {
     let norm = if h.object.inside(r) { -h.norm } else { h.norm };
 
     /* Snell-Descartes law */
-    let up = r.dir.normalize();
-    let cos_in = norm.dot(-up).min(1.0);
+    let wo = r.dir.normalize();
+    let cos_in = norm.dot(-wo).min(1.0);
     let sin_out = (1.0 - cos_in * cos_in) * eta_ratio * eta_ratio;
 
     /* total reflection */
@@ -47,7 +47,7 @@ pub fn glass_bsdf(h: &Hit, r: &Ray) -> Option<ScatterRay> {
         return mirror_bsdf(h, r);
     }
 
-    let dir = eta_ratio * up + norm *
+    let dir = eta_ratio * wo + norm *
         (eta_ratio * cos_in - (1.0 - sin_out).sqrt());
 
     ScatterRay::new(

@@ -39,7 +39,8 @@ impl Cuboid {
      * matters.*/
     /// Helper function to construct cuboids from affine transformations.
     /// `n1` is the direction of the normal defined by `r1`.
-    fn from_triangles(r1: DMat3, r2: DMat3, n1: DVec3, m: Material) -> Box<Self> {
+    fn from_triangles(r1: DMat3, r2: DMat3, n1: DVec3, m: Material)
+                      -> Box<Self> {
         let d1 = _triangle_to_rect(r1);
 
         let norm_xz = n1.normalize();

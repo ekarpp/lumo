@@ -12,8 +12,8 @@ pub struct Ray {
 impl Ray {
     pub fn new(origin: DVec3, dir: DVec3) -> Self {
         Self {
-            origin: origin,
-            dir: dir,
+            origin,
+            dir,
         }
     }
 
@@ -31,10 +31,10 @@ pub struct ScatterRay {
 }
 
 impl ScatterRay {
-    pub fn new(r: Ray, pdf: Box<dyn Pdf>) -> Option<Self> {
+    pub fn new(ray: Ray, pdf: Box<dyn Pdf>) -> Option<Self> {
         Some(Self {
-            ray: r,
-            pdf: pdf,
+            ray,
+            pdf,
         })
     }
 }

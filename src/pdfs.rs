@@ -57,10 +57,10 @@ pub struct ObjectPdf<'a> {
 }
 
 impl<'a> ObjectPdf<'a> {
-    pub fn new(o: &'a Box<dyn Object>, p: DVec3) -> Self {
+    pub fn new(object: &'a Box<dyn Object>, p: DVec3) -> Self {
         Self {
-            object: o,
-            p: p,
+            object,
+            p,
          }
     }
 }
@@ -84,7 +84,7 @@ pub struct MixedPdf {
 impl MixedPdf {
     pub fn new(pdfs: Vec<Box<dyn Pdf>>) -> Self {
         Self {
-            pdfs: pdfs,
+            pdfs,
         }
     }
 

@@ -20,13 +20,13 @@ impl<'a, 'b> Hit<'a> {
     /// * `t` - Value of ray at which hit occurred.
     /// * `o` - The object which got hit.
     /// * `r` - The ray which hit the object.
-    pub fn new(t: f64, o: &'a dyn Object, r: &'b Ray) -> Option<Self> {
+    pub fn new(t: f64, object: &'a dyn Object, r: &'b Ray) -> Option<Self> {
         /* p and n not always needed. computing for every hit slows rendering */
         Some(Self {
-            t: t,
-            object: o,
+            t,
+            object,
             p: r.at(t),
-            norm: o.normal_at(r.at(t)),
+            norm: object.normal_at(r.at(t)),
         })
     }
 }

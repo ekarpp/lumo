@@ -45,9 +45,7 @@ pub trait Object: Sync {
     fn area(&self) -> f64;
 
     /* default pdf, uniformly at random from surface. */
-    /* do this in scene.rs */
     fn sample_pdf(&self, p: DVec3, dir: DVec3, h: &Hit) -> f64 {
-        /* TODO: dont calculate hit */
         p.distance_squared(h.p)
             / (h.norm.dot(-dir.normalize()).max(0.0) * self.area())
     }
