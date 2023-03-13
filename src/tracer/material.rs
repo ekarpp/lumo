@@ -1,4 +1,5 @@
 use crate::DVec3;
+use std::f64::consts::PI;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::{Ray, ScatterRay};
 use crate::tracer::bxdfs;
@@ -30,7 +31,7 @@ impl Material {
     /// What is the color at p?
     pub fn albedo_at(&self, p: DVec3) -> DVec3 {
         match self {
-            Self::Diffuse(t) => t.albedo_at(p),
+            Self::Diffuse(t) => t.albedo_at(p) * PI.recip(),
             Self::Mirror | Self::Glass => DVec3::ONE,
             _ => DVec3::ZERO,
         }

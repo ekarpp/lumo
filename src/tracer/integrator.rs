@@ -55,11 +55,8 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
             match scene.hit_light(&r, light) {
                 None => DVec3::ZERO,
                 Some(hl) => {
-                    /* scatter pdf = cos / PI, might need to change in future
-                     * if use different scattering */
                     material.albedo_at(h.p)
-                        * h.norm.dot(r.dir.normalize())
-                        * PI.recip()
+                        * h.norm.dot(r.dir.normalize()).abs()
                         / pdf_light.pdf_val(r.dir, &hl)
                 }
             }
