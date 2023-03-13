@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use std::f64::consts::PI;
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use crate::consts::PATH_TRACE_RR;

@@ -2,6 +2,7 @@ use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
 use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
+use crate::pdfs::{Pdf, CosPdf};
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
@@ -40,6 +41,21 @@ pub trait Object: Sync {
     fn inside(&self, _r: &Ray) -> bool { false }
     /// Sample a random point from our surface that is visible from `p`
     fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
+
+    /// Random point on the surface of the object
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
+
+    /// Sample random ray leaving the object
+    fn sample_from(&self, rand_sq_o: DVec2, rand_sq_d: DVec2) -> Ray {
+        let origin = self.sample_on(rand_sq_o);
+        let cos_pdf = CosPdf::new(self.normal_at(origin));
+        let dir = cos_pdf.generate_dir(rand_sq_d);
+        Ray::new(
+            origin,
+            dir,
+        )
+    }
+
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;

@@ -68,6 +68,12 @@ impl Object for Sphere {
         )
     }
 
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        let rand_sph = rand_utils::unit_square_to_unit_sphere(rand_sq);
+
+        self.origin + self.radius * rand_sph
+    }
+
     /* sample random direction in cone from p towards self */
     fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-orthonormal basis,

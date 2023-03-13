@@ -19,7 +19,8 @@ pub fn rand_f64() -> f64 {
 
 /// return `n` normalized random DVec3s in a vector
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
-    (0..n).map(|_| rand_unit_sphere()).collect()
+    (0..n).map(|_| unit_square_to_unit_sphere(rand_unit_square()))
+        .collect()
 }
 
 /// Uniform random DVec2 in unit square
@@ -55,13 +56,15 @@ pub fn sq_to_cos_unit_hemisphere(rand_sq: DVec2) -> DVec3 {
 }
 
 /// Uniform random DVec3 in unit sphere
-pub fn rand_unit_sphere() -> DVec3 {
-    let sq = rand_unit_square();
+pub fn unit_square_to_unit_sphere(rand_sq: DVec2) -> DVec3 {
+    let z = 1.0 - 2.0 * rand_sq.y;
+    let r = (1.0 - z * z).sqrt();
+    let phi = 2.0 * PI * rand_sq.x;
 
     DVec3::new(
-        (2.0 * PI * sq.x).cos() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
-        (2.0 * PI * sq.x).sin() * 2.0 * (sq.y * (1.0 - sq.y)).sqrt(),
-        1.0 - 2.0 * sq.y,
+        r * phi.cos(),
+        r * phi.sin(),
+        z,
     )
 }
 

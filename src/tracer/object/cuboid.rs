@@ -99,6 +99,15 @@ impl Cuboid {
             ],
         })
     }
+
+    fn choose_rectangle(&self) -> &Rectangle {
+        let idx = {
+            let rnd = rand_utils::rand_f64() * 6.0;
+            rnd.floor() as usize
+        };
+
+        &self.rectangles[idx]
+    }
 }
 
 impl Object for Cuboid {
@@ -111,6 +120,14 @@ impl Object for Cuboid {
     }
 
     fn material(&self) -> &Material { &self.material }
+
+    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+        self.choose_rectangle().sample_towards(p, rand_sq)
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        self.choose_rectangle().sample_on(rand_sq)
+    }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.rectangles.iter().map(|rect| rect.hit(r))
