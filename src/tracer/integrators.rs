@@ -12,6 +12,24 @@ pub trait Integrator {
     fn integrate(&self, r: &Ray, depth: usize) -> DVec3;
 }
 
+pub struct BiDirectionalPathTracingIntegrator {
+    scene: Scene,
+}
+
+impl BiDirectionalPathTracingIntegrator {
+    pub fn new(s: Scene) -> Self {
+        Self {
+            scene: s,
+        }
+    }
+}
+
+impl Integrator for BiDirectionalPathTracingIntegrator {
+    fn integrate(&self, r: &Ray, depth: usize) -> DVec3 {
+        DVec3::ZERO
+    }
+}
+
 pub struct PathTracingIntegrator {
     scene: Scene,
 }
