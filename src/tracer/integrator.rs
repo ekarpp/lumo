@@ -1,18 +1,20 @@
 #![allow(dead_code)]
 use std::f64::consts::PI;
-use crate::DVec3;
+use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use crate::consts::PATH_TRACE_RR;
-use crate::pdfs::{Pdf, ObjectPdf, CosPdf};
+use crate::pdfs::{Pdf, ObjectPdf};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
-use crate::tracer::ray::{Ray, ScatterRay};
+use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 
 /// Implements the path tracing algorithm with
-/// Russian Roulette and next event estimation.
+/// Russian Roulette (With probability `p` terminate each path.
+/// Multiply contributions by reciprocal of `1-p`) and
+/// next event estimation (Importance sample light at each impact).
 mod path_trace;
-/// Implements a direct light integrator.
+/// Naive integrator that importance samples light once.
 mod direct_light;
 
 /// Enum to choose which integrator to use
@@ -30,8 +32,8 @@ impl Integrator {
     }
 }
 
-/// Shoots a shadow ray towards random light from `h`.
-fn shadow_ray(scene: &Scene, h: &Hit) -> DVec3 {
+/// Shoots a shadow ray towards random light from `h`. pass scatter pdf?
+fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
     let material = h.object.material();
     match material {
         Material::Diffuse(_) => {
@@ -42,7 +44,7 @@ fn shadow_ray(scene: &Scene, h: &Hit) -> DVec3 {
             let r = Ray::new(
                 h.p,
                 pdf_light.generate_dir(
-                    rand_utils::rand_unit_square()
+                    rand_sq
                 ),
             );
 

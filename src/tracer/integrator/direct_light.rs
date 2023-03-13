@@ -8,7 +8,9 @@ pub fn integrate(scene: &Scene, r: &Ray) -> DVec3 {
         Some(h) => {
             let material = h.object.material();
             match material {
-                Material::Diffuse(_) => shadow_ray(scene, &h),
+                Material::Diffuse(_) => {
+                    shadow_ray(scene, &h, rand_utils::rand_unit_square())
+                }
                 Material::Glass | Material::Mirror => {
                     match material.bsdf(&h, r) {
                         Some(sr) => integrate(scene, &sr.ray),
