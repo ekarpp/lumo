@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Integrator","Enum to choose which integrator to use"]],"mod":[["direct_light","Implements a direct light integrator."],["path_trace","Implements the path tracing algorithm with Russian Roulette and next event estimation."]]};

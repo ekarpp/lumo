@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Onb","Small utility struct for orthonormal basis"]]};
