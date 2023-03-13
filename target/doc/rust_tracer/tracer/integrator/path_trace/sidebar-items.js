@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["integrate",""],["shadow_ray","Shoots a shadow ray towards random light from `h`. `sr` has PDF?"]]};

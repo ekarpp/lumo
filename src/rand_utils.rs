@@ -12,21 +12,22 @@ fn _get_rng() -> MyRng {
 /* should figure better way to rng creation??
  * (thread_rng() always creates new?) */
 
+/// Random f64
 pub fn rand_f64() -> f64 {
     _get_rng().gen()
 }
 
-/* return n normalized random dvec3 in a vector */
+/// return `n` normalized random DVec3s in a vector
 pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
     (0..n).map(|_| rand_unit_sphere()).collect()
 }
 
-/* uniform random DVec2 in unit square */
+/// Uniform random DVec2 in unit square
 pub fn rand_unit_square() -> DVec2 {
     DVec2::new(rand_f64(), rand_f64())
 }
 
-/* concentric map of the unit square to unit disk */
+/// Concentric map of the unit square to unit disk
 pub fn unit_square_to_unit_disk(rand_sq: DVec2) -> DVec2 {
     /* map [0,1]^2 to [-1,1]^2 */
     let offset = 2.0*rand_sq - DVec2::ONE;
@@ -45,7 +46,7 @@ pub fn unit_square_to_unit_disk(rand_sq: DVec2) -> DVec2 {
     }
 }
 
-/* cosine weighed random DVec3s on hemisphere pointing towards +z */
+/// Cosine weighed random DVec3s on hemisphere pointing towards +z
 pub fn sq_to_cos_unit_hemisphere(rand_sq: DVec2) -> DVec3 {
     let disk = unit_square_to_unit_disk(rand_sq);
     let z = (1.0 - disk.x * disk.x - disk.y * disk.y).max(0.0).sqrt();
@@ -53,7 +54,7 @@ pub fn sq_to_cos_unit_hemisphere(rand_sq: DVec2) -> DVec3 {
     disk.extend(z)
 }
 
-/* uniform random DVec3 in unit sphere */
+/// Uniform random DVec3 in unit sphere
 pub fn rand_unit_sphere() -> DVec3 {
     let sq = rand_unit_square();
 
@@ -64,7 +65,7 @@ pub fn rand_unit_sphere() -> DVec3 {
     )
 }
 
-/* random permutation of 0..n */
+/// Random permutation of 0..n
 pub fn perm_n(n: usize) -> Vec<usize> {
     let mut v: Vec<usize> = (0..n).collect();
     v.shuffle(&mut _get_rng());

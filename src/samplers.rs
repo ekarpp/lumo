@@ -2,16 +2,19 @@
 use crate::DVec2;
 use crate::rand_utils;
 
+/// Choose each sample point uniformly at random
 pub struct UniformSampler {
+    /// How many samples have been given?
     state: usize,
+    /// How many samples was asked?
     samples: usize,
 }
 
 impl UniformSampler {
-    pub fn new(num_rays: usize) -> Self {
+    pub fn new(samples: usize) -> Self {
         Self {
             state: 0,
-            samples: num_rays,
+            samples: samples,
         }
     }
 }
@@ -29,16 +32,22 @@ impl Iterator for UniformSampler {
     }
 }
 
+/// Divide unit square to `n`x`n` strata and provide one sample from each strata.
 pub struct JitteredSampler {
+    /// Width of one strata
     scale: f64,
+    /// How many samples have been given?
     state: usize,
+    /// How many strata per dimension?
     strata_dim: usize,
+    /// How many samples have been asked for? Should be a square,
+    /// otherwise gets rounded down to the nearest square.
     samples: usize,
 }
 
 impl JitteredSampler {
-    pub fn new(num_rays: usize) -> Self {
-        let dim = (num_rays as f64).sqrt() as usize;
+    pub fn new(samples: usize) -> Self {
+        let dim = (samples as f64).sqrt() as usize;
         Self {
             scale: (dim as f64).recip(),
             samples: dim*dim,

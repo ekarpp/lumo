@@ -1,5 +1,3 @@
-debug/
-target/
 Cargo.lock
 *.png
 !render.png

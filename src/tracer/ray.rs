@@ -1,9 +1,11 @@
 use crate::DVec3;
 use crate::pdfs::Pdf;
 
+/// Ray abstraction
 pub struct Ray {
+    /// Point of origin of the ray
     pub origin: DVec3,
-    /* should not be neccesarily normalized. go through code to verify */
+    /// Direction of the ray. Not neccesarily normalized.
     pub dir: DVec3,
 }
 
@@ -20,9 +22,11 @@ impl Ray {
     }
 }
 
-
+/// Ray that got scattered and provides the related scatter pdf.
 pub struct ScatterRay {
+    /// Scattered ray.
     pub ray: Ray,
+    /// PDF among which ray was scattered.
     pub pdf: Box<dyn Pdf>,
 }
 

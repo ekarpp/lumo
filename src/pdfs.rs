@@ -7,16 +7,28 @@ use crate::tracer::hit::Hit;
 use crate::tracer::object::Object;
 
 pub trait Pdf {
+    /// Generates a random direction according to the sampling strategy
+    ///
+    /// # Arguments
+    /// * `rand_sq` - Random point on the unit square.
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3;
+    /// Computes the probability of the given direction
+    ///
+    /// # Arguments
+    /// * `dir` - Direction to compute probability for
+    /// * `_h` - ???
     fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64;
 }
 
-/* cosine weighed samples on hemisphere pointing towards w */
+/// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
 pub struct CosPdf {
     uvw: Onb,
 }
 
 impl CosPdf {
+    /// # Arguments
+    ///
+    /// * `w` - Normal at the point of sampling directions.
     pub fn new(w: DVec3) -> Self {
         Self {
             uvw: Onb::new(w),
@@ -34,10 +46,11 @@ impl Pdf for CosPdf {
     }
 }
 
-/* randomly sample point from the area of the object that is visible from p.
- * norm is the normal at p */
+/// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
+    /// Object to do sampling from
     object: &'a Box<dyn Object>,
+    /// Point from where the object should be visible
     p: DVec3,
 }
 
@@ -60,7 +73,9 @@ impl Pdf for ObjectPdf<'_> {
     }
 }
 
+/// Combination of multiple PDFs. Chooses one uniformly at random. BROKEN.
 pub struct MixedPdf {
+    /// Vector of the PDFs to choose from
     pdfs: Vec<Box<dyn Pdf>>,
 }
 
@@ -89,7 +104,7 @@ impl Pdf for MixedPdf {
     }
 }
 
-/* for glass and mirror. glass might want own pdf.. */
+/// Unit PDF with delta distribution. Glass might want own PDF?
 pub struct UnitPdf {}
 
 impl UnitPdf {

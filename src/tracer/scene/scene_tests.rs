@@ -4,7 +4,6 @@ use crate::consts::EPSILON;
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {
     Scene::new(
-        DVec3::ZERO,
         vec![
             Sphere::new(
                 DVec3::new(0.0, 2.0, 0.0),
@@ -53,7 +52,6 @@ fn object_behind_light() {
 #[test]
 fn hits_closest() {
     let s = Scene::new(
-        DVec3::ZERO,
         vec![
             Plane::new(
                 DVec3::new(0.0, 1.0, 0.0),
