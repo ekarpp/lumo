@@ -31,8 +31,9 @@ pub fn integrate(
                         + material.albedo_at(h.p)
                         * integrate(scene, &sr.ray, depth + 1, is_specular)
                     /* hit ok to pass here?? */
-                        * sr.pdf.pdf_val(sr.ray.dir, &h)
-                        / (1.0 - PATH_TRACE_RR)
+                        * h.norm.dot(sr.ray.dir).abs()
+                        / ((1.0 - PATH_TRACE_RR)
+                           * sr.pdf.pdf_val(sr.ray.dir, &h))
                 }
             }
         }
