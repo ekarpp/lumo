@@ -26,7 +26,7 @@ impl<'a, 'b> Hit<'a> {
             t: t,
             object: o,
             p: r.at(t),
-            norm: o.normal_for_at(r, r.at(t)),
+            norm: o.normal_at(r.at(t)),
         })
     }
 }

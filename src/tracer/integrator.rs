@@ -16,18 +16,22 @@ use crate::tracer::scene::Scene;
 mod path_trace;
 /// Naive integrator that importance samples light once.
 mod direct_light;
+/// bidirectional path tracing
+mod bd_path_trace;
 
 /// Enum to choose which integrator to use
 pub enum Integrator {
     PathTrace,
     DirectLight,
+    BDPathTrace,
 }
 
 impl Integrator {
     pub fn integrate(&self, s: &Scene, r: &Ray) -> DVec3 {
         match self {
-            Integrator::PathTrace => path_trace::integrate(s, r, 0, true),
-            Integrator::DirectLight => direct_light::integrate(s, r),
+            Self::PathTrace => path_trace::integrate(s, r, 0, true),
+            Self::DirectLight => direct_light::integrate(s, r),
+            Self::BDPathTrace => bd_path_trace::integrate(s, r),
         }
     }
 }

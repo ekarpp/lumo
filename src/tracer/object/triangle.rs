@@ -5,6 +5,8 @@ mod triangle_tests;
 
 /* barycentric interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
+
+/// Triangle specified by three points
 pub struct Triangle {
     a: DVec3,
     b: DVec3,
@@ -14,15 +16,24 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    /* assume non-degenerate */
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, m: Material) -> Box<Self> {
-        let norm = -(b - a).cross(c - a).normalize();
+    /// Constructs triangle from three points and specifies normal direction
+    ///
+    /// # Arguments
+    /// * `a,b,c` - Three vertices of the triangle
+    /// * `n` - Direction where normal should point
+    /// * `m` - Material of the triangle
+    pub fn new(a: DVec3, b: DVec3, c: DVec3, n: DVec3, m: Material)
+               -> Box<Self> {
+        /* check degeneracy */
+        assert!((b - a).cross(c - a).length() != 0.0);
+
+        let norm = (b - a).cross(c - a).normalize();
 
         Box::new(Self {
             a: a,
             b: b,
             c: c,
-            norm: norm,
+            norm: if norm.dot(n) > 0.0 { norm } else { -norm },
             material: m,
         })
     }
@@ -31,15 +42,15 @@ impl Triangle {
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
-        _orient_normal(self.norm, r)
+    fn normal_at(&self, _p: DVec3) -> DVec3 {
+        self.norm
     }
 
     fn area(&self) -> f64 {
         (self.b - self.a).cross(self.c - self.a).length() / 2.0
     }
 
-    /* barycentric triangle intersection with Cramer's rule */
+    /// Barycentric triangle intersection with Cramer's rule
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* can store a-c, a-b, and a instead. saves some computation.
          * compiler should do it? */
@@ -92,7 +103,7 @@ impl Object for Triangle {
         }
     }
 
-    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 

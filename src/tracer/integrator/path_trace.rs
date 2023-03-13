@@ -11,7 +11,7 @@ pub fn integrate(
     }
 
     match scene.hit(r) {
-        None => DVec3::new(0.0, 1.0, 0.0),
+        None => DVec3::new(0.0, 0.0, 1.0),
         Some(h) => {
             let material = h.object.material();
 

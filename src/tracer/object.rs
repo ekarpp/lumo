@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3, DVec2, DAffine3};
+use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
 use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
@@ -20,11 +20,6 @@ pub mod triangle;
 /// Defines rectangles. Built from two triangles.
 pub mod rectangle;
 
-/* make sure normal points the right way for triangle/plane/sphere */
-fn _orient_normal(n: DVec3, r: &Ray) -> DVec3 {
-    if n.dot(r.dir) > 0.0 { -n } else { n }
-}
-
 /* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
 /// Given a triangle, with points read from the columns of the matrix `abc`,
@@ -37,14 +32,14 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 pub trait Object: Sync {
     /* unit length normal for r at p. only called during hit creation
      * => no need to implement for rectangle or cuboid. */
-    fn normal_for_at(&self, _r: &Ray, _p: DVec3) -> DVec3 { todo!() }
+    fn normal_at(&self, _p: DVec3) -> DVec3 { todo!() }
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
     /// Number of objects this object consists of.
     fn size(&self) -> usize { 1 }
     /// Is the ray inside this object?
     fn inside(&self, _r: &Ray) -> bool { false }
     /// Sample a random point from our surface that is visible from `p`
-    fn sample_from(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
+    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
     fn area(&self) -> f64;
