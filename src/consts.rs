@@ -11,6 +11,7 @@ pub const SHADOW_RAYS: usize = 4*4;
 pub const ETA: f64 = 1.5;
 
 /// Maximum recursion depth of path tracing. UNUSED, russian roulette instead
+#[allow(dead_code)]
 pub const PATH_TRACE_MAX_DEPTH: usize = 5;
 
 /// Russian roulette probability for the path tracer.
