@@ -2,20 +2,34 @@ use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
+/// Utility struct for orthonormal basis.
 mod onb;
+/// Implementation of different probability density functions for sampling.
 mod pdfs;
+/// Wrapper for writing image buffer to file.
 mod image;
+/// The heart.
 mod tracer;
+/// Various constants used around the crate.
 mod consts;
+/// Perlin noise generator.
 mod perlin;
+/// Different iterators that stream values sampled from the unit square.
 mod samplers;
+/// Main renderer.
 mod renderer;
+/// Wrapper around rand. Provides functions to sample from various geometrics.
 mod rand_utils;
 
+/// Default render width
 const WIDTH: usize = 3840;
+/// Default render height
 const HEIGHT: usize = 2160;
+/// Default number of samples per pixel
 const NUM_SAMPLES: usize = 1;
+/// Default vfov
 const FOV: f64 = 90.0;
+/// Default output filename
 const FNAME: &str = "render.png";
 
 #[derive(argh::FromArgs)]
@@ -109,8 +123,6 @@ fn main() {
 
     cli_args.output_cfg();
 
-    let scene_size = scene.size();
-
     let start_img = std::time::SystemTime::now();
     let image_buffer: Vec<DVec3> = renderer::_render(
         img_height,
@@ -119,11 +131,11 @@ fn main() {
         px_width,
         n_samples,
         cam,
-        scene,
+        &scene,
     );
     match start_img.elapsed() {
         Ok(v) => println!("rendered scene with {} objects in {v:?}",
-                          scene_size),
+                          scene.size()),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 

@@ -8,25 +8,26 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use crate::tracer::material::Material;
-use crate::tracer::object::sphere::Sphere;
-use crate::tracer::object::{Object, Plane, Rectangle, Cuboid};
+use crate::tracer::object::{Object, plane::Plane, rectangle::Rectangle};
+use crate::tracer::object::{cuboid::Cuboid, sphere::Sphere};
 
 #[cfg(test)]
 mod scene_tests;
 
+/// Defines a scene in 3D space
 pub struct Scene {
-    pub ambient: DVec3,
-    /* vec of indices to objects that are lights */
-    pub lights: Vec<usize>,
-    /* TODO */
+    /// All of the objects in the scene.
     pub objects: Vec<Box<dyn Object>>,
+    /// Contains indices to all of the lights in `objects`
+    pub lights: Vec<usize>,
+
 }
 
 /* temporary constant */
 const LIGHT_R: f64 = 0.1;
 
 impl Scene {
-    pub fn new(amb: DVec3, objs: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(objs: Vec<Box<dyn Object>>) -> Self {
         let lights = (0..objs.len()).map(|i: usize| {
             match objs[i].material() {
                 Material::Light(_) => i,
@@ -35,23 +36,25 @@ impl Scene {
         }).filter(|i: &usize| *i != objs.len()).collect();
 
         Self {
-            ambient: amb,
-            lights: lights,
             objects: objs,
+            lights: lights,
         }
     }
 
+    /// Choose one of the lights uniformly at random.
     pub fn uniform_random_light(&self) -> &Box<dyn Object> {
         let rnd = rand_utils::rand_f64();
         let idx = (rnd * self.lights.len() as f64).floor() as usize;
         &self.objects[self.lights[idx]]
     }
 
-    /* might want to print x of this, y of that, ... */
+    /// Number of objects in the scene.
+    /// Might want to print x of this, y of that, ...
     pub fn size(&self) -> usize {
         self.objects.iter().fold(0, |acc, obj| acc + obj.size())
     }
 
+    /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         self.objects.iter().map(|obj| obj.hit(r))
             .fold(None, |closest, hit| {
@@ -63,6 +66,7 @@ impl Scene {
             })
     }
 
+    /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
                      -> Option<Hit> {
         let light_hit = light.hit(r).and_then(|mut h| {
@@ -81,6 +85,7 @@ impl Scene {
         if reached_light { light_hit } else { None }
     }
 
+    /// "Cornell Box"
     pub fn box_scene(focal_length: f64) -> Self {
         /* y ground */
         let yg = -focal_length;
@@ -89,7 +94,6 @@ impl Scene {
         let light_xy = 0.2*focal_length;
         let r = 0.2*focal_length;
         Self::new(
-            DVec3::splat(0.0),
             vec![
                 Rectangle::new(
                     DMat3::from_cols(
@@ -186,9 +190,9 @@ impl Scene {
         )
     }
 
+    /// Scene showing capabilities of the renderer :)
     pub fn default() -> Self {
         Self::new(
-            DVec3::splat(0.0),
             vec![
                 Sphere::new(
                     DVec3::new(-0.3, 0.2, -0.1),

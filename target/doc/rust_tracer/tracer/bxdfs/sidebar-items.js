@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["diffuse_bsdf","Scattering function for diffuse material."],["glass_bsdf","Scattering function for glass material. Refracts according to Snell-Descartes law."],["mirror_bsdf","Scattering function for mirror material. Perfect reflection."]]};

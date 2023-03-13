@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Material","Describes which material an object is made out of"]]};

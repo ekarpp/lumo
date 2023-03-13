@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["LIGHT_R",""]],"struct":[["Scene","Defines a scene in 3D space"]]};

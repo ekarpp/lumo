@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["integrate",""],["light_at","Randomly sample light from `h` and check if it is visible. Currently only one shadow ray is shot."]]};
