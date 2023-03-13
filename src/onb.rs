@@ -10,16 +10,7 @@ pub struct Onb {
 impl Onb {
     pub fn new(dir: DVec3) -> Self {
         let w = dir.normalize();
-
-        let a = if w.x.abs() > 0.9 {
-            DVec3::new(0.0, 1.0, 0.0)
-        } else {
-            DVec3::new(1.0, 0.0, 0.0)
-        };
-
-        let v = w.cross(a).normalize();
-        let u = w.cross(v);
-
+        let (u,v) = w.any_orthonormal_pair();
         Self {
             u: u,
             v: v,
