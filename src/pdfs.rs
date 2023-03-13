@@ -71,7 +71,7 @@ impl Pdf for ObjectPdf<'_> {
     }
 
     fn pdf_val(&self, dir: DVec3, h: &Hit) -> f64 {
-        self.object.sample_pdf(self.p, dir, h)
+        self.object.sample_towards_pdf(self.p, dir, h)
     }
 }
 

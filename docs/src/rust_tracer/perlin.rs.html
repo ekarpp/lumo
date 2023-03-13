@@ -128,9 +128,9 @@
 }
 
 <span class="kw">impl </span>Perlin {
-    <span class="kw">pub fn </span>new(c: DVec3) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(albedo: DVec3) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            albedo: c,
+            albedo,
             lattice: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
             perm: PermutationXyz {
                 x: rand_utils::perm_n(PERLIN_POINTS),
@@ -202,11 +202,11 @@
     /// * `w` - Fractional part of the point. Gives distances to each normal.
     </span><span class="kw">fn </span>interp(<span class="kw-2">&amp;</span><span class="self">self</span>, normals: Vec&lt;DVec3&gt;, w: DVec3) -&gt; f64 {
         (<span class="number">0</span>..<span class="number">2</span>).cartesian_product(<span class="number">0</span>..<span class="number">2</span>)
-            .cartesian_product(<span class="number">0</span>..<span class="number">2</span>).zip(normals).map(|(((x,y),z), g)| {
+            .cartesian_product(<span class="number">0</span>..<span class="number">2</span>).zip(normals).map(|(((x,y),z), norm)| {
                 <span class="kw">let </span>idx = UVec3::new(x, y, z).as_dvec3();
                 <span class="kw">let </span>widx = <span class="number">2.0</span><span class="kw-2">*</span>w<span class="kw-2">*</span>idx + DVec3::ONE - w - idx;
 
-                widx.x * widx.y * widx.z * g.dot(w - idx)
+                widx.x * widx.y * widx.z * norm.dot(w - idx)
             }).fold(<span class="number">0.0</span>, |acc, v| acc + v)
     }
 }

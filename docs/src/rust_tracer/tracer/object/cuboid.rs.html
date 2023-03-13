@@ -109,6 +109,44 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Cuboid {
@@ -119,8 +157,14 @@
 <span class="kw">impl </span>Cuboid {
 
     <span class="comment">/* applies the aff to the unit cube. some affines might break this */
+    </span><span class="doccomment">/// Constructs a cuboid by applying an affine transformation
+    /// to the unit cube. NOTE! Some affines may break this.
+    ///
+    /// # Arguments
+    /// * `aff` - Affine transformation to be applied to the unit cube
+    /// * `m` - Material of the cuboid
     </span><span class="kw">pub fn </span>new(aff: DAffine3, m: Material) -&gt; Box&lt;<span class="self">Self</span>&gt; {
-        <span class="comment">/* triangles are parallel to xz-plane, like our camera */
+        <span class="comment">/* triangles are parallel to xz-plane */
         </span><span class="self">Self</span>::from_triangles(
             DMat3::from_cols(
                 aff.transform_point3(DVec3::new(<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>)),
@@ -132,6 +176,7 @@
                 aff.transform_point3(DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>)),
                 aff.transform_point3(DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>)),
             ),
+            aff.transform_point3(DVec3::new(<span class="number">0.0</span>, -<span class="number">1.0</span>, <span class="number">0.0</span>)),
             m,
         )
     }
@@ -141,15 +186,23 @@
      * unit cube and apply affines to it. */
     /* columns of r1 and r2 define the triangles. the order of columns
      * matters.*/
-    </span><span class="kw">fn </span>from_triangles(r1: DMat3, r2: DMat3, m: Material) -&gt; Box&lt;<span class="self">Self</span>&gt; {
+    </span><span class="doccomment">/// Helper function to construct cuboids from affine transformations.
+    /// `n1` is the direction of the normal defined by `r1`.
+    </span><span class="kw">fn </span>from_triangles(r1: DMat3, r2: DMat3, n1: DVec3, m: Material)
+                      -&gt; Box&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>d1 = _triangle_to_rect(r1);
+
+        <span class="kw">let </span>norm_xz = n1.normalize();
+        <span class="kw">let </span>norm_yz = DQuat::from_rotation_z(-PI / <span class="number">2.0</span>).mul_vec3(norm_xz);
+        <span class="kw">let </span>norm_xy = DQuat::from_rotation_x(PI / <span class="number">2.0</span>).mul_vec3(norm_xz);
         Box::new(<span class="self">Self </span>{
             material: m,
             rectangles: [
                 <span class="comment">/* directions given assuming unit cube */
                 </span><span class="kw-2">*</span>Rectangle::new(
                     r1, <span class="comment">/* xz-plane */
-                    </span>Material::Blank,
+                    </span>norm_xz,
+                    Material::Blank,
                 ),
                 <span class="kw-2">*</span>Rectangle::new(
                     DMat3::from_cols(
@@ -157,7 +210,8 @@
                         r1.col(<span class="number">1</span>),
                         r1.col(<span class="number">2</span>),
                     ), <span class="comment">/* yz-plane */
-                    </span>Material::Blank,
+                    </span>norm_yz,
+                    Material::Blank,
                 ),
                 <span class="kw-2">*</span>Rectangle::new(
                     DMat3::from_cols(
@@ -165,7 +219,8 @@
                         r1.col(<span class="number">1</span>),
                         r2.col(<span class="number">1</span>),
                     ), <span class="comment">/* xy-plane */
-                    </span>Material::Blank,
+                    </span>norm_xy,
+                    Material::Blank,
                 ),
                 <span class="kw-2">*</span>Rectangle::new(
                     DMat3::from_cols(
@@ -173,7 +228,8 @@
                         r1.col(<span class="number">0</span>),
                         d1,
                     ), <span class="comment">/* yz-plane + 1z*/
-                    </span>Material::Blank,
+                    </span>-norm_yz,
+                    Material::Blank,
                 ),
                 <span class="kw-2">*</span>Rectangle::new(
                     DMat3::from_cols(
@@ -181,14 +237,26 @@
                         r1.col(<span class="number">2</span>),
                         d1,
                     ), <span class="comment">/* xy-plane + 1x */
-                    </span>Material::Blank,
+                    </span>-norm_xy,
+                    Material::Blank,
                 ),
                 <span class="kw-2">*</span>Rectangle::new(
-                    r2, <span class="comment">/* y-plane + 1y*/
-                    </span>Material::Blank,
+                    r2, <span class="comment">/* xz-plane + 1y*/
+                    </span>-norm_xz,
+                    Material::Blank,
                 ),
             ],
         })
+    }
+
+    <span class="doccomment">/// Choose a rectangle uniformly at random
+    </span><span class="kw">fn </span>choose_rectangle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rectangle {
+        <span class="kw">let </span>idx = {
+            <span class="kw">let </span>rnd = rand_utils::rand_f64() * <span class="number">6.0</span>;
+            rnd.floor() <span class="kw">as </span>usize
+        };
+
+        <span class="kw-2">&amp;</span><span class="self">self</span>.rectangles[idx]
     }
 }
 
@@ -202,6 +270,14 @@
     }
 
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
+
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="self">self</span>.choose_rectangle().sample_towards(p, rand_sq)
+    }
+
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="self">self</span>.choose_rectangle().sample_on(rand_sq)
+    }
 
     <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="self">self</span>.rectangles.iter().map(|rect| rect.hit(r))

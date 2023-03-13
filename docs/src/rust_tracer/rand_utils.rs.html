@@ -71,6 +71,9 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span>rand::Rng;
@@ -92,7 +95,8 @@
 
 <span class="doccomment">/// return `n` normalized random DVec3s in a vector
 </span><span class="kw">pub fn </span>rand_vec_dvec3(n: usize) -&gt; Vec&lt;DVec3&gt; {
-    (<span class="number">0</span>..n).map(|<span class="kw">_</span>| rand_unit_sphere()).collect()
+    (<span class="number">0</span>..n).map(|<span class="kw">_</span>| unit_square_to_unit_sphere(rand_unit_square()))
+        .collect()
 }
 
 <span class="doccomment">/// Uniform random DVec2 in unit square
@@ -128,13 +132,15 @@
 }
 
 <span class="doccomment">/// Uniform random DVec3 in unit sphere
-</span><span class="kw">pub fn </span>rand_unit_sphere() -&gt; DVec3 {
-    <span class="kw">let </span>sq = rand_unit_square();
+</span><span class="kw">pub fn </span>unit_square_to_unit_sphere(rand_sq: DVec2) -&gt; DVec3 {
+    <span class="kw">let </span>z = <span class="number">1.0 </span>- <span class="number">2.0 </span>* rand_sq.y;
+    <span class="kw">let </span>r = (<span class="number">1.0 </span>- z * z).sqrt();
+    <span class="kw">let </span>phi = <span class="number">2.0 </span>* PI * rand_sq.x;
 
     DVec3::new(
-        (<span class="number">2.0 </span>* PI * sq.x).cos() * <span class="number">2.0 </span>* (sq.y * (<span class="number">1.0 </span>- sq.y)).sqrt(),
-        (<span class="number">2.0 </span>* PI * sq.x).sin() * <span class="number">2.0 </span>* (sq.y * (<span class="number">1.0 </span>- sq.y)).sqrt(),
-        <span class="number">1.0 </span>- <span class="number">2.0 </span>* sq.y,
+        r * phi.cos(),
+        r * phi.sin(),
+        z,
     )
 }
 

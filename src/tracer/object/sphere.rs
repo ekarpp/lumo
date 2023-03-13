@@ -28,6 +28,8 @@ impl Sphere {
 }
 
 impl Object for Sphere {
+
+    /// If distance to origin smaller than radius, must be inside
     fn inside(&self, r: &Ray) -> bool {
         self.origin.distance_squared(r.origin + EPSILON*r.dir)
             < self.radius*self.radius
@@ -41,6 +43,7 @@ impl Object for Sphere {
         (p - self.origin) / self.radius
     }
 
+    /// Solve the quadratic
     fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"
@@ -75,6 +78,8 @@ impl Object for Sphere {
     }
 
     /* sample random direction in cone from p towards self */
+    /// Visible area from `p` forms a cone.
+    /// Sample a random direction within the cone.
     fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
@@ -92,7 +97,7 @@ impl Object for Sphere {
         uvw.to_uvw_basis(DVec3::new(x, y, z))
     }
 
-    fn sample_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
+    fn sample_towards_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
         // check hit here for debug
         let cos_theta_max = (
             1.0 - self.radius*self.radius

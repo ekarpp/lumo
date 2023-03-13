@@ -284,6 +284,16 @@
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DMat3, DAffine3};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span><span class="kw">crate</span>::rand_utils;
@@ -313,17 +323,17 @@
 </span><span class="kw">const </span>LIGHT_R: f64 = <span class="number">0.1</span>;
 
 <span class="kw">impl </span>Scene {
-    <span class="kw">pub fn </span>new(objs: Vec&lt;Box&lt;<span class="kw">dyn </span>Object&gt;&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>lights = (<span class="number">0</span>..objs.len()).map(|i: usize| {
-            <span class="kw">match </span>objs[i].material() {
+    <span class="kw">pub fn </span>new(objects: Vec&lt;Box&lt;<span class="kw">dyn </span>Object&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>lights = (<span class="number">0</span>..objects.len()).map(|i: usize| {
+            <span class="kw">match </span>objects[i].material() {
                 Material::Light(<span class="kw">_</span>) =&gt; i,
-                <span class="kw">_ </span>=&gt; objs.len(),
+                <span class="kw">_ </span>=&gt; objects.len(),
             }
-        }).filter(|i: <span class="kw-2">&amp;</span>usize| <span class="kw-2">*</span>i != objs.len()).collect();
+        }).filter(|i: <span class="kw-2">&amp;</span>usize| <span class="kw-2">*</span>i != objects.len()).collect();
 
         <span class="self">Self </span>{
-            objects: objs,
-            lights: lights,
+            objects,
+            lights,
         }
     }
 
@@ -387,6 +397,7 @@
                         DVec3::new(-<span class="number">2.0</span><span class="kw-2">*</span>light_xy, -yg - EPSILON, light_z - <span class="number">2.0</span><span class="kw-2">*</span>light_xy),
                         DVec3::new(<span class="number">2.0</span><span class="kw-2">*</span>light_xy, -yg - EPSILON, light_z - <span class="number">2.0</span><span class="kw-2">*</span>light_xy),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, -<span class="number">1.0</span>, <span class="number">0.0</span>),
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
                 Sphere::new(
@@ -409,13 +420,14 @@
                         Texture::Solid(DVec3::new(<span class="number">0.0</span>, <span class="number">0.9</span>, <span class="number">0.0</span>))
                     )
                 ),
-                <span class="comment">// roof
+                <span class="comment">/* roof */
                 </span>Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg + light_xy, -yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                         DVec3::new(yg - light_xy, -yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                         DVec3::new(yg - light_xy, -yg, <span class="number">0.0</span>),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, -<span class="number">1.0</span>, <span class="number">0.0</span>),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
 
@@ -426,41 +438,47 @@
                         DVec3::new(yg, yg, light_z),
                         DVec3::new(yg, yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
-                Rectangle::new(
+                <span class="comment">/* floor extension, can apply texture to other part */
+                </span>Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg, yg, light_z - EPSILON),
                         DVec3::new(yg, yg, light_z - EPSILON),
                         DVec3::new(yg, yg, <span class="number">0.0</span>),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
-                <span class="comment">// front wall
+                <span class="comment">/* front wall */
                 </span>Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg, -yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z + <span class="number">4.0</span><span class="kw-2">*</span>EPSILON),
                         DVec3::new(yg, -yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z + <span class="number">4.0</span><span class="kw-2">*</span>EPSILON),
                         DVec3::new(yg, yg, <span class="number">2.0</span><span class="kw-2">*</span>light_z + <span class="number">4.0</span><span class="kw-2">*</span>EPSILON),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">1.0</span>),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
-                <span class="comment">// left wall
+                <span class="comment">/* left wall */
                 </span>Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(yg, -yg + light_xy, <span class="number">0.0</span>),
                         DVec3::new(yg, -yg + light_xy, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                         DVec3::new(yg, yg - light_xy, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                     ),
+                    DVec3::new(<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>),
                     Material::Diffuse(Texture::Solid(DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>))),
                 ),
-                <span class="comment">// right wall
+                <span class="comment">/* right wall */
                 </span>Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg - <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, -yg + <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, <span class="number">0.0</span>),
                         DVec3::new(-yg - <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, -yg + <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                         DVec3::new(-yg - <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, yg - <span class="number">5.0</span><span class="kw-2">*</span>EPSILON, <span class="number">2.0</span><span class="kw-2">*</span>light_z),
                     ),
+                    DVec3::new(-<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>),
                     Material::Diffuse(Texture::Solid(DVec3::new(<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">1.0</span>))),
                 ),
                 <span class="comment">// background
@@ -470,6 +488,7 @@
                         DVec3::new(-yg, -yg, <span class="number">0.0</span>),
                         DVec3::new(yg, -yg, <span class="number">0.0</span>),
                     ),
+                    DVec3::new(<span class="number">0.0</span>, <span class="number">0.0</span>, -<span class="number">1.0</span>),
                     Material::Diffuse(Texture::Solid(DVec3::ZERO)),
                 ),
             ],
@@ -515,6 +534,7 @@
                         DVec3::new(<span class="number">0.8</span>, <span class="number">0.6</span>, -<span class="number">0.4</span>),
                         DVec3::new(<span class="number">0.4</span>, <span class="number">0.6</span>, -<span class="number">0.8</span>),
                     ),
+                    DVec3::new(-<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>),
                     Material::Mirror,
                 ),
                 Cuboid::new(

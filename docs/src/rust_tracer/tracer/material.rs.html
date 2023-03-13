@@ -54,7 +54,9 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::DVec3;
+<span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::hit::Hit;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::ray::{Ray, ScatterRay};
 <span class="kw">use </span><span class="kw">crate</span>::tracer::bxdfs;
@@ -86,7 +88,7 @@
     <span class="doccomment">/// What is the color at p?
     </span><span class="kw">pub fn </span>albedo_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Diffuse(t) =&gt; t.albedo_at(p),
+            <span class="self">Self</span>::Diffuse(t) =&gt; t.albedo_at(p) * PI.recip(),
             <span class="self">Self</span>::Mirror | <span class="self">Self</span>::Glass =&gt; DVec3::ONE,
             <span class="kw">_ </span>=&gt; DVec3::ZERO,
         }

@@ -11,6 +11,7 @@ pub struct Triangle {
     a: DVec3,
     b: DVec3,
     c: DVec3,
+    /// Unidirectional normal
     norm: DVec3,
     material: Material,
 }

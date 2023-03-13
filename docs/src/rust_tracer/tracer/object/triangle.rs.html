@@ -99,6 +99,22 @@
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="attr">#[cfg(test)]
@@ -106,25 +122,37 @@
 
 <span class="comment">/* barycentric interpolation ~ different texture at each point of triangle */
 /* normal inside?? */
+
+</span><span class="doccomment">/// Triangle specified by three points
 </span><span class="kw">pub struct </span>Triangle {
     a: DVec3,
     b: DVec3,
     c: DVec3,
-    norm: DVec3,
+    <span class="doccomment">/// Unidirectional normal
+    </span>norm: DVec3,
     material: Material,
 }
 
 <span class="kw">impl </span>Triangle {
-    <span class="comment">/* assume non-degenerate */
-    </span><span class="kw">pub fn </span>new(a: DVec3, b: DVec3, c: DVec3, m: Material) -&gt; Box&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>norm = -(b - a).cross(c - a).normalize();
+    <span class="doccomment">/// Constructs triangle from three points and specifies normal direction
+    ///
+    /// # Arguments
+    /// * `a,b,c` - Three vertices of the triangle
+    /// * `norm_dir` - Direction where normal should point
+    /// * `material` - Material of the triangle
+    </span><span class="kw">pub fn </span>new(a: DVec3, b: DVec3, c: DVec3, norm_dir: DVec3, material: Material)
+               -&gt; Box&lt;<span class="self">Self</span>&gt; {
+        <span class="comment">/* check degeneracy */
+        </span><span class="macro">assert!</span>((b - a).cross(c - a).length() != <span class="number">0.0</span>);
+
+        <span class="kw">let </span>norm = (b - a).cross(c - a).normalize();
 
         Box::new(<span class="self">Self </span>{
-            a: a,
-            b: b,
-            c: c,
-            norm: norm,
-            material: m,
+            a,
+            b,
+            c,
+            material,
+            norm: <span class="kw">if </span>norm.dot(norm_dir) &gt; <span class="number">0.0 </span>{ norm } <span class="kw">else </span>{ -norm },
         })
     }
 }
@@ -132,15 +160,15 @@
 <span class="kw">impl </span>Object <span class="kw">for </span>Triangle {
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>normal_for_at(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, _p: DVec3) -&gt; DVec3 {
-        _orient_normal(<span class="self">self</span>.norm, r)
+    <span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, _p: DVec3) -&gt; DVec3 {
+        <span class="self">self</span>.norm
     }
 
     <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
         (<span class="self">self</span>.b - <span class="self">self</span>.a).cross(<span class="self">self</span>.c - <span class="self">self</span>.a).length() / <span class="number">2.0
     </span>}
 
-    <span class="comment">/* barycentric triangle intersection with Cramer&#39;s rule */
+    <span class="doccomment">/// Barycentric triangle intersection with Cramer&#39;s rule
     </span><span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="comment">/* can store a-c, a-b, and a instead. saves some computation.
          * compiler should do it? */
@@ -193,11 +221,15 @@
         }
     }
 
-    <span class="kw">fn </span>sample_from(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
         <span class="kw">let </span>gamma = <span class="number">1.0 </span>- (<span class="number">1.0 </span>- rand_sq.x).sqrt();
         <span class="kw">let </span>beta = rand_sq.y * (<span class="number">1.0 </span>- gamma);
 
-        <span class="self">self</span>.a + beta * (<span class="self">self</span>.b - <span class="self">self</span>.a) + gamma * (<span class="self">self</span>.c - <span class="self">self</span>.a) - p
+        <span class="self">self</span>.a + beta * (<span class="self">self</span>.b - <span class="self">self</span>.a) + gamma * (<span class="self">self</span>.c - <span class="self">self</span>.a)
+    }
+
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="self">self</span>.sample_on(rand_sq) - p
     }
 }
 </code></pre></div>

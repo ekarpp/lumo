@@ -119,6 +119,8 @@
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 </span><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>std::f64::consts::PI;
@@ -163,7 +165,9 @@
     }
 
     <span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, dir: DVec3, _h: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
-        <span class="self">self</span>.uvw.w.dot(dir.normalize()) * PI.recip()
+        <span class="kw">let </span>cos_theta = <span class="self">self</span>.uvw.w.dot(dir.normalize());
+        <span class="comment">// double check math
+        </span><span class="kw">if </span>cos_theta &gt; <span class="number">0.0 </span>{ cos_theta * PI.recip() } <span class="kw">else </span>{ <span class="number">0.0 </span>}
     }
 }
 
@@ -176,21 +180,21 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ObjectPdf&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub fn </span>new(o: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Box&lt;<span class="kw">dyn </span>Object&gt;, p: DVec3) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(object: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Box&lt;<span class="kw">dyn </span>Object&gt;, p: DVec3) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            object: o,
-            p: p,
+            object,
+            p,
          }
     }
 }
 
 <span class="kw">impl </span>Pdf <span class="kw">for </span>ObjectPdf&lt;<span class="lifetime">&#39;_</span>&gt; {
     <span class="kw">fn </span>generate_dir(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.object.sample_from(<span class="self">self</span>.p, rand_sq)
+        <span class="self">self</span>.object.sample_towards(<span class="self">self</span>.p, rand_sq)
     }
 
     <span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, dir: DVec3, h: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
-        <span class="self">self</span>.object.sample_pdf(<span class="self">self</span>.p, dir, h)
+        <span class="self">self</span>.object.sample_towards_pdf(<span class="self">self</span>.p, dir, h)
     }
 }
 
@@ -203,7 +207,7 @@
 <span class="kw">impl </span>MixedPdf {
     <span class="kw">pub fn </span>new(pdfs: Vec&lt;Box&lt;<span class="kw">dyn </span>Pdf&gt;&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            pdfs: pdfs,
+            pdfs,
         }
     }
 

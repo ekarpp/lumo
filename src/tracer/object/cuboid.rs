@@ -100,6 +100,7 @@ impl Cuboid {
         })
     }
 
+    /// Choose a rectangle uniformly at random
     fn choose_rectangle(&self) -> &Rectangle {
         let idx = {
             let rnd = rand_utils::rand_f64() * 6.0;
