@@ -2,20 +2,34 @@ use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
+/// Utility struct for orthonormal basis.
 mod onb;
+/// Implementation of different probability density functions for sampling.
 mod pdfs;
+/// Wrapper for writing image buffer to file.
 mod image;
+/// The heart.
 mod tracer;
+/// Various constants used around the crate.
 mod consts;
+/// Perlin noise generator.
 mod perlin;
+/// Different iterators that stream values sampled from the unit square.
 mod samplers;
+/// Main renderer.
 mod renderer;
+/// Wrapper around rand. Provides functions to sample from various geometrics.
 mod rand_utils;
 
+/// Default render width
 const WIDTH: usize = 3840;
+/// Default render height
 const HEIGHT: usize = 2160;
+/// Default number of samples per pixel
 const NUM_SAMPLES: usize = 1;
+/// Default vfov
 const FOV: f64 = 90.0;
+/// Default output filename
 const FNAME: &str = "render.png";
 
 #[derive(argh::FromArgs)]

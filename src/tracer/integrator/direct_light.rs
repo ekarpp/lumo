@@ -23,6 +23,8 @@ pub fn integrate(scene: &Scene, r: &Ray, depth: usize) -> DVec3 {
     }
 }
 
+/// Randomly sample light from `h` and check if it is visible.
+/// Currently only one shadow ray is shot.
 fn light_at(scene: &Scene, h: &Hit) -> f64 {
     let light = scene.uniform_random_light();
 

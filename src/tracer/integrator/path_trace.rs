@@ -39,7 +39,7 @@ pub fn integrate(
     }
 }
 
-
+/// Shoots a shadow ray towards random light from `h`. `sr` has PDF?
 fn shadow_ray(scene: &Scene, h: &Hit, sr: &ScatterRay) -> DVec3 {
     let material = h.object.material();
     match material {

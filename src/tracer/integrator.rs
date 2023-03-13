@@ -8,9 +8,13 @@ use crate::tracer::material::Material;
 use crate::tracer::ray::{Ray, ScatterRay};
 use crate::tracer::scene::Scene;
 
+/// Implements the path tracing algorithm with
+/// Russian Roulette and next event estimation.
 mod path_trace;
+/// Implements a direct light integrator.
 mod direct_light;
 
+/// Enum to choose which integrator to use
 pub enum Integrator {
     PathTrace,
     DirectLight,

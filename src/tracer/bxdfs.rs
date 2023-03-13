@@ -4,7 +4,10 @@ use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::{Ray, ScatterRay};
 
-/* */
+/// Scattering function for diffuse material.
+/// # Arguments
+/// * `h` - The hit from which we scatter.
+/// * `r` - Incoming ray to the hit point.
 pub fn diffuse_bsdf(h: &Hit, _r: &Ray) -> Option<ScatterRay> {
     let pdf = CosPdf::new(h.norm);
 
@@ -17,7 +20,7 @@ pub fn diffuse_bsdf(h: &Hit, _r: &Ray) -> Option<ScatterRay> {
     )
 }
 
-/* perfect reflection */
+/// Scattering function for mirror material. Perfect reflection.
 pub fn mirror_bsdf(h: &Hit, _r: &Ray) -> Option<ScatterRay> {
     ScatterRay::new(
         Ray::new(
@@ -28,6 +31,8 @@ pub fn mirror_bsdf(h: &Hit, _r: &Ray) -> Option<ScatterRay> {
     )
 }
 
+/// Scattering function for glass material.
+/// Refracts according to Snell-Descartes law.
 pub fn glass_bsdf(h: &Hit, r: &Ray) -> Option<ScatterRay> {
     let eta_ratio = if h.object.inside(r) { ETA } else { ETA.recip() };
 
