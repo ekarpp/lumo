@@ -27,8 +27,8 @@ impl Object for Plane {
     fn area(&self) -> f64 { f64::INFINITY }
 
     // check that point is on plane?? or assume we are smart
-    fn normal_for_at(&self, r: &Ray, _p: DVec3) -> DVec3 {
-        _orient_normal(self.norm, r)
+    fn normal_at(&self, _p: DVec3) -> DVec3 {
+        self.norm
     }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {

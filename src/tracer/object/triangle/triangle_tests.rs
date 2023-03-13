@@ -1,7 +1,8 @@
 use super::*;
+use crate::tracer::texture::Texture;
 
 fn get_mat() -> Material {
-    Material::Diffuse(crate::tracer::texture::Texture::Solid(DVec3::ONE))
+    Material::Diffuse(Texture::Solid(DVec3::ONE))
 }
 
 #[test]
@@ -26,6 +27,7 @@ fn point_order_irrelevant() {
             pts[a],
             pts[(a + b + 1)%3],
             pts[2 - (i % 3)],
+            DVec3::ONE,
             get_mat()
         );
         assert!(t.hit(&r).is_some());
@@ -38,6 +40,7 @@ fn no_self_intersect() {
         DVec3::ZERO,
         DVec3::ONE,
         DVec3::new(1.0, 0.0, 1.0),
+        DVec3::ONE,
         get_mat(),
     );
     let r = Ray::new(

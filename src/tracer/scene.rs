@@ -101,6 +101,7 @@ impl Scene {
                         DVec3::new(-2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
                         DVec3::new(2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
                     ),
+                    DVec3::new(0.0, -1.0, 0.0),
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
                 Sphere::new(
@@ -123,13 +124,14 @@ impl Scene {
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
                     )
                 ),
-                // roof
+                /* roof */
                 Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg + light_xy, -yg, 2.0*light_z),
                         DVec3::new(yg - light_xy, -yg, 2.0*light_z),
                         DVec3::new(yg - light_xy, -yg, 0.0),
                     ),
+                    DVec3::new(0.0, -1.0, 0.0),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
 
@@ -140,41 +142,47 @@ impl Scene {
                         DVec3::new(yg, yg, light_z),
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
+                    DVec3::new(0.0, 1.0, 0.0),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
+                /* floor extension, can apply texture to other part */
                 Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg, yg, light_z - EPSILON),
                         DVec3::new(yg, yg, light_z - EPSILON),
                         DVec3::new(yg, yg, 0.0),
                     ),
+                    DVec3::new(0.0, 1.0, 0.0),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
-                // front wall
+                /* front wall */
                 Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg, -yg, 2.0*light_z + 4.0*EPSILON),
                         DVec3::new(yg, -yg, 2.0*light_z + 4.0*EPSILON),
                         DVec3::new(yg, yg, 2.0*light_z + 4.0*EPSILON),
                     ),
+                    DVec3::new(0.0, 0.0, 1.0),
                     Material::Diffuse(Texture::Solid(col)),
                 ),
-                // left wall
+                /* left wall */
                 Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(yg, -yg + light_xy, 0.0),
                         DVec3::new(yg, -yg + light_xy, 2.0*light_z),
                         DVec3::new(yg, yg - light_xy, 2.0*light_z),
                     ),
+                    DVec3::new(1.0, 0.0, 0.0),
                     Material::Diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                 ),
-                // right wall
+                /* right wall */
                 Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(-yg - 5.0*EPSILON, -yg + 5.0*EPSILON, 0.0),
                         DVec3::new(-yg - 5.0*EPSILON, -yg + 5.0*EPSILON, 2.0*light_z),
                         DVec3::new(-yg - 5.0*EPSILON, yg - 5.0*EPSILON, 2.0*light_z),
                     ),
+                    DVec3::new(-1.0, 0.0, 0.0),
                     Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 // background
@@ -184,6 +192,7 @@ impl Scene {
                         DVec3::new(-yg, -yg, 0.0),
                         DVec3::new(yg, -yg, 0.0),
                     ),
+                    DVec3::new(0.0, 0.0, -1.0),
                     Material::Diffuse(Texture::Solid(DVec3::ZERO)),
                 ),
             ],
@@ -229,6 +238,7 @@ impl Scene {
                         DVec3::new(0.8, 0.6, -0.4),
                         DVec3::new(0.4, 0.6, -0.8),
                     ),
+                    DVec3::new(-1.0, 0.0, 0.0),
                     Material::Mirror,
                 ),
                 Cuboid::new(

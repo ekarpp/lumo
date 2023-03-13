@@ -3,6 +3,7 @@ use super::*;
 #[cfg(test)]
 mod sphere_tests;
 
+/// Sphere specified by its radius and origin
 pub struct Sphere {
     pub origin: DVec3,
     pub radius: f64,
@@ -11,11 +12,17 @@ pub struct Sphere {
 
 impl Sphere {
     /* assume r != 0 */
-    pub fn new(origin: DVec3, r: f64, mat: Material) -> Box<Self> {
+    /// # Arguments
+    /// * `o` - Origin of the sphere
+    /// * `r` - Radius of the sphere
+    /// * `mat` - Material of the sphere
+    pub fn new(o: DVec3, r: f64, m: Material) -> Box<Self> {
+        assert!(r != 0.0);
+
         Box::new(Self {
-            origin: origin,
+            origin: o,
             radius: r,
-            material: mat,
+            material: m,
         })
     }
 }
@@ -30,8 +37,8 @@ impl Object for Sphere {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn normal_for_at(&self, r: &Ray, p: DVec3) -> DVec3 {
-        _orient_normal((p - self.origin) / self.radius, r)
+    fn normal_at(&self, p: DVec3) -> DVec3 {
+        (p - self.origin) / self.radius
     }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -62,7 +69,7 @@ impl Object for Sphere {
     }
 
     /* sample random direction in cone from p towards self */
-    fn sample_from(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
         let uvw = Onb::new(self.origin - p);

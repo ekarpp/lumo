@@ -42,7 +42,9 @@ impl Pdf for CosPdf {
     }
 
     fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64 {
-        self.uvw.w.dot(dir.normalize()) * PI.recip()
+        let cos_theta = self.uvw.w.dot(dir.normalize());
+        // double check math
+        if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
 }
 
@@ -65,7 +67,7 @@ impl<'a> ObjectPdf<'a> {
 
 impl Pdf for ObjectPdf<'_> {
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        self.object.sample_from(self.p, rand_sq)
+        self.object.sample_towards(self.p, rand_sq)
     }
 
     fn pdf_val(&self, dir: DVec3, h: &Hit) -> f64 {
