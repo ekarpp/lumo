@@ -27,7 +27,7 @@ pub fn integrate(
                         _ => false,
                     };
 
-                    shadow_ray(scene, &h, &sr)
+                    shadow_ray(scene, &h)
                         + material.albedo_at(h.p)
                         * integrate(scene, &sr.ray, depth + 1, is_specular)
                     /* hit ok to pass here?? */
@@ -36,34 +36,5 @@ pub fn integrate(
                 }
             }
         }
-    }
-}
-
-/// Shoots a shadow ray towards random light from `h`. `sr` has PDF?
-fn shadow_ray(scene: &Scene, h: &Hit, sr: &ScatterRay) -> DVec3 {
-    let material = h.object.material();
-    match material {
-        Material::Diffuse(_) => {
-            let light = scene.uniform_random_light();
-
-            let pdf_light = ObjectPdf::new(light, h.p);
-            /* ray to sampled point on light */
-            let r = Ray::new(
-                h.p,
-                pdf_light.generate_dir(
-                    rand_utils::rand_unit_square()
-                ),
-            );
-
-            match scene.hit_light(&r, light) {
-                None => DVec3::ZERO,
-                Some(hl) => {
-                    material.albedo_at(h.p)
-                        * sr.pdf.pdf_val(r.dir, &hl)
-                        / pdf_light.pdf_val(r.dir, &hl)
-                }
-            }
-        }
-        _ => DVec3::ZERO,
     }
 }
