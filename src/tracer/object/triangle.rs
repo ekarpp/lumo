@@ -47,6 +47,7 @@ impl Object for Triangle {
         self.norm
     }
 
+    /// With cross product
     fn area(&self) -> f64 {
         (self.b - self.a).cross(self.c - self.a).length() / 2.0
     }
@@ -104,6 +105,7 @@ impl Object for Triangle {
         }
     }
 
+    /// Random point with barycentrics.
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
@@ -111,6 +113,7 @@ impl Object for Triangle {
         self.a + beta * (self.b - self.a) + gamma * (self.c - self.a)
     }
 
+    /// Choose random point on surface of triangle. Shoot ray towards it.
     fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
         let xo = ho.p;
         let xi = self.sample_on(rand_sq);
