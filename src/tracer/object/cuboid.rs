@@ -122,8 +122,8 @@ impl Object for Cuboid {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> Ray {
-        self.choose_rectangle().sample_towards(p, rand_sq)
+    fn sample_towards(&self, h: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        self.choose_rectangle().sample_towards(h, rand_sq)
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {

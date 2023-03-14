@@ -77,15 +77,14 @@ impl Object for Sphere {
         self.origin + self.radius * rand_sph
     }
 
-    /* sample random direction in cone from p towards self */
-    /// Visible area from `p` forms a cone.
+    /// Visible area from `h.p` forms a cone.
     /// Sample a random direction within the cone.
-    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, h: &Hit, rand_sq: DVec2) -> (Ray, f64) {
         /* uvw-orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
-        let uvw = Onb::new(self.origin - p);
+        let uvw = Onb::new(self.origin - h.p);
 
-        let dist_light = p.distance_squared(self.origin);
+        let dist_light = h.p.distance_squared(self.origin);
 
         let z = 1.0 + rand_sq.y *
             ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
@@ -94,19 +93,23 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        Ray::new(
-            p,
-            uvw.to_uvw_basis(DVec3::new(x, y, z)),
+        let dir = uvw.to_uvw_basis(DVec3::new(x, y, z));
+
+        // IS dir + h.p CORRECT POINT ON "TOWARDS" OBJECT??
+        let p_to = dir + h.p;
+
+        (
+            Ray::new(h.p, dir),
+            self.sample_towards_pdf(h.p, p_to, dir, self.normal_at(p_to)),
         )
     }
 
-    fn sample_towards_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
-        // check hit here for debug
-        let cos_theta_max = (
-            1.0 - self.radius*self.radius
-                / (self.origin - p).length_squared()
-        ).sqrt();
+    fn sample_towards_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+                          -> f64 {
+        let sin2_theta_max = self.radius * self.radius
+            / self.origin.distance_squared(xo);
+        let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
 
-        (2.0 * PI * (1.0 - cos_theta_max)).recip()
+        1.0 / (2.0 * PI * (1.0 - cos_theta_max))
     }
 }
