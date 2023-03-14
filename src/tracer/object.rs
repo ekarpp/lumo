@@ -9,6 +9,7 @@ use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::object::triangle::Triangle;
 use crate::tracer::object::rectangle::Rectangle;
+use crate::tracer::object::aabb::AxisAlignedBoundingBox;
 
 /// Defines infinite planes
 pub mod plane;
@@ -20,6 +21,10 @@ pub mod sphere;
 pub mod triangle;
 /// Defines rectangles. Built from two triangles.
 pub mod rectangle;
+/// Axis aligned bounding boxes
+pub mod aabb;
+/// Bounding volume hierarchy
+pub mod bvh;
 
 /* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
@@ -33,22 +38,26 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 pub trait Object: Sync {
     /// Normal of the object at the point `p`. Does not check if `p` is
     /// actually on the object.
-    fn normal_at(&self, _p: DVec3) -> DVec3 { todo!() }
-
+    fn normal_at(&self, _p: DVec3) -> DVec3 { panic!("normal_at") }
     fn is_translucent(&self) -> bool { self.material().is_translucent() }
-
+    /// Does the ray hit the object?
+    fn hit(&self, r: &Ray) -> Option<Hit>;
+    fn material(&self) -> &Material;
+    /// Surface area of the object
+    fn area(&self) -> f64;
     /// Number of objects the object consists of.
     fn size(&self) -> usize { 1 }
-
     /// Is the ray inside the object?
     fn inside(&self, _r: &Ray) -> bool { false }
 
     /// Sample a random point from surface of the object that is visible from `p`
     /// Returns direction from `p` to us. DO THIS BETTER
-    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 { todo!() }
+    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 {
+        panic!("sample_towards")
+    }
 
     /// Random point on the surface of the object
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { panic!("sample_on") }
 
     /// Sample random ray leaving the object
     fn sample_from(&self, rand_sq_o: DVec2, rand_sq_d: DVec2) -> Ray {
@@ -60,14 +69,6 @@ pub trait Object: Sync {
             dir,
         )
     }
-
-    /// Does the ray hit the object?
-    fn hit(&self, r: &Ray) -> Option<Hit>;
-
-    fn material(&self) -> &Material;
-
-    /// Surface area of the object
-    fn area(&self) -> f64;
 
     /* TODO: THIS SHOULD BE DONE BETTER */
     /// PDF for sampling points on the surface that are visible from `p`
