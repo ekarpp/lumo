@@ -63,11 +63,18 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 </span><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span><span class="kw">crate</span>::rand_utils;
+<span class="kw">use </span>rand_utils::{RandomShape, RandomShape::Square};
 <span class="kw">use </span><span class="kw">crate</span>::consts::PATH_TRACE_RR;
-<span class="kw">use </span><span class="kw">crate</span>::pdfs::{Pdf, ObjectPdf};
 <span class="kw">use </span><span class="kw">crate</span>::tracer::hit::Hit;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::material::Material;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::ray::Ray;
@@ -100,28 +107,35 @@
     }
 }
 
-<span class="doccomment">/// Shoots a shadow ray towards random light from `h`. pass scatter pdf?
-</span><span class="kw">fn </span>shadow_ray(scene: <span class="kw-2">&amp;</span>Scene, h: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; DVec3 {
-    <span class="kw">let </span>material = h.object.material();
+<span class="doccomment">/// Shoots a shadow ray towards random light from `ho`.
+</span><span class="kw">fn </span>shadow_ray(scene: <span class="kw-2">&amp;</span>Scene, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; DVec3 {
+    <span class="kw">let </span>material = ho.object.material();
+
     <span class="kw">match </span>material {
         Material::Diffuse(<span class="kw">_</span>) =&gt; {
+            <span class="kw">let </span>xo = ho.p;
+            <span class="kw">let </span>no = ho.norm;
             <span class="kw">let </span>light = scene.uniform_random_light();
 
-            <span class="kw">let </span>pdf_light = ObjectPdf::new(light, h.p);
-            <span class="comment">/* ray to sampled point on light */
-            </span><span class="kw">let </span>r = Ray::new(
-                h.p,
-                pdf_light.generate_dir(
-                    rand_sq
-                ),
-            );
+            <span class="comment">/* ray to sampled point on light and the corresponding
+             * PDF value w.r.t solid angle */
+            </span><span class="kw">let </span>(ri, pdf_w) = light.sample_towards(ho, rand_sq);
+            <span class="kw">let </span>wi = ri.dir;
 
-            <span class="kw">match </span>scene.hit_light(<span class="kw-2">&amp;</span>r, light) {
+            <span class="kw">match </span>scene.hit_light(<span class="kw-2">&amp;</span>ri, light) {
                 <span class="prelude-val">None </span>=&gt; DVec3::ZERO,
-                <span class="prelude-val">Some</span>(hl) =&gt; {
-                    material.albedo_at(h.p)
-                        * h.norm.dot(r.dir.normalize()).abs()
-                        / pdf_light.pdf_val(r.dir, <span class="kw-2">&amp;</span>hl)
+                <span class="prelude-val">Some</span>(hi) =&gt; {
+                    <span class="kw">let </span>xi = hi.p;
+                    <span class="kw">let </span>ni = hi.norm;
+                    <span class="comment">/* PDF w.r.t to solid angle, need to change to area.
+                     * HOW?
+                     * dA = dw_i * cos(t_i) / dist_sq(xo, xi) */
+                    </span><span class="kw">let </span>pdf_a = pdf_w * ni.dot(wi.normalize()).abs()
+                        / xo.distance_squared(xi);
+
+                    material.brdf(xo)
+                        * no.dot(wi.normalize()).abs()
+                        / pdf_a
                 }
             }
         }

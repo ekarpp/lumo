@@ -53,12 +53,10 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::DVec3;
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::hit::Hit;
-<span class="kw">use </span><span class="kw">crate</span>::tracer::ray::{Ray, ScatterRay};
+<span class="kw">use </span><span class="kw">crate</span>::tracer::ray::Ray;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::bxdfs;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::texture::Texture;
 
@@ -77,7 +75,7 @@
 }
 
 <span class="kw">impl </span>Material {
-    <span class="doccomment">/// How much light emitted at h?
+    <span class="doccomment">/// How much light emitted at `h`?
     </span><span class="kw">pub fn </span>emit(<span class="kw-2">&amp;</span><span class="self">self</span>, h: <span class="kw-2">&amp;</span>Hit) -&gt; DVec3 {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Light(t) =&gt; t.albedo_at(h.p),
@@ -86,7 +84,7 @@
     }
 
     <span class="doccomment">/// What is the color at p?
-    </span><span class="kw">pub fn </span>albedo_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
+    </span><span class="kw">pub fn </span>brdf(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Diffuse(t) =&gt; t.albedo_at(p) * PI.recip(),
             <span class="self">Self</span>::Mirror | <span class="self">Self</span>::Glass =&gt; DVec3::ONE,
@@ -95,21 +93,19 @@
     }
 
     <span class="doccomment">/// How does `r` get scattered at `h`?
-    </span><span class="kw">pub fn </span>bsdf(<span class="kw-2">&amp;</span><span class="self">self</span>, h: <span class="kw-2">&amp;</span>Hit, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;ScatterRay&gt; {
+    </span><span class="kw">pub fn </span>bsdf(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, ro: <span class="kw-2">&amp;</span>Ray, rand_sq: DVec2)
+                -&gt; <span class="prelude-ty">Option</span>&lt;(Ray, f64)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Glass =&gt; bxdfs::glass_bsdf(h, r),
-            <span class="self">Self</span>::Mirror =&gt; bxdfs::mirror_bsdf(h, r),
-            <span class="self">Self</span>::Diffuse(<span class="kw">_</span>) =&gt; bxdfs::diffuse_bsdf(h, r),
+            <span class="self">Self</span>::Glass =&gt; bxdfs::glass_bsdf(ho, ro),
+            <span class="self">Self</span>::Mirror =&gt; bxdfs::mirror_bsdf(ho, ro),
+            <span class="self">Self</span>::Diffuse(<span class="kw">_</span>) =&gt; bxdfs::diffuse_bsdf(ho, ro, rand_sq),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 
     <span class="doccomment">/// Does light pass through the material?
     </span><span class="kw">pub fn </span>is_translucent(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Glass | <span class="self">Self</span>::Blank =&gt; <span class="bool-val">true</span>,
-            <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
-        }
+        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="self">Self</span>::Glass | <span class="self">Self</span>::Blank)
     }
 }
 </code></pre></div>

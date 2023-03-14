@@ -115,6 +115,15 @@
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="attr">#[cfg(test)]
@@ -164,7 +173,8 @@
         <span class="self">self</span>.norm
     }
 
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
+    <span class="doccomment">/// With cross product
+    </span><span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
         (<span class="self">self</span>.b - <span class="self">self</span>.a).cross(<span class="self">self</span>.c - <span class="self">self</span>.a).length() / <span class="number">2.0
     </span>}
 
@@ -221,15 +231,23 @@
         }
     }
 
-    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
+    <span class="doccomment">/// Random point with barycentrics.
+    </span><span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
         <span class="kw">let </span>gamma = <span class="number">1.0 </span>- (<span class="number">1.0 </span>- rand_sq.x).sqrt();
         <span class="kw">let </span>beta = rand_sq.y * (<span class="number">1.0 </span>- gamma);
 
         <span class="self">self</span>.a + beta * (<span class="self">self</span>.b - <span class="self">self</span>.a) + gamma * (<span class="self">self</span>.c - <span class="self">self</span>.a)
     }
 
-    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.sample_on(rand_sq) - p
+    <span class="doccomment">/// Choose random point on surface of triangle. Shoot ray towards it.
+    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
+        <span class="kw">let </span>xo = ho.p;
+        <span class="kw">let </span>xi = <span class="self">self</span>.sample_on(rand_sq);
+        <span class="kw">let </span>wi = xi - xo;
+        (
+            Ray::new(xo, wi),
+            <span class="self">self</span>.sample_towards_pdf(xo, xi, wi, <span class="self">self</span>.normal_at(xi))
+        )
     }
 }
 </code></pre></div>

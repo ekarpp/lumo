@@ -69,7 +69,6 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Rectangle {
@@ -125,8 +124,8 @@
 
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.choose_triangle().sample_towards(p, rand_sq)
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
+        <span class="self">self</span>.choose_triangle().sample_towards(ho, rand_sq)
     }
 
     <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
@@ -135,10 +134,9 @@
 
     <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="self">self</span>.triangles.<span class="number">0</span>.hit(r).or_else(|| <span class="self">self</span>.triangles.<span class="number">1</span>.hit(r))
-            .and_then(|<span class="kw-2">mut </span>hit| {
-                <span class="comment">/* change us as the object to get correct texture for rendering */
-                </span>hit.object = <span class="self">self</span>;
-                <span class="prelude-val">Some</span>(hit)
+            .map(|<span class="kw-2">mut </span>h| {
+                h.object = <span class="self">self</span>;
+                h
             })
     }
 }

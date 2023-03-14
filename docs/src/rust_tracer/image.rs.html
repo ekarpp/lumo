@@ -108,7 +108,7 @@
     </span><span class="kw">pub fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="kw">let </span>path = Path::new(<span class="kw-2">&amp;</span><span class="self">self</span>.fname);
         <span class="kw">let </span>file = File::create(path).unwrap();
-        <span class="kw">let </span><span class="kw-2">ref mut </span>w = BufWriter::new(file);
+        <span class="kw">let </span>w = <span class="kw-2">&amp;mut </span>BufWriter::new(file);
 
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(w, <span class="self">self</span>.width <span class="kw">as </span>u32, <span class="self">self</span>.height <span class="kw">as </span>u32);
         encoder.set_color(ColorType::Rgb);

@@ -25,24 +25,24 @@
 <a href="#25" id="25">25</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>integrate(scene: <span class="kw-2">&amp;</span>Scene, r: <span class="kw-2">&amp;</span>Ray) -&gt; DVec3 {
+<span class="kw">pub fn </span>integrate(scene: <span class="kw-2">&amp;</span>Scene, ro: <span class="kw-2">&amp;</span>Ray) -&gt; DVec3 {
     <span class="comment">/* two mirrors next to each other might cause issues... */
 
-    </span><span class="kw">match </span>scene.hit(r) {
+    </span><span class="kw">match </span>scene.hit(ro) {
         <span class="prelude-val">None </span>=&gt; DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>),
-        <span class="prelude-val">Some</span>(h) =&gt; {
-            <span class="kw">let </span>material = h.object.material();
+        <span class="prelude-val">Some</span>(ho) =&gt; {
+            <span class="kw">let </span>material = ho.object.material();
             <span class="kw">match </span>material {
                 Material::Diffuse(<span class="kw">_</span>) =&gt; {
-                    shadow_ray(scene, <span class="kw-2">&amp;</span>h, rand_utils::rand_unit_square())
+                    shadow_ray(scene, <span class="kw-2">&amp;</span>ho, RandomShape::gen_2d(Square))
                 }
                 Material::Glass | Material::Mirror =&gt; {
-                    <span class="kw">match </span>material.bsdf(<span class="kw-2">&amp;</span>h, r) {
-                        <span class="prelude-val">Some</span>(sr) =&gt; integrate(scene, <span class="kw-2">&amp;</span>sr.ray),
+                    <span class="kw">match </span>material.bsdf(<span class="kw-2">&amp;</span>ho, ro, RandomShape::gen_2d(Square)) {
+                        <span class="prelude-val">Some</span>((ri, pdf_s)) =&gt; integrate(scene, <span class="kw-2">&amp;</span>ri) / pdf_s,
                         <span class="prelude-val">None </span>=&gt; DVec3::ZERO,
                     }
                 }
-                <span class="kw">_ </span>=&gt; material.emit(<span class="kw-2">&amp;</span>h),
+                <span class="kw">_ </span>=&gt; material.emit(<span class="kw-2">&amp;</span>ho),
 
             }
         }

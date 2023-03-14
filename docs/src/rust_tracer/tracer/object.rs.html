@@ -82,10 +82,20 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DMat3, DVec2, DAffine3, DQuat};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span><span class="kw">crate</span>::onb::Onb;
 <span class="kw">use </span><span class="kw">crate</span>::rand_utils;
+<span class="kw">use </span>rand_utils::RandomShape;
 <span class="kw">use </span><span class="kw">crate</span>::pdfs::{Pdf, CosPdf};
 <span class="kw">use </span><span class="kw">crate</span>::consts::EPSILON;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::ray::Ray;
@@ -93,6 +103,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::tracer::material::Material;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::object::triangle::Triangle;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::object::rectangle::Rectangle;
+<span class="kw">use </span><span class="kw">crate</span>::tracer::object::aabb::AxisAlignedBoundingBox;
 
 <span class="doccomment">/// Defines infinite planes
 </span><span class="kw">pub mod </span>plane;
@@ -104,6 +115,10 @@
 </span><span class="kw">pub mod </span>triangle;
 <span class="doccomment">/// Defines rectangles. Built from two triangles.
 </span><span class="kw">pub mod </span>rectangle;
+<span class="doccomment">/// Axis aligned bounding boxes
+</span><span class="kw">pub mod </span>aabb;
+<span class="doccomment">/// Bounding volume hierarchy
+</span><span class="kw">pub mod </span>bvh;
 
 <span class="comment">/* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
@@ -117,53 +132,56 @@
 </span><span class="kw">pub trait </span>Object: Sync {
     <span class="doccomment">/// Normal of the object at the point `p`. Does not check if `p` is
     /// actually on the object.
-    </span><span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, _p: DVec3) -&gt; DVec3 { <span class="macro">todo!</span>() }
-
+    </span><span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, _p: DVec3) -&gt; DVec3 { <span class="macro">panic!</span>(<span class="string">&quot;normal_at&quot;</span>) }
     <span class="kw">fn </span>is_translucent(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool { <span class="self">self</span>.material().is_translucent() }
-
+    <span class="doccomment">/// Does the ray hit the object?
+    </span><span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt;;
+    <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material;
+    <span class="doccomment">/// Surface area of the object
+    </span><span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64;
     <span class="doccomment">/// Number of objects the object consists of.
     </span><span class="kw">fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="number">1 </span>}
-
     <span class="doccomment">/// Is the ray inside the object?
     </span><span class="kw">fn </span>inside(<span class="kw-2">&amp;</span><span class="self">self</span>, _r: <span class="kw-2">&amp;</span>Ray) -&gt; bool { <span class="bool-val">false </span>}
 
-    <span class="doccomment">/// Sample a random point from surface of the object that is visible from `p`
-    /// Returns direction from `p` to us. DO THIS BETTER
-    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, _p: DVec3, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">todo!</span>() }
+    <span class="doccomment">/// Sample random ray from `ho.p = xo` towards area of object
+    /// that is visible form `xo`
+    ///
+    /// # Arguments
+    /// * `ho` - Hit on the &quot;from&quot; object
+    /// * `rand_sq` - Uniformly random point on unit square
+    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, _ho: <span class="kw-2">&amp;</span>Hit, _rand_sq: DVec2) -&gt; (Ray, f64) {
+        <span class="macro">panic!</span>(<span class="string">&quot;sample_towards&quot;</span>)
+    }
 
-    <span class="doccomment">/// Random point on the surface of the object
-    </span><span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">todo!</span>() }
+    <span class="doccomment">/// Sample random point on the surface of the object
+    </span><span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">panic!</span>(<span class="string">&quot;sample_on&quot;</span>) }
 
-    <span class="doccomment">/// Sample random ray leaving the object
+    <span class="doccomment">/// Sample random ray leaving the object. Random unit square points for
+    /// ray direction and origin separately
     </span><span class="kw">fn </span>sample_from(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq_o: DVec2, rand_sq_d: DVec2) -&gt; Ray {
-        <span class="kw">let </span>origin = <span class="self">self</span>.sample_on(rand_sq_o);
-        <span class="kw">let </span>cos_pdf = CosPdf::new(<span class="self">self</span>.normal_at(origin));
-        <span class="kw">let </span>dir = cos_pdf.generate_dir(rand_sq_d);
+        <span class="kw">let </span>xi = <span class="self">self</span>.sample_on(rand_sq_o);
+        <span class="kw">let </span>cos_pdf = CosPdf::new(<span class="self">self</span>.normal_at(xi));
+        <span class="kw">let </span>wi = cos_pdf.generate_dir(rand_sq_d);
         Ray::new(
-            origin,
-            dir,
+            xi,
+            wi,
         )
     }
 
-    <span class="doccomment">/// Does the ray hit the object?
-    </span><span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt;;
-
-    <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material;
-
-    <span class="doccomment">/// Surface area of the object
-    </span><span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64;
-
     <span class="comment">/* TODO: THIS SHOULD BE DONE BETTER */
     </span><span class="doccomment">/// PDF for sampling points on the surface that are visible from `p`
+    /// w.r.t. the solid angle from `p` to direction `dir`
     ///
     /// # Arguments
-    /// * `p` - The point form which the point sampled on the object should
-    /// be visible
-    /// * `dir` - Direction from `p` to the sampled point on surface
-    /// * `h` - Hit on the surface from `p`
-    </span><span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, dir: DVec3, h: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
-        p.distance_squared(h.p)
-            / (h.norm.dot(-dir.normalize()).max(<span class="number">0.0</span>) * <span class="self">self</span>.area())
+    /// * `xo` - Point on the &quot;from&quot; object
+    /// * `xi` - Randomly drawn point on the &quot;towards&quot; object
+    /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
+    /// * `ni` - Normal of &quot;towards&quot; object at `xi`
+    </span><span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+                          -&gt; f64 {
+        xo.distance_squared(xi)
+            / (ni.dot(wi.normalize()).abs() * <span class="self">self</span>.area())
     }
 }
 </code></pre></div>

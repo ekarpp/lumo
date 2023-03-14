@@ -107,6 +107,16 @@
 <a href="#107" id="107">107</a>
 <a href="#108" id="108">108</a>
 <a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="attr">#[cfg(test)]
@@ -148,7 +158,8 @@
 
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
+    <span class="doccomment">/// Points way from origin
+    </span><span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
         (p - <span class="self">self</span>.origin) / <span class="self">self</span>.radius
     }
 
@@ -180,21 +191,24 @@
         )
     }
 
-    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="kw">let </span>rand_sph = rand_utils::unit_square_to_unit_sphere(rand_sq);
+    <span class="doccomment">/// Sample on unit sphere and scale
+    </span><span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="kw">let </span>rand_sph = RandomShape::gen_3d(RandomShape::Sphere(rand_sq));
 
         <span class="self">self</span>.origin + <span class="self">self</span>.radius * rand_sph
     }
 
-    <span class="comment">/* sample random direction in cone from p towards self */
-    </span><span class="doccomment">/// Visible area from `p` forms a cone.
+    <span class="doccomment">/// Visible area from `ho.p = xo` forms a cone.
     /// Sample a random direction within the cone.
-    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, rand_sq: DVec2) -&gt; DVec3 {
+    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
+        <span class="kw">let </span>xo = ho.p;
         <span class="comment">/* uvw-orthonormal basis,
-         * where w is the direction from x to origin of this sphere. */
-        </span><span class="kw">let </span>uvw = Onb::new(<span class="self">self</span>.origin - p);
+         * where w is the direction from xo to origin of this sphere. */
+        </span><span class="kw">let </span>uvw = Onb::new(<span class="self">self</span>.origin - xo);
 
-        <span class="kw">let </span>dist_light = p.distance_squared(<span class="self">self</span>.origin);
+        <span class="comment">/* TODO: this seems broken */
+
+        </span><span class="kw">let </span>dist_light = xo.distance_squared(<span class="self">self</span>.origin);
 
         <span class="kw">let </span>z = <span class="number">1.0 </span>+ rand_sq.y *
             ((<span class="number">1.0 </span>- <span class="self">self</span>.radius * <span class="self">self</span>.radius / dist_light).sqrt() - <span class="number">1.0</span>);
@@ -203,17 +217,23 @@
         <span class="kw">let </span>x = phi.cos() * (<span class="number">1.0 </span>- z<span class="kw-2">*</span>z).sqrt();
         <span class="kw">let </span>y = phi.sin() * (<span class="number">1.0 </span>- z<span class="kw-2">*</span>z).sqrt();
 
-        uvw.to_uvw_basis(DVec3::new(x, y, z))
+        <span class="kw">let </span>wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
+
+        <span class="comment">/* not used in pdf calc? */
+        </span><span class="kw">let </span>xi = DVec3::ZERO;
+        (
+            Ray::new(xo, wi),
+            <span class="self">self</span>.sample_towards_pdf(xo, xi, wi, <span class="self">self</span>.normal_at(xi)),
+        )
     }
 
-    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3, _dir: DVec3, _h: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
-        <span class="comment">// check hit here for debug
-        </span><span class="kw">let </span>cos_theta_max = (
-            <span class="number">1.0 </span>- <span class="self">self</span>.radius<span class="kw-2">*</span><span class="self">self</span>.radius
-                / (<span class="self">self</span>.origin - p).length_squared()
-        ).sqrt();
+    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
+                          -&gt; f64 {
+        <span class="kw">let </span>sin2_theta_max = <span class="self">self</span>.radius * <span class="self">self</span>.radius
+            / <span class="self">self</span>.origin.distance_squared(xo);
+        <span class="kw">let </span>cos_theta_max = (<span class="number">1.0 </span>- sin2_theta_max).sqrt();
 
-        (<span class="number">2.0 </span>* PI * (<span class="number">1.0 </span>- cos_theta_max)).recip()
+        <span class="number">1.0 </span>/ (<span class="number">2.0 </span>* PI * (<span class="number">1.0 </span>- cos_theta_max))
     }
 }
 </code></pre></div>

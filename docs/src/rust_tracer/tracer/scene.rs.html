@@ -362,17 +362,17 @@
             })
     }
 
-    <span class="doccomment">/// Does ray `r` reach the light object `light`?
+    <span class="doccomment">/// Does ray `r` reach the light object `light`? TODO: rewrite
     </span><span class="kw">pub fn </span>hit_light&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, light: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Box&lt;<span class="kw">dyn </span>Object&gt;)
                      -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
-        <span class="kw">let </span>light_hit = light.hit(r).and_then(|<span class="kw-2">mut </span>h| {
+        <span class="kw">let </span>light_hit = light.hit(r).map(|<span class="kw-2">mut </span>h| {
             h.t -= EPSILON;
-            <span class="prelude-val">Some</span>(h)
+            h
         });
 
         <span class="kw">let </span>no_block_light = |obj: &amp;&amp;Box&lt;<span class="kw">dyn </span>Object&gt;| -&gt; bool {
-            obj.is_translucent() || obj.hit(r).is_none()
-                || obj.hit(r) &gt; light_hit
+            obj.hit(r).is_none() || obj.hit(r) &gt; light_hit
+
         };
 
         <span class="kw">let </span>reached_light = <span class="self">self</span>.objects.iter().take_while(no_block_light)
