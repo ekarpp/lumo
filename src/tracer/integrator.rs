@@ -42,7 +42,7 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
             let light = scene.uniform_random_light();
 
             /* ray to sampled point on light. return tuple with pdf? */
-            let r = light.sample_towards(h.p, rand_utils::rand_unit_square());
+            let r = light.sample_towards(h.p, rand_sq);
 
             match scene.hit_light(&r, light) {
                 None => DVec3::ZERO,
