@@ -6,9 +6,14 @@ pub fn integrate(
              depth: usize,
              last_specular: bool
 ) -> DVec3 {
-    if rand_utils::rand_f64() < PATH_TRACE_RR {
+    if depth > 1 && rand_utils::rand_f64() < PATH_TRACE_RR {
         return DVec3::ZERO;
     }
+    /*
+    if depth > crate::consts::PATH_TRACE_MAX_DEPTH {
+        return DVec3::ZERO;
+    }
+     */
 
     match scene.hit(r) {
         None => DVec3::new(0.0, 0.0, 1.0),
@@ -29,12 +34,9 @@ pub fn integrate(
 
                     shadow_ray(scene, &h, rand_utils::rand_unit_square())
                         + material.brdf(h.p)
+                        * h.norm.dot(sr.dir.normalize()).abs()
                         * integrate(scene, &sr, depth + 1, is_specular)
-                        * h.norm.dot(sr.dir.normalize()).abs()
-                        /* something fishy here. pdf cancels one cosine... */
-                        * h.norm.dot(sr.dir.normalize()).abs()
-                        / ((1.0 - PATH_TRACE_RR)
-                           * pdf)
+                        / (pdf * (1.0 - PATH_TRACE_RR))
                 }
             }
         }
