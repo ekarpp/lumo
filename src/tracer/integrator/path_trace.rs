@@ -30,8 +30,9 @@ pub fn integrate(
                     shadow_ray(scene, &h, rand_utils::rand_unit_square())
                         + material.brdf(h.p)
                         * integrate(scene, &sr, depth + 1, is_specular)
-                    /* hit ok to pass here?? */
-                        * h.norm.dot(sr.dir).abs()
+                        * h.norm.dot(sr.dir.normalize()).abs()
+                        /* something fishy here. pdf cancels one cosine... */
+                        * h.norm.dot(sr.dir.normalize()).abs()
                         / ((1.0 - PATH_TRACE_RR)
                            * pdf)
                 }
