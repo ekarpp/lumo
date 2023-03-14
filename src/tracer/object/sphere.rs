@@ -87,7 +87,7 @@ impl Object for Sphere {
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
 
-        /* TODO */
+        /* TODO: this seems broken */
 
         let dist_light = xo.distance_squared(self.origin);
 
@@ -100,9 +100,8 @@ impl Object for Sphere {
 
         let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
-        // IS wi + xo CORRECT POINT ON "TOWARDS" OBJECT?? i.e. is wi correct len?
-        let xi = wi + xo;
-
+        /* not used in pdf calc? */
+        let xi = DVec3::ZERO;
         (
             Ray::new(xo, wi),
             self.sample_towards_pdf(xo, xi, wi, self.normal_at(xi)),
