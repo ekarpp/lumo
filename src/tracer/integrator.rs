@@ -39,23 +39,29 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
     let material = h.object.material();
     match material {
         Material::Diffuse(_) => {
+            let xo = h.p;
+            let no = h.norm;
             let light = scene.uniform_random_light();
 
-            /* ray to sampled point on light. return tuple with pdf? */
-            let r = light.sample_towards(h.p, rand_sq);
+            /* ray to sampled point on light and the corresponding
+             * PDF value w.r.t solid angle */
+            let (rl, pdf_w) = light.sample_towards(h, rand_sq);
+            let wi = rl.dir;
 
-            match scene.hit_light(&r, light) {
+            match scene.hit_light(&rl, light) {
                 None => DVec3::ZERO,
                 Some(hl) => {
-                    // wrap in sample_towards?
-                    let pdf = light.sample_towards_pdf(hl.p, r.dir, &h);
-                    material.brdf(h.p)
-                    /* --- G ----  */
-                        * hl.norm.dot(r.dir.normalize()).abs()
-                        * h.norm.dot(r.dir.normalize()).abs()
-                        * h.p.distance_squared(hl.p).recip()
-                    /* --- G ----  */
-                        / pdf
+                    let xi = hl.p;
+                    let ni = hl.norm;
+                    /* PDF w.r.t to solid angle, need to change to area.
+                     * HOW?
+                     * dA = dw_i * cos(t_i) / dist_sq(xo, xi) */
+                    let pdf_a = pdf_w * ni.dot(wi.normalize()).abs()
+                        / xo.distance_squared(xi);
+
+                    material.brdf(xo)
+                        * no.dot(wi.normalize()).abs()
+                        / pdf_a
                 }
             }
         }

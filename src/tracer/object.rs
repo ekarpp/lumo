@@ -50,9 +50,13 @@ pub trait Object: Sync {
     /// Is the ray inside the object?
     fn inside(&self, _r: &Ray) -> bool { false }
 
-    /// Sample random ray from `p` towards area of object
-    /// that is visible form `p`
-    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> Ray {
+    /// Sample random ray from `h.p` towards area of object
+    /// that is visible form `h.p`
+    ///
+    /// # Arguments
+    /// * `h` - Hit on the "from" object
+    /// * `rand_sq` - Uniformly random point on unit square
+    fn sample_towards(&self, _h: &Hit, _rand_sq: DVec2) -> (Ray, f64) {
         panic!("sample_towards")
     }
 
@@ -75,11 +79,13 @@ pub trait Object: Sync {
     /// w.r.t. the solid angle from `p` to direction `dir`
     ///
     /// # Arguments
-    /// * `p` - Point of impact on the object
-    /// * `dir` - Direction from `p` to the object we want to sample towards
-    /// * `h` - Hit on the object we want to sample the ray towards
-    fn sample_towards_pdf(&self, p: DVec3, dir: DVec3, h: &Hit) -> f64 {
-        p.distance_squared(h.p)
-            / (h.norm.dot(dir.normalize()).abs() * self.area())
+    /// * `xo` - Point on the "from" object
+    /// * `xi` - Randomly drawn point on the "towards" object
+    /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
+    /// * `ni` - Normal of "towards" object at `xi`
+    fn sample_towards_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+                          -> f64 {
+        xo.distance_squared(xi)
+            / (ni.dot(wi.normalize()).abs() * self.area())
     }
 }

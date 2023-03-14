@@ -111,10 +111,15 @@ impl Object for Triangle {
         self.a + beta * (self.b - self.a) + gamma * (self.c - self.a)
     }
 
-    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> Ray {
-        Ray::new(
-            p,
-            self.sample_on(rand_sq) - p,
+    fn sample_towards(&self, h: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        let rand_p = self.sample_on(rand_sq);
+        (
+            Ray::new(h.p, rand_p - h.p),
+            self.sample_towards_pdf(h.p,
+                                    rand_p,
+                                    rand_p - h.p,
+                                    self.normal_at(rand_p)
+            )
         )
     }
 }
