@@ -2,7 +2,6 @@
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use crate::consts::PATH_TRACE_RR;
-use crate::pdfs::{Pdf, ObjectPdf};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
@@ -42,21 +41,15 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
         Material::Diffuse(_) => {
             let light = scene.uniform_random_light();
 
-            let pdf_light = ObjectPdf::new(light, h.p);
-            /* ray to sampled point on light */
-            let r = Ray::new(
-                h.p,
-                pdf_light.generate_dir(
-                    rand_sq
-                ),
-            );
+            /* ray to sampled point on light. return tuple with pdf? */
+            let r = light.sample_towards(h.p, rand_utils::rand_unit_square());
 
             match scene.hit_light(&r, light) {
                 None => DVec3::ZERO,
                 Some(hl) => {
                     material.brdf(h.p)
                         * h.norm.dot(r.dir.normalize()).abs()
-                        / pdf_light.pdf_val(r.dir, &hl)
+                        / light.sample_towards_pdf(h.p, r.dir, &hl)
                 }
             }
         }

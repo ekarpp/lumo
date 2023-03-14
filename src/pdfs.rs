@@ -47,7 +47,7 @@ impl Pdf for CosPdf {
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
 }
-
+/*
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
@@ -74,7 +74,7 @@ impl Pdf for ObjectPdf<'_> {
         self.object.sample_towards_pdf(self.p, dir, h)
     }
 }
-
+*/
 /// Combination of multiple PDFs. Chooses one uniformly at random. BROKEN.
 pub struct MixedPdf {
     /// Vector of the PDFs to choose from

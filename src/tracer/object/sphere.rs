@@ -80,7 +80,7 @@ impl Object for Sphere {
     /* sample random direction in cone from p towards self */
     /// Visible area from `p` forms a cone.
     /// Sample a random direction within the cone.
-    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> DVec3 {
+    fn sample_towards(&self, p: DVec3, rand_sq: DVec2) -> Ray {
         /* uvw-orthonormal basis,
          * where w is the direction from x to origin of this sphere. */
         let uvw = Onb::new(self.origin - p);
@@ -94,7 +94,10 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        uvw.to_uvw_basis(DVec3::new(x, y, z))
+        Ray::new(
+            p,
+            uvw.to_uvw_basis(DVec3::new(x, y, z)),
+        )
     }
 
     fn sample_towards_pdf(&self, p: DVec3, _dir: DVec3, _h: &Hit) -> f64 {
