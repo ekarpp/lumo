@@ -48,7 +48,7 @@ impl Image {
     pub fn save(&self) {
         let path = Path::new(&self.fname);
         let file = File::create(path).unwrap();
-        let ref mut w = BufWriter::new(file);
+        let w = &mut BufWriter::new(file);
 
         let mut encoder = Encoder::new(w, self.width as u32, self.height as u32);
         encoder.set_color(ColorType::Rgb);
