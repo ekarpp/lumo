@@ -77,14 +77,15 @@ impl Object for Sphere {
         self.origin + self.radius * rand_sph
     }
 
-    /// Visible area from `h.p` forms a cone.
+    /// Visible area from `ho.p = xo` forms a cone.
     /// Sample a random direction within the cone.
-    fn sample_towards(&self, h: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        let xo = ho.p;
         /* uvw-orthonormal basis,
-         * where w is the direction from x to origin of this sphere. */
-        let uvw = Onb::new(self.origin - h.p);
+         * where w is the direction from xo to origin of this sphere. */
+        let uvw = Onb::new(self.origin - xo);
 
-        let dist_light = h.p.distance_squared(self.origin);
+        let dist_light = xo.distance_squared(self.origin);
 
         let z = 1.0 + rand_sq.y *
             ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
@@ -93,18 +94,18 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z*z).sqrt();
         let y = phi.sin() * (1.0 - z*z).sqrt();
 
-        let dir = uvw.to_uvw_basis(DVec3::new(x, y, z));
+        let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
         // IS dir + h.p CORRECT POINT ON "TOWARDS" OBJECT??
-        let p_to = dir + h.p;
+        let xi = wi + xo;
 
         (
-            Ray::new(h.p, dir),
-            self.sample_towards_pdf(h.p, p_to, dir, self.normal_at(p_to)),
+            Ray::new(xo, wi),
+            self.sample_towards_pdf(xo, xi, wi, self.normal_at(xi)),
         )
     }
 
-    fn sample_towards_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+    fn sample_towards_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
                           -> f64 {
         let sin2_theta_max = self.radius * self.radius
             / self.origin.distance_squared(xo);
