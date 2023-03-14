@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::DVec2;
-use crate::rand_utils;
+use crate::rand_utils::RandomShape;
 
 /// Choose each sample point uniformly at random
 pub struct UniformSampler {
@@ -27,7 +27,7 @@ impl Iterator for UniformSampler {
             None
         } else {
             self.state += 1;
-            Some(rand_utils::rand_unit_square())
+            Some(RandomShape::gen_2d(RandomShape::Square))
         }
     }
 }
@@ -69,7 +69,7 @@ impl Iterator for JitteredSampler {
                 (self.state / self.strata_dim) as f64,
             );
             self.state += 1;
-            Some(self.scale * rand_utils::rand_unit_square() + offset)
+            Some(self.scale * RandomShape::gen_2d(RandomShape::Square) + offset)
         }
     }
 }

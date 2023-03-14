@@ -2,6 +2,7 @@ use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
 use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
+use rand_utils::RandomShape;
 use crate::pdfs::{Pdf, CosPdf};
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;

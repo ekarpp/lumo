@@ -1,4 +1,4 @@
-use crate::DVec3;
+use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -20,7 +20,7 @@ pub enum Material {
 }
 
 impl Material {
-    /// How much light emitted at h?
+    /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {
             Self::Light(t) => t.albedo_at(h.p),
@@ -38,11 +38,12 @@ impl Material {
     }
 
     /// How does `r` get scattered at `h`?
-    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<(Ray, f64)> {
+    pub fn bsdf(&self, ho: &Hit, ro: &Ray, rand_sq: DVec2)
+                -> Option<(Ray, f64)> {
         match self {
-            Self::Glass => bxdfs::glass_bsdf(h, r),
-            Self::Mirror => bxdfs::mirror_bsdf(h, r),
-            Self::Diffuse(_) => bxdfs::diffuse_bsdf(h, r),
+            Self::Glass => bxdfs::glass_bsdf(ho, ro),
+            Self::Mirror => bxdfs::mirror_bsdf(ho, ro),
+            Self::Diffuse(_) => bxdfs::diffuse_bsdf(ho, ro, rand_sq),
             _ => None,
         }
     }

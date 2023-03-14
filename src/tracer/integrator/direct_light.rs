@@ -9,10 +9,10 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
             let material = ho.object.material();
             match material {
                 Material::Diffuse(_) => {
-                    shadow_ray(scene, &ho, rand_utils::rand_unit_square())
+                    shadow_ray(scene, &ho, RandomShape::gen_2d(Square))
                 }
                 Material::Glass | Material::Mirror => {
-                    match material.bsdf(&ho, ro) {
+                    match material.bsdf(&ho, ro, RandomShape::gen_2d(Square)) {
                         Some((ri, pdf_s)) => integrate(scene, &ri) / pdf_s,
                         None => DVec3::ZERO,
                     }

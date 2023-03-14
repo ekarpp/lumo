@@ -74,7 +74,7 @@ impl Object for Sphere {
 
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        let rand_sph = rand_utils::unit_square_to_unit_sphere(rand_sq);
+        let rand_sph = RandomShape::gen_3d(RandomShape::Sphere(rand_sq));
 
         self.origin + self.radius * rand_sph
     }
