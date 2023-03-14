@@ -6,7 +6,7 @@ pub fn integrate(
              depth: usize,
              last_specular: bool
 ) -> DVec3 {
-    if depth > 2 && rand_utils::rand_f64() < PATH_TRACE_RR {
+    if rand_utils::rand_f64() < PATH_TRACE_RR {
         return DVec3::ZERO;
     }
 
