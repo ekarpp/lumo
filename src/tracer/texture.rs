@@ -19,7 +19,7 @@ impl Texture {
     /// Colour at point `p`, should transform to texture coords of object??
     pub fn albedo_at(&self, p: DVec3) -> DVec3 {
         match self {
-            Texture::Solid(c) => c.clone(),
+            Texture::Solid(c) => *c,
             Texture::Marble(pn) => pn.albedo_at(p),
             Texture::Checkerboard(t1, t2, s) => {
                 if self.checkers_phase(p * (*s)) > 0.0 {

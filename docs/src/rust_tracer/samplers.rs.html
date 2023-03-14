@@ -75,7 +75,7 @@
 <a href="#75" id="75">75</a>
 </pre><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 </span><span class="kw">use </span><span class="kw">crate</span>::DVec2;
-<span class="kw">use </span><span class="kw">crate</span>::rand_utils;
+<span class="kw">use </span><span class="kw">crate</span>::rand_utils::RandomShape;
 
 <span class="doccomment">/// Choose each sample point uniformly at random
 </span><span class="kw">pub struct </span>UniformSampler {
@@ -102,7 +102,7 @@
             <span class="prelude-val">None
         </span>} <span class="kw">else </span>{
             <span class="self">self</span>.state += <span class="number">1</span>;
-            <span class="prelude-val">Some</span>(rand_utils::rand_unit_square())
+            <span class="prelude-val">Some</span>(RandomShape::gen_2d(RandomShape::Square))
         }
     }
 }
@@ -144,7 +144,7 @@
                 (<span class="self">self</span>.state / <span class="self">self</span>.strata_dim) <span class="kw">as </span>f64,
             );
             <span class="self">self</span>.state += <span class="number">1</span>;
-            <span class="prelude-val">Some</span>(<span class="self">self</span>.scale * rand_utils::rand_unit_square() + offset)
+            <span class="prelude-val">Some</span>(<span class="self">self</span>.scale * RandomShape::gen_2d(RandomShape::Square) + offset)
         }
     }
 }

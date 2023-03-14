@@ -57,7 +57,7 @@
     <span class="doccomment">/// Colour at point `p`, should transform to texture coords of object??
     </span><span class="kw">pub fn </span>albedo_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
         <span class="kw">match </span><span class="self">self </span>{
-            Texture::Solid(c) =&gt; c.clone(),
+            Texture::Solid(c) =&gt; <span class="kw-2">*</span>c,
             Texture::Marble(pn) =&gt; pn.albedo_at(p),
             Texture::Checkerboard(t1, t2, s) =&gt; {
                 <span class="kw">if </span><span class="self">self</span>.checkers_phase(p * (<span class="kw-2">*</span>s)) &gt; <span class="number">0.0 </span>{

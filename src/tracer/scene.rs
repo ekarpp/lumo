@@ -66,7 +66,7 @@ impl Scene {
             })
     }
 
-    /// Does ray `r` reach the light object `light`?
+    /// Does ray `r` reach the light object `light`? TODO: rewrite
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
                      -> Option<Hit> {
         let light_hit = light.hit(r).map(|mut h| {

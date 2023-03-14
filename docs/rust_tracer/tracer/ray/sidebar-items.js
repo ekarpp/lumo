@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Ray","Ray abstraction"],["ScatterRay","Ray that got scattered and provides the related scatter pdf."]]};
+window.SIDEBAR_ITEMS = {"struct":[["Ray","Ray abstraction"]]};

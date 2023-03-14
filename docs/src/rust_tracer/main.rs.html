@@ -154,7 +154,10 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
-</pre><pre class="rust"><code><span class="kw">use </span>glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
+<a href="#157" id="157">157</a>
+</pre><pre class="rust"><code><span class="doccomment">//! Ray tracer. WIP
+
+</span><span class="kw">use </span>glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
 <span class="kw">use </span><span class="kw">crate</span>::image::Image;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::scene::Scene;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::camera::Camera;
@@ -257,11 +260,10 @@
         <span class="prelude-val">None </span>=&gt; NUM_SAMPLES,
     };
 
-    <span class="kw">match </span>cli_args.threads {
-        <span class="prelude-val">Some</span>(t) =&gt; rayon::ThreadPoolBuilder::new().num_threads(t)
-            .build_global().unwrap(),
-        <span class="prelude-val">None </span>=&gt; (),
-    };
+
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(t) = cli_args.threads {
+        rayon::ThreadPoolBuilder::new().num_threads(t).build_global().unwrap()
+    }
 
     <span class="kw">let </span>fl = <span class="number">1.0</span>;
     <span class="kw">let </span>scene = <span class="kw">if </span>cli_args.boxx {

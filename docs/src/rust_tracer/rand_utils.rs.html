@@ -74,6 +74,42 @@
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span>rand::Rng;
@@ -95,53 +131,13 @@
 
 <span class="doccomment">/// return `n` normalized random DVec3s in a vector
 </span><span class="kw">pub fn </span>rand_vec_dvec3(n: usize) -&gt; Vec&lt;DVec3&gt; {
-    (<span class="number">0</span>..n).map(|<span class="kw">_</span>| unit_square_to_unit_sphere(rand_unit_square()))
-        .collect()
-}
+    (<span class="number">0</span>..n).map(|<span class="kw">_</span>| {
+        <span class="comment">/* veeeeerboooooseee */
+        </span>RandomShape::gen_3d(
+            RandomShape::Sphere(RandomShape::gen_2d(RandomShape::Square))
+        )
+    }).collect()
 
-<span class="doccomment">/// Uniform random DVec2 in unit square
-</span><span class="kw">pub fn </span>rand_unit_square() -&gt; DVec2 {
-    DVec2::new(rand_f64(), rand_f64())
-}
-
-<span class="doccomment">/// Concentric map of the unit square to unit disk
-</span><span class="kw">pub fn </span>unit_square_to_unit_disk(rand_sq: DVec2) -&gt; DVec2 {
-    <span class="comment">/* map [0,1]^2 to [-1,1]^2 */
-    </span><span class="kw">let </span>offset = <span class="number">2.0</span><span class="kw-2">*</span>rand_sq - DVec2::ONE;
-
-    <span class="kw">if </span>offset.x == <span class="number">0.0 </span>&amp;&amp; offset.y == <span class="number">0.0 </span>{
-        DVec2::ZERO
-    } <span class="kw">else </span>{
-        <span class="kw">let </span>r = <span class="kw">if </span>offset.x.abs() &gt; offset.y.abs() { offset.x } <span class="kw">else </span>{ offset.y };
-        <span class="kw">let </span>theta = <span class="kw">if </span>offset.x.abs() &gt; offset.y.abs() {
-            PI * (offset.y / offset.x ) / <span class="number">4.0
-        </span>} <span class="kw">else </span>{
-            <span class="number">2.0 </span>* PI  - PI * (offset.x / offset.y) / <span class="number">4.0
-        </span>};
-
-        r * DVec2::new(theta.cos(), theta.sin())
-    }
-}
-
-<span class="doccomment">/// Cosine weighed random DVec3s on hemisphere pointing towards +z
-</span><span class="kw">pub fn </span>sq_to_cos_unit_hemisphere(rand_sq: DVec2) -&gt; DVec3 {
-    <span class="kw">let </span>disk = unit_square_to_unit_disk(rand_sq);
-    <span class="kw">let </span>z = (<span class="number">1.0 </span>- disk.x * disk.x - disk.y * disk.y).max(<span class="number">0.0</span>).sqrt();
-
-    disk.extend(z)
-}
-
-<span class="doccomment">/// Uniform random DVec3 in unit sphere
-</span><span class="kw">pub fn </span>unit_square_to_unit_sphere(rand_sq: DVec2) -&gt; DVec3 {
-    <span class="kw">let </span>z = <span class="number">1.0 </span>- <span class="number">2.0 </span>* rand_sq.y;
-    <span class="kw">let </span>r = (<span class="number">1.0 </span>- z * z).sqrt();
-    <span class="kw">let </span>phi = <span class="number">2.0 </span>* PI * rand_sq.x;
-
-    DVec3::new(
-        r * phi.cos(),
-        r * phi.sin(),
-        z,
-    )
 }
 
 <span class="doccomment">/// Random permutation of 0..n
@@ -149,6 +145,82 @@
     <span class="kw">let </span><span class="kw-2">mut </span>v: Vec&lt;usize&gt; = (<span class="number">0</span>..n).collect();
     v.shuffle(<span class="kw-2">&amp;mut </span>_get_rng());
     v
+}
+
+<span class="doccomment">/// Enum to generate different random unit geometrical objects
+/// TODO: rewrite this
+</span><span class="kw">pub enum </span>RandomShape {
+    Square,
+    Sphere(DVec2),
+    CosHemisphere(DVec2),
+}
+
+<span class="kw">impl </span>RandomShape {
+
+    <span class="doccomment">/// Generator function for 2D objects
+    </span><span class="kw">pub fn </span>gen_2d(shape: <span class="self">Self</span>) -&gt; DVec2 {
+        <span class="kw">match </span>shape {
+            <span class="self">Self</span>::Square =&gt; DVec2::new(rand_f64(), rand_f64()),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;from object called to gen 2d shape&quot;</span>),
+        }
+    }
+
+    <span class="doccomment">/// Generator function for 3D objects
+    </span><span class="kw">pub fn </span>gen_3d(shape: <span class="self">Self</span>) -&gt; DVec3 {
+        <span class="kw">match </span>shape {
+            <span class="self">Self</span>::Sphere(sq) =&gt; <span class="self">Self</span>::square_to_sphere(sq),
+            <span class="self">Self</span>::CosHemisphere(sq) =&gt; <span class="self">Self</span>::square_to_cos_hemisphere(sq),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;from object called to gen 2d shape&quot;</span>),
+        }
+    }
+
+    <span class="doccomment">/// Concentric map of unit square to unit disk. Shirley &amp; Chiu 97
+    </span><span class="kw">fn </span>square_to_disk(rand_sq: DVec2) -&gt; DVec2 {
+        <span class="comment">/* map [0,1]^2 to [-1,1]^2 */
+        </span><span class="kw">let </span>offset = <span class="number">2.0</span><span class="kw-2">*</span>rand_sq - DVec2::ONE;
+
+        <span class="kw">if </span>offset.x == <span class="number">0.0 </span>&amp;&amp; offset.y == <span class="number">0.0 </span>{
+            DVec2::ZERO
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>r = <span class="kw">if </span>offset.x.abs() &gt; offset.y.abs() {
+                offset.x
+            } <span class="kw">else </span>{
+                offset.y
+            };
+            <span class="kw">let </span>theta = <span class="kw">if </span>offset.x.abs() &gt; offset.y.abs() {
+                PI * (offset.y / offset.x ) / <span class="number">4.0
+            </span>} <span class="kw">else </span>{
+                <span class="number">2.0 </span>* PI  - PI * (offset.x / offset.y) / <span class="number">4.0
+            </span>};
+
+            r * DVec2::new(theta.cos(), theta.sin())
+        }
+    }
+
+    <span class="doccomment">/// Cosine weighed random point ON hemisphere pointing towards +z.
+    /// Malley&#39;s method i.e. lift unit disk to 3D
+    </span><span class="kw">fn </span>square_to_cos_hemisphere(rand_sq: DVec2) -&gt; DVec3 {
+        <span class="kw">let </span>rand_disk = <span class="self">Self</span>::square_to_disk(rand_sq);
+        <span class="kw">let </span>z = (<span class="number">1.0
+                 </span>- rand_disk.x * rand_disk.x
+                 - rand_disk.y * rand_disk.y).max(<span class="number">0.0</span>).sqrt();
+
+        rand_disk.extend(z)
+    }
+
+    <span class="doccomment">/// Uniform random point IN unit sphere
+    </span><span class="kw">fn </span>square_to_sphere(rand_sq: DVec2) -&gt; DVec3 {
+        <span class="kw">let </span>z = <span class="number">1.0 </span>- <span class="number">2.0 </span>* rand_sq.y;
+        <span class="kw">let </span>r = (<span class="number">1.0 </span>- z * z).sqrt();
+        <span class="kw">let </span>phi = <span class="number">2.0 </span>* PI * rand_sq.x;
+
+        DVec3::new(
+            r * phi.cos(),
+            r * phi.sin(),
+            z,
+        )
+    }
+
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rust_tracer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
