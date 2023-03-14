@@ -47,9 +47,15 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
             match scene.hit_light(&r, light) {
                 None => DVec3::ZERO,
                 Some(hl) => {
+                    // wrap in sample_towards?
+                    let pdf = light.sample_towards_pdf(hl.p, r.dir, &h);
                     material.brdf(h.p)
+                    /* --- G ----  */
+                        * hl.norm.dot(r.dir.normalize()).abs()
                         * h.norm.dot(r.dir.normalize()).abs()
-                        / light.sample_towards_pdf(h.p, r.dir, &hl)
+                        * h.p.distance_squared(hl.p).recip()
+                    /* --- G ----  */
+                        / pdf
                 }
             }
         }

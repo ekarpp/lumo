@@ -71,16 +71,15 @@ pub trait Object: Sync {
     }
 
     /* TODO: THIS SHOULD BE DONE BETTER */
-    /// PDF for sampling points on the surface that are visible from `p` w.r.t
-    /// area
+    /// PDF for sampling points on the surface that are visible from `p`
+    /// w.r.t. the solid angle from `p` to direction `dir`
     ///
     /// # Arguments
-    /// * `p` - The point form which the point sampled on the object should
-    /// be visible
-    /// * `dir` - Direction from `p` to the sampled point on surface
-    /// * `h` - Hit on the surface from `p`
+    /// * `p` - Point of impact on the object
+    /// * `dir` - Direction from `p` to the object we want to sample towards
+    /// * `h` - Hit on the object we want to sample the ray towards
     fn sample_towards_pdf(&self, p: DVec3, dir: DVec3, h: &Hit) -> f64 {
         p.distance_squared(h.p)
-            / (h.norm.dot(-dir.normalize()).max(0.0) * self.area())
+            / (h.norm.dot(dir.normalize()).abs() * self.area())
     }
 }
