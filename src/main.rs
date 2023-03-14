@@ -101,11 +101,10 @@ fn main() {
         None => NUM_SAMPLES,
     };
 
-    match cli_args.threads {
-        Some(t) => rayon::ThreadPoolBuilder::new().num_threads(t)
-            .build_global().unwrap(),
-        None => (),
-    };
+
+    if let Some(t) = cli_args.threads {
+        rayon::ThreadPoolBuilder::new().num_threads(t).build_global().unwrap()
+    }
 
     let fl = 1.0;
     let scene = if cli_args.boxx {

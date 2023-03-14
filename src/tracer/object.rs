@@ -71,7 +71,8 @@ pub trait Object: Sync {
     }
 
     /* TODO: THIS SHOULD BE DONE BETTER */
-    /// PDF for sampling points on the surface that are visible from `p`
+    /// PDF for sampling points on the surface that are visible from `p` w.r.t
+    /// area
     ///
     /// # Arguments
     /// * `p` - The point form which the point sampled on the object should

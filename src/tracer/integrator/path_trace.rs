@@ -22,10 +22,10 @@ pub fn integrate(
                     DVec3::ZERO
                 },
                 Some((sr, pdf)) => {
-                    let is_specular = match material {
-                        Material::Mirror | Material::Glass => true,
-                        _ => false,
-                    };
+                    let is_specular = matches!(
+                        material,
+                        Material::Mirror | Material::Glass
+                    );
 
                     shadow_ray(scene, &h, rand_utils::rand_unit_square())
                         + material.brdf(h.p)

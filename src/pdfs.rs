@@ -4,7 +4,6 @@ use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
 use crate::tracer::hit::Hit;
-use crate::tracer::object::Object;
 
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
@@ -43,7 +42,6 @@ impl Pdf for CosPdf {
 
     fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64 {
         let cos_theta = self.uvw.w.dot(dir.normalize());
-        // double check math
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
 }
