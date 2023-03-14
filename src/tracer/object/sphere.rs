@@ -39,6 +39,7 @@ impl Object for Sphere {
 
     fn material(&self) -> &Material { &self.material }
 
+    /// Points way from origin
     fn normal_at(&self, p: DVec3) -> DVec3 {
         (p - self.origin) / self.radius
     }
@@ -71,6 +72,7 @@ impl Object for Sphere {
         )
     }
 
+    /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_sph = rand_utils::unit_square_to_unit_sphere(rand_sq);
 
@@ -85,6 +87,8 @@ impl Object for Sphere {
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
 
+        /* TODO */
+
         let dist_light = xo.distance_squared(self.origin);
 
         let z = 1.0 + rand_sq.y *
@@ -96,7 +100,7 @@ impl Object for Sphere {
 
         let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
-        // IS dir + h.p CORRECT POINT ON "TOWARDS" OBJECT??
+        // IS wi + xo CORRECT POINT ON "TOWARDS" OBJECT?? i.e. is wi correct len?
         let xi = wi + xo;
 
         (

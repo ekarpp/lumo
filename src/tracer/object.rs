@@ -50,8 +50,8 @@ pub trait Object: Sync {
     /// Is the ray inside the object?
     fn inside(&self, _r: &Ray) -> bool { false }
 
-    /// Sample random ray from `h.p` towards area of object
-    /// that is visible form `h.p`
+    /// Sample random ray from `ho.p = xo` towards area of object
+    /// that is visible form `xo`
     ///
     /// # Arguments
     /// * `ho` - Hit on the "from" object
@@ -63,14 +63,15 @@ pub trait Object: Sync {
     /// Sample random point on the surface of the object
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { panic!("sample_on") }
 
-    /// Sample random ray leaving the object
+    /// Sample random ray leaving the object. Random unit square points for
+    /// ray direction and origin separately
     fn sample_from(&self, rand_sq_o: DVec2, rand_sq_d: DVec2) -> Ray {
-        let origin = self.sample_on(rand_sq_o);
-        let cos_pdf = CosPdf::new(self.normal_at(origin));
-        let dir = cos_pdf.generate_dir(rand_sq_d);
+        let xi = self.sample_on(rand_sq_o);
+        let cos_pdf = CosPdf::new(self.normal_at(xi));
+        let wi = cos_pdf.generate_dir(rand_sq_d);
         Ray::new(
-            origin,
-            dir,
+            xi,
+            wi,
         )
     }
 
