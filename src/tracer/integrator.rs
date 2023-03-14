@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
+use rand_utils::{RandomShape, RandomShape::Square};
 use crate::consts::PATH_TRACE_RR;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;

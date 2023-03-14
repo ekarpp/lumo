@@ -19,7 +19,7 @@ pub fn integrate(
             let xo = ho.p;
             let no = ho.norm;
 
-            match material.bsdf(&ho, ro) {
+            match material.bsdf(&ho, ro, RandomShape::gen_2d(Square)) {
                 None => if last_specular {
                     material.emit(&ho)
                 } else {
@@ -33,7 +33,7 @@ pub fn integrate(
                         Material::Mirror | Material::Glass
                     );
 
-                    shadow_ray(scene, &ho, rand_utils::rand_unit_square())
+                    shadow_ray(scene, &ho, RandomShape::gen_2d(Square))
                         + material.brdf(xo)
                         * no.dot(wi.normalize()).abs()
                         * integrate(scene, &ri, depth + 1, is_specular)

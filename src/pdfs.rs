@@ -3,6 +3,7 @@ use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
+use rand_utils::RandomShape;
 use crate::tracer::hit::Hit;
 
 pub trait Pdf {
@@ -37,7 +38,9 @@ impl CosPdf {
 
 impl Pdf for CosPdf {
     fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        self.uvw.to_uvw_basis(rand_utils::sq_to_cos_unit_hemisphere(rand_sq))
+        self.uvw.to_uvw_basis(
+            RandomShape::gen_3d(RandomShape::CosHemisphere(rand_sq))
+        )
     }
 
     fn pdf_val(&self, dir: DVec3, _h: &Hit) -> f64 {
