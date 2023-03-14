@@ -75,8 +75,8 @@ impl Scene {
         });
 
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
-            obj.is_translucent() || obj.hit(r).is_none()
-                || obj.hit(r) > light_hit
+            obj.hit(r).is_none() || obj.hit(r) > light_hit
+
         };
 
         let reached_light = self.objects.iter().take_while(no_block_light)
