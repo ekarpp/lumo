@@ -1,3 +1,5 @@
+//! Ray tracer. WIP
+
 use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
 use crate::image::Image;
 use crate::tracer::scene::Scene;
