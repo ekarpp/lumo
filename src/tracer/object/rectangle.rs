@@ -63,10 +63,9 @@ impl Object for Rectangle {
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.triangles.0.hit(r).or_else(|| self.triangles.1.hit(r))
-            .and_then(|mut hit| {
-                /* change us as the object to get correct texture for rendering */
-                hit.object = self;
-                Some(hit)
+            .map(|mut h| {
+                h.object = self;
+                h
             })
     }
 }

@@ -139,10 +139,9 @@ impl Object for Cuboid {
                     closest
                 }
             })
-            .and_then(|mut hit| {
-                /* change us as the object to get correct texture for rendering */
-                hit.object = self;
-                Some(hit)
+            .map(|mut h| {
+                h.object = self;
+                h
             })
     }
 

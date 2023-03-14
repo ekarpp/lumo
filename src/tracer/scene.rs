@@ -69,9 +69,9 @@ impl Scene {
     /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
                      -> Option<Hit> {
-        let light_hit = light.hit(r).and_then(|mut h| {
+        let light_hit = light.hit(r).map(|mut h| {
             h.t -= EPSILON;
-            Some(h)
+            h
         });
 
         let no_block_light = |obj: &&Box<dyn Object>| -> bool {
