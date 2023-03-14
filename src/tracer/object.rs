@@ -54,9 +54,9 @@ pub trait Object: Sync {
     /// that is visible form `h.p`
     ///
     /// # Arguments
-    /// * `h` - Hit on the "from" object
+    /// * `ho` - Hit on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
-    fn sample_towards(&self, _h: &Hit, _rand_sq: DVec2) -> (Ray, f64) {
+    fn sample_towards(&self, _ho: &Hit, _rand_sq: DVec2) -> (Ray, f64) {
         panic!("sample_towards")
     }
 

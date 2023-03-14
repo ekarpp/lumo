@@ -34,25 +34,26 @@ impl Integrator {
     }
 }
 
-/// Shoots a shadow ray towards random light from `h`. pass scatter pdf?
-fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
-    let material = h.object.material();
+/// Shoots a shadow ray towards random light from `ho`.
+fn shadow_ray(scene: &Scene, ho: &Hit, rand_sq: DVec2) -> DVec3 {
+    let material = ho.object.material();
+
     match material {
         Material::Diffuse(_) => {
-            let xo = h.p;
-            let no = h.norm;
+            let xo = ho.p;
+            let no = ho.norm;
             let light = scene.uniform_random_light();
 
             /* ray to sampled point on light and the corresponding
              * PDF value w.r.t solid angle */
-            let (rl, pdf_w) = light.sample_towards(h, rand_sq);
-            let wi = rl.dir;
+            let (ri, pdf_w) = light.sample_towards(ho, rand_sq);
+            let wi = ri.dir;
 
-            match scene.hit_light(&rl, light) {
+            match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
-                Some(hl) => {
-                    let xi = hl.p;
-                    let ni = hl.norm;
+                Some(hi) => {
+                    let xi = hi.p;
+                    let ni = hi.norm;
                     /* PDF w.r.t to solid angle, need to change to area.
                      * HOW?
                      * dA = dw_i * cos(t_i) / dist_sq(xo, xi) */

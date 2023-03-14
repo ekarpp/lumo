@@ -53,8 +53,8 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_towards(&self, h: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        self.choose_triangle().sample_towards(h, rand_sq)
+    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        self.choose_triangle().sample_towards(ho, rand_sq)
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
