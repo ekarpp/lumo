@@ -21,19 +21,19 @@ pub fn integrate(
                 } else {
                     DVec3::ZERO
                 },
-                Some(sr) => {
+                Some((sr, pdf)) => {
                     let is_specular = match material {
                         Material::Mirror | Material::Glass => true,
                         _ => false,
                     };
 
                     shadow_ray(scene, &h, rand_utils::rand_unit_square())
-                        + material.albedo_at(h.p)
-                        * integrate(scene, &sr.ray, depth + 1, is_specular)
+                        + material.brdf(h.p)
+                        * integrate(scene, &sr, depth + 1, is_specular)
                     /* hit ok to pass here?? */
-                        * h.norm.dot(sr.ray.dir).abs()
+                        * h.norm.dot(sr.dir).abs()
                         / ((1.0 - PATH_TRACE_RR)
-                           * sr.pdf.pdf_val(sr.ray.dir, &h))
+                           * pdf)
                 }
             }
         }
