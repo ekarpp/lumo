@@ -50,13 +50,13 @@ pub trait Object: Sync {
     /// Is the ray inside the object?
     fn inside(&self, _r: &Ray) -> bool { false }
 
-    /// Sample a random point from surface of the object that is visible from `p`
-    /// Returns direction from `p` to us. DO THIS BETTER
-    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> DVec3 {
+    /// Sample random ray from `p` towards area of object
+    /// that is visible form `p`
+    fn sample_towards(&self, _p: DVec3, _rand_sq: DVec2) -> Ray {
         panic!("sample_towards")
     }
 
-    /// Random point on the surface of the object
+    /// Sample random point on the surface of the object
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { panic!("sample_on") }
 
     /// Sample random ray leaving the object
