@@ -1,7 +1,7 @@
 use crate::DVec3;
 use std::f64::consts::PI;
 use crate::tracer::hit::Hit;
-use crate::tracer::ray::{Ray, ScatterRay};
+use crate::tracer::ray::Ray;
 use crate::tracer::bxdfs;
 use crate::tracer::texture::Texture;
 
@@ -29,7 +29,7 @@ impl Material {
     }
 
     /// What is the color at p?
-    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
+    pub fn brdf(&self, p: DVec3) -> DVec3 {
         match self {
             Self::Diffuse(t) => t.albedo_at(p) * PI.recip(),
             Self::Mirror | Self::Glass => DVec3::ONE,
@@ -38,7 +38,7 @@ impl Material {
     }
 
     /// How does `r` get scattered at `h`?
-    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<ScatterRay> {
+    pub fn bsdf(&self, h: &Hit, r: &Ray) -> Option<(Ray, f64)> {
         match self {
             Self::Glass => bxdfs::glass_bsdf(h, r),
             Self::Mirror => bxdfs::mirror_bsdf(h, r),

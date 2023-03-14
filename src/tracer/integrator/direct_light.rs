@@ -13,7 +13,7 @@ pub fn integrate(scene: &Scene, r: &Ray) -> DVec3 {
                 }
                 Material::Glass | Material::Mirror => {
                     match material.bsdf(&h, r) {
-                        Some(sr) => integrate(scene, &sr.ray),
+                        Some((sr,pdf)) => integrate(scene, &sr) / pdf,
                         None => DVec3::ZERO,
                     }
                 }

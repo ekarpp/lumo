@@ -54,7 +54,7 @@ fn shadow_ray(scene: &Scene, h: &Hit, rand_sq: DVec2) -> DVec3 {
             match scene.hit_light(&r, light) {
                 None => DVec3::ZERO,
                 Some(hl) => {
-                    material.albedo_at(h.p)
+                    material.brdf(h.p)
                         * h.norm.dot(r.dir.normalize()).abs()
                         / pdf_light.pdf_val(r.dir, &hl)
                 }
