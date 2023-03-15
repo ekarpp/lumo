@@ -39,11 +39,11 @@ impl Material {
     }
 
     /// How does `r` get scattered at `h`?
-    pub fn bsdf_sampler(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
+    pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
-            Self::Glass => bxdfs::bsdf_glass_sample(ho, ro),
-            Self::Mirror => bxdfs::bsdf_mirror_sample(ho, ro),
-            Self::Diffuse(_) => bxdfs::bsdf_diffuse_sample(ho, ro),
+            Self::Glass => bxdfs::bsdf_glass_pdf(ho, ro),
+            Self::Mirror => bxdfs::bsdf_mirror_pdf(ho, ro),
+            Self::Diffuse(_) => bxdfs::bsdf_diffuse_pdf(ho, ro),
             _ => None,
         }
     }
