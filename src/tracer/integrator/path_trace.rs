@@ -19,15 +19,14 @@ pub fn integrate(
             let xo = ho.p;
             let no = ho.norm;
 
-            match material.bsdf_sampler(&ho, ro) {
+            match material.bsdf_pdf(&ho, ro) {
                 None => if last_specular {
                     material.emit(&ho)
                 } else {
                     DVec3::ZERO
                 },
-                //Some((ri, pdf_s)) => {
-                Some(pdf) => {
-                    let ri = pdf.generate_ray(RandomShape::gen_2d(Square));
+                Some(scatter_pdf) => {
+                    let ri = scatter_pdf.sample_ray(RandomShape::gen_2d(Square));
                     let wi = ri.dir;
 
                     let is_specular = matches!(
@@ -35,11 +34,13 @@ pub fn integrate(
                         Material::Mirror | Material::Glass
                     );
 
-                    shadow_ray(scene, &ho, RandomShape::gen_2d(Square))
+                    shadow_ray(scene, &ho, scatter_pdf.as_ref(),
+                               RandomShape::gen_2d(Square))
                         + material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
                         * integrate(scene, &ri, depth + 1, is_specular)
-                        / (pdf.value_for(wi, None) * (1.0 - PATH_TRACE_RR))
+                        / (scatter_pdf.value_for(wi, None)
+                           * (1.0 - PATH_TRACE_RR))
                 }
             }
         }

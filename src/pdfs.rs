@@ -15,7 +15,7 @@ pub trait Pdf {
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
-    fn generate_ray(&self, rand_sq: DVec2) -> Ray;
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray;
     /// Computes the probability of the given direction.
     /// CAN REFACTORIZE THIS TO JUST TAKE THE GENERATED RAY
     ///
@@ -45,7 +45,7 @@ impl CosPdf {
 }
 
 impl Pdf for CosPdf {
-    fn generate_ray(&self, rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
         let wi = self.uvw.to_uvw_basis(
             RandomShape::gen_3d(RandomShape::CosHemisphere(rand_sq))
         );
@@ -79,7 +79,7 @@ impl<'a> ObjectPdf<'a> {
 }
 
 impl Pdf for ObjectPdf<'_> {
-    fn generate_ray(&self, rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
         self.object.sample_towards(self.xo, rand_sq)
     }
 
@@ -135,7 +135,7 @@ impl DeltaPdf {
 }
 
 impl Pdf for DeltaPdf {
-    fn generate_ray(&self, _rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, _rand_sq: DVec2) -> Ray {
         // lazy
         Ray::new(self.ri.origin, self.ri.dir)
     }
