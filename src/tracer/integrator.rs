@@ -52,18 +52,10 @@ fn shadow_ray(scene: &Scene, ho: &Hit, rand_sq: DVec2) -> DVec3 {
 
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
-                Some(hi) => {
-                    let xi = hi.p;
-                    let ni = hi.norm;
-                    /* PDF w.r.t to solid angle, need to change to area.
-                     * HOW?
-                     * dA = dw_i * cos(t_i) / dist_sq(xo, xi) */
-                    let pdf_a = pdf_w * ni.dot(wi.normalize()).abs()
-                        / xo.distance_squared(xi);
-
+                Some(_hi) => {
                     material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
-                        / pdf_a
+                        / pdf_w
                 }
             }
         }
