@@ -57,6 +57,8 @@ fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
                 Some(hi) => {
                     material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
+                        /* TODO: power heuristic, Veach & Guibas 95 */
+                        * 0.5
                         / (pdf_light.value_for(wi, Some(hi))
                            + scatter_pdf.value_for(wi, None))
                 }
