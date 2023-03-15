@@ -12,8 +12,8 @@ impl AxisAlignedBoundingBox {
 }
 
 impl Object for AxisAlignedBoundingBox {
-    fn normal_at(&self, p: DVec3) -> DVec3 { p }
-    fn material(&self) -> &Material { &Material::Blank }
+    fn normal_at(&self, _p: DVec3) -> DVec3 { unimplemented!() }
+    fn material(&self) -> &Material { unimplemented!() }
     fn area(&self) -> f64 { 0.0 }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
@@ -38,4 +38,8 @@ impl Object for AxisAlignedBoundingBox {
         }
     }
 
+    fn sample_towards(&self, _ho: &Hit, _rand_sq: DVec2) -> (Ray, f64) {
+        unimplemented!()
+    }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
 }

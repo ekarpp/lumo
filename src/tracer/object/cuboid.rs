@@ -112,7 +112,10 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
-    fn inside(&self, _r: &Ray) -> bool { todo!() }
+    fn normal_at(&self, p: DVec3) -> DVec3 {
+        // wtf?
+        self.rectangles[0].normal_at(p)
+    }
 
     fn size(&self) -> usize { 12 }
 
@@ -121,14 +124,6 @@ impl Object for Cuboid {
     }
 
     fn material(&self) -> &Material { &self.material }
-
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        self.choose_rectangle().sample_towards(ho, rand_sq)
-    }
-
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        self.choose_rectangle().sample_on(rand_sq)
-    }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.rectangles.iter().map(|rect| rect.hit(r))
@@ -145,4 +140,20 @@ impl Object for Cuboid {
             })
     }
 
+    /// TODO: sample only from visible area at `ho.p = xo`
+    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        let (ri, _) = self.choose_rectangle().sample_towards(ho, rand_sq);
+        let xo = ho.p;
+        let xi = ri.origin;
+        let wi = ri.dir;
+        let ni = self.normal_at(xi);
+
+        (ri, self.sample_area_pdf(xo, xi, wi, ni))
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        self.choose_rectangle().sample_on(rand_sq)
+    }
+
+    fn inside(&self, _r: &Ray) -> bool { todo!() }
 }

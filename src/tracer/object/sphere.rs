@@ -28,13 +28,6 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-
-    /// If distance to origin smaller than radius, must be inside
-    fn inside(&self, r: &Ray) -> bool {
-        self.origin.distance_squared(r.origin + EPSILON*r.dir)
-            < self.radius*self.radius
-    }
-
     fn area(&self) -> f64 { 4.0 * PI * self.radius * self.radius }
 
     fn material(&self) -> &Material { &self.material }
@@ -72,6 +65,13 @@ impl Object for Sphere {
         )
     }
 
+    /// If distance to origin smaller than radius, must be inside
+    fn inside(&self, r: &Ray) -> bool {
+        self.origin.distance_squared(r.origin + EPSILON*r.dir)
+            < self.radius*self.radius
+    }
+
+
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_sph = RandomShape::gen_3d(RandomShape::Sphere(rand_sq));
@@ -80,7 +80,8 @@ impl Object for Sphere {
     }
 
     /// Visible area from `ho.p = xo` forms a cone.
-    /// Sample a random direction within the cone.
+    /// Sample a random direction towards `xo` within the cone.
+    /// HOW SPECIFICALLY? disk transform?
     fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
         let xo = ho.p;
         /* uvw-orthonormal basis,
@@ -104,11 +105,12 @@ impl Object for Sphere {
         let xi = DVec3::ZERO;
         (
             Ray::new(xo, wi),
-            self.sample_towards_pdf(xo, xi, wi, self.normal_at(xi)),
+            self.sample_area_pdf(xo, xi, wi, self.normal_at(xi)),
         )
     }
 
-    fn sample_towards_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
+    /// PDF for sampling area of the sphere that is visible from `xo`
+    fn sample_area_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
                           -> f64 {
         let sin2_theta_max = self.radius * self.radius
             / self.origin.distance_squared(xo);

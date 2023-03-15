@@ -4,7 +4,6 @@ use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
 use rand_utils::RandomShape;
-use crate::tracer::hit::Hit;
 
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
@@ -16,8 +15,8 @@ pub trait Pdf {
     ///
     /// # Arguments
     /// * `wi` - Direction to compute probability for
-    /// * `ho` - Hit on "from" object
-    fn pdf_val(&self, wi: DVec3, ho: &Hit) -> f64;
+    /// * `ho` - Hit on "from" object. NEED FOR OBJECTPDF
+    fn pdf_val(&self, wi: DVec3) -> f64;
 }
 
 /// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
@@ -43,7 +42,7 @@ impl Pdf for CosPdf {
         )
     }
 
-    fn pdf_val(&self, wi: DVec3, _ho: &Hit) -> f64 {
+    fn pdf_val(&self, wi: DVec3) -> f64 {
         let cos_theta = self.uvw.w.dot(wi.normalize());
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
@@ -101,8 +100,8 @@ impl Pdf for MixedPdf {
         self.uniform_choose().generate_dir(rand_sq)
     }
 
-    fn pdf_val(&self, wi: DVec3, ho: &Hit) -> f64 {
-        self.pdfs.iter().fold(0.0, |acc, pdf| acc + pdf.pdf_val(wi, ho))
+    fn pdf_val(&self, wi: DVec3) -> f64 {
+        self.pdfs.iter().fold(0.0, |acc, pdf| acc + pdf.pdf_val(wi))
             / self.pdfs.len() as f64
     }
 }
@@ -120,5 +119,5 @@ impl Pdf for UnitPdf {
     /* just make sure it never gets called */
     fn generate_dir(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
 
-    fn pdf_val(&self, _wi: DVec3, _ho: &Hit) -> f64 { 1.0 }
+    fn pdf_val(&self, _wi: DVec3) -> f64 { 1.0 }
 }
