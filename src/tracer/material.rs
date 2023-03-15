@@ -29,7 +29,7 @@ impl Material {
     }
 
     /// What is the color at p?
-    pub fn brdf(&self, p: DVec3) -> DVec3 {
+    pub fn bsdf_f(&self, p: DVec3) -> DVec3 {
         match self {
             Self::Diffuse(t) => t.albedo_at(p) * PI.recip(),
             Self::Mirror | Self::Glass => DVec3::ONE,
@@ -38,12 +38,12 @@ impl Material {
     }
 
     /// How does `r` get scattered at `h`?
-    pub fn bsdf(&self, ho: &Hit, ro: &Ray, rand_sq: DVec2)
+    pub fn bsdf_sample(&self, ho: &Hit, ro: &Ray, rand_sq: DVec2)
                 -> Option<(Ray, f64)> {
         match self {
-            Self::Glass => bxdfs::glass_bsdf(ho, ro),
-            Self::Mirror => bxdfs::mirror_bsdf(ho, ro),
-            Self::Diffuse(_) => bxdfs::diffuse_bsdf(ho, ro, rand_sq),
+            Self::Glass => bxdfs::bsdf_glass_sample(ho, ro),
+            Self::Mirror => bxdfs::bsdf_mirror_sample(ho, ro),
+            Self::Diffuse(_) => bxdfs::bsdf_diffuse_sample(ho, ro, rand_sq),
             _ => None,
         }
     }

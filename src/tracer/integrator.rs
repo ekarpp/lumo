@@ -61,7 +61,7 @@ fn shadow_ray(scene: &Scene, ho: &Hit, rand_sq: DVec2) -> DVec3 {
                     let pdf_a = pdf_w * ni.dot(wi.normalize()).abs()
                         / xo.distance_squared(xi);
 
-                    material.brdf(xo)
+                    material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
                         / pdf_a
                 }
