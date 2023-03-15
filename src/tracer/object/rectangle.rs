@@ -45,6 +45,10 @@ impl Rectangle {
             &self.triangles.1
         }
     }
+
+    pub fn point_on(&self) -> DVec3 {
+        self.triangles.0.point_on()
+    }
 }
 
 impl Object for Rectangle {

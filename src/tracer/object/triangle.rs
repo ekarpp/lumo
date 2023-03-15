@@ -38,6 +38,12 @@ impl Triangle {
             norm: if norm.dot(norm_dir) > 0.0 { norm } else { -norm },
         })
     }
+
+    /// "Random" point on the triangle. Used for cuboid inside computation.
+    /// Maybe define cuboids with just transformation, then don't need this.
+    pub fn point_on(&self) -> DVec3 {
+        0.3*self.a + 0.3*self.b + 0.4*self.c
+    }
 }
 
 impl Object for Triangle {

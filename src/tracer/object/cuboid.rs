@@ -126,7 +126,11 @@ impl Object for Cuboid {
     /// If vector towards each face from `p` points to the same direction
     /// as the normal of that face, we must be inside.
     fn inside(&self, p: DVec3) -> bool {
-        todo!()
+        self.rectangles.iter().all(|rect| {
+            let pi = rect.point_on();
+
+            rect.normal_at(pi).dot(pi - p) > 0.0
+        })
     }
 
     fn material(&self) -> &Material { &self.material }
