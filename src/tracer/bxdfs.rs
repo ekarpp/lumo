@@ -1,6 +1,6 @@
 use crate::DVec2;
 use crate::pdfs::{Pdf, CosPdf};
-use crate::consts::ETA;
+use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 
@@ -28,8 +28,9 @@ pub fn bsdf_mirror_sample(ho: &Hit, _ro: &Ray) -> Option<(Ray, f64)> {
 /// Scattering function for glass material.
 /// Refracts according to Snell-Descartes law.
 pub fn bsdf_glass_sample(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
-    let eta_ratio = if ho.object.inside(ro) { ETA } else { ETA.recip() };
-    let no = if ho.object.inside(ro) { -ho.norm } else { ho.norm };
+    let inside = ho.object.inside(ro.origin + EPSILON*ro.dir);
+    let eta_ratio = if inside { ETA } else { ETA.recip() };
+    let no = if inside { -ho.norm } else { ho.norm };
     let xo = ho.p;
 
     /* Snell-Descartes law */

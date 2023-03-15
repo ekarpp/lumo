@@ -40,7 +40,6 @@ pub trait Object: Sync {
     /// Normal of the object at the point `p`. Does not check if `p` is
     /// actually on the object.
     fn normal_at(&self, _p: DVec3) -> DVec3;
-    fn is_translucent(&self) -> bool { self.material().is_translucent() }
     /// Does the ray hit the object?
     fn hit(&self, r: &Ray) -> Option<Hit>;
     fn material(&self) -> &Material;
@@ -49,8 +48,8 @@ pub trait Object: Sync {
     /// Number of objects the object consists of.
     fn size(&self) -> usize { 1 }
 
-    /// Is the ray inside the object?
-    fn inside(&self, _r: &Ray) -> bool { false }
+    /// Is the point inside the object? Care with epsilons here
+    fn inside(&self, _p: DVec3) -> bool { false }
 
     /// Sample random ray from `ho.p = xo` towards area of object
     /// that is visible form `xo`

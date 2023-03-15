@@ -47,9 +47,4 @@ impl Material {
             _ => None,
         }
     }
-
-    /// Does light pass through the material?
-    pub fn is_translucent(&self) -> bool {
-        matches!(self, Self::Glass | Self::Blank)
-    }
 }
