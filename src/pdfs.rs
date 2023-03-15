@@ -4,77 +4,91 @@ use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
 use rand_utils::RandomShape;
+use crate::consts::EPSILON;
+use crate::tracer::hit::Hit;
+use crate::tracer::ray::Ray;
+use crate::tracer::object::Object;
 
+/// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
-    fn generate_dir(&self, rand_sq: DVec2) -> DVec3;
-    /// Computes the probability of the given direction
+    fn generate_ray(&self, rand_sq: DVec2) -> Ray;
+    /// Computes the probability of the given direction.
+    /// CAN REFACTORIZE THIS TO JUST TAKE THE GENERATED RAY
     ///
     /// # Arguments
     /// * `wi` - Direction to compute probability for
-    /// * `ho` - Hit on "from" object. NEED FOR OBJECTPDF
-    fn pdf_val(&self, wi: DVec3) -> f64;
+    /// * `hi` - Optional hit on the object direction sampled towards
+    fn value_for(&self, wi: DVec3, hi: Option<Hit>) -> f64;
 }
 
 /// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
 pub struct CosPdf {
+    xo: DVec3,
     uvw: Onb,
 }
 
 impl CosPdf {
     /// # Arguments
     ///
-    /// * `w` - Normal at the point of sampling directions.
-    pub fn new(w: DVec3) -> Self {
+    /// * `xo` - Point where sampling is done.
+    /// * `no` - Normal at the point of sampling directions.
+    pub fn new(xo: DVec3, no: DVec3) -> Self {
         Self {
-            uvw: Onb::new(w),
+            xo,
+            uvw: Onb::new(no),
         }
     }
 }
 
 impl Pdf for CosPdf {
-    fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        self.uvw.to_uvw_basis(
+    fn generate_ray(&self, rand_sq: DVec2) -> Ray {
+        let wi = self.uvw.to_uvw_basis(
             RandomShape::gen_3d(RandomShape::CosHemisphere(rand_sq))
-        )
+        );
+
+        Ray::new(self.xo, wi)
     }
 
-    fn pdf_val(&self, wi: DVec3) -> f64 {
+    fn value_for(&self, wi: DVec3, _hi: Option<Hit>) -> f64 {
         let cos_theta = self.uvw.w.dot(wi.normalize());
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
 }
-/*
+
+/// WITH OBJECT PDF HAVE TO MAKE SURE THAT IT HITS. SHOULD REFACTOR IT HERE,
+/// TO PDF VAL CALC.
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
-    object: &'a Box<dyn Object>,
+    object: &'a dyn Object,
     /// Point from where the object should be visible
-    p: DVec3,
+    xo: DVec3,
 }
 
 impl<'a> ObjectPdf<'a> {
-    pub fn new(object: &'a Box<dyn Object>, p: DVec3) -> Self {
+    pub fn new(object: &'a dyn Object, xo: DVec3) -> Self {
         Self {
             object,
-            p,
+            xo,
          }
     }
 }
 
 impl Pdf for ObjectPdf<'_> {
-    fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        self.object.sample_towards(self.p, rand_sq)
+    fn generate_ray(&self, rand_sq: DVec2) -> Ray {
+        self.object.sample_towards(self.xo, rand_sq)
     }
 
-    fn pdf_val(&self, dir: DVec3, h: &Hit) -> f64 {
-        self.object.sample_towards_pdf(self.p, dir, h)
+    fn value_for(&self, wi: DVec3, hi_opt: Option<Hit>) -> f64 {
+        hi_opt.map_or(0.0, |hi| self.object.sample_area_pdf(self.xo, wi, &hi))
     }
 }
-*/
+
+/*
 /// Combination of multiple PDFs. Chooses one uniformly at random. BROKEN.
 pub struct MixedPdf {
     /// Vector of the PDFs to choose from
@@ -105,19 +119,32 @@ impl Pdf for MixedPdf {
             / self.pdfs.len() as f64
     }
 }
+*/
 
-/// Unit PDF with delta distribution. Glass might want own PDF?
-pub struct UnitPdf {}
+/// Delta distribution PDF. Always samples the same ray. For glass/mirror.
+pub struct DeltaPdf {
+    ri: Ray,
+}
 
-impl UnitPdf {
-    pub fn new() -> Self {
-        Self {}
+impl DeltaPdf {
+    pub fn new(xo: DVec3, wi: DVec3) -> Self {
+        Self {
+            ri: Ray::new(xo, wi),
+        }
     }
 }
 
-impl Pdf for UnitPdf {
-    /* just make sure it never gets called */
-    fn generate_dir(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
+impl Pdf for DeltaPdf {
+    fn generate_ray(&self, _rand_sq: DVec2) -> Ray {
+        // lazy
+        Ray::new(self.ri.origin, self.ri.dir)
+    }
 
-    fn pdf_val(&self, _wi: DVec3) -> f64 { 1.0 }
+    fn value_for(&self, wi: DVec3, _hi: Option<Hit>) -> f64 {
+        if wi.normalize().dot(self.ri.dir.normalize()).abs() >= 1.0 - EPSILON {
+            1.0
+        } else {
+            0.0
+        }
+    }
 }

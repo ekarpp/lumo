@@ -120,13 +120,9 @@ impl Object for Triangle {
     }
 
     /// Choose random point on surface of triangle. Shoot ray towards it.
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        let xo = ho.p;
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         let xi = self.sample_on(rand_sq);
         let wi = xi - xo;
-        (
-            Ray::new(xo, wi),
-            self.sample_area_pdf(xo, xi, wi, self.normal_at(xi))
-        )
+        Ray::new(xo, wi)
     }
 }

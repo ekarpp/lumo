@@ -3,7 +3,6 @@ use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
 use rand_utils::RandomShape;
-use crate::pdfs::{Pdf, CosPdf};
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
@@ -51,13 +50,13 @@ pub trait Object: Sync {
     /// Is the point inside the object? Care with epsilons here
     fn inside(&self, _p: DVec3) -> bool { false }
 
-    /// Sample random ray from `ho.p = xo` towards area of object
+    /// Sample random ray from `xo` towards area of object
     /// that is visible form `xo`
     ///
     /// # Arguments
-    /// * `ho` - Hit on the "from" object
+    /// * `xo` - Point on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
-    fn sample_towards(&self, _ho: &Hit, _rand_sq: DVec2) -> (Ray, f64);
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray;
 
     /// Sample random point on the surface of the object
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
@@ -65,11 +64,14 @@ pub trait Object: Sync {
     /// Sample random ray leaving the object. Random unit square points for
     /// ray direction and origin separately. Special care for sphere/cuboid?
     /// What if non-solids face wrong direction?
-    fn sample_from(&self, rand_sq_o: DVec2, rand_sq_d: DVec2) -> (Ray, f64) {
+    fn sample_from(&self, _rand_sq_o: DVec2, _rand_sq_d: DVec2) -> (Ray, f64) {
+        todo!()
+        /*
         let xi = self.sample_on(rand_sq_o);
         let cos_pdf = CosPdf::new(self.normal_at(xi));
         let wi = cos_pdf.generate_dir(rand_sq_d);
         ( Ray::new(xi, wi), cos_pdf.pdf_val(wi) + /* origin prob */ 0.0 )
+         */
     }
 
     /* TODO: THIS SHOULD BE DONE BETTER */
@@ -77,11 +79,15 @@ pub trait Object: Sync {
     ///
     /// # Arguments
     /// * `xo` - Point on the "from" object
+    /// * `hi` - Hit on the "towards" object in the sampled direction
     /// * `xi` - Randomly drawn point on the "towards" object
     /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
     /// * `ni` - Normal of "towards" object at `xi`
-    fn sample_area_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+    //fn sample_area_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
+    fn sample_area_pdf(&self, xo: DVec3, wi: DVec3, hi: &Hit)
                        -> f64 {
+        let xi = hi.p;
+        let ni = hi.norm;
         xo.distance_squared(xi)
             / (ni.dot(wi.normalize()).abs() * self.area())
     }

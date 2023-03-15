@@ -12,11 +12,13 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                     shadow_ray(scene, &ho, RandomShape::gen_2d(Square))
                 }
                 Material::Glass | Material::Mirror => {
-                    match material.bsdf_sample(
-                        &ho, ro, RandomShape::gen_2d(Square)
-                    ) {
-                        Some((ri, pdf_s)) => integrate(scene, &ri) / pdf_s,
+                    match material.bsdf_sampler(&ho, ro) {
                         None => DVec3::ZERO,
+                        Some(pdf) => {
+                            let ri =
+                                pdf.generate_ray(RandomShape::gen_2d(Square));
+                            integrate(scene, &ri) / pdf.value_for(ri.dir, None)
+                        }
                     }
                 }
                 _ => material.emit(&ho),

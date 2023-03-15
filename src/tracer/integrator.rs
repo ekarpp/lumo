@@ -2,6 +2,7 @@
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
 use rand_utils::{RandomShape, RandomShape::Square};
+use crate::pdfs::{Pdf, ObjectPdf};
 use crate::consts::PATH_TRACE_RR;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
@@ -45,17 +46,17 @@ fn shadow_ray(scene: &Scene, ho: &Hit, rand_sq: DVec2) -> DVec3 {
             let no = ho.norm;
             let light = scene.uniform_random_light();
 
-            /* ray to sampled point on light and the corresponding
-             * PDF value w.r.t solid angle */
-            let (ri, pdf_w) = light.sample_towards(ho, rand_sq);
+            let pdf_light = ObjectPdf::new(light.as_ref(), xo);
+            let ri = pdf_light.generate_ray(rand_sq);
             let wi = ri.dir;
 
+            /* move this to object PDF */
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
-                Some(_hi) => {
+                Some(hi) => {
                     material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
-                        / pdf_w
+                        / pdf_light.value_for(wi, Some(hi))
                 }
             }
         }
