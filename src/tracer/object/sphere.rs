@@ -66,8 +66,8 @@ impl Object for Sphere {
     }
 
     /// If distance to origin smaller than radius, must be inside
-    fn inside(&self, r: &Ray) -> bool {
-        self.origin.distance_squared(r.origin + EPSILON*r.dir)
+    fn inside(&self, p: DVec3) -> bool {
+        self.origin.distance_squared(p)
             < self.radius*self.radius
     }
 

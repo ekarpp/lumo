@@ -48,8 +48,9 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
-    fn normal_at(&self, p: DVec3) -> DVec3 {
-        self.triangles.0.normal_at(p)
+    fn normal_at(&self, _p: DVec3) -> DVec3 {
+        /* gets called for the triangles */
+        unimplemented!()
     }
 
     fn size(&self) -> usize { 2 }
