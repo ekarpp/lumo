@@ -150,15 +150,9 @@ impl Object for Cuboid {
             })
     }
 
-    /// TODO: sample only from visible area at `ho.p = xo`
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        let (ri, _) = self.choose_rectangle().sample_towards(ho, rand_sq);
-        let xo = ho.p;
-        let xi = ri.origin;
-        let wi = ri.dir;
-        let ni = self.normal_at(xi);
-
-        (ri, self.sample_area_pdf(xo, xi, wi, ni))
+    /// TODO: sample only from visible area at `xo`
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+        self.choose_rectangle().sample_towards(xo, rand_sq)
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {

@@ -79,11 +79,10 @@ impl Object for Sphere {
         self.origin + self.radius * rand_sph
     }
 
-    /// Visible area from `ho.p = xo` forms a cone.
+    /// Visible area from `xo` forms a cone.
     /// Sample a random direction towards `xo` within the cone.
     /// HOW SPECIFICALLY? disk transform?
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        let xo = ho.p;
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         /* uvw-orthonormal basis,
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
@@ -101,16 +100,12 @@ impl Object for Sphere {
 
         let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
-        /* not used in pdf calc? */
-        let xi = DVec3::ZERO;
-        (
-            Ray::new(xo, wi),
-            self.sample_area_pdf(xo, xi, wi, self.normal_at(xi)),
-        )
+        Ray::new(xo, wi)
     }
 
     /// PDF for sampling area of the sphere that is visible from `xo`
-    fn sample_area_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
+    //fn sample_area_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
+    fn sample_area_pdf(&self, xo: DVec3, _wi: DVec3, _hi: &Hit)
                           -> f64 {
         let sin2_theta_max = self.radius * self.radius
             / self.origin.distance_squared(xo);

@@ -1,5 +1,6 @@
-use crate::{DVec3, DVec2};
+use crate::DVec3;
 use std::f64::consts::PI;
+use crate::pdfs::Pdf;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::bxdfs;
@@ -38,12 +39,11 @@ impl Material {
     }
 
     /// How does `r` get scattered at `h`?
-    pub fn bsdf_sample(&self, ho: &Hit, ro: &Ray, rand_sq: DVec2)
-                -> Option<(Ray, f64)> {
+    pub fn bsdf_sampler(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
             Self::Glass => bxdfs::bsdf_glass_sample(ho, ro),
             Self::Mirror => bxdfs::bsdf_mirror_sample(ho, ro),
-            Self::Diffuse(_) => bxdfs::bsdf_diffuse_sample(ho, ro, rand_sq),
+            Self::Diffuse(_) => bxdfs::bsdf_diffuse_sample(ho, ro),
             _ => None,
         }
     }

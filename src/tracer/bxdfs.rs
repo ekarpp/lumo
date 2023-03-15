@@ -1,5 +1,4 @@
-use crate::DVec2;
-use crate::pdfs::{Pdf, CosPdf};
+use crate::pdfs::{Pdf, CosPdf, DeltaPdf};
 use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -8,26 +7,23 @@ use crate::tracer::ray::Ray;
 /// # Arguments
 /// * `h` - The hit from which we scatter.
 /// * `r` - Incoming ray to the hit point.
-pub fn bsdf_diffuse_sample(ho: &Hit, _ro: &Ray, rand_sq: DVec2)
-                           -> Option<(Ray, f64)> {
+pub fn bsdf_diffuse_sample(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
-    let pdf = CosPdf::new(no);
-    let wi = pdf.generate_dir(rand_sq);
-    Some( (Ray::new(xo, wi), pdf.pdf_val(wi)) )
+    Some( Box::new(CosPdf::new(xo, no)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.
-pub fn bsdf_mirror_sample(ho: &Hit, _ro: &Ray) -> Option<(Ray, f64)> {
+pub fn bsdf_mirror_sample(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     let wi = xo - 2.0 * xo.project_onto(no);
-    Some( (Ray::new(xo, wi), 1.0) )
+    Some( Box::new(DeltaPdf::new(xo, wi)) )
 }
 
 /// Scattering function for glass material.
 /// Refracts according to Snell-Descartes law.
-pub fn bsdf_glass_sample(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
+pub fn bsdf_glass_sample(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let inside = ho.object.inside(ro.origin + EPSILON*ro.dir);
     let eta_ratio = if inside { ETA } else { ETA.recip() };
     let no = if inside { -ho.norm } else { ho.norm };
@@ -46,5 +42,5 @@ pub fn bsdf_glass_sample(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
     let wi = eta_ratio * wo + no *
         (eta_ratio * cos_in - (1.0 - sin_out).sqrt());
 
-    Some( (Ray::new(xo, wi), 1.0) )
+    Some( Box::new(DeltaPdf::new(xo, wi)) )
 }

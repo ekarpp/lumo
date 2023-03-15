@@ -38,7 +38,7 @@ impl Object for AxisAlignedBoundingBox {
         }
     }
 
-    fn sample_towards(&self, _ho: &Hit, _rand_sq: DVec2) -> (Ray, f64) {
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         unimplemented!()
     }
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }

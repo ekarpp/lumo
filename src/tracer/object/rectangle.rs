@@ -72,11 +72,8 @@ impl Object for Rectangle {
             })
     }
 
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        let (ri, pdf) = self.choose_triangle().sample_towards(ho, rand_sq);
-
-        /* area of triangle is 2x smaller => divide pdf by two */
-        (ri, pdf / 2.0)
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+        self.choose_triangle().sample_towards(xo, rand_sq)
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
