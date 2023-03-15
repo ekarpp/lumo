@@ -1,5 +1,6 @@
 use super::*;
 
+/// Rectangle defined by two triangles
 pub struct Rectangle {
     triangles: (Triangle, Triangle),
     material: Material,
@@ -47,19 +48,16 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
+    fn normal_at(&self, p: DVec3) -> DVec3 {
+        self.triangles.0.normal_at(p)
+    }
+
     fn size(&self) -> usize { 2 }
 
     fn area(&self) -> f64 { 2.0 * self.triangles.0.area() }
 
     fn material(&self) -> &Material { &self.material }
 
-    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
-        self.choose_triangle().sample_towards(ho, rand_sq)
-    }
-
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        self.choose_triangle().sample_on(rand_sq)
-    }
 
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.triangles.0.hit(r).or_else(|| self.triangles.1.hit(r))
@@ -67,5 +65,16 @@ impl Object for Rectangle {
                 h.object = self;
                 h
             })
+    }
+
+    fn sample_towards(&self, ho: &Hit, rand_sq: DVec2) -> (Ray, f64) {
+        let (ri, pdf) = self.choose_triangle().sample_towards(ho, rand_sq);
+
+        /* area of triangle is 2x smaller => divide pdf by two */
+        (ri, pdf / 2.0)
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        self.choose_triangle().sample_on(rand_sq)
     }
 }

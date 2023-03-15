@@ -14,7 +14,7 @@ pub fn bsdf_diffuse_sample(ho: &Hit, _ro: &Ray, rand_sq: DVec2)
     let no = ho.norm;
     let pdf = CosPdf::new(no);
     let wi = pdf.generate_dir(rand_sq);
-    Some( (Ray::new(xo, wi), pdf.pdf_val(wi, ho)) )
+    Some( (Ray::new(xo, wi), pdf.pdf_val(wi)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.

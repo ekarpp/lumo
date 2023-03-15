@@ -120,7 +120,7 @@ impl Object for Triangle {
         let wi = xi - xo;
         (
             Ray::new(xo, wi),
-            self.sample_towards_pdf(xo, xi, wi, self.normal_at(xi))
+            self.sample_area_pdf(xo, xi, wi, self.normal_at(xi))
         )
     }
 }
