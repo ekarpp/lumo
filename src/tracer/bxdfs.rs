@@ -8,7 +8,8 @@ use crate::tracer::ray::Ray;
 /// # Arguments
 /// * `h` - The hit from which we scatter.
 /// * `r` - Incoming ray to the hit point.
-pub fn diffuse_bsdf(ho: &Hit, _ro: &Ray, rand_sq: DVec2) -> Option<(Ray, f64)> {
+pub fn bsdf_diffuse_sample(ho: &Hit, _ro: &Ray, rand_sq: DVec2)
+                           -> Option<(Ray, f64)> {
     let xo = ho.p;
     let no = ho.norm;
     let pdf = CosPdf::new(no);
@@ -17,7 +18,7 @@ pub fn diffuse_bsdf(ho: &Hit, _ro: &Ray, rand_sq: DVec2) -> Option<(Ray, f64)> {
 }
 
 /// Scattering function for mirror material. Perfect reflection.
-pub fn mirror_bsdf(ho: &Hit, _ro: &Ray) -> Option<(Ray, f64)> {
+pub fn bsdf_mirror_sample(ho: &Hit, _ro: &Ray) -> Option<(Ray, f64)> {
     let xo = ho.p;
     let no = ho.norm;
     let wi = xo - 2.0 * xo.project_onto(no);
@@ -26,7 +27,7 @@ pub fn mirror_bsdf(ho: &Hit, _ro: &Ray) -> Option<(Ray, f64)> {
 
 /// Scattering function for glass material.
 /// Refracts according to Snell-Descartes law.
-pub fn glass_bsdf(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
+pub fn bsdf_glass_sample(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
     let eta_ratio = if ho.object.inside(ro) { ETA } else { ETA.recip() };
     let no = if ho.object.inside(ro) { -ho.norm } else { ho.norm };
     let xo = ho.p;
@@ -38,7 +39,7 @@ pub fn glass_bsdf(ho: &Hit, ro: &Ray) -> Option<(Ray, f64)> {
 
     /* total reflection */
     if sin_out > 1.0 {
-        return mirror_bsdf(ho, ro);
+        return bsdf_mirror_sample(ho, ro);
     }
 
     let wi = eta_ratio * wo + no *

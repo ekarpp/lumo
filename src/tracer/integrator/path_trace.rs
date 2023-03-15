@@ -19,7 +19,7 @@ pub fn integrate(
             let xo = ho.p;
             let no = ho.norm;
 
-            match material.bsdf(&ho, ro, RandomShape::gen_2d(Square)) {
+            match material.bsdf_sample(&ho, ro, RandomShape::gen_2d(Square)) {
                 None => if last_specular {
                     material.emit(&ho)
                 } else {
@@ -34,7 +34,7 @@ pub fn integrate(
                     );
 
                     shadow_ray(scene, &ho, RandomShape::gen_2d(Square))
-                        + material.brdf(xo)
+                        + material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
                         * integrate(scene, &ri, depth + 1, is_specular)
                         / (pdf_s * (1.0 - PATH_TRACE_RR))
