@@ -21,7 +21,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                             let wi = ri.dir;
 
                             integrate(scene, &ri)
-                                / scatter_pdf.value_for(wi, None)
+                                / scatter_pdf.value_for(wi, &ho)
                         }
                         _ => DVec3::ZERO,
                     }

@@ -22,7 +22,7 @@ pub trait Pdf {
     /// # Arguments
     /// * `wi` - Direction to compute probability for
     /// * `hi` - Optional hit on the object direction sampled towards
-    fn value_for(&self, wi: DVec3, hi: Option<Hit>) -> f64;
+    fn value_for(&self, wi: DVec3, hi: &Hit) -> f64;
 }
 
 /// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
@@ -53,7 +53,7 @@ impl Pdf for CosPdf {
         Ray::new(self.xo, wi)
     }
 
-    fn value_for(&self, wi: DVec3, _hi: Option<Hit>) -> f64 {
+    fn value_for(&self, wi: DVec3, _hi: &Hit) -> f64 {
         let cos_theta = self.uvw.w.dot(wi.normalize());
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
@@ -77,11 +77,9 @@ impl Pdf for IsotropicPdf {
         Ray::new(self.xo, wi)
     }
 
-    fn value_for(&self, _wi: DVec3, hi_opt: Option<Hit>) -> f64 {
-        hi_opt.map_or(0.0, |hi| {
-            let d = hi.object.density();
-            d * (-d * hi.t).exp()
-        })
+    fn value_for(&self, _wi: DVec3, hi: &Hit) -> f64 {
+        let d = hi.object.density();
+        d * (-d * hi.t).exp()
     }
 }
 
@@ -109,8 +107,8 @@ impl Pdf for ObjectPdf<'_> {
         self.object.sample_towards(self.xo, rand_sq)
     }
 
-    fn value_for(&self, wi: DVec3, hi_opt: Option<Hit>) -> f64 {
-        hi_opt.map_or(0.0, |hi| self.object.sample_area_pdf(self.xo, wi, &hi))
+    fn value_for(&self, wi: DVec3, hi: &Hit) -> f64 {
+        self.object.sample_area_pdf(self.xo, wi, &hi)
     }
 }
 
@@ -166,7 +164,7 @@ impl Pdf for DeltaPdf {
         Ray::new(self.ri.origin, self.ri.dir)
     }
 
-    fn value_for(&self, wi: DVec3, _hi: Option<Hit>) -> f64 {
+    fn value_for(&self, wi: DVec3, _hi: &Hit) -> f64 {
         if wi.normalize().dot(self.ri.dir.normalize()).abs() >= 1.0 - EPSILON {
             1.0
         } else {
