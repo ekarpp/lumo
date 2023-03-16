@@ -97,7 +97,7 @@ impl RandomShape {
     }
 
     /// Uniform random point IN unit sphere
-    fn square_to_sphere(rand_sq: DVec2) -> DVec3 {
+    pub fn square_to_sphere(rand_sq: DVec2) -> DVec3 {
         let z = 1.0 - 2.0 * rand_sq.y;
         let r = (1.0 - z * z).sqrt();
         let phi = 2.0 * PI * rand_sq.x;

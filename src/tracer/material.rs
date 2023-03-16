@@ -14,6 +14,8 @@ pub enum Material {
     Light(Texture),
     /// Perfect mirror
     Mirror,
+    /// Isotropic medium
+    Isotropic(Texture),
     /// Refracts light
     Glass,
     /// Not specified. Used with objects that are built on top of other objects.
@@ -33,6 +35,7 @@ impl Material {
     pub fn bsdf_f(&self, p: DVec3) -> DVec3 {
         match self {
             Self::Diffuse(t) => t.albedo_at(p) * PI.recip(),
+            Self::Isotropic(t) => t.albedo_at(p),
             Self::Mirror | Self::Glass => DVec3::ONE,
             _ => DVec3::ZERO,
         }
@@ -44,6 +47,7 @@ impl Material {
             Self::Glass => bxdfs::bsdf_glass_pdf(ho, ro),
             Self::Mirror => bxdfs::bsdf_mirror_pdf(ho, ro),
             Self::Diffuse(_) => bxdfs::bsdf_diffuse_pdf(ho, ro),
+            Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,
         }
     }

@@ -1,4 +1,4 @@
-use crate::pdfs::{Pdf, CosPdf, DeltaPdf};
+use crate::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf};
 use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -11,6 +11,11 @@ pub fn bsdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     Some( Box::new(CosPdf::new(xo, no)) )
+}
+
+pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
+    let xo = ho.p;
+    Some( Box::new(IsotropicPdf::new(xo)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.
