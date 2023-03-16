@@ -104,7 +104,6 @@ impl Object for Sphere {
     }
 
     /// PDF for sampling area of the sphere that is visible from `xo`
-    //fn sample_area_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
         match self.hit(ri) {
             None => 0.0,
@@ -121,8 +120,8 @@ impl Object for Sphere {
                 let ni = hi.norm;
                 let xi = hi.p;
 
-                visible_area * ni.dot(wi.normalize()).abs()
-                    / xo.distance_squared(xi)
+                xo.distance_squared(xi)
+                    / visible_area * ni.dot(wi.normalize()).abs()
             }
         }
     }
