@@ -59,6 +59,32 @@ impl Pdf for CosPdf {
     }
 }
 
+pub struct IsotropicPdf {
+    xo: DVec3,
+}
+
+impl IsotropicPdf {
+    pub fn new(xo: DVec3) -> Self {
+        Self {
+            xo,
+        }
+    }
+}
+
+impl Pdf for IsotropicPdf {
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
+        let wi = RandomShape::square_to_sphere(rand_sq);
+        Ray::new(self.xo, wi)
+    }
+
+    fn value_for(&self, _wi: DVec3, hi_opt: Option<Hit>) -> f64 {
+        hi_opt.map_or(0.0, |hi| {
+            let d = hi.object.density();
+            d * (-d * hi.t).exp()
+        })
+    }
+}
+
 /// WITH OBJECT PDF HAVE TO MAKE SURE THAT IT HITS. SHOULD REFACTOR IT HERE,
 /// TO PDF VAL CALC.
 /// Randomly samples a direction towards a point on the object that is visible

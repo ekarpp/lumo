@@ -29,13 +29,17 @@ pub mod sphere;
 pub mod triangle;
 /// Defines rectangles. Built from two triangles.
 pub mod rectangle;
+/// Medium, fog, smoke, etc
+pub mod medium;
 /// Axis aligned bounding boxes
 pub mod aabb;
 /// Bounding volume hierarchy
 pub mod bvh;
 
+/* TOO COMPLEX */
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
+    fn density(&self) -> f64 { panic!() }
     /// Normal of the object at the point `p`. Does not check if `p` is
     /// actually on the object.
     fn normal_at(&self, _p: DVec3) -> DVec3;
