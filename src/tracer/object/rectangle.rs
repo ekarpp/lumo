@@ -53,7 +53,6 @@ impl Object for Rectangle {
 
     fn material(&self) -> &Material { &self.material }
 
-
     fn hit(&self, r: &Ray) -> Option<Hit> {
         self.triangles.0.hit(r).or_else(|| self.triangles.1.hit(r))
             .map(|mut h| {
