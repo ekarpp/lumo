@@ -38,7 +38,7 @@ fn light_no_pass() {
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, 0.0),
     );
-    assert!(s.hit_light(&r, &s.objects[0]).is_none());
+    assert!(s.hit_light(&r, s.objects[0].as_ref()).is_none());
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn object_behind_light() {
         DVec3::new(0.0, 3.0, 0.0),
         DVec3::new(0.0, -1.0, 0.0),
     );
-    assert!(s.hit_light(&r, &s.objects[0]).is_some());
+    assert!(s.hit_light(&r, s.objects[0].as_ref()).is_some());
 }
 
 #[test]

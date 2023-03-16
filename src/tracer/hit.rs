@@ -13,7 +13,7 @@ pub struct Hit<'a> {
     pub norm: DVec3,
 }
 
-impl<'a, 'b> Hit<'a> {
+impl<'a> Hit<'a> {
     /// # Arguments
     ///
     /// * `t` - Value of ray at which hit occurred.

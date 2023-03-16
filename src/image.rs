@@ -28,6 +28,7 @@ impl Image {
     }
     /// Translates the image buffer of RGB values in range \[0,1\]
     /// to discrete range \[0,256\]. Applies gamma correction.
+    #[allow(clippy::identity_op)]
     fn rgb(&self) -> Vec<u8> {
         let mut rgb_img: Vec<u8> = vec![0; self.width * self.height * 3];
 

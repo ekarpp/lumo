@@ -106,9 +106,8 @@ impl Object for Sphere {
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
         match self.hit(ri) {
             None => 0.0,
-            Some(hi) => {
+            Some(_) => {
                 let xo = ri.origin;
-                let wi = ri.dir;
 
                 let sin2_theta_max = self.radius * self.radius
                     / self.origin.distance_squared(xo);
