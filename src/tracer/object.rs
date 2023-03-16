@@ -36,18 +36,22 @@ pub mod aabb;
 /// Bounding volume hierarchy
 pub mod bvh;
 
-/* TOO COMPLEX */
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
-    fn density(&self) -> f64 { panic!() }
     /// Does the ray hit the object?
     fn hit(&self, r: &Ray) -> Option<Hit>;
+
+    /// dumb
     fn material(&self) -> &Material;
+
     /// Surface area of the object
     fn area(&self) -> f64;
 
     /// Is the point inside the object? Care with epsilons here
     fn inside(&self, _p: DVec3) -> bool { false }
+
+    /// Sample random point on the surface of the object
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
 
     /// Sample random ray from `xo` towards area of object
     /// that is visible form `xo`
@@ -57,9 +61,6 @@ pub trait Object: Sync {
     /// * `rand_sq` - Uniformly random point on unit square
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray;
 
-    /// Sample random point on the surface of the object
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
-
     /// PDF for sampling points on the surface uniformly at random
     ///
     /// # Arguments
@@ -68,7 +69,6 @@ pub trait Object: Sync {
     /// * `xi` - Randomly drawn point on the "towards" object
     /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
     /// * `ni` - Normal of "towards" object at `xi`
-    //fn sample_area_pdf(&self, xo: DVec3, xi: DVec3, wi: DVec3, ni: DVec3)
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
         match self.hit(ri) {
             None => 0.0,

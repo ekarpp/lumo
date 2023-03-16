@@ -21,7 +21,6 @@ impl Medium {
 }
 
 impl Object for Medium {
-    fn density(&self) -> f64 { self.density }
     fn inside(&self, p: DVec3) -> bool { self.boundary.inside(p) }
     fn area(&self) -> f64 { self.boundary.area() }
     fn material(&self) -> &Material { &self.isotropic }
