@@ -30,11 +30,6 @@ impl Object for Plane {
 
     fn area(&self) -> f64 { f64::INFINITY }
 
-    // check that point is on plane?? or assume we are smart
-    fn normal_at(&self, _p: DVec3) -> DVec3 {
-        self.norm
-    }
-
     fn hit(&self, r: &Ray) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
@@ -49,7 +44,8 @@ impl Object for Plane {
             Hit::new(
                 t,
                 self,
-                r,
+                r.at(t),
+                self.norm,
             )
         }
     }

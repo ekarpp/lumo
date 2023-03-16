@@ -18,10 +18,8 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                         Material::Glass | Material::Mirror => {
                             let ri = scatter_pdf.sample_ray(
                                 RandomShape::gen_2d(Square));
-                            let wi = ri.dir;
-
                             integrate(scene, &ri)
-                                / scatter_pdf.value_for(wi, &ho)
+                                / scatter_pdf.value_for(&ri)
                         }
                         _ => DVec3::ZERO,
                     }

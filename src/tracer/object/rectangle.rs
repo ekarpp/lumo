@@ -45,19 +45,9 @@ impl Rectangle {
             &self.triangles.1
         }
     }
-
-    pub fn point_on(&self) -> DVec3 {
-        self.triangles.0.point_on()
-    }
 }
 
 impl Object for Rectangle {
-    fn normal_at(&self, _p: DVec3) -> DVec3 {
-        /* gets called for the triangles */
-        unimplemented!()
-    }
-
-    fn size(&self) -> usize { 2 }
 
     fn area(&self) -> f64 { 2.0 * self.triangles.0.area() }
 

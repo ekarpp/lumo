@@ -136,8 +136,7 @@ fn main() {
         &scene,
     );
     match start_img.elapsed() {
-        Ok(v) => println!("rendered scene with {} objects in {v:?}",
-                          scene.size()),
+        Ok(v) => println!("rendered scene in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
     }
 

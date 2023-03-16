@@ -23,10 +23,8 @@ impl Medium {
 impl Object for Medium {
     fn density(&self) -> f64 { self.density }
     fn inside(&self, p: DVec3) -> bool { self.boundary.inside(p) }
-    fn size(&self) -> usize { self.boundary.size() }
     fn area(&self) -> f64 { self.boundary.area() }
     fn material(&self) -> &Material { &self.isotropic }
-    fn normal_at(&self, p: DVec3) -> DVec3 { p }
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         unimplemented!()
@@ -57,7 +55,8 @@ impl Object for Medium {
         if hit_dist > inside_dist {
             None
         } else {
-            Hit::new(to + hit_dist / ray_length, self, ro)
+            let t = to + hit_dist / ray_length;
+            Hit::new(t, self, ro.at(t), DVec3::ZERO)
         }
     }
 }

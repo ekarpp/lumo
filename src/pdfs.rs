@@ -5,7 +5,6 @@ use crate::onb::Onb;
 use crate::rand_utils;
 use rand_utils::RandomShape;
 use crate::consts::EPSILON;
-use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
 
@@ -22,7 +21,7 @@ pub trait Pdf {
     /// # Arguments
     /// * `wi` - Direction to compute probability for
     /// * `hi` - Optional hit on the object direction sampled towards
-    fn value_for(&self, wi: DVec3, hi: &Hit) -> f64;
+    fn value_for(&self, ri: &Ray) -> f64;
 }
 
 /// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
@@ -53,7 +52,8 @@ impl Pdf for CosPdf {
         Ray::new(self.xo, wi)
     }
 
-    fn value_for(&self, wi: DVec3, _hi: &Hit) -> f64 {
+    fn value_for(&self, ri: &Ray) -> f64 {
+        let wi = ri.dir;
         let cos_theta = self.uvw.w.dot(wi.normalize());
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
@@ -77,9 +77,10 @@ impl Pdf for IsotropicPdf {
         Ray::new(self.xo, wi)
     }
 
-    fn value_for(&self, _wi: DVec3, hi: &Hit) -> f64 {
-        let d = hi.object.density();
-        d * (-d * hi.t).exp()
+    fn value_for(&self, _ri: &Ray) -> f64 {
+        let d: f64 = 0.1;//hi.object.density();
+        // hi.t = 1.5
+        d * (-d * 1.5).exp()
     }
 }
 
@@ -107,8 +108,8 @@ impl Pdf for ObjectPdf<'_> {
         self.object.sample_towards(self.xo, rand_sq)
     }
 
-    fn value_for(&self, wi: DVec3, hi: &Hit) -> f64 {
-        self.object.sample_area_pdf(self.xo, wi, &hi)
+    fn value_for(&self, ri: &Ray) -> f64 {
+        self.object.sample_towards_pdf(ri)
     }
 }
 
@@ -147,13 +148,13 @@ impl Pdf for MixedPdf {
 
 /// Delta distribution PDF. Always samples the same ray. For glass/mirror.
 pub struct DeltaPdf {
-    ri: Ray,
+    r: Ray,
 }
 
 impl DeltaPdf {
     pub fn new(xo: DVec3, wi: DVec3) -> Self {
         Self {
-            ri: Ray::new(xo, wi),
+            r: Ray::new(xo, wi),
         }
     }
 }
@@ -161,11 +162,12 @@ impl DeltaPdf {
 impl Pdf for DeltaPdf {
     fn sample_ray(&self, _rand_sq: DVec2) -> Ray {
         // lazy
-        Ray::new(self.ri.origin, self.ri.dir)
+        Ray::new(self.r.origin, self.r.dir)
     }
 
-    fn value_for(&self, wi: DVec3, _hi: &Hit) -> f64 {
-        if wi.normalize().dot(self.ri.dir.normalize()).abs() >= 1.0 - EPSILON {
+    fn value_for(&self, ri: &Ray) -> f64 {
+        let wi = ri.dir;
+        if wi.normalize().dot(self.r.dir.normalize()).abs() >= 1.0 - EPSILON {
             1.0
         } else {
             0.0
