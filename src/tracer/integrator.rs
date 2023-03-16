@@ -47,7 +47,7 @@ fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
             let no = ho.norm;
             let light = scene.uniform_random_light();
 
-            let pdf_light = ObjectPdf::new(light.as_ref(), xo);
+            let pdf_light = ObjectPdf::new(light, xo);
             let ri = pdf_light.sample_ray(rand_sq);
             let wi = ri.dir;
 

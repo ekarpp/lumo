@@ -42,10 +42,10 @@ impl Scene {
     }
 
     /// Choose one of the lights uniformly at random.
-    pub fn uniform_random_light(&self) -> &Box<dyn Object> {
+    pub fn uniform_random_light(&self) -> &dyn Object {
         let rnd = rand_utils::rand_f64();
         let idx = (rnd * self.lights.len() as f64).floor() as usize;
-        &self.objects[self.lights[idx]]
+        self.objects[self.lights[idx]].as_ref()
     }
 
     /// Returns the closest object `r` hits and `None` if no hits
@@ -61,19 +61,22 @@ impl Scene {
     }
 
     /// Does ray `r` reach the light object `light`? TODO: rewrite
-    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a Box<dyn Object>)
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object)
                      -> Option<Hit> {
         let light_hit = light.hit(r).map(|mut h| {
             h.t -= EPSILON;
             h
         });
 
-        let no_block_light = |obj: &&Box<dyn Object>| -> bool {
+        // ...
+        let no_block_light = |obj: &&dyn Object| -> bool {
             obj.hit(r).is_none() || obj.hit(r) > light_hit
 
         };
 
-        let reached_light = self.objects.iter().take_while(no_block_light)
+        let reached_light = self.objects.iter()
+            .map(|obj| &**obj) // ...
+            .take_while(no_block_light)
             .count() == self.objects.len();
 
         if reached_light { light_hit } else { None }
