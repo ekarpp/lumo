@@ -44,7 +44,7 @@ pub fn integrate(
                         + material.bsdf_f(xo)
                         * cos_theta
                         * integrate(scene, &ri, depth + 1, is_specular)
-                        / (scatter_pdf.value_for(wi, &ho)
+                        / (scatter_pdf.value_for(&ri)
                            * (1.0 - PATH_TRACE_RR))
                 }
             }

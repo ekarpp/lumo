@@ -54,13 +54,13 @@ fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
             /* move this to object PDF */
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
-                Some(hi) => {
+                Some(_hi) => {
                     material.bsdf_f(xo)
                         * no.dot(wi.normalize()).abs()
                         /* TODO: power heuristic, Veach & Guibas 95 */
                         * 0.5
-                        / (pdf_light.value_for(wi, &hi)
-                           + scatter_pdf.value_for(wi, &hi))
+                        / (pdf_light.value_for(&ri)
+                           + scatter_pdf.value_for(&ri))
                 }
             }
         }

@@ -1,6 +1,5 @@
 use crate::DVec3;
 use crate::tracer::object::Object;
-use crate::tracer::ray::Ray;
 
 /// Stores information about a hit between a ray and an object.
 pub struct Hit<'a> {
@@ -20,13 +19,14 @@ impl<'a, 'b> Hit<'a> {
     /// * `t` - Value of ray at which hit occurred.
     /// * `o` - The object which got hit.
     /// * `r` - The ray which hit the object.
-    pub fn new(t: f64, object: &'a dyn Object, r: &'b Ray) -> Option<Self> {
+    pub fn new(t: f64, object: &'a dyn Object, xi: DVec3, ni: DVec3)
+               -> Option<Self> {
         /* p and n not always needed. computing for every hit slows rendering */
         Some(Self {
             t,
             object,
-            p: r.at(t),
-            norm: object.normal_at(r.at(t)),
+            p: xi,
+            norm: ni,
         })
     }
 }

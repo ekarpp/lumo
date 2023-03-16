@@ -48,12 +48,6 @@ impl Scene {
         &self.objects[self.lights[idx]]
     }
 
-    /// Number of objects in the scene.
-    /// Might want to print x of this, y of that, ...
-    pub fn size(&self) -> usize {
-        self.objects.iter().fold(0, |acc, obj| acc + obj.size())
-    }
-
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         self.objects.iter().map(|obj| obj.hit(r))

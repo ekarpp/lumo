@@ -112,25 +112,14 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
-    fn normal_at(&self, _p: DVec3) -> DVec3 {
-        /* gets called for the triangles */
-        unimplemented!()
-    }
-
-    fn size(&self) -> usize { 12 }
-
     fn area(&self) -> f64 {
         self.rectangles.iter().map(|r| r.area()).sum()
     }
 
     /// If vector towards each face from `p` points to the same direction
     /// as the normal of that face, we must be inside.
-    fn inside(&self, p: DVec3) -> bool {
-        self.rectangles.iter().all(|rect| {
-            let pi = rect.point_on();
-
-            rect.normal_at(pi).dot(pi - p) > 0.0
-        })
+    fn inside(&self, _p: DVec3) -> bool {
+        todo!()
     }
 
     fn material(&self) -> &Material { &self.material }

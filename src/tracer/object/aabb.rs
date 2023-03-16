@@ -12,7 +12,6 @@ impl AxisAlignedBoundingBox {
 }
 
 impl Object for AxisAlignedBoundingBox {
-    fn normal_at(&self, _p: DVec3) -> DVec3 { unimplemented!() }
     fn material(&self) -> &Material { unimplemented!() }
     fn area(&self) -> f64 { 0.0 }
 
@@ -34,7 +33,7 @@ impl Object for AxisAlignedBoundingBox {
             None
         } else {
             let t = if ts > EPSILON { ts } else { te };
-            Hit::new(t, self, r)
+            Hit::new(t, self, r.at(t), DVec3::ZERO)
         }
     }
 

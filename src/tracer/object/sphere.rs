@@ -32,11 +32,6 @@ impl Object for Sphere {
 
     fn material(&self) -> &Material { &self.material }
 
-    /// Points way from origin
-    fn normal_at(&self, p: DVec3) -> DVec3 {
-        (p - self.origin) / self.radius
-    }
-
     /// Solve the quadratic
     fn hit(&self, r: &Ray) -> Option<Hit> {
         let tmp = r.origin - self.origin;
@@ -58,10 +53,15 @@ impl Object for Sphere {
                 return None;
             }
         }
+
+        let xi = r.at(t);
+        let ni = (xi - self.origin) / self.radius;
+
         Hit::new(
             t,
             self,
-            r,
+            xi,
+            ni,
         )
     }
 
@@ -105,12 +105,25 @@ impl Object for Sphere {
 
     /// PDF for sampling area of the sphere that is visible from `xo`
     //fn sample_area_pdf(&self, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
-    fn sample_area_pdf(&self, xo: DVec3, _wi: DVec3, _hi: &Hit)
-                          -> f64 {
-        let sin2_theta_max = self.radius * self.radius
-            / self.origin.distance_squared(xo);
-        let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+        match self.hit(ri) {
+            None => 0.0,
+            Some(hi) => {
+                let xo = ri.origin;
+                let wi = ri.dir;
 
-        1.0 / (2.0 * PI * (1.0 - cos_theta_max))
+                let sin2_theta_max = self.radius * self.radius
+                    / self.origin.distance_squared(xo);
+                let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
+
+                let visible_area = 2.0 * PI * (1.0 - cos_theta_max);
+
+                let ni = hi.norm;
+                let xi = hi.p;
+
+                visible_area * ni.dot(wi.normalize()).abs()
+                    / xo.distance_squared(xi)
+            }
+        }
     }
 }
