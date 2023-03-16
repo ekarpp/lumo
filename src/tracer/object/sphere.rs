@@ -87,8 +87,6 @@ impl Object for Sphere {
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
 
-        /* TODO: this seems broken */
-
         let dist_light = xo.distance_squared(self.origin);
 
         let z = 1.0 + rand_sq.y *
@@ -103,7 +101,8 @@ impl Object for Sphere {
         Ray::new(xo, wi)
     }
 
-    /// PDF for sampling area of the sphere that is visible from `xo`
+    /// PDF (w.r.t solid angle) for sampling area of the sphere
+    /// that is visible from `xo` (a cone)
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
         match self.hit(ri) {
             None => 0.0,
@@ -115,13 +114,7 @@ impl Object for Sphere {
                     / self.origin.distance_squared(xo);
                 let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
 
-                let visible_area = 2.0 * PI * (1.0 - cos_theta_max);
-
-                let ni = hi.norm;
-                let xi = hi.p;
-
-                xo.distance_squared(xi)
-                    / visible_area * ni.dot(wi.normalize()).abs()
+                1.0 / (2.0 * PI * (1.0 - cos_theta_max))
             }
         }
     }
