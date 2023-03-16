@@ -1,5 +1,4 @@
 //! Ray tracer. WIP
-
 use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
 use crate::image::Image;
 use crate::tracer::scene::Scene;
@@ -112,7 +111,7 @@ fn main() {
     let scene = if cli_args.boxx {
         Scene::box_scene(fl)
     } else {
-        Scene::default()
+        Scene::default_scene()
     };
     let cam = Camera::new(
         img_width as f64 / img_height as f64,
