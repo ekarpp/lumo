@@ -30,7 +30,7 @@ impl Object for Plane {
 
     fn area(&self) -> f64 { f64::INFINITY }
 
-    fn hit(&self, r: &Ray) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
         if self.norm.dot(r.dir) == 0.0 {
@@ -38,7 +38,7 @@ impl Object for Plane {
         }
 
         let t = -(self.d + self.norm.dot(r.origin)) / self.norm.dot(r.dir);
-        if t < EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             None
         } else {
             Hit::new(

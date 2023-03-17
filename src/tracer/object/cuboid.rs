@@ -120,12 +120,15 @@ impl Object for Cuboid {
     /// as the normal of that face, we must be inside.
     fn inside(&self, _p: DVec3) -> bool {
         todo!()
+        /*
+         * add t_min and t_max to hit. (both, so we arent inside cubes behind us
+         * now can do cube inside and medium better. */
     }
 
     fn material(&self) -> &Material { &self.material }
 
-    fn hit(&self, r: &Ray) -> Option<Hit> {
-        self.rectangles.iter().map(|rect| rect.hit(r))
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        self.rectangles.iter().map(|rect| rect.hit(r, t_min, t_max))
             .fold(None, |closest, hit| {
                 if closest.is_none() || (hit.is_some() && hit < closest) {
                     hit
@@ -139,9 +142,12 @@ impl Object for Cuboid {
             })
     }
 
-    /// TODO: sample only from visible area at `xo`
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
-        self.choose_rectangle().sample_towards(xo, rand_sq)
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
+        /* add normal to rectangle, now can do visible area of cube??
+         * add middle point of rectangle? 0.5a + 0.5c
+         * (dot prod with all normals. need direction? dot < 0.0 => visible)
+         * weight faces that have lower dot prod.. interesting.. */
+        unimplemented!()
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {

@@ -33,7 +33,7 @@ impl Object for Sphere {
     fn material(&self) -> &Material { &self.material }
 
     /// Solve the quadratic
-    fn hit(&self, r: &Ray) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let tmp = r.origin - self.origin;
         // coefficients of "hit quadratic"
         // .dot faster than .length_squared, recheck
@@ -47,9 +47,9 @@ impl Object for Sphere {
         }
         let disc_root = disc.sqrt();
         let mut t = (-half_b - disc_root) / a;
-        if t < EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             t = (-half_b + disc_root) / a;
-            if t < EPSILON {
+            if t < t_min + EPSILON || t > t_max {
                 return None;
             }
         }
@@ -100,11 +100,11 @@ impl Object for Sphere {
 
         Ray::new(xo, wi)
     }
-
+    /* make sphere pdf, area pdf, etc..? */
     /// PDF (w.r.t solid angle) for sampling area of the sphere
     /// that is visible from `xo` (a cone)
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
-        match self.hit(ri) {
+        match self.hit(ri, 0.0, INFINITY) {
             None => 0.0,
             Some(_) => {
                 let xo = ri.origin;

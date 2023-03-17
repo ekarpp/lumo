@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code)]
 use super::*;
 
 pub struct AxisAlignedBoundingBox {
@@ -15,7 +16,7 @@ impl Object for AxisAlignedBoundingBox {
     fn material(&self) -> &Material { unimplemented!() }
     fn area(&self) -> f64 { 0.0 }
 
-    fn hit(&self, r: &Ray) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let mut ts = -f64::INFINITY;
         let mut te = f64::INFINITY;
         let ro_min = (self.ax_min - r.origin).to_array();
