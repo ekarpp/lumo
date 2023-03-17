@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code)]
 use super::*;
 
 pub struct BoundingVolumeHierarchy {
@@ -5,5 +6,3 @@ pub struct BoundingVolumeHierarchy {
     //right: Option<dyn Object>,
     boxx: AxisAlignedBoundingBox,
 }
-
-// refactor scattered ray away and return tuple with pdf. for light sample too.

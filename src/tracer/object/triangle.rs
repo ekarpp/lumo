@@ -49,7 +49,7 @@ impl Object for Triangle {
     }
 
     /// Barycentric triangle intersection with Cramer's rule
-    fn hit(&self, r: &Ray) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* can store a-c, a-b, and a instead. saves some computation.
          * compiler should do it? */
 
@@ -90,7 +90,7 @@ impl Object for Triangle {
             vec_b,
         ).determinant() / det_a;
 
-        if t < EPSILON {
+        if t < t_min + EPSILON  || t > t_max {
             None
         } else {
             Hit::new(

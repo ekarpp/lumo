@@ -1,4 +1,7 @@
+#![allow(unused_variables, dead_code)]
 use super::*;
+
+
 
 use crate::tracer::object::sphere::Sphere;
 use crate::tracer::texture::Texture;
@@ -29,7 +32,9 @@ impl Object for Medium {
         unimplemented!()
     }
 
-    fn hit(&self, ro: &Ray) -> Option<Hit> {
+    fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        None
+        /*
         let to = if self.boundary.inside(ro.origin) {
             0.0
         } else {
@@ -57,5 +62,6 @@ impl Object for Medium {
             let t = to + hit_dist / ray_length;
             Hit::new(t, self, ro.at(t), DVec3::ZERO)
         }
+        */
     }
 }

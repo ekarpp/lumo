@@ -30,7 +30,7 @@ fn point_order_irrelevant() {
             DVec3::ONE,
             get_mat()
         );
-        assert!(t.hit(&r).is_some());
+        assert!(t.hit(&r, 0.0, INFINITY).is_some());
     });
 }
 
@@ -47,5 +47,5 @@ fn no_self_intersect() {
         DVec3::ZERO,
         DVec3::new(0.0, 0.0, -1.0),
     );
-    assert!(t.hit(&r).is_none());
+    assert!(t.hit(&r, 0.0, INFINITY).is_none());
 }

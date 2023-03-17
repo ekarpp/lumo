@@ -1,5 +1,5 @@
 use crate::{DVec3, DMat3, DAffine3};
-use std::f64::consts::PI;
+use std::f64::{INFINITY, consts::PI};
 use crate::rand_utils;
 #[allow(unused_imports)]
 use crate::perlin::Perlin;
@@ -52,7 +52,8 @@ impl Scene {
 
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
-        self.objects.iter().map(|obj| obj.hit(r))
+        self.objects.iter()
+            .map(|obj| obj.hit(r, 0.0, INFINITY))
             .fold(None, |closest, hit| {
                 if closest.is_none() || (hit.is_some() && hit < closest) {
                     hit
@@ -65,15 +66,15 @@ impl Scene {
     /// Does ray `r` reach the light object `light`? TODO: rewrite
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object)
                      -> Option<Hit> {
-        let light_hit = light.hit(r).map(|mut h| {
+        let light_hit = light.hit(r, 0.0, INFINITY).map(|mut h| {
             h.t -= EPSILON;
             h
         });
 
         // ...
         let no_block_light = |obj: &&dyn Object| -> bool {
-            obj.hit(r).is_none() || obj.hit(r) > light_hit
-
+            let hi = obj.hit(r, 0.0, INFINITY);
+            hi.is_none() || hi > light_hit
         };
 
         let reached_light = self.objects.iter()

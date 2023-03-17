@@ -1,5 +1,5 @@
 use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
-use std::f64::consts::PI;
+use std::f64::{INFINITY, consts::PI};
 use crate::onb::Onb;
 use crate::rand_utils;
 use rand_utils::RandomShape;
@@ -39,7 +39,7 @@ pub mod bvh;
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
     /// Does the ray hit the object?
-    fn hit(&self, r: &Ray) -> Option<Hit>;
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit>;
 
     /// dumb
     fn material(&self) -> &Material;
@@ -70,7 +70,7 @@ pub trait Object: Sync {
     /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
     /// * `ni` - Normal of "towards" object at `xi`
     fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
-        match self.hit(ri) {
+        match self.hit(ri, 0.0, INFINITY) {
             None => 0.0,
             Some(hi) => {
                 let xo = ri.origin;

@@ -15,7 +15,7 @@ fn no_self_intersect() {
         DVec3::new(1.0, 0.0, 0.0),
         DVec3::new(0.0, 1.0, 0.0),
     );
-    assert!(s.hit(&r).is_none());
+    assert!(s.hit(&r, 0.0, INFINITY).is_none());
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn no_intersect_behind() {
         DVec3::new(1.5, 0.0, 0.0),
         DVec3::new(1.0, 0.0, 0.0),
     );
-    assert!(s.hit(&r).is_none());
+    assert!(s.hit(&r, 0.0, INFINITY).is_none());
 }
 
 #[test]
@@ -37,5 +37,5 @@ fn does_intersect() {
         v,
         -v,
     );
-    assert!(s.hit(&r).is_some());
+    assert!(s.hit(&r, 0.0, INFINITY).is_some());
 }
