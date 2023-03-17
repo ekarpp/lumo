@@ -16,11 +16,9 @@ pub trait Pdf {
     /// * `rand_sq` - Random point on the unit square.
     fn sample_ray(&self, rand_sq: DVec2) -> Ray;
     /// Computes the probability of the given direction.
-    /// CAN REFACTORIZE THIS TO JUST TAKE THE GENERATED RAY
     ///
     /// # Arguments
-    /// * `wi` - Direction to compute probability for
-    /// * `hi` - Optional hit on the object direction sampled towards
+    /// * `ri` - Ray to compute probability for
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
@@ -84,8 +82,6 @@ impl Pdf for IsotropicPdf {
     }
 }
 
-/// WITH OBJECT PDF HAVE TO MAKE SURE THAT IT HITS. SHOULD REFACTOR IT HERE,
-/// TO PDF VAL CALC.
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
