@@ -43,11 +43,6 @@ impl Triangle {
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 
-    /// With cross product
-    fn area(&self) -> f64 {
-        (self.b - self.a).cross(self.c - self.a).length() / 2.0
-    }
-
     /// Barycentric triangle intersection with Cramer's rule
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* can store a-c, a-b, and a instead. saves some computation.
@@ -81,8 +76,8 @@ impl Object for Triangle {
 
         if beta < 0.0 || gamma < 0.0
             || beta + gamma > 1.0 {
-            return None;
-        }
+                return None;
+            }
 
         let t = DMat3::from_cols(
             mat_a.col(0),
@@ -116,4 +111,23 @@ impl Object for Triangle {
         let wi = xi - xo;
         Ray::new(xo, wi)
     }
+
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+        match self.hit(ri, 0.0, INFINITY) {
+            None => 0.0,
+            Some(hi) => {
+                let area = (self.b - self.a).cross(self.c - self.a).length()
+                    / 2.0;
+
+                let xo = ri.origin;
+                let xi = hi.p;
+                let ni = hi.norm;
+                let wi = ri.dir;
+                xo.distance_squared(xi)
+                    / (ni.dot(wi.normalize()).abs() * area)
+
+            }
+        }
+    }
+
 }

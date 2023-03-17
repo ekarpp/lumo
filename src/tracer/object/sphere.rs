@@ -28,8 +28,6 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-    fn area(&self) -> f64 { 4.0 * PI * self.radius * self.radius }
-
     fn material(&self) -> &Material { &self.material }
 
     /// Solve the quadratic

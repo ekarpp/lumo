@@ -28,8 +28,6 @@ impl Plane {
 impl Object for Plane {
     fn material(&self) -> &Material { &self.material }
 
-    fn area(&self) -> f64 { f64::INFINITY }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
@@ -53,5 +51,6 @@ impl Object for Plane {
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         unimplemented!()
     }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { unimplemented!() }
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
 }

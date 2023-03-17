@@ -112,17 +112,13 @@ impl Cuboid {
 }
 
 impl Object for Cuboid {
-    fn area(&self) -> f64 {
-        self.rectangles.iter().map(|r| r.area()).sum()
-    }
-
     /// Shoot ray forwards and backwards. If both hit, we are inside.
     /// Probably faster ways to do this.
     fn inside(&self, p: DVec3) -> bool {
         /* direction shouldn't matter */
         let r = Ray::new(p, DVec3::new(1.0, 0.0, 0.0));
 
-        self.hit(r, -INFINITY, 0.0).and(self.hit(r, 0.0, INFINITY))
+        self.hit(&r, -INFINITY, 0.0).and(self.hit(&r, 0.0, INFINITY))
             .is_some()
     }
 
@@ -151,7 +147,12 @@ impl Object for Cuboid {
         unimplemented!()
     }
 
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
+        unimplemented!()
+    }
+
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         self.choose_rectangle().sample_on(rand_sq)
     }
+
 }

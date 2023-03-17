@@ -48,9 +48,6 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
-
-    fn area(&self) -> f64 { 2.0 * self.triangles.0.area() }
-
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
@@ -64,6 +61,15 @@ impl Object for Rectangle {
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         self.choose_triangle().sample_towards(xo, rand_sq)
+    }
+
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+        /* ray can hit either of the triangles. sum pdf from both
+         * (if miss, pdf = 0) and divide by two. (rectangle = two identical
+         * triangles => area two times bigger) */
+        (self.triangles.0.sample_towards_pdf(ri)
+         + self.triangles.1.sample_towards_pdf(ri))
+            / 2.0
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
