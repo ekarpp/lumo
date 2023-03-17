@@ -47,9 +47,9 @@ impl Object for Sphere {
         }
         let disc_root = disc.sqrt();
         let mut t = (-half_b - disc_root) / a;
-        if t < t_min + EPSILON || t > t_max {
+        if t < t_min + EPSILON || t > t_max - EPSILON {
             t = (-half_b + disc_root) / a;
-            if t < t_min + EPSILON || t > t_max {
+            if t < t_min + EPSILON || t > t_max - EPSILON {
                 return None;
             }
         }

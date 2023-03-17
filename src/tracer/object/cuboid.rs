@@ -116,13 +116,14 @@ impl Object for Cuboid {
         self.rectangles.iter().map(|r| r.area()).sum()
     }
 
-    /// If vector towards each face from `p` points to the same direction
-    /// as the normal of that face, we must be inside.
-    fn inside(&self, _p: DVec3) -> bool {
-        todo!()
-        /*
-         * add t_min and t_max to hit. (both, so we arent inside cubes behind us
-         * now can do cube inside and medium better. */
+    /// Shoot ray forwards and backwards. If both hit, we are inside.
+    /// Probably faster ways to do this.
+    fn inside(&self, p: DVec3) -> bool {
+        /* direction shouldn't matter */
+        let r = Ray::new(p, DVec3::new(1.0, 0.0, 0.0));
+
+        self.hit(r, -INFINITY, 0.0).and(self.hit(r, 0.0, INFINITY))
+            .is_some()
     }
 
     fn material(&self) -> &Material { &self.material }

@@ -90,7 +90,7 @@ impl Object for Triangle {
             vec_b,
         ).determinant() / det_a;
 
-        if t < t_min + EPSILON  || t > t_max {
+        if t < t_min + EPSILON  || t > t_max - EPSILON {
             None
         } else {
             Hit::new(

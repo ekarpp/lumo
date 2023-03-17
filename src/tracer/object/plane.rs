@@ -38,7 +38,7 @@ impl Object for Plane {
         }
 
         let t = -(self.d + self.norm.dot(r.origin)) / self.norm.dot(r.dir);
-        if t < t_min + EPSILON || t > t_max {
+        if t < t_min + EPSILON || t > t_max - EPSILON {
             None
         } else {
             Hit::new(
