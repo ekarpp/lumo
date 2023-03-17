@@ -47,7 +47,7 @@ pub const PERLIN_FREQ: f64 = 60.0;
 pub const PERLIN_AMP: f64 = 20.0;
 
 /// Recursion depth in perlin turbulence
-pub const PERLIN_OCTAVES: usize = 6;
+pub const PERLIN_OCTAVES: i32 = 6;
 
 /// Scale of each term in turbulence. should be less than 1.0
 pub const PERLIN_GAIN: f64 = 0.5;

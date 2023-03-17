@@ -42,14 +42,14 @@ impl Perlin {
     }
 
     fn _scale_turb(&self, px: f64, t: f64) -> f64 {
-        1.0 - (0.5 + 0.5*(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powf(6.0)
+        1.0 - (0.5 + 0.5*(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(6)
     }
 
-    fn turbulence(&self, acc: f64, p: DVec3, depth: usize) -> f64 {
+    fn turbulence(&self, acc: f64, p: DVec3, depth: i32) -> f64 {
         if depth >= PERLIN_OCTAVES {
             return acc;
         }
-        let w = PERLIN_GAIN.powf(depth as f64);
+        let w = PERLIN_GAIN.powi(depth);
 
         self.turbulence(acc + w*self.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
