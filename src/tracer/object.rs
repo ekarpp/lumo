@@ -44,10 +44,8 @@ pub trait Object: Sync {
     /// dumb
     fn material(&self) -> &Material;
 
-    /// Surface area of the object
-    fn area(&self) -> f64;
-
-    /// Is the point inside the object? Care with epsilons here
+    /// Is the point inside the object? Care with epsilons here.
+    /// How about planar/solid objects?
     fn inside(&self, _p: DVec3) -> bool { false }
 
     /// Sample random point on the surface of the object
@@ -64,23 +62,6 @@ pub trait Object: Sync {
     /// PDF for sampling points on the surface uniformly at random
     ///
     /// # Arguments
-    /// * `xo` - Point on the "from" object
-    /// * `hi` - Hit on the "towards" object in the sampled direction
-    /// * `xi` - Randomly drawn point on the "towards" object
-    /// * `wi` - Direction towards `xi` from `xo`. Not normalized.
-    /// * `ni` - Normal of "towards" object at `xi`
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
-        match self.hit(ri, 0.0, INFINITY) {
-            None => 0.0,
-            Some(hi) => {
-                let xo = ri.origin;
-                let xi = hi.p;
-                let ni = hi.norm;
-                let wi = ri.dir;
-                xo.distance_squared(xi)
-                    / (ni.dot(wi.normalize()).abs() * self.area())
-
-            }
-        }
-    }
+    /// * `ri` - Sampled ray from `xo` to `xi`
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64;
 }

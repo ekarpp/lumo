@@ -14,7 +14,6 @@ impl AxisAlignedBoundingBox {
 
 impl Object for AxisAlignedBoundingBox {
     fn material(&self) -> &Material { unimplemented!() }
-    fn area(&self) -> f64 { 0.0 }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let mut ts = -f64::INFINITY;
@@ -42,4 +41,5 @@ impl Object for AxisAlignedBoundingBox {
         unimplemented!()
     }
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { unimplemented!() }
 }
