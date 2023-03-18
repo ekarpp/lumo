@@ -47,7 +47,9 @@ pub fn bsdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
 pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
                            -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
-    Some( Box::new(MfdPdf::new(ro, no, *mfd)) )
+    let xo = ho.p;
+    let wo = ro.dir;
+    Some( Box::new(MfdPdf::new(xo, wo, no, *mfd)) )
 }
 
 pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
