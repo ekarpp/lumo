@@ -194,30 +194,27 @@ impl MfdPdf {
 
 impl Pdf for MfdPdf {
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let roughness = self.mfd.get_roughness();
         let phi = 2.0 * PI * rand_sq.x;
-        let theta = (roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan();
+        let theta = self.mfd.sample_theta(rand_sq.y);
 
-        let wm = DVec3::new(
-            theta.sin() * phi.cos(),
-            theta.sin() * phi.sin(),
-            theta.cos(),
+        let wm = self.uvw.to_uvw_basis(
+            DVec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
         ).normalize();
 
-        let wi = 2.0 * self.wo.dot(wm) * wm - self.wo;
+        let wi = self.wo - 2.0 * self.wo.dot(wm) * wm;
 
-        Ray::new(self.xo, self.uvw.to_uvw_basis(wi))
+        Ray::new(self.xo, wi)
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir.normalize();
         let wh = (self.wo + wi).normalize();
 
-        if wh.dot(self.no) < 0.0 {
-            0.0
-        } else {
-            self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
-                / (4.0 * self.wo.dot(wh))
-        }
+        self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
+            / (4.0 * self.wo.dot(wh))
     }
 }
