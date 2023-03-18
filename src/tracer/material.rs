@@ -5,11 +5,14 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::bxdfs;
 use crate::tracer::texture::Texture;
+use crate::tracer::microfacet::MfDistribution;
 
 /// Describes which material an object is made out of
 pub enum Material {
-    /// "Normal material"
+    /// Matte
     Diffuse(Texture),
+    /// Glossy
+    Microfacet(Texture, MfDistribution),
     /// Emits light
     Light(Texture),
     /// Perfect mirror
@@ -32,11 +35,15 @@ impl Material {
     }
 
     /// What is the color at p?
-    pub fn bsdf_f(&self, p: DVec3) -> DVec3 {
+    pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, no: DVec3) -> DVec3 {
+        let xo = ri.origin;
         match self {
-            Self::Diffuse(t) => t.albedo_at(p) * PI.recip(),
-            Self::Isotropic(t) => t.albedo_at(p),
+            Self::Diffuse(t) => t.albedo_at(xo) * PI.recip(),
+            Self::Isotropic(t) => t.albedo_at(xo),
             Self::Mirror | Self::Glass => DVec3::ONE,
+            Self::Microfacet(t, mfd) => {
+                bxdfs::brdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
+            }
             _ => DVec3::ZERO,
         }
     }
@@ -47,6 +54,7 @@ impl Material {
             Self::Glass => bxdfs::bsdf_glass_pdf(ho, ro),
             Self::Mirror => bxdfs::bsdf_mirror_pdf(ho, ro),
             Self::Diffuse(_) => bxdfs::bsdf_diffuse_pdf(ho, ro),
+            Self::Microfacet(_, mfd) => bxdfs::bsdf_microfacet_pdf(ho, ro, mfd),
             Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,
         }

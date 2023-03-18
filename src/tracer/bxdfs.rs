@@ -1,7 +1,41 @@
-use crate::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf};
+use crate::DVec3;
+use crate::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf, MfdPdf};
+use std::f64::consts::PI;
 use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
+use crate::tracer::microfacet::MfDistribution;
+
+/// Shading for microfacet
+pub fn brdf_microfacet(
+    ro: &Ray,
+    ri: &Ray,
+    no: DVec3,
+    color: DVec3,
+    mfd: &MfDistribution,
+) -> DVec3 {
+    let wo = -ro.dir.normalize();
+    let wi = ri.dir.normalize();
+    let wh = (wi + wo).normalize();
+    let ET: f64 = 1.5;
+    let met = 1.0;
+
+    let no_dot_wi = no.dot(wi);
+    let no_dot_wo = no.dot(wo);
+
+    let d = mfd.d(wh, no);
+    let g = mfd.g(wo, no);
+
+    // Fresnel
+    let cos_theta = wo.dot(wh);
+    let fo = ((ET - 1.0) / (ET + 1.0)).powi(2);
+    let f0 = DVec3::splat(fo).lerp(color, met);
+    let f = f0 + (DVec3::ONE - f0) * (1.0 - cos_theta).powi(5);
+
+    let ks = DVec3::ONE;
+
+    color / PI + ks * d * f * g / (4.0 * no_dot_wo * no_dot_wi)
+}
 
 /// Scattering function for diffuse material.
 /// # Arguments
@@ -11,6 +45,12 @@ pub fn bsdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     Some( Box::new(CosPdf::new(xo, no)) )
+}
+
+pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
+                           -> Option<Box<dyn Pdf>> {
+    let no = ho.norm;
+    Some( Box::new(MfdPdf::new(ro, no, *mfd)) )
 }
 
 pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {

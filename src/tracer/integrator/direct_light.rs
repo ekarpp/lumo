@@ -12,7 +12,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                 Some(scatter_pdf) => {
                     match material {
                         Material::Diffuse(_) => {
-                            shadow_ray(scene, &ho, scatter_pdf.as_ref(),
+                            shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
                                        RandomShape::gen_2d(Square))
                         }
                         Material::Glass | Material::Mirror => {

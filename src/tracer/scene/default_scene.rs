@@ -73,9 +73,10 @@ impl Scene {
                 Sphere::new(
                     DVec3::new(0.0, 0.0, -1.0),
                     0.5,
-                    Material::Diffuse(Texture::Solid(
-                        DVec3::new(136.0, 8.0, 8.0) / 255.9
-                    )),
+                    Material::Microfacet(
+                        Texture::Solid(DVec3::new(136.0, 8.0, 8.0) / 255.9),
+                        MfDistribution::Ggx(0.1),
+                    ),
                 ),
                 Sphere::new(
                     DVec3::new(-0.9, 0.0, -1.0),
