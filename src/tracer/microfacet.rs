@@ -1,11 +1,18 @@
 use crate::DVec3;
 use std::f64::consts::PI;
 
+#[derive(Copy, Clone)]
 pub enum MfDistribution {
     Ggx(f64),
 }
 
 impl MfDistribution {
+    pub fn get_roughness(&self) -> f64 {
+        match self {
+            Self::Ggx(roughness) => *roughness,
+        }
+    }
+
     pub fn d(&self, wh: DVec3, no: DVec3) -> f64 {
         match self {
             Self::Ggx(roughness) => {

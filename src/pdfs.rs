@@ -7,6 +7,7 @@ use rand_utils::RandomShape;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
+use crate::tracer::microfacet::MfDistribution;
 
 /// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
 pub trait Pdf {
@@ -168,5 +169,45 @@ impl Pdf for DeltaPdf {
         } else {
             0.0
         }
+    }
+}
+
+pub struct MfdPdf {
+    xo: DVec3,
+    wo: DVec3,
+    no: DVec3,
+    mfd: MfDistribution,
+}
+
+impl MfdPdf {
+    pub fn new(ro: &Ray, no: DVec3, mfd: MfDistribution) -> Self {
+        Self {
+            xo: ro.origin,
+            wo: ro.dir.normalize(),
+            no,
+            mfd,
+        }
+    }
+}
+
+impl Pdf for MfdPdf {
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
+        let roughness = self.mfd.get_roughness();
+        let phi = 2.0 * PI * rand_sq.x;
+        let theta = (roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan();
+
+        let wi = DVec3::new(
+            theta.sin() * phi.cos(),
+            theta.sin() * phi.sin(),
+            theta.cos(),
+        );
+        Ray::new(self.xo, wi)
+    }
+
+    fn value_for(&self, ri: &Ray) -> f64 {
+        let wh = ri.dir.normalize();
+
+        wh.dot(self.no) * self.mfd.d(wh, self.no)
+            / (4.0 * self.wo.dot(wh))
     }
 }
