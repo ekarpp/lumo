@@ -176,6 +176,7 @@ pub struct MfdPdf {
     xo: DVec3,
     wo: DVec3,
     no: DVec3,
+    uvw: Onb,
     mfd: MfDistribution,
 }
 
@@ -184,6 +185,7 @@ impl MfdPdf {
         Self {
             xo: ro.origin,
             wo: ro.dir.normalize(),
+            uvw: Onb::new(no),
             no,
             mfd,
         }
@@ -196,19 +198,22 @@ impl Pdf for MfdPdf {
         let phi = 2.0 * PI * rand_sq.x;
         let theta = (roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan();
 
-        let wi = DVec3::new(
-            theta.sin() * phi.cos(),
-            theta.sin() * phi.sin(),
-            theta.cos(),
+        let wi = self.uvw.to_uvw_basis(
+            DVec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
         );
-        Ray::new(self.xo, wi)
+
+        Ray::new(self.xo, if wi.dot(self.no) < 0.0 { -wi } else { wi })
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir.normalize();
         let wh = (self.wo + wi).normalize();
 
-        if wi.dot(wh) < 0.0 {
+        if wi.dot(self.no) < 0.0 {
             0.0
         } else {
             self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
