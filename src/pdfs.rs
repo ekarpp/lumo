@@ -205,9 +205,14 @@ impl Pdf for MfdPdf {
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
-        let wh = ri.dir.normalize();
+        let wi = ri.dir.normalize();
+        let wh = (self.wo + wi).normalize();
 
-        wh.dot(self.no) * self.mfd.d(wh, self.no)
-            / (4.0 * self.wo.dot(wh))
+        if wi.dot(wh) < 0.0 {
+            0.0
+        } else {
+            self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
+                / (4.0 * self.wo.dot(wh))
+        }
     }
 }

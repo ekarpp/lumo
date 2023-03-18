@@ -24,7 +24,7 @@ pub fn brdf_microfacet(
     let no_dot_wo = no.dot(wo);
 
     let d = mfd.d(wh, no);
-    let g = mfd.g(wo, no);
+    let g = mfd.g(wo, wi, no);
 
     // Fresnel
     let cos_theta = wo.dot(wh);
@@ -32,9 +32,7 @@ pub fn brdf_microfacet(
     let f0 = DVec3::splat(fo).lerp(color, met);
     let f = f0 + (DVec3::ONE - f0) * (1.0 - cos_theta).powi(5);
 
-    let ks = DVec3::ONE;
-
-    color / PI + ks * d * f * g / (4.0 * no_dot_wo * no_dot_wi)
+    (DVec3::ONE - f) * color / PI + d * f * g / (4.0 * no_dot_wo * no_dot_wi)
 }
 
 /// Scattering function for diffuse material.

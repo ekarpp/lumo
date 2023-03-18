@@ -26,18 +26,18 @@ impl MfDistribution {
         }
     }
 
-    pub fn g(&self, wo: DVec3, no: DVec3) -> f64 {
-        1.0 / (1.0 + self.lambda(wo, no))
+    pub fn g(&self, wo: DVec3, wi: DVec3, no: DVec3) -> f64 {
+        1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
     }
 
-    fn lambda(&self, wo: DVec3, no: DVec3) -> f64 {
+    fn lambda(&self, w: DVec3, no: DVec3) -> f64 {
         match self {
             Self::Ggx(roughness) => {
-                let wo_dot_no2 = wo.dot(no).powi(2);
-                let tan_wo = (1.0 - wo_dot_no2) / wo_dot_no2;
+                let w_dot_no2 = w.dot(no).powi(2);
+                let tan_w = (1.0 - w_dot_no2) / w_dot_no2;
                 let roughness2 = roughness * roughness;
 
-                ((1.0 + roughness2 * tan_wo).sqrt() - 1.0) / 2.0
+                ((1.0 + roughness2 * tan_w).sqrt() - 1.0) / 2.0
             }
         }
     }
