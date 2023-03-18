@@ -47,7 +47,9 @@ fn shadow_ray(
     let material = ho.object.material();
 
     match material {
-        Material::Diffuse(_) => {
+        Material::Light(_) | Material::Isotropic(_) | Material::Glass |
+        Material::Mirror | Material::Blank => DVec3::ZERO,
+        _ => {
             let xo = ho.p;
             let no = ho.norm;
             let light = scene.uniform_random_light();
@@ -69,6 +71,5 @@ fn shadow_ray(
                 }
             }
         }
-        _ => DVec3::ZERO,
     }
 }

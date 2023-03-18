@@ -11,7 +11,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                 None => material.emit(&ho),
                 Some(scatter_pdf) => {
                     match material {
-                        Material::Diffuse(_) => {
+                        Material::Diffuse(_) | Material::Microfacet(..) => {
                             shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
                                        RandomShape::gen_2d(Square))
                         }
