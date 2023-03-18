@@ -17,7 +17,6 @@ pub fn brdf_microfacet(
     let wo = -ro.dir.normalize();
     let wi = ri.dir.normalize();
     let wh = (wi + wo).normalize();
-    let ET: f64 = 1.5;
     let met = 1.0;
 
     let no_dot_wi = no.dot(wi);
@@ -28,8 +27,8 @@ pub fn brdf_microfacet(
 
     // Fresnel
     let cos_theta = wo.dot(wh);
-    let fo = ((ET - 1.0) / (ET + 1.0)).powi(2);
-    let f0 = DVec3::splat(fo).lerp(color, met);
+    let f0 = (ETA - 1.0) / (ETA + 1.0);
+    let f0 = DVec3::splat(f0 * f0).lerp(color, met);
     let f = f0 + (DVec3::ONE - f0) * (1.0 - cos_theta).powi(5);
 
     (DVec3::ONE - f) * color / PI + d * f * g / (4.0 * no_dot_wo * no_dot_wi)
