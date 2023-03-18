@@ -214,7 +214,7 @@ impl Pdf for MfdPdf {
         let wi = ri.dir.normalize();
         let wh = (self.wo + wi).normalize();
 
-        self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
-            / (4.0 * self.wo.dot(wh))
+        self.mfd.d(wh, self.no) * wh.dot(self.no).abs() / (4.0 * self.wo.dot(wh))
+            + wi.dot(self.no).max(0.0) / PI
     }
 }
