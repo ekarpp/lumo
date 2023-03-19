@@ -39,7 +39,12 @@
 <a href="#39" id="39">39</a>
 <a href="#40" id="40">40</a>
 <a href="#41" id="41">41</a>
-</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+</pre><pre class="rust"><code><span class="attr">#![allow(unused_variables, dead_code)]
+</span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>AxisAlignedBoundingBox {
     ax_min: DVec3,
@@ -53,11 +58,9 @@
 }
 
 <span class="kw">impl </span>Object <span class="kw">for </span>AxisAlignedBoundingBox {
-    <span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 { p }
-    <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span>Material::Blank }
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 { <span class="number">0.0 </span>}
+    <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="macro">unimplemented!</span>() }
 
-    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
+    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, t_min: f64, t_max: f64) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>ts = -f64::INFINITY;
         <span class="kw">let </span><span class="kw-2">mut </span>te = f64::INFINITY;
         <span class="kw">let </span>ro_min = (<span class="self">self</span>.ax_min - r.origin).to_array();
@@ -75,10 +78,15 @@
             <span class="prelude-val">None
         </span>} <span class="kw">else </span>{
             <span class="kw">let </span>t = <span class="kw">if </span>ts &gt; EPSILON { ts } <span class="kw">else </span>{ te };
-            Hit::new(t, <span class="self">self</span>, r)
+            Hit::new(t, <span class="self">self</span>, r.at(t), DVec3::ZERO)
         }
     }
 
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, _xo: DVec3, _rand_sq: DVec2) -&gt; Ray {
+        <span class="macro">unimplemented!</span>()
+    }
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">unimplemented!</span>() }
+    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, _ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 { <span class="macro">unimplemented!</span>() }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rust_tracer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

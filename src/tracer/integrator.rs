@@ -37,12 +37,19 @@ impl Integrator {
 }
 
 /// Shoots a shadow ray towards random light from `ho`.
-fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
-              -> DVec3 {
+fn shadow_ray(
+    scene: &Scene,
+    ro: &Ray,
+    ho: &Hit,
+    scatter_pdf: &dyn Pdf,
+    rand_sq: DVec2
+) -> DVec3 {
     let material = ho.object.material();
 
     match material {
-        Material::Diffuse(_) => {
+        Material::Light(_) | Material::Isotropic(_) | Material::Glass |
+        Material::Mirror | Material::Blank => DVec3::ZERO,
+        _ => {
             let xo = ho.p;
             let no = ho.norm;
             let light = scene.uniform_random_light();
@@ -54,8 +61,8 @@ fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
             /* move this to object PDF */
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
-                Some(_hi) => {
-                    material.bsdf_f(xo)
+                Some(_) => {
+                    material.bsdf_f(ro, &ri, no)
                         * no.dot(wi.normalize()).abs()
                         /* TODO: power heuristic, Veach & Guibas 95 */
                         * 0.5
@@ -64,6 +71,5 @@ fn shadow_ray(scene: &Scene, ho: &Hit, scatter_pdf: &dyn Pdf, rand_sq: DVec2)
                 }
             }
         }
-        _ => DVec3::ZERO,
     }
 }

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["LIGHT_R",""]],"struct":[["Scene","Defines a scene in 3D space"]]};
+window.SIDEBAR_ITEMS = {"mod":[["box_scene","“Cornell Box”"],["default_scene","Scene showing capabilities of the renderer"]],"struct":[["Scene","Defines a scene in 3D space"]]};

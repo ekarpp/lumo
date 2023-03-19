@@ -148,14 +148,14 @@
     }
 
     <span class="kw">fn </span>_scale_turb(<span class="kw-2">&amp;</span><span class="self">self</span>, px: f64, t: f64) -&gt; f64 {
-        <span class="number">1.0 </span>- (<span class="number">0.5 </span>+ <span class="number">0.5</span><span class="kw-2">*</span>(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powf(<span class="number">6.0</span>)
+        <span class="number">1.0 </span>- (<span class="number">0.5 </span>+ <span class="number">0.5</span><span class="kw-2">*</span>(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(<span class="number">6</span>)
     }
 
-    <span class="kw">fn </span>turbulence(<span class="kw-2">&amp;</span><span class="self">self</span>, acc: f64, p: DVec3, depth: usize) -&gt; f64 {
+    <span class="kw">fn </span>turbulence(<span class="kw-2">&amp;</span><span class="self">self</span>, acc: f64, p: DVec3, depth: i32) -&gt; f64 {
         <span class="kw">if </span>depth &gt;= PERLIN_OCTAVES {
             <span class="kw">return </span>acc;
         }
-        <span class="kw">let </span>w = PERLIN_GAIN.powf(depth <span class="kw">as </span>f64);
+        <span class="kw">let </span>w = PERLIN_GAIN.powi(depth);
 
         <span class="self">self</span>.turbulence(acc + w<span class="kw-2">*</span><span class="self">self</span>.noise_at(p).abs(), <span class="number">2.0 </span>* p, depth + <span class="number">1</span>)
     }

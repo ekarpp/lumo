@@ -153,10 +153,7 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Ray tracer. WIP
-
 </span><span class="kw">use </span>glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3, DQuat}};
 <span class="kw">use </span><span class="kw">crate</span>::image::Image;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::scene::Scene;
@@ -269,7 +266,7 @@
     <span class="kw">let </span>scene = <span class="kw">if </span>cli_args.boxx {
         Scene::box_scene(fl)
     } <span class="kw">else </span>{
-        Scene::default()
+        Scene::default_scene()
     };
     <span class="kw">let </span>cam = Camera::new(
         img_width <span class="kw">as </span>f64 / img_height <span class="kw">as </span>f64,
@@ -293,8 +290,7 @@
         <span class="kw-2">&amp;</span>scene,
     );
     <span class="kw">match </span>start_img.elapsed() {
-        <span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">println!</span>(<span class="string">&quot;rendered scene with {} objects in {v:?}&quot;</span>,
-                          scene.size()),
+        <span class="prelude-val">Ok</span>(v) =&gt; <span class="macro">println!</span>(<span class="string">&quot;rendered scene in {v:?}&quot;</span>),
         <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">println!</span>(<span class="string">&quot;rendering done, error measuring duration {e:?}&quot;</span>),
     }
 

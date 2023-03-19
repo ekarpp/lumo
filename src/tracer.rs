@@ -16,3 +16,5 @@ pub mod texture;
 pub mod material;
 /// Integrator to estimate the irradiance at each point
 pub mod integrator;
+/// MFDistributio
+pub mod microfacet;

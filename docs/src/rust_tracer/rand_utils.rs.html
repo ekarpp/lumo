@@ -209,7 +209,7 @@
     }
 
     <span class="doccomment">/// Uniform random point IN unit sphere
-    </span><span class="kw">fn </span>square_to_sphere(rand_sq: DVec2) -&gt; DVec3 {
+    </span><span class="kw">pub fn </span>square_to_sphere(rand_sq: DVec2) -&gt; DVec3 {
         <span class="kw">let </span>z = <span class="number">1.0 </span>- <span class="number">2.0 </span>* rand_sq.y;
         <span class="kw">let </span>r = (<span class="number">1.0 </span>- z * z).sqrt();
         <span class="kw">let </span>phi = <span class="number">2.0 </span>* PI * rand_sq.x;

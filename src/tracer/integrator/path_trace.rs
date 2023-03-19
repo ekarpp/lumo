@@ -23,7 +23,6 @@ pub fn integrate(
                     DVec3::ZERO
                 },
                 Some(scatter_pdf) => {
-                    let xo = ho.p;
                     let no = ho.norm;
                     let ri = scatter_pdf.sample_ray(RandomShape::gen_2d(Square));
                     let wi = ri.dir;
@@ -39,9 +38,9 @@ pub fn integrate(
                         no.dot(wi.normalize()).abs()
                     };
 
-                    shadow_ray(scene, &ho, scatter_pdf.as_ref(),
+                    shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
                                RandomShape::gen_2d(Square))
-                        + material.bsdf_f(xo)
+                        + material.bsdf_f(ro, &ri, no)
                         * cos_theta
                         * integrate(scene, &ri, depth + 1, is_specular)
                         / (scatter_pdf.value_for(&ri)

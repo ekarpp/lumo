@@ -10,6 +10,7 @@ use crate::tracer::texture::Texture;
 use crate::tracer::material::Material;
 use crate::tracer::object::{Object, plane::Plane, rectangle::Rectangle};
 use crate::tracer::object::{cuboid::Cuboid, sphere::Sphere};
+use crate::tracer::microfacet::MfDistribution;
 
 #[cfg(test)]
 mod scene_tests;

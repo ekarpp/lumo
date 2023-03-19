@@ -19,6 +19,7 @@ pub fn _render(
     scene: &Scene,
 ) -> Vec<DVec3> {
     let integrator = Integrator::PathTrace;
+    //let integrator = Integrator::DirectLight;
     (0..img_height).into_par_iter().flat_map(|y: usize| {
         (0..img_width).map(|x: usize| {
             let u = x as f64 * px_width;

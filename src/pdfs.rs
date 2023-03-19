@@ -7,6 +7,7 @@ use rand_utils::RandomShape;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
+use crate::tracer::microfacet::MfDistribution;
 
 /// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
 pub trait Pdf {
@@ -16,11 +17,9 @@ pub trait Pdf {
     /// * `rand_sq` - Random point on the unit square.
     fn sample_ray(&self, rand_sq: DVec2) -> Ray;
     /// Computes the probability of the given direction.
-    /// CAN REFACTORIZE THIS TO JUST TAKE THE GENERATED RAY
     ///
     /// # Arguments
-    /// * `wi` - Direction to compute probability for
-    /// * `hi` - Optional hit on the object direction sampled towards
+    /// * `ri` - Ray to compute probability for
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
@@ -59,6 +58,7 @@ impl Pdf for CosPdf {
     }
 }
 
+/// TODO
 pub struct IsotropicPdf {
     xo: DVec3,
 }
@@ -84,8 +84,6 @@ impl Pdf for IsotropicPdf {
     }
 }
 
-/// WITH OBJECT PDF HAVE TO MAKE SURE THAT IT HITS. SHOULD REFACTOR IT HERE,
-/// TO PDF VAL CALC.
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
@@ -113,39 +111,6 @@ impl Pdf for ObjectPdf<'_> {
     }
 }
 
-/*
-/// Combination of multiple PDFs. Chooses one uniformly at random. BROKEN.
-pub struct MixedPdf {
-    /// Vector of the PDFs to choose from
-    pdfs: Vec<Box<dyn Pdf>>,
-}
-
-impl MixedPdf {
-    pub fn new(pdfs: Vec<Box<dyn Pdf>>) -> Self {
-        Self {
-            pdfs,
-        }
-    }
-
-    fn uniform_choose(&self) -> &Box<dyn Pdf> {
-        let idx = (self.pdfs.len() as f64 * rand_utils::rand_f64())
-            .floor() as usize;
-        &self.pdfs[idx]
-    }
-}
-
-impl Pdf for MixedPdf {
-    fn generate_dir(&self, rand_sq: DVec2) -> DVec3 {
-        self.uniform_choose().generate_dir(rand_sq)
-    }
-
-    fn pdf_val(&self, wi: DVec3) -> f64 {
-        self.pdfs.iter().fold(0.0, |acc, pdf| acc + pdf.pdf_val(wi))
-            / self.pdfs.len() as f64
-    }
-}
-*/
-
 /// Delta distribution PDF. Always samples the same ray. For glass/mirror.
 pub struct DeltaPdf {
     r: Ray,
@@ -172,5 +137,63 @@ impl Pdf for DeltaPdf {
         } else {
             0.0
         }
+    }
+}
+
+/// PDF for microfacet distribution.
+pub struct MfdPdf {
+    /// Point of impact
+    xo: DVec3,
+    /// Direction from camera to point of impact
+    wo: DVec3,
+    /// Macrosurface normal
+    no: DVec3,
+    /// ONB for macrosurface normal
+    uvw: Onb,
+    /// The microfacet distribution of the surface
+    mfd: MfDistribution,
+}
+
+impl MfdPdf {
+    pub fn new(xo: DVec3, wo: DVec3, no: DVec3, mfd: MfDistribution) -> Self {
+        Self {
+            xo,
+            wo: wo.normalize(),
+            uvw: Onb::new(no),
+            no,
+            mfd,
+        }
+    }
+}
+
+impl Pdf for MfdPdf {
+    /// Sample microsurface normal from the distribution. Mirror direction from
+    /// camera around the normal. Better and more complex method of sampling
+    /// only visible normals due to Heitz 2014.
+    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
+        let phi = 2.0 * PI * rand_sq.x;
+        let theta = self.mfd.sample_theta(rand_sq.y);
+
+        let wm = self.uvw.to_uvw_basis(
+            DVec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
+        ).normalize();
+
+        let wi = self.wo - 2.0 * self.wo.dot(wm) * wm;
+
+
+        Ray::new(self.xo, -wi)
+    }
+
+    /// Read it directly from the NFD and do change of variables
+    /// from `wh` to `wi`.
+    fn value_for(&self, ri: &Ray) -> f64 {
+        let wi = ri.dir.normalize();
+        let wh = (self.wo + wi).normalize();
+
+        self.mfd.d(wh, self.no) * wh.dot(self.no).abs() / (4.0 * self.wo.dot(wh))
     }
 }

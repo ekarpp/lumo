@@ -36,8 +36,9 @@ impl Scene {
                         * DAffine3::from_scale(
                             DVec3::new(light_xy, 2.0*light_xy, light_xy))
                         * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::Diffuse(
-                        Texture::Solid(DVec3::new(0.0, 0.9, 0.0))
+                    Material::Microfacet(
+                        Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
+                        MfDistribution::Ggx(0.05),
                     )
                 ),
                 /* roof */

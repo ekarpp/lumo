@@ -69,9 +69,17 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub struct </span>Rectangle {
+<span class="doccomment">/// Rectangle defined by two triangles
+</span><span class="kw">pub struct </span>Rectangle {
     triangles: (Triangle, Triangle),
     material: Material,
 }
@@ -118,26 +126,32 @@
 }
 
 <span class="kw">impl </span>Object <span class="kw">for </span>Rectangle {
-    <span class="kw">fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="number">2 </span>}
-
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 { <span class="number">2.0 </span>* <span class="self">self</span>.triangles.<span class="number">0</span>.area() }
-
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
-        <span class="self">self</span>.choose_triangle().sample_towards(ho, rand_sq)
-    }
-
-    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.choose_triangle().sample_on(rand_sq)
-    }
-
-    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
-        <span class="self">self</span>.triangles.<span class="number">0</span>.hit(r).or_else(|| <span class="self">self</span>.triangles.<span class="number">1</span>.hit(r))
+    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, t_min: f64, t_max: f64) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
+        <span class="self">self</span>.triangles.<span class="number">0</span>.hit(r, t_min, t_max)
+            .or_else(|| <span class="self">self</span>.triangles.<span class="number">1</span>.hit(r, t_min, t_max))
             .map(|<span class="kw-2">mut </span>h| {
                 h.object = <span class="self">self</span>;
                 h
             })
+    }
+
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, xo: DVec3, rand_sq: DVec2) -&gt; Ray {
+        <span class="self">self</span>.choose_triangle().sample_towards(xo, rand_sq)
+    }
+
+    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="comment">/* ray can hit either of the triangles. sum pdf from both
+         * (if miss, pdf = 0) and divide by two. (rectangle = two identical
+         * triangles =&gt; area two times bigger) */
+        </span>(<span class="self">self</span>.triangles.<span class="number">0</span>.sample_towards_pdf(ri)
+         + <span class="self">self</span>.triangles.<span class="number">1</span>.sample_towards_pdf(ri))
+            / <span class="number">2.0
+    </span>}
+
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="self">self</span>.choose_triangle().sample_on(rand_sq)
     }
 }
 </code></pre></div>

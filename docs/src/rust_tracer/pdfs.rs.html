@@ -122,129 +122,279 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
 </pre><pre class="rust"><code><span class="attr">#![allow(dead_code)]
 </span><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>std::f64::consts::PI;
 <span class="kw">use </span><span class="kw">crate</span>::onb::Onb;
 <span class="kw">use </span><span class="kw">crate</span>::rand_utils;
 <span class="kw">use </span>rand_utils::RandomShape;
-<span class="kw">use </span><span class="kw">crate</span>::tracer::hit::Hit;
+<span class="kw">use </span><span class="kw">crate</span>::consts::EPSILON;
+<span class="kw">use </span><span class="kw">crate</span>::tracer::ray::Ray;
+<span class="kw">use </span><span class="kw">crate</span>::tracer::object::Object;
+<span class="kw">use </span><span class="kw">crate</span>::tracer::microfacet::MfDistribution;
 
-<span class="kw">pub trait </span>Pdf {
+<span class="doccomment">/// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
+</span><span class="kw">pub trait </span>Pdf {
     <span class="doccomment">/// Generates a random direction according to the sampling strategy
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
-    </span><span class="kw">fn </span>generate_dir(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3;
-    <span class="doccomment">/// Computes the probability of the given direction
+    </span><span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; Ray;
+    <span class="doccomment">/// Computes the probability of the given direction.
     ///
     /// # Arguments
-    /// * `wi` - Direction to compute probability for
-    /// * `ho` - Hit on &quot;from&quot; object
-    </span><span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, wi: DVec3, ho: <span class="kw-2">&amp;</span>Hit) -&gt; f64;
+    /// * `ri` - Ray to compute probability for
+    </span><span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64;
 }
 
 <span class="doccomment">/// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
 </span><span class="kw">pub struct </span>CosPdf {
+    xo: DVec3,
     uvw: Onb,
 }
 
 <span class="kw">impl </span>CosPdf {
     <span class="doccomment">/// # Arguments
     ///
-    /// * `w` - Normal at the point of sampling directions.
-    </span><span class="kw">pub fn </span>new(w: DVec3) -&gt; <span class="self">Self </span>{
+    /// * `xo` - Point where sampling is done.
+    /// * `no` - Normal at the point of sampling directions.
+    </span><span class="kw">pub fn </span>new(xo: DVec3, no: DVec3) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            uvw: Onb::new(w),
+            xo,
+            uvw: Onb::new(no),
         }
     }
 }
 
 <span class="kw">impl </span>Pdf <span class="kw">for </span>CosPdf {
-    <span class="kw">fn </span>generate_dir(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.uvw.to_uvw_basis(
+    <span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; Ray {
+        <span class="kw">let </span>wi = <span class="self">self</span>.uvw.to_uvw_basis(
             RandomShape::gen_3d(RandomShape::CosHemisphere(rand_sq))
-        )
+        );
+
+        Ray::new(<span class="self">self</span>.xo, wi)
     }
 
-    <span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, wi: DVec3, _ho: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
+    <span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="kw">let </span>wi = ri.dir;
         <span class="kw">let </span>cos_theta = <span class="self">self</span>.uvw.w.dot(wi.normalize());
         <span class="kw">if </span>cos_theta &gt; <span class="number">0.0 </span>{ cos_theta * PI.recip() } <span class="kw">else </span>{ <span class="number">0.0 </span>}
     }
 }
-<span class="comment">/*
-/// Randomly samples a direction towards a point on the object that is visible
-pub struct ObjectPdf&lt;&#39;a&gt; {
-    /// Object to do sampling from
-    object: &amp;&#39;a Box&lt;dyn Object&gt;,
-    /// Point from where the object should be visible
-    p: DVec3,
+
+<span class="doccomment">/// TODO
+</span><span class="kw">pub struct </span>IsotropicPdf {
+    xo: DVec3,
 }
 
-impl&lt;&#39;a&gt; ObjectPdf&lt;&#39;a&gt; {
-    pub fn new(object: &amp;&#39;a Box&lt;dyn Object&gt;, p: DVec3) -&gt; Self {
-        Self {
+<span class="kw">impl </span>IsotropicPdf {
+    <span class="kw">pub fn </span>new(xo: DVec3) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            xo,
+        }
+    }
+}
+
+<span class="kw">impl </span>Pdf <span class="kw">for </span>IsotropicPdf {
+    <span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; Ray {
+        <span class="kw">let </span>wi = RandomShape::square_to_sphere(rand_sq);
+        Ray::new(<span class="self">self</span>.xo, wi)
+    }
+
+    <span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, _ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="kw">let </span>d: f64 = <span class="number">0.1</span>;<span class="comment">//hi.object.density();
+        // hi.t = 1.5
+        </span>d * (-d * <span class="number">1.5</span>).exp()
+    }
+}
+
+<span class="doccomment">/// Randomly samples a direction towards a point on the object that is visible
+</span><span class="kw">pub struct </span>ObjectPdf&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// Object to do sampling from
+    </span>object: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Object,
+    <span class="doccomment">/// Point from where the object should be visible
+    </span>xo: DVec3,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ObjectPdf&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub fn </span>new(object: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw">dyn </span>Object, xo: DVec3) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
             object,
-            p,
+            xo,
          }
     }
 }
 
-impl Pdf for ObjectPdf&lt;&#39;_&gt; {
-    fn generate_dir(&amp;self, rand_sq: DVec2) -&gt; DVec3 {
-        self.object.sample_towards(self.p, rand_sq)
+<span class="kw">impl </span>Pdf <span class="kw">for </span>ObjectPdf&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; Ray {
+        <span class="self">self</span>.object.sample_towards(<span class="self">self</span>.xo, rand_sq)
     }
 
-    fn pdf_val(&amp;self, dir: DVec3, h: &amp;Hit) -&gt; f64 {
-        self.object.sample_towards_pdf(self.p, dir, h)
+    <span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="self">self</span>.object.sample_towards_pdf(ri)
     }
 }
-*/
-</span><span class="doccomment">/// Combination of multiple PDFs. Chooses one uniformly at random. BROKEN.
-</span><span class="kw">pub struct </span>MixedPdf {
-    <span class="doccomment">/// Vector of the PDFs to choose from
-    </span>pdfs: Vec&lt;Box&lt;<span class="kw">dyn </span>Pdf&gt;&gt;,
+
+<span class="doccomment">/// Delta distribution PDF. Always samples the same ray. For glass/mirror.
+</span><span class="kw">pub struct </span>DeltaPdf {
+    r: Ray,
 }
 
-<span class="kw">impl </span>MixedPdf {
-    <span class="kw">pub fn </span>new(pdfs: Vec&lt;Box&lt;<span class="kw">dyn </span>Pdf&gt;&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>DeltaPdf {
+    <span class="kw">pub fn </span>new(xo: DVec3, wi: DVec3) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            pdfs,
+            r: Ray::new(xo, wi),
         }
     }
+}
 
-    <span class="kw">fn </span>uniform_choose(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Box&lt;<span class="kw">dyn </span>Pdf&gt; {
-        <span class="kw">let </span>idx = (<span class="self">self</span>.pdfs.len() <span class="kw">as </span>f64 * rand_utils::rand_f64())
-            .floor() <span class="kw">as </span>usize;
-        <span class="kw-2">&amp;</span><span class="self">self</span>.pdfs[idx]
+<span class="kw">impl </span>Pdf <span class="kw">for </span>DeltaPdf {
+    <span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; Ray {
+        <span class="comment">// lazy
+        </span>Ray::new(<span class="self">self</span>.r.origin, <span class="self">self</span>.r.dir)
+    }
+
+    <span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="kw">let </span>wi = ri.dir;
+        <span class="kw">if </span>wi.normalize().dot(<span class="self">self</span>.r.dir.normalize()).abs() &gt;= <span class="number">1.0 </span>- EPSILON {
+            <span class="number">1.0
+        </span>} <span class="kw">else </span>{
+            <span class="number">0.0
+        </span>}
     }
 }
 
-<span class="kw">impl </span>Pdf <span class="kw">for </span>MixedPdf {
-    <span class="kw">fn </span>generate_dir(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.uniform_choose().generate_dir(rand_sq)
-    }
+<span class="doccomment">/// PDF for microfacet distribution.
+</span><span class="kw">pub struct </span>MfdPdf {
+    <span class="doccomment">/// Point of impact
+    </span>xo: DVec3,
+    <span class="doccomment">/// Direction from camera to point of impact
+    </span>wo: DVec3,
+    <span class="doccomment">/// Macrosurface normal
+    </span>no: DVec3,
+    <span class="doccomment">/// ONB for macrosurface normal
+    </span>uvw: Onb,
+    <span class="doccomment">/// The microfacet distribution of the surface
+    </span>mfd: MfDistribution,
+}
 
-    <span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, wi: DVec3, ho: <span class="kw-2">&amp;</span>Hit) -&gt; f64 {
-        <span class="self">self</span>.pdfs.iter().fold(<span class="number">0.0</span>, |acc, pdf| acc + pdf.pdf_val(wi, ho))
-            / <span class="self">self</span>.pdfs.len() <span class="kw">as </span>f64
+<span class="kw">impl </span>MfdPdf {
+    <span class="kw">pub fn </span>new(xo: DVec3, wo: DVec3, no: DVec3, mfd: MfDistribution) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            xo,
+            wo: wo.normalize(),
+            uvw: Onb::new(no),
+            no,
+            mfd,
+        }
     }
 }
 
-<span class="doccomment">/// Unit PDF with delta distribution. Glass might want own PDF?
-</span><span class="kw">pub struct </span>UnitPdf {}
+<span class="kw">impl </span>Pdf <span class="kw">for </span>MfdPdf {
+    <span class="doccomment">/// Sample microsurface normal from the distribution. Mirror direction from
+    /// camera around the normal. Better and more complex method of sampling
+    /// only visible normals due to Heitz 2014.
+    </span><span class="kw">fn </span>sample_ray(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; Ray {
+        <span class="kw">let </span>phi = <span class="number">2.0 </span>* PI * rand_sq.x;
+        <span class="kw">let </span>theta = <span class="self">self</span>.mfd.sample_theta(rand_sq.y);
 
-<span class="kw">impl </span>UnitPdf {
-    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{}
+        <span class="kw">let </span>wm = <span class="self">self</span>.uvw.to_uvw_basis(
+            DVec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
+        ).normalize();
+
+        <span class="kw">let </span>wi = <span class="self">self</span>.wo - <span class="number">2.0 </span>* <span class="self">self</span>.wo.dot(wm) * wm;
+
+
+        Ray::new(<span class="self">self</span>.xo, -wi)
     }
-}
 
-<span class="kw">impl </span>Pdf <span class="kw">for </span>UnitPdf {
-    <span class="comment">/* just make sure it never gets called */
-    </span><span class="kw">fn </span>generate_dir(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">todo!</span>() }
+    <span class="doccomment">/// Read it directly from the NFD and do change of variables
+    /// from `wh` to `wi`.
+    </span><span class="kw">fn </span>value_for(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="kw">let </span>wi = ri.dir.normalize();
+        <span class="kw">let </span>wh = (<span class="self">self</span>.wo + wi).normalize();
 
-    <span class="kw">fn </span>pdf_val(<span class="kw-2">&amp;</span><span class="self">self</span>, _wi: DVec3, _ho: <span class="kw-2">&amp;</span>Hit) -&gt; f64 { <span class="number">1.0 </span>}
+        <span class="self">self</span>.mfd.d(wh, <span class="self">self</span>.no) * wh.dot(<span class="self">self</span>.no).abs() / (<span class="number">4.0 </span>* <span class="self">self</span>.wo.dot(wh))
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rust_tracer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

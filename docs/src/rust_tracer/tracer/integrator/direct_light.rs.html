@@ -23,6 +23,11 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>integrate(scene: <span class="kw-2">&amp;</span>Scene, ro: <span class="kw-2">&amp;</span>Ray) -&gt; DVec3 {
@@ -32,18 +37,23 @@
         <span class="prelude-val">None </span>=&gt; DVec3::new(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">0.0</span>),
         <span class="prelude-val">Some</span>(ho) =&gt; {
             <span class="kw">let </span>material = ho.object.material();
-            <span class="kw">match </span>material {
-                Material::Diffuse(<span class="kw">_</span>) =&gt; {
-                    shadow_ray(scene, <span class="kw-2">&amp;</span>ho, RandomShape::gen_2d(Square))
-                }
-                Material::Glass | Material::Mirror =&gt; {
-                    <span class="kw">match </span>material.bsdf(<span class="kw-2">&amp;</span>ho, ro, RandomShape::gen_2d(Square)) {
-                        <span class="prelude-val">Some</span>((ri, pdf_s)) =&gt; integrate(scene, <span class="kw-2">&amp;</span>ri) / pdf_s,
-                        <span class="prelude-val">None </span>=&gt; DVec3::ZERO,
+            <span class="kw">match </span>material.bsdf_pdf(<span class="kw-2">&amp;</span>ho, ro) {
+                <span class="prelude-val">None </span>=&gt; material.emit(<span class="kw-2">&amp;</span>ho),
+                <span class="prelude-val">Some</span>(scatter_pdf) =&gt; {
+                    <span class="kw">match </span>material {
+                        Material::Diffuse(<span class="kw">_</span>) | Material::Microfacet(..) =&gt; {
+                            shadow_ray(scene, ro, <span class="kw-2">&amp;</span>ho, scatter_pdf.as_ref(),
+                                       RandomShape::gen_2d(Square))
+                        }
+                        Material::Glass | Material::Mirror =&gt; {
+                            <span class="kw">let </span>ri = scatter_pdf.sample_ray(
+                                RandomShape::gen_2d(Square));
+                            integrate(scene, <span class="kw-2">&amp;</span>ri)
+                                / scatter_pdf.value_for(<span class="kw-2">&amp;</span>ri)
+                        }
+                        <span class="kw">_ </span>=&gt; DVec3::ZERO,
                     }
                 }
-                <span class="kw">_ </span>=&gt; material.emit(<span class="kw-2">&amp;</span>ho),
-
             }
         }
     }
