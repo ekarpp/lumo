@@ -28,7 +28,7 @@ pub enum Integrator {
 impl Integrator {
     pub fn integrate(&self, s: &Scene, r: &Ray) -> DVec3 {
         match self {
-            Self::PathTrace => path_trace::integrate(s, r, 0, true),
+            Self::PathTrace => path_trace::integrate(s, r, true),
             Self::DirectLight => direct_light::integrate(s, r),
             Self::BDPathTrace => bd_path_trace::integrate(s, r),
         }

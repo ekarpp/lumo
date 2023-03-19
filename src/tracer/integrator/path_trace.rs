@@ -1,16 +1,6 @@
 use super::*;
 
-pub fn integrate(
-             scene: &Scene,
-             ro: &Ray,
-             depth: usize,
-             last_specular: bool
-) -> DVec3 {
-    // TODO: fix depth > 1
-    if depth > 1 && rand_utils::rand_f64() < PATH_TRACE_RR {
-        return DVec3::ZERO;
-    }
-
+pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
     match scene.hit(ro) {
         None => DVec3::new(0.0, 0.0, 1.0),
         Some(ho) => {
@@ -23,6 +13,13 @@ pub fn integrate(
                     DVec3::ZERO
                 },
                 Some(scatter_pdf) => {
+                    let shadow = shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
+                                            rand_utils::unit_square());
+
+                    if rand_utils::rand_f64() < PATH_TRACE_RR {
+                        return shadow;
+                    }
+
                     let no = ho.norm;
                     let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
                     let wi = ri.dir;
@@ -37,11 +34,9 @@ pub fn integrate(
                         no.dot(wi.normalize()).abs()
                     };
 
-                    shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
-                               rand_utils::unit_square())
-                        + material.bsdf_f(ro, &ri, no)
+                    shadow + material.bsdf_f(ro, &ri, no)
                         * cos_theta
-                        * integrate(scene, &ri, depth + 1, material.is_specular())
+                        * integrate(scene, &ri, material.is_specular())
                         / (scatter_pdf.value_for(&ri)
                            * (1.0 - PATH_TRACE_RR))
                 }
