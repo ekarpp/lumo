@@ -207,7 +207,8 @@ impl Pdf for MfdPdf {
 
         let wi = self.wo - 2.0 * self.wo.dot(wm) * wm;
 
-        Ray::new(self.xo, wi)
+
+        Ray::new(self.xo, -wi)
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
@@ -215,6 +216,6 @@ impl Pdf for MfdPdf {
         let wh = (self.wo + wi).normalize();
 
         self.mfd.d(wh, self.no) * wh.dot(self.no).abs() / (4.0 * self.wo.dot(wh))
-            + wi.dot(self.no).max(0.0) / PI
+               //+ 0.5 * wi.dot(self.no).max(0.0) / PI
     }
 }

@@ -75,7 +75,7 @@ impl Scene {
                     0.5,
                     Material::Microfacet(
                         Texture::Solid(DVec3::new(136.0, 8.0, 8.0) / 255.9),
-                        MfDistribution::Ggx(0.1),
+                        MfDistribution::Beckmann(0.1),
                     ),
                 ),
                 Sphere::new(

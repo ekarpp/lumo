@@ -32,6 +32,15 @@ impl MfDistribution {
         1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
     }
 
+    pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3, metallic: f64, eta: f64)
+             -> DVec3 {
+        let f0 = (eta - 1.0) / (eta + 1.0);
+        let f0 = DVec3::splat(f0 * f0).lerp(color, metallic);
+
+        let wo_dot_wh = wo.dot(wh);
+        f0 + (DVec3::ONE - f0) * (1.0 - wo_dot_wh).powi(5)
+    }
+
     pub fn sample_theta(&self, rand_f: f64) -> f64 {
         match self {
             Self::Ggx(roughness) => {

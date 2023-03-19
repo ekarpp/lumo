@@ -20,13 +20,8 @@ pub fn brdf_microfacet(
     let met = 1.0;
 
     let d = mfd.d(wh, no);
+    let f = mfd.f(wo, wh, color, met, ETA);
     let g = mfd.g(wo, wi, no);
-
-    // Fresnel
-    let wo_dot_wh = wo.dot(wh);
-    let f0 = (ETA - 1.0) / (ETA + 1.0);
-    let f0 = DVec3::splat(f0 * f0).lerp(color, met);
-    let f = f0 + (DVec3::ONE - f0) * (1.0 - wo_dot_wh).powi(5);
 
     let no_dot_wi = no.dot(wi);
     let no_dot_wo = no.dot(wo);
@@ -48,7 +43,7 @@ pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
                            -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
     let xo = ho.p;
-    let wo = ro.dir;
+    let wo = -ro.dir;
     Some( Box::new(MfdPdf::new(xo, wo, no, *mfd)) )
 }
 
