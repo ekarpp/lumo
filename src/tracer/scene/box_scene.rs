@@ -26,17 +26,9 @@ impl Scene {
                     Material::Mirror,
                 ),
                 Sphere::new(
-                    DVec3::new(-light_xy, yg + 0.5*r, light_z - 0.7*light_xy),
+                    DVec3::new(0.0, yg + r, light_z - light_xy),
                     0.5*r,
                     Material::Glass,
-                ),
-                Sphere::new(
-                    DVec3::new(-light_xy*0.1, yg + 0.75*r, 1.4*light_z),
-                    0.75 * r,
-                    Material::specular(
-                        Texture::Solid(DVec3::new(1.0, 0.647, 0.0)),
-                        0.05,
-                    ),
                 ),
                 Cuboid::new(
                     DAffine3::from_translation(
