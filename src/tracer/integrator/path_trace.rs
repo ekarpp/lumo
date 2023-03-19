@@ -13,8 +13,12 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
                     DVec3::ZERO
                 },
                 Some(scatter_pdf) => {
-                    let shadow = shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
-                                            rand_utils::unit_square());
+                    // jittered sampler
+                    let shadow = JitteredSampler::new(SHADOW_SPLITS)
+                        .fold(DVec3::ZERO, |acc, rand_sq| {
+                            acc + shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
+                                             rand_sq)
+                        }) / SHADOW_SPLITS as f64;
 
                     if rand_utils::rand_f64() < PATH_TRACE_RR {
                         return shadow;

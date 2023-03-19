@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 use crate::{DVec3, DVec2};
 use crate::rand_utils;
+use crate::samplers::JitteredSampler;
 use crate::pdfs::{Pdf, ObjectPdf};
-use crate::consts::PATH_TRACE_RR;
+use crate::consts::{PATH_TRACE_RR, SHADOW_SPLITS};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;

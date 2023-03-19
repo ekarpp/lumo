@@ -9,6 +9,10 @@ pub const ETA: f64 = 1.5;
 /// Computed values are multiplied by the reciprocal of the inverse probability.
 pub const PATH_TRACE_RR: f64 = 0.2;
 
+/// How many shadow rays per vertex in path tracer? Preferably square for
+/// jittered sampler.
+pub const SHADOW_SPLITS: usize = 1;
+
 /*
  * TEXTURES
  */
