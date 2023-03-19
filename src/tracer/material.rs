@@ -46,6 +46,12 @@ impl Material {
         }
     }
 
+    /// Is the material diffuse? I.e. do shadow rays have effect on it.
+    /// (CORRECT TERM?)
+    pub fn is_diffuse(&self) -> bool {
+        matches!(self, Self::Microfacet(..) | Self::Diffuse(_))
+    }
+
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {

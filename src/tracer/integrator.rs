@@ -45,29 +45,27 @@ fn shadow_ray(
 ) -> DVec3 {
     let material = ho.object.material();
 
-    match material {
-        Material::Light(_) | Material::Isotropic(_) | Material::Glass |
-        Material::Mirror | Material::Blank => DVec3::ZERO,
-        _ => {
-            let xo = ho.p;
-            let no = ho.norm;
-            let light = scene.uniform_random_light();
+    if !material.is_diffuse() {
+        DVec3::ZERO
+    } else {
+        let xo = ho.p;
+        let no = ho.norm;
+        let light = scene.uniform_random_light();
 
-            let pdf_light = ObjectPdf::new(light, xo);
-            let ri = pdf_light.sample_ray(rand_sq);
-            let wi = ri.dir;
+        let pdf_light = ObjectPdf::new(light, xo);
+        let ri = pdf_light.sample_ray(rand_sq);
+        let wi = ri.dir;
 
-            /* move this to object PDF */
-            match scene.hit_light(&ri, light) {
-                None => DVec3::ZERO,
-                Some(_) => {
-                    material.bsdf_f(ro, &ri, no)
-                        * no.dot(wi.normalize()).abs()
-                        /* TODO: power heuristic, Veach & Guibas 95 */
-                        * 0.5
-                        / (pdf_light.value_for(&ri)
-                           + scatter_pdf.value_for(&ri))
-                }
+        /* move this to object PDF */
+        match scene.hit_light(&ri, light) {
+            None => DVec3::ZERO,
+            Some(_) => {
+                material.bsdf_f(ro, &ri, no)
+                    * no.dot(wi.normalize()).abs()
+                /* TODO: power heuristic, Veach & Guibas 95 */
+                    * 0.5
+                    / (pdf_light.value_for(&ri)
+                       + scatter_pdf.value_for(&ri))
             }
         }
     }
