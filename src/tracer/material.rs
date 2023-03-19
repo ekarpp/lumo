@@ -37,6 +37,15 @@ impl Material {
         Self::Microfacet(texture, MfDistribution::specular(roughness))
     }
 
+    /// Is the material specular? i.e does it reflect/refract light
+    pub fn is_specular(&self) -> bool {
+        match self {
+            Self::Glass | Self::Mirror => true,
+            Self::Microfacet(_, mfd) => mfd.is_specular(),
+            _ => false,
+        }
+    }
+
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {

@@ -47,18 +47,15 @@ impl MfDistribution {
         Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0))
     }
 
-
-    /// Getter, better way to do this?
-    fn metallicity(&self) -> f64 {
-        match self {
-            Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg.metallicity,
-        }
+    /// might need tuning, send ratio that emittance is multiplied with?
+    pub fn is_specular(&self) -> bool {
+        self.get_config().roughness < 1.0
     }
 
     /// Getter, better way to do this?
-    fn refraction_idx(&self) -> f64 {
+    fn get_config(&self) -> &MicrofacetConfig {
         match self {
-            Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg.refraction_idx,
+            Self::Ggx(cfg) | Self::Beckmann(cfg) => &cfg,
         }
     }
 
@@ -105,8 +102,8 @@ impl MfDistribution {
 
     /// Fresnel term with Schlick's approximation
     pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3) -> DVec3 {
-        let eta = self.refraction_idx();
-        let metallicity = self.metallicity();
+        let eta = self.get_config().refraction_idx;
+        let metallicity = self.get_config().metallicity;
 
         let f0 = (eta - 1.0) / (eta + 1.0);
         let f0 = DVec3::splat(f0 * f0).lerp(color, metallicity);

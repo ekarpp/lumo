@@ -27,12 +27,11 @@ pub fn integrate(
                     let ri = scatter_pdf.sample_ray(RandomShape::gen_2d(Square));
                     let wi = ri.dir;
 
-                    let is_specular = matches!(
-                        material,
-                        Material::Mirror | Material::Glass
-                    );
+                    // tmp, find better way to do this.
+                    let tmp = matches!(material,
+                                       Material::Glass | Material::Mirror);
 
-                    let cos_theta = if is_specular {
+                    let cos_theta = if tmp {
                         1.0
                     } else {
                         no.dot(wi.normalize()).abs()
@@ -42,7 +41,7 @@ pub fn integrate(
                                RandomShape::gen_2d(Square))
                         + material.bsdf_f(ro, &ri, no)
                         * cos_theta
-                        * integrate(scene, &ri, depth + 1, is_specular)
+                        * integrate(scene, &ri, depth + 1, material.is_specular())
                         / (scatter_pdf.value_for(&ri)
                            * (1.0 - PATH_TRACE_RR))
                 }
