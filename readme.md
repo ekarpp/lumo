@@ -4,14 +4,10 @@ Ray tracer written in rust
 
 todo:
 - bidirectional path tracing
-- glass shadows
 - mediums
   - subsurface scattering
-- more materials
-
-nice to haves:
 - acceleration structures
-- cone lights
+  - meshes with kD-trees?
 - custom camera lens
 - DoF
 
