@@ -4,7 +4,7 @@ impl Scene {
     pub fn box_scene(focal_length: f64) -> Self {
         /* y ground */
         let yg = -focal_length;
-        let col = DVec3::new(255.0, 253.0, 208.0) / 255.9;
+        let col = DVec3::splat(0.95);
         let light_z = yg;
         let light_xy = 0.2*focal_length;
         let r = 0.2*focal_length;
@@ -26,15 +26,15 @@ impl Scene {
                     Material::Mirror,
                 ),
                 Sphere::new(
-                    DVec3::new(0.0, yg + 0.5*r, light_z - 2.5*light_xy),
+                    DVec3::new(-light_xy, yg + 0.5*r, light_z - 0.7*light_xy),
                     0.5*r,
                     Material::Glass,
                 ),
                 Sphere::new(
-                    DVec3::new(light_xy, yg + 0.75*r, light_z - light_xy),
+                    DVec3::new(-light_xy*0.1, yg + 0.75*r, 1.4*light_z),
                     0.75 * r,
                     Material::specular(
-                        Texture::Solid(DVec3::new(0.8, 0.6, 0.4)),
+                        Texture::Solid(DVec3::new(1.0, 0.647, 0.0)),
                         0.05,
                     ),
                 ),
@@ -68,7 +68,14 @@ impl Scene {
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Diffuse(Texture::Solid(col)),
+                    Material::metal(
+                        Texture::Checkerboard(
+                            Box::new(Texture::Solid(col)),
+                            Box::new(Texture::Solid(DVec3::new(0.0, 0.0, 0.9))),
+                            2.0,
+                        ),
+                        0.01,
+                    ),
                 ),
                 /* floor extension, can apply texture to other part */
                 Rectangle::new(
