@@ -13,11 +13,11 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                     match material {
                         Material::Diffuse(_) | Material::Microfacet(..) => {
                             shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
-                                       RandomShape::gen_2d(Square))
+                                       rand_utils::unit_square())
                         }
                         Material::Glass | Material::Mirror => {
                             let ri = scatter_pdf.sample_ray(
-                                RandomShape::gen_2d(Square));
+                                rand_utils::unit_square());
                             integrate(scene, &ri)
                                 / scatter_pdf.value_for(&ri)
                         }

@@ -24,7 +24,7 @@ pub fn integrate(
                 },
                 Some(scatter_pdf) => {
                     let no = ho.norm;
-                    let ri = scatter_pdf.sample_ray(RandomShape::gen_2d(Square));
+                    let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
                     let wi = ri.dir;
 
                     // tmp, find better way to do this.
@@ -38,7 +38,7 @@ pub fn integrate(
                     };
 
                     shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
-                               RandomShape::gen_2d(Square))
+                               rand_utils::unit_square())
                         + material.bsdf_f(ro, &ri, no)
                         * cos_theta
                         * integrate(scene, &ri, depth + 1, material.is_specular())

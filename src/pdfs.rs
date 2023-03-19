@@ -3,7 +3,6 @@ use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::onb::Onb;
 use crate::rand_utils;
-use rand_utils::RandomShape;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
@@ -45,7 +44,7 @@ impl CosPdf {
 impl Pdf for CosPdf {
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
         let wi = self.uvw.to_uvw_basis(
-            RandomShape::gen_3d(RandomShape::CosHemisphere(rand_sq))
+            rand_utils::square_to_cos_hemisphere(rand_sq)
         );
 
         Ray::new(self.xo, wi)
@@ -73,7 +72,7 @@ impl IsotropicPdf {
 
 impl Pdf for IsotropicPdf {
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let wi = RandomShape::square_to_sphere(rand_sq);
+        let wi = rand_utils::square_to_sphere(rand_sq);
         Ray::new(self.xo, wi)
     }
 

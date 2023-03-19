@@ -2,7 +2,6 @@ use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
 use std::f64::{INFINITY, consts::PI};
 use crate::onb::Onb;
 use crate::rand_utils;
-use rand_utils::RandomShape;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
