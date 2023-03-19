@@ -6,7 +6,10 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::microfacet::MfDistribution;
 
-/// Shading for microfacet
+/// Shading for microfacet. Computed as diffuse + specular, where (`D`, `F`, `G` values from the microfacet distribution):
+///
+/// `specular = D(wh) * F(wo, wh) * G(wo, wi) / (4.0 * (n • wo) * (n • wi))`
+/// `diffuse = (1 - F(wo, wh)) * albedo / π`
 pub fn brdf_microfacet(
     ro: &Ray,
     ri: &Ray,
@@ -30,15 +33,22 @@ pub fn brdf_microfacet(
 }
 
 /// Scattering function for diffuse material.
+///
 /// # Arguments
-/// * `h` - The hit from which we scatter.
-/// * `r` - Incoming ray to the hit point.
+/// * `ho` - The hit from which we scatter.
+/// * `ro` - Incoming ray to the hit point.
 pub fn bsdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     Some( Box::new(CosPdf::new(xo, no)) )
 }
 
+/// Scattering function for microfacet surfaces
+///
+/// # Arguments
+/// * `ho` - Hit to scatter from
+/// * `ro` - Ray from viewer.
+/// * `mfd` - The microfacet distribution of the surface
 pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
                            -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
@@ -47,6 +57,7 @@ pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
     Some( Box::new(MfdPdf::new(xo, wo, no, *mfd)) )
 }
 
+/// TODO
 pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     Some( Box::new(IsotropicPdf::new(xo)) )
