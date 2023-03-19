@@ -20,10 +20,9 @@ pub fn brdf_microfacet(
     let wo = -ro.dir.normalize();
     let wi = ri.dir.normalize();
     let wh = (wi + wo).normalize();
-    let met = 1.0;
 
     let d = mfd.d(wh, no);
-    let f = mfd.f(wo, wh, color, met, ETA);
+    let f = mfd.f(wo, wh, color);
     let g = mfd.g(wo, wi, no);
 
     let no_dot_wi = no.dot(wi);

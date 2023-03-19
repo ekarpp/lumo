@@ -26,6 +26,17 @@ pub enum Material {
 }
 
 impl Material {
+
+    /// Metallic microfacet material
+    pub fn metal(texture: Texture, roughness: f64) -> Self {
+        Self::Microfacet(texture, MfDistribution::metallic(roughness))
+    }
+
+    /// Specular microfacet material
+    pub fn specular(texture: Texture, roughness: f64) -> Self {
+        Self::Microfacet(texture, MfDistribution::specular(roughness))
+    }
+
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {

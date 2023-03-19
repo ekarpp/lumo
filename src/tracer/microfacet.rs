@@ -1,17 +1,67 @@
 use crate::DVec3;
 use std::f64::consts::PI;
 
+/// Configurable parameters for a microsurface
+#[derive(Copy, Clone)]
+pub struct MicrofacetConfig {
+    /// Roughness of the surface (α) [0,1]
+    pub roughness: f64,
+    /// Refraction index of the material >= 1.0
+    pub refraction_idx: f64,
+    /// Ratio of how metallic the material is [0,1]
+    pub metallicity: f64,
+}
+
+impl MicrofacetConfig {
+    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64) -> Self {
+        assert!(roughness <= 1.0 && roughness >= 0.0);
+        assert!(refraction_idx >= 1.0);
+        assert!(metallicity <= 1.0 && metallicity >= 0.0);
+        Self {
+            roughness,
+            refraction_idx,
+            metallicity,
+        }
+    }
+}
+
 /// Defines a distribution of normals for a microfacet. `f64` parameter is the
 /// roughness (α) of the surface.
 #[derive(Copy, Clone)]
+#[allow(dead_code)]
 pub enum MfDistribution {
     /// Walter et al. 2007
-    Ggx(f64),
+    Ggx(MicrofacetConfig),
     /// Beckmann et al. 1987
-    Beckmann(f64),
+    Beckmann(MicrofacetConfig),
 }
 
 impl MfDistribution {
+    /// Metallic material
+    pub fn metallic(roughness: f64) -> Self {
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 1.0))
+    }
+
+    /// Specular material
+    pub fn specular(roughness: f64) -> Self {
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0))
+    }
+
+
+    /// Getter, better way to do this?
+    fn metallicity(&self) -> f64 {
+        match self {
+            Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg.metallicity,
+        }
+    }
+
+    /// Getter, better way to do this?
+    fn refraction_idx(&self) -> f64 {
+        match self {
+            Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg.refraction_idx,
+        }
+    }
+
     /// The microfacet distribution function.
     ///
     /// # Distributions
@@ -23,15 +73,15 @@ impl MfDistribution {
     /// * `no` - Surface normal at the point of impact
     pub fn d(&self, wh: DVec3, no: DVec3) -> f64 {
         match self {
-            Self::Ggx(roughness) => {
+            Self::Ggx(cfg) => {
                 let cos_theta2 = wh.dot(no).powi(2);
-                let roughness2 = roughness * roughness;
+                let roughness2 = cfg.roughness * cfg.roughness;
 
                 roughness2
                     / (PI * (cos_theta2 * (roughness2 - 1.0) + 1.0).powi(2))
             }
-            Self::Beckmann(roughness) => {
-                let roughness2 = roughness * roughness;
+            Self::Beckmann(cfg) => {
+                let roughness2 = cfg.roughness * cfg.roughness;
                 let cos_theta2 = wh.dot(no).powi(2);
                 let tan_theta2 = (1.0 - cos_theta2) / cos_theta2;
 
@@ -54,10 +104,12 @@ impl MfDistribution {
     }
 
     /// Fresnel term with Schlick's approximation
-    pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3, metallic: f64, eta: f64)
-             -> DVec3 {
+    pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3) -> DVec3 {
+        let eta = self.refraction_idx();
+        let metallicity = self.metallicity();
+
         let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = DVec3::splat(f0 * f0).lerp(color, metallic);
+        let f0 = DVec3::splat(f0 * f0).lerp(color, metallicity);
 
         let wo_dot_wh = wo.dot(wh);
         f0 + (DVec3::ONE - f0) * (1.0 - wo_dot_wh).powi(5)
@@ -71,17 +123,17 @@ impl MfDistribution {
     /// * `no` - Macrosurface normal
     fn lambda(&self, w: DVec3, no: DVec3) -> f64 {
         match self {
-            Self::Ggx(roughness) => {
+            Self::Ggx(cfg) => {
                 let w_dot_no2 = w.dot(no).powi(2);
                 let tan_w = (1.0 - w_dot_no2) / w_dot_no2;
-                let roughness2 = roughness * roughness;
+                let roughness2 = cfg.roughness * cfg.roughness;
 
                 ((1.0 + roughness2 * tan_w).sqrt() - 1.0) / 2.0
             }
-            Self::Beckmann(roughness) => {
+            Self::Beckmann(cfg) => {
                 let w_dot_no2 = w.dot(no).powi(2);
                 let tan_w = ((1.0 - w_dot_no2) / w_dot_no2).abs();
-                let a = 1.0 / (roughness * tan_w);
+                let a = 1.0 / (cfg.roughness * tan_w);
 
                 if a >= 1.6 {
                     0.0
@@ -96,11 +148,11 @@ impl MfDistribution {
     /// Sampling thetas per distribution for importance sampling.
     pub fn sample_theta(&self, rand_f: f64) -> f64 {
         match self {
-            Self::Ggx(roughness) => {
-                (roughness * (rand_f / (1.0 - rand_f)).sqrt()).atan()
+            Self::Ggx(cfg) => {
+                (cfg.roughness * (rand_f / (1.0 - rand_f)).sqrt()).atan()
             }
-            Self::Beckmann(roughness) => {
-                let roughness2 = roughness * roughness;
+            Self::Beckmann(cfg) => {
+                let roughness2 = cfg.roughness * cfg.roughness;
                 (-roughness2 * (1.0 - rand_f).ln()).sqrt().atan()
             }
         }

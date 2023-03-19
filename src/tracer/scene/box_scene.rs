@@ -26,9 +26,17 @@ impl Scene {
                     Material::Mirror,
                 ),
                 Sphere::new(
-                    DVec3::new(0.0, yg + r, light_z - light_xy),
+                    DVec3::new(0.0, yg + 0.5*r, light_z - 2.5*light_xy),
                     0.5*r,
                     Material::Glass,
+                ),
+                Sphere::new(
+                    DVec3::new(light_xy, yg + 0.75*r, light_z - light_xy),
+                    0.75 * r,
+                    Material::specular(
+                        Texture::Solid(DVec3::new(0.8, 0.6, 0.4)),
+                        0.05,
+                    ),
                 ),
                 Cuboid::new(
                     DAffine3::from_translation(
@@ -36,10 +44,10 @@ impl Scene {
                         * DAffine3::from_scale(
                             DVec3::new(light_xy, 2.0*light_xy, light_xy))
                         * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::Microfacet(
+                    Material::metal(
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
-                        MfDistribution::Ggx(0.05),
-                    )
+                        0.05,
+                    ),
                 ),
                 /* roof */
                 Rectangle::new(
