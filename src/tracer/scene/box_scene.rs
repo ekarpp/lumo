@@ -63,8 +63,8 @@ impl Scene {
                 /* floor */
                 Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(-yg, yg, light_z),
-                        DVec3::new(yg, yg, light_z),
+                        DVec3::new(-yg, yg, 0.0),
+                        DVec3::new(yg, yg, 0.0),
                         DVec3::new(yg, yg, 2.0*light_z),
                     ),
                     DVec3::new(0.0, 1.0, 0.0),
@@ -76,16 +76,6 @@ impl Scene {
                         ),
                         0.01,
                     ),
-                ),
-                /* floor extension, can apply texture to other part */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(-yg, yg, light_z - EPSILON),
-                        DVec3::new(yg, yg, light_z - EPSILON),
-                        DVec3::new(yg, yg, 0.0),
-                    ),
-                    DVec3::new(0.0, 1.0, 0.0),
-                    Material::Diffuse(Texture::Solid(col)),
                 ),
                 /* front wall */
                 Rectangle::new(
