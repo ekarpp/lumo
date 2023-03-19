@@ -53,21 +53,34 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DVec2};
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::DVec3;
 <span class="kw">use </span>std::f64::consts::PI;
+<span class="kw">use </span><span class="kw">crate</span>::pdfs::Pdf;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::hit::Hit;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::ray::Ray;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::bxdfs;
 <span class="kw">use </span><span class="kw">crate</span>::tracer::texture::Texture;
+<span class="kw">use </span><span class="kw">crate</span>::tracer::microfacet::MfDistribution;
 
 <span class="doccomment">/// Describes which material an object is made out of
 </span><span class="kw">pub enum </span>Material {
-    <span class="doccomment">/// &quot;Normal material&quot;
+    <span class="doccomment">/// Matte
     </span>Diffuse(Texture),
+    <span class="doccomment">/// Glossy
+    </span>Microfacet(Texture, MfDistribution),
     <span class="doccomment">/// Emits light
     </span>Light(Texture),
     <span class="doccomment">/// Perfect mirror
     </span>Mirror,
+    <span class="doccomment">/// Isotropic medium
+    </span>Isotropic(Texture),
     <span class="doccomment">/// Refracts light
     </span>Glass,
     <span class="doccomment">/// Not specified. Used with objects that are built on top of other objects.
@@ -84,28 +97,29 @@
     }
 
     <span class="doccomment">/// What is the color at p?
-    </span><span class="kw">pub fn </span>brdf(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
+    </span><span class="kw">pub fn </span>bsdf_f(<span class="kw-2">&amp;</span><span class="self">self</span>, ro: <span class="kw-2">&amp;</span>Ray, ri: <span class="kw-2">&amp;</span>Ray, no: DVec3) -&gt; DVec3 {
+        <span class="kw">let </span>xo = ri.origin;
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Diffuse(t) =&gt; t.albedo_at(p) * PI.recip(),
+            <span class="self">Self</span>::Diffuse(t) =&gt; t.albedo_at(xo) * PI.recip(),
+            <span class="self">Self</span>::Isotropic(t) =&gt; t.albedo_at(xo),
             <span class="self">Self</span>::Mirror | <span class="self">Self</span>::Glass =&gt; DVec3::ONE,
+            <span class="self">Self</span>::Microfacet(t, mfd) =&gt; {
+                bxdfs::brdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
+            }
             <span class="kw">_ </span>=&gt; DVec3::ZERO,
         }
     }
 
     <span class="doccomment">/// How does `r` get scattered at `h`?
-    </span><span class="kw">pub fn </span>bsdf(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, ro: <span class="kw-2">&amp;</span>Ray, rand_sq: DVec2)
-                -&gt; <span class="prelude-ty">Option</span>&lt;(Ray, f64)&gt; {
+    </span><span class="kw">pub fn </span>bsdf_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, ro: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Pdf&gt;&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Glass =&gt; bxdfs::glass_bsdf(ho, ro),
-            <span class="self">Self</span>::Mirror =&gt; bxdfs::mirror_bsdf(ho, ro),
-            <span class="self">Self</span>::Diffuse(<span class="kw">_</span>) =&gt; bxdfs::diffuse_bsdf(ho, ro, rand_sq),
+            <span class="self">Self</span>::Glass =&gt; bxdfs::bsdf_glass_pdf(ho, ro),
+            <span class="self">Self</span>::Mirror =&gt; bxdfs::bsdf_mirror_pdf(ho, ro),
+            <span class="self">Self</span>::Diffuse(<span class="kw">_</span>) =&gt; bxdfs::bsdf_diffuse_pdf(ho, ro),
+            <span class="self">Self</span>::Microfacet(<span class="kw">_</span>, mfd) =&gt; bxdfs::bsdf_microfacet_pdf(ho, ro, mfd),
+            <span class="self">Self</span>::Isotropic(<span class="kw">_</span>) =&gt; bxdfs::bsdf_isotropic_pdf(ho, ro),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
-    }
-
-    <span class="doccomment">/// Does light pass through the material?
-    </span><span class="kw">pub fn </span>is_translucent(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">matches!</span>(<span class="self">self</span>, <span class="self">Self</span>::Glass | <span class="self">Self</span>::Blank)
     }
 }
 </code></pre></div>

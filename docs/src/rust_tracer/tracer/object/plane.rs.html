@@ -84,14 +84,7 @@
 <span class="kw">impl </span>Object <span class="kw">for </span>Plane {
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 { f64::INFINITY }
-
-    <span class="comment">// check that point is on plane?? or assume we are smart
-    </span><span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, _p: DVec3) -&gt; DVec3 {
-        <span class="self">self</span>.norm
-    }
-
-    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
+    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, t_min: f64, t_max: f64) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="comment">/* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
         </span><span class="kw">if </span><span class="self">self</span>.norm.dot(r.dir) == <span class="number">0.0 </span>{
@@ -99,16 +92,23 @@
         }
 
         <span class="kw">let </span>t = -(<span class="self">self</span>.d + <span class="self">self</span>.norm.dot(r.origin)) / <span class="self">self</span>.norm.dot(r.dir);
-        <span class="kw">if </span>t &lt; EPSILON {
+        <span class="kw">if </span>t &lt; t_min + EPSILON || t &gt; t_max - EPSILON {
             <span class="prelude-val">None
         </span>} <span class="kw">else </span>{
             Hit::new(
                 t,
                 <span class="self">self</span>,
-                r,
+                r.at(t),
+                <span class="self">self</span>.norm,
             )
         }
     }
+
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, _xo: DVec3, _rand_sq: DVec2) -&gt; Ray {
+        <span class="macro">unimplemented!</span>()
+    }
+    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, _ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 { <span class="macro">unimplemented!</span>() }
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, _rand_sq: DVec2) -&gt; DVec3 { <span class="macro">unimplemented!</span>() }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rust_tracer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

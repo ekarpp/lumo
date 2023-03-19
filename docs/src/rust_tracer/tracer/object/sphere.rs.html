@@ -116,7 +116,6 @@
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="attr">#[cfg(test)]
@@ -147,24 +146,10 @@
 }
 
 <span class="kw">impl </span>Object <span class="kw">for </span>Sphere {
-
-    <span class="doccomment">/// If distance to origin smaller than radius, must be inside
-    </span><span class="kw">fn </span>inside(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; bool {
-        <span class="self">self</span>.origin.distance_squared(r.origin + EPSILON<span class="kw-2">*</span>r.dir)
-            &lt; <span class="self">self</span>.radius<span class="kw-2">*</span><span class="self">self</span>.radius
-    }
-
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 { <span class="number">4.0 </span>* PI * <span class="self">self</span>.radius * <span class="self">self</span>.radius }
-
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="doccomment">/// Points way from origin
-    </span><span class="kw">fn </span>normal_at(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; DVec3 {
-        (p - <span class="self">self</span>.origin) / <span class="self">self</span>.radius
-    }
-
     <span class="doccomment">/// Solve the quadratic
-    </span><span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
+    </span><span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, t_min: f64, t_max: f64) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
         <span class="kw">let </span>tmp = r.origin - <span class="self">self</span>.origin;
         <span class="comment">// coefficients of &quot;hit quadratic&quot;
         // .dot faster than .length_squared, recheck
@@ -178,18 +163,30 @@
         }
         <span class="kw">let </span>disc_root = disc.sqrt();
         <span class="kw">let </span><span class="kw-2">mut </span>t = (-half_b - disc_root) / a;
-        <span class="kw">if </span>t &lt; EPSILON {
+        <span class="kw">if </span>t &lt; t_min + EPSILON || t &gt; t_max - EPSILON {
             t = (-half_b + disc_root) / a;
-            <span class="kw">if </span>t &lt; EPSILON {
+            <span class="kw">if </span>t &lt; t_min + EPSILON || t &gt; t_max - EPSILON {
                 <span class="kw">return </span><span class="prelude-val">None</span>;
             }
         }
+
+        <span class="kw">let </span>xi = r.at(t);
+        <span class="kw">let </span>ni = (xi - <span class="self">self</span>.origin) / <span class="self">self</span>.radius;
+
         Hit::new(
             t,
             <span class="self">self</span>,
-            r,
+            xi,
+            ni,
         )
     }
+
+    <span class="doccomment">/// If distance to origin smaller than radius, must be inside
+    </span><span class="kw">fn </span>inside(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; bool {
+        <span class="self">self</span>.origin.distance_squared(p)
+            &lt; <span class="self">self</span>.radius<span class="kw-2">*</span><span class="self">self</span>.radius
+    }
+
 
     <span class="doccomment">/// Sample on unit sphere and scale
     </span><span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
@@ -198,17 +195,15 @@
         <span class="self">self</span>.origin + <span class="self">self</span>.radius * rand_sph
     }
 
-    <span class="doccomment">/// Visible area from `ho.p = xo` forms a cone.
-    /// Sample a random direction within the cone.
-    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
-        <span class="kw">let </span>xo = ho.p;
+    <span class="doccomment">/// Visible area from `xo` forms a cone.
+    /// Sample a random direction towards `xo` within the cone.
+    /// HOW SPECIFICALLY? disk transform?
+    </span><span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, xo: DVec3, rand_sq: DVec2) -&gt; Ray {
         <span class="comment">/* uvw-orthonormal basis,
          * where w is the direction from xo to origin of this sphere. */
         </span><span class="kw">let </span>uvw = Onb::new(<span class="self">self</span>.origin - xo);
 
-        <span class="comment">/* TODO: this seems broken */
-
-        </span><span class="kw">let </span>dist_light = xo.distance_squared(<span class="self">self</span>.origin);
+        <span class="kw">let </span>dist_light = xo.distance_squared(<span class="self">self</span>.origin);
 
         <span class="kw">let </span>z = <span class="number">1.0 </span>+ rand_sq.y *
             ((<span class="number">1.0 </span>- <span class="self">self</span>.radius * <span class="self">self</span>.radius / dist_light).sqrt() - <span class="number">1.0</span>);
@@ -219,21 +214,24 @@
 
         <span class="kw">let </span>wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
-        <span class="comment">/* not used in pdf calc? */
-        </span><span class="kw">let </span>xi = DVec3::ZERO;
-        (
-            Ray::new(xo, wi),
-            <span class="self">self</span>.sample_towards_pdf(xo, xi, wi, <span class="self">self</span>.normal_at(xi)),
-        )
+        Ray::new(xo, wi)
     }
+    <span class="comment">/* make sphere pdf, area pdf, etc..? */
+    </span><span class="doccomment">/// PDF (w.r.t solid angle) for sampling area of the sphere
+    /// that is visible from `xo` (a cone)
+    </span><span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="kw">match </span><span class="self">self</span>.hit(ri, <span class="number">0.0</span>, INFINITY) {
+            <span class="prelude-val">None </span>=&gt; <span class="number">0.0</span>,
+            <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
+                <span class="kw">let </span>xo = ri.origin;
 
-    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, xo: DVec3, _xi: DVec3, _wi: DVec3, _ni: DVec3)
-                          -&gt; f64 {
-        <span class="kw">let </span>sin2_theta_max = <span class="self">self</span>.radius * <span class="self">self</span>.radius
-            / <span class="self">self</span>.origin.distance_squared(xo);
-        <span class="kw">let </span>cos_theta_max = (<span class="number">1.0 </span>- sin2_theta_max).sqrt();
+                <span class="kw">let </span>sin2_theta_max = <span class="self">self</span>.radius * <span class="self">self</span>.radius
+                    / <span class="self">self</span>.origin.distance_squared(xo);
+                <span class="kw">let </span>cos_theta_max = (<span class="number">1.0 </span>- sin2_theta_max).sqrt();
 
-        <span class="number">1.0 </span>/ (<span class="number">2.0 </span>* PI * (<span class="number">1.0 </span>- cos_theta_max))
+                <span class="number">1.0 </span>/ (<span class="number">2.0 </span>* PI * (<span class="number">1.0 </span>- cos_theta_max))
+            }
+        }
     }
 }
 </code></pre></div>

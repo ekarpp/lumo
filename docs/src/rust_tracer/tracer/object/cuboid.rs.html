@@ -146,6 +146,16 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
 </pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>Cuboid {
@@ -260,26 +270,20 @@
 }
 
 <span class="kw">impl </span>Object <span class="kw">for </span>Cuboid {
-    <span class="kw">fn </span>inside(<span class="kw-2">&amp;</span><span class="self">self</span>, _r: <span class="kw-2">&amp;</span>Ray) -&gt; bool { <span class="macro">todo!</span>() }
+    <span class="doccomment">/// Shoot ray forwards and backwards. If both hit, we are inside.
+    /// Probably faster ways to do this.
+    </span><span class="kw">fn </span>inside(<span class="kw-2">&amp;</span><span class="self">self</span>, p: DVec3) -&gt; bool {
+        <span class="comment">/* direction shouldn&#39;t matter */
+        </span><span class="kw">let </span>r = Ray::new(p, DVec3::new(<span class="number">1.0</span>, <span class="number">0.0</span>, <span class="number">0.0</span>));
 
-    <span class="kw">fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize { <span class="number">12 </span>}
-
-    <span class="kw">fn </span>area(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; f64 {
-        <span class="self">self</span>.rectangles.iter().map(|r| r.area()).sum()
+        <span class="self">self</span>.hit(<span class="kw-2">&amp;</span>r, -INFINITY, <span class="number">0.0</span>).and(<span class="self">self</span>.hit(<span class="kw-2">&amp;</span>r, <span class="number">0.0</span>, INFINITY))
+            .is_some()
     }
 
     <span class="kw">fn </span>material(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Material { <span class="kw-2">&amp;</span><span class="self">self</span>.material }
 
-    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, ho: <span class="kw-2">&amp;</span>Hit, rand_sq: DVec2) -&gt; (Ray, f64) {
-        <span class="self">self</span>.choose_rectangle().sample_towards(ho, rand_sq)
-    }
-
-    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
-        <span class="self">self</span>.choose_rectangle().sample_on(rand_sq)
-    }
-
-    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
-        <span class="self">self</span>.rectangles.iter().map(|rect| rect.hit(r))
+    <span class="kw">fn </span>hit(<span class="kw-2">&amp;</span><span class="self">self</span>, r: <span class="kw-2">&amp;</span>Ray, t_min: f64, t_max: f64) -&gt; <span class="prelude-ty">Option</span>&lt;Hit&gt; {
+        <span class="self">self</span>.rectangles.iter().map(|rect| rect.hit(r, t_min, t_max))
             .fold(<span class="prelude-val">None</span>, |closest, hit| {
                 <span class="kw">if </span>closest.is_none() || (hit.is_some() &amp;&amp; hit &lt; closest) {
                     hit
@@ -291,6 +295,22 @@
                 h.object = <span class="self">self</span>;
                 h
             })
+    }
+
+    <span class="kw">fn </span>sample_towards(<span class="kw-2">&amp;</span><span class="self">self</span>, _xo: DVec3, _rand_sq: DVec2) -&gt; Ray {
+        <span class="comment">/* add normal to rectangle, now can do visible area of cube??
+         * add middle point of rectangle? 0.5a + 0.5c
+         * (dot prod with all normals. need direction? dot &lt; 0.0 =&gt; visible)
+         * weight faces that have lower dot prod.. interesting.. */
+        </span><span class="macro">unimplemented!</span>()
+    }
+
+    <span class="kw">fn </span>sample_towards_pdf(<span class="kw-2">&amp;</span><span class="self">self</span>, _ri: <span class="kw-2">&amp;</span>Ray) -&gt; f64 {
+        <span class="macro">unimplemented!</span>()
+    }
+
+    <span class="kw">fn </span>sample_on(<span class="kw-2">&amp;</span><span class="self">self</span>, rand_sq: DVec2) -&gt; DVec3 {
+        <span class="self">self</span>.choose_rectangle().sample_on(rand_sq)
     }
 
 }

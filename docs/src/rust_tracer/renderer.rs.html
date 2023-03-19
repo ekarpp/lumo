@@ -34,6 +34,7 @@
 <a href="#34" id="34">34</a>
 <a href="#35" id="35">35</a>
 <a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{DVec3, DVec2};
 <span class="kw">use </span>rayon::iter::{ParallelIterator, IntoParallelIterator};
 <span class="attr">#[allow(unused_imports)]
@@ -55,7 +56,8 @@
     scene: <span class="kw-2">&amp;</span>Scene,
 ) -&gt; Vec&lt;DVec3&gt; {
     <span class="kw">let </span>integrator = Integrator::PathTrace;
-    (<span class="number">0</span>..img_height).into_par_iter().flat_map(|y: usize| {
+    <span class="comment">//let integrator = Integrator::DirectLight;
+    </span>(<span class="number">0</span>..img_height).into_par_iter().flat_map(|y: usize| {
         (<span class="number">0</span>..img_width).map(|x: usize| {
             <span class="kw">let </span>u = x <span class="kw">as </span>f64 * px_width;
             <span class="kw">let </span>v = (img_height - <span class="number">1 </span>- y) <span class="kw">as </span>f64 * px_height;
