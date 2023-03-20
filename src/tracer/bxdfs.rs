@@ -32,7 +32,6 @@ pub fn brdf_microfacet(
     let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
     let diffuse = color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
         / PI;
-
     diffuse + specular
 }
 

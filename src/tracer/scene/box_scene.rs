@@ -64,9 +64,9 @@ impl Scene {
                         Texture::Checkerboard(
                             Box::new(Texture::Solid(col)),
                             Box::new(Texture::Solid(DVec3::new(0.0, 0.0, 0.9))),
-                            2.0,
+                            2.42,
                         ),
-                        0.05,
+                        0.01,
                     ),
                 ),
                 /* front wall */

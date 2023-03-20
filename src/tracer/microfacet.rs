@@ -48,12 +48,12 @@ impl MfDistribution {
     }
 
     pub fn diffuse() -> Self {
-        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0))
+        Self::Beckmann(MicrofacetConfig::new(1.0, 1.5, 0.0))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
-        self.get_config().roughness < 1.0
+        self.get_config().roughness <= 0.05
     }
 
     /// Getter, better way to do this?
@@ -70,7 +70,7 @@ impl MfDistribution {
         let eta = cfg.refraction_idx;
         let f0 = ((1.0 - eta) / (1.0 + eta)).powi(2);
 
-        (1.0 - cfg.metallicity) * f0 + cfg.metallicity
+        (1.0 - cfg.metallicity) * (1.0 - cfg.roughness) + cfg.metallicity
     }
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy

@@ -41,7 +41,7 @@ fn shadow_ray(
     scene: &Scene,
     ro: &Ray,
     ho: &Hit,
-    scatter_pdf: &dyn Pdf,
+    _scatter_pdf: &dyn Pdf,
     rand_sq: DVec2
 ) -> DVec3 {
     let material = ho.object.material();
@@ -57,16 +57,12 @@ fn shadow_ray(
         let ri = pdf_light.sample_ray(rand_sq);
         let wi = ri.dir;
 
-        /* move this to object PDF */
         match scene.hit_light(&ri, light) {
             None => DVec3::ZERO,
             Some(_) => {
                 material.bsdf_f(ro, &ri, no)
                     * no.dot(wi.normalize()).abs()
-                /* TODO: power heuristic, Veach & Guibas 95 */
-                    * 0.5
-                    / (pdf_light.value_for(&ri)
-                       + scatter_pdf.value_for(&ri))
+                    / pdf_light.value_for(&ri)
             }
         }
     }

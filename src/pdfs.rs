@@ -184,7 +184,7 @@ impl Pdf for MfdPdf {
             )
         };
 
-        Ray::new(self.xo, -wi)
+        Ray::new(self.xo, wi)
     }
 
     /// Read it directly from the NFD and do change of variables
@@ -193,13 +193,12 @@ impl Pdf for MfdPdf {
         let wi = ri.dir.normalize();
         let wh = (self.wo + wi).normalize();
 
-        let prob_ndf = self.mfd.probability_ndf_sample();
-
         let ndf = self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
             / (4.0 * self.wo.dot(wh));
 
         let hemisphere = wi.dot(self.no).max(0.0) / PI;
 
+        let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
         prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
     }
 }
