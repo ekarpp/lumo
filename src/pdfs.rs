@@ -170,11 +170,19 @@ impl Pdf for MfdPdf {
     /// camera around the normal. Better and more complex method of sampling
     /// only visible normals due to Heitz 2014.
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let wm = self.uvw.to_uvw_basis(
-            self.mfd.sample_normal(rand_sq)
-        ).normalize();
+        let prob_ndf = self.mfd.probability_ndf_sample();
 
-        let wi = self.wo - 2.0 * self.wo.dot(wm) * wm;
+        let wi = if rand_utils::rand_f64() < prob_ndf {
+            let wm = self.uvw.to_uvw_basis(
+                self.mfd.sample_normal(rand_sq)
+            ).normalize();
+
+            2.0 * self.wo.dot(wm) * wm - self.wo
+        } else {
+            self.uvw.to_uvw_basis(
+                rand_utils::square_to_cos_hemisphere(rand_sq)
+            )
+        };
 
         Ray::new(self.xo, -wi)
     }
@@ -185,6 +193,13 @@ impl Pdf for MfdPdf {
         let wi = ri.dir.normalize();
         let wh = (self.wo + wi).normalize();
 
-        self.mfd.d(wh, self.no) * wh.dot(self.no).abs() / (4.0 * self.wo.dot(wh))
+        let prob_ndf = self.mfd.probability_ndf_sample();
+
+        let ndf = self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
+            / (4.0 * self.wo.dot(wh));
+
+        let hemisphere = wi.dot(self.no).max(0.0) / PI;
+
+        prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
     }
 }

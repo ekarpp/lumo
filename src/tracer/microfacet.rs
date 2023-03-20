@@ -47,6 +47,10 @@ impl MfDistribution {
         Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0))
     }
 
+    pub fn diffuse() -> Self {
+        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0))
+    }
+
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
         self.get_config().roughness < 1.0
@@ -57,6 +61,16 @@ impl MfDistribution {
         match self {
             Self::Ggx(cfg) | Self::Beckmann(cfg) => &cfg,
         }
+    }
+
+    /// Probability to do importance sampling from NDF. Otherwise done from
+    /// cosine weighed hemisphere. Should do something smarter here...
+    pub fn probability_ndf_sample(&self) -> f64 {
+        let cfg = self.get_config();
+        let eta = cfg.refraction_idx;
+        let f0 = ((1.0 - eta) / (1.0 + eta)).powi(2);
+
+        (1.0 - cfg.metallicity) * f0 + cfg.metallicity
     }
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
