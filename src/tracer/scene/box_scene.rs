@@ -38,7 +38,7 @@ impl Scene {
                         * DAffine3::from_rotation_y(PI / 10.0),
                     Material::specular(
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
-                        0.2,
+                        0.1,
                     ),
                 ),
                 /* roof */
@@ -51,7 +51,6 @@ impl Scene {
                     DVec3::new(0.0, -1.0, 0.0),
                     Material::diffuse(Texture::Solid(col)),
                 ),
-
                 /* floor */
                 Rectangle::new(
                     DMat3::from_cols(

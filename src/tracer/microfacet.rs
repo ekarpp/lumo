@@ -48,7 +48,7 @@ impl MfDistribution {
     }
 
     pub fn diffuse() -> Self {
-        Self::Beckmann(MicrofacetConfig::new(1.0, 1.5, 0.0))
+        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
@@ -67,8 +67,6 @@ impl MfDistribution {
     /// cosine weighed hemisphere. Should do something smarter here...
     pub fn probability_ndf_sample(&self) -> f64 {
         let cfg = self.get_config();
-        let eta = cfg.refraction_idx;
-        let f0 = ((1.0 - eta) / (1.0 + eta)).powi(2);
 
         (1.0 - cfg.metallicity) * (1.0 - cfg.roughness) + cfg.metallicity
     }
