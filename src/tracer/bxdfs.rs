@@ -9,7 +9,7 @@ use crate::tracer::microfacet::MfDistribution;
 /// Shading for microfacet. Computed as diffuse + specular, where (`D`, `F`, `G` values from the microfacet distribution):
 ///
 /// `specular = D(wh) * F(wo, wh) * G(wo, wi) / (4.0 * (n • wo) * (n • wi))`
-/// `diffuse = (1 - F(wo, wh)) * albedo / π`
+/// `diffuse = disney_term * albedo / π`
 pub fn brdf_microfacet(
     ro: &Ray,
     ri: &Ray,
@@ -17,18 +17,23 @@ pub fn brdf_microfacet(
     color: DVec3,
     mfd: &MfDistribution,
 ) -> DVec3 {
-    let wo = -ro.dir.normalize();
+    let v = -ro.dir.normalize();
     let wi = ri.dir.normalize();
-    let wh = (wi + wo).normalize();
+    let wh = (wi + v).normalize();
 
     let d = mfd.d(wh, no);
-    let f = mfd.f(wo, wh, color);
-    let g = mfd.g(wo, wi, no);
+    let f = mfd.f(v, wh, color);
+    let g = mfd.g(v, wi, no);
 
     let no_dot_wi = no.dot(wi);
-    let no_dot_wo = no.dot(wo);
+    let no_dot_v = no.dot(v);
+    let no_dot_wh = no.dot(wh);
 
-    (DVec3::ONE - f) * color / PI + d * f * g / (4.0 * no_dot_wo * no_dot_wi)
+    let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
+    let diffuse = color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
+        / PI;
+
+    diffuse + specular
 }
 
 /// Scattering function for diffuse material.

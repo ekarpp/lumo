@@ -59,6 +59,26 @@ impl MfDistribution {
         }
     }
 
+    /// Disney diffuse (Burley 2012) with renormalization to conserve energy
+    /// as done in Frostbite (Lagarde et al. 2014)
+    pub fn disney_diffuse(
+        &self,
+        no_dot_v: f64,
+        no_dot_wh: f64,
+        no_dot_wi: f64,
+    ) -> f64 {
+        let roughness2 = self.get_config().roughness.powi(2);
+        let energy_bias = 0.5 * roughness2;
+        let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
+
+        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_v).powi(5);
+        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_wi).powi(5);
+
+        let energy_factor = 1.0 + roughness2 * (1.0 / 1.51 - 1.0);
+
+        view_scatter * light_scatter * energy_factor
+    }
+
     /// The microfacet distribution function.
     ///
     /// # Distributions
