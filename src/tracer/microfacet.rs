@@ -1,4 +1,4 @@
-use crate::DVec3;
+use crate::{DVec2, DVec3};
 use std::f64::consts::PI;
 
 /// Configurable parameters for a microsurface
@@ -142,16 +142,23 @@ impl MfDistribution {
         }
     }
 
-    /// Sampling thetas per distribution for importance sampling.
-    pub fn sample_theta(&self, rand_f: f64) -> f64 {
-        match self {
+    /// Sampling microfacet normals per distribution for importance sampling.
+    pub fn sample_normal(&self, rand_sq: DVec2) -> DVec3 {
+        let phi = 2.0 * PI * rand_sq.x;
+        let theta = match self {
             Self::Ggx(cfg) => {
-                (cfg.roughness * (rand_f / (1.0 - rand_f)).sqrt()).atan()
+                (cfg.roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan()
             }
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
-                (-roughness2 * (1.0 - rand_f).ln()).sqrt().atan()
+                (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan()
             }
-        }
+        };
+
+        DVec3::new(
+            theta.sin() * phi.cos(),
+            theta.sin() * phi.sin(),
+            theta.cos()
+        )
     }
 }

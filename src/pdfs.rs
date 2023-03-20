@@ -170,19 +170,11 @@ impl Pdf for MfdPdf {
     /// camera around the normal. Better and more complex method of sampling
     /// only visible normals due to Heitz 2014.
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let phi = 2.0 * PI * rand_sq.x;
-        let theta = self.mfd.sample_theta(rand_sq.y);
-
         let wm = self.uvw.to_uvw_basis(
-            DVec3::new(
-                theta.sin() * phi.cos(),
-                theta.sin() * phi.sin(),
-                theta.cos(),
-            )
+            self.mfd.sample_normal(rand_sq)
         ).normalize();
 
         let wi = self.wo - 2.0 * self.wo.dot(wm) * wm;
-
 
         Ray::new(self.xo, -wi)
     }
