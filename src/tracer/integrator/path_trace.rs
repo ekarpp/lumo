@@ -2,7 +2,7 @@ use super::*;
 
 pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
     match scene.hit(ro) {
-        None => DVec3::new(0.0, 0.0, 1.0),
+        None => panic!("ray escaped"),
         Some(ho) => {
             let material = ho.object.material();
 
