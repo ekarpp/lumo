@@ -176,8 +176,10 @@ impl Pdf for MfdPdf {
             let wm = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
             ).normalize();
-
-            2.0 * self.wo.dot(wm) * wm - self.wo
+            let wi = 2.0 * self.wo.dot(wm) * wm - self.wo;
+            // if angle between wm and wo > 90 deg, its bad.
+            // VNDF fixes this?
+            if wi.dot(self.no) < 0.0 { -wi } else { wi }
         } else {
             self.uvw.to_uvw_basis(
                 rand_utils::square_to_cos_hemisphere(rand_sq)
@@ -199,6 +201,7 @@ impl Pdf for MfdPdf {
         let hemisphere = wi.dot(self.no).max(0.0) / PI;
 
         let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
+
         prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
     }
 }
