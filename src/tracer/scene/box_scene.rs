@@ -36,9 +36,9 @@ impl Scene {
                         * DAffine3::from_scale(
                             DVec3::new(light_xy, 2.0*light_xy, light_xy))
                         * DAffine3::from_rotation_y(PI / 10.0),
-                    Material::metal(
+                    Material::specular(
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
-                        0.05,
+                        0.2,
                     ),
                 ),
                 /* roof */
@@ -49,7 +49,7 @@ impl Scene {
                         DVec3::new(yg - light_xy, -yg, 0.0),
                     ),
                     DVec3::new(0.0, -1.0, 0.0),
-                    Material::Diffuse(Texture::Solid(col)),
+                    Material::diffuse(Texture::Solid(col)),
                 ),
 
                 /* floor */
@@ -66,7 +66,7 @@ impl Scene {
                             Box::new(Texture::Solid(DVec3::new(0.0, 0.0, 0.9))),
                             2.0,
                         ),
-                        0.01,
+                        0.05,
                     ),
                 ),
                 /* front wall */
@@ -77,7 +77,7 @@ impl Scene {
                         DVec3::new(yg, yg, 2.0*light_z + 4.0*EPSILON),
                     ),
                     DVec3::new(0.0, 0.0, 1.0),
-                    Material::Diffuse(Texture::Solid(col)),
+                    Material::diffuse(Texture::Solid(col)),
                 ),
                 /* left wall */
                 Rectangle::new(
@@ -87,7 +87,7 @@ impl Scene {
                         DVec3::new(yg, yg - light_xy, 2.0*light_z),
                     ),
                     DVec3::new(1.0, 0.0, 0.0),
-                    Material::Diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+                    Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
                 ),
                 /* right wall */
                 Rectangle::new(
@@ -97,7 +97,7 @@ impl Scene {
                         DVec3::new(-yg - 5.0*EPSILON, yg - 5.0*EPSILON, 2.0*light_z),
                     ),
                     DVec3::new(-1.0, 0.0, 0.0),
-                    Material::Diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+                    Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                 ),
                 // background
                 Rectangle::new(
@@ -107,7 +107,7 @@ impl Scene {
                         DVec3::new(yg, -yg, 0.0),
                     ),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::Diffuse(Texture::Solid(DVec3::ZERO)),
+                    Material::diffuse(Texture::Solid(DVec3::ZERO)),
                 ),
             ],
         )
