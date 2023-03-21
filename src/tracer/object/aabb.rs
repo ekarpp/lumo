@@ -1,21 +1,34 @@
 #![allow(unused_variables, dead_code)]
 use super::*;
 
-pub struct AxisAlignedBoundingBox {
+/// Axis aligned bounding box
+pub struct AaBoundingBox {
     ax_min: DVec3,
     ax_max: DVec3,
 }
 
-impl AxisAlignedBoundingBox {
-    pub fn new(object: &dyn Object) -> Self {
-        todo!()
+pub trait Bounded: Object {
+    fn bounding_box(&self) -> AaBoundingBox;
+}
+
+impl Default for AaBoundingBox {
+    fn default() -> Self {
+        Self {
+            ax_min: DVec3::splat(-INFINITY),
+            ax_max: DVec3::splat(INFINITY),
+        }
     }
 }
 
-impl Object for AxisAlignedBoundingBox {
-    fn material(&self) -> &Material { unimplemented!() }
+impl AaBoundingBox {
+    pub fn new(ax_min: DVec3, ax_max: DVec3) -> Self {
+        Self {
+            ax_min,
+            ax_max,
+        }
+    }
 
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    pub fn intersect(&self, r: &Ray) -> bool {
         let mut ts = -f64::INFINITY;
         let mut te = f64::INFINITY;
         let ro_min = (self.ax_min - r.origin).to_array();
@@ -29,17 +42,13 @@ impl Object for AxisAlignedBoundingBox {
             te = te.min(t2);
         });
 
-        if ts > te || te < EPSILON {
-            None
-        } else {
-            let t = if ts > EPSILON { ts } else { te };
-            Hit::new(t, self, r.at(t), DVec3::ZERO)
-        }
+        ts < te && te > EPSILON
     }
 
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        unimplemented!()
+    pub fn merge(&self, other: &Self) -> Self {
+        Self {
+            ax_min: self.ax_min.min(other.ax_min),
+            ax_max: self.ax_max.max(other.ax_max),
+        }
     }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { unimplemented!() }
 }

@@ -40,6 +40,15 @@ impl Triangle {
     }
 }
 
+impl Bounded for Triangle {
+    fn bounding_box(&self) -> AaBoundingBox {
+        AaBoundingBox::new(
+            self.a.min(self.b.min(self.c)),
+            self.a.max(self.b.max(self.c)),
+        )
+    }
+}
+
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 

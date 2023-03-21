@@ -8,7 +8,7 @@ use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::object::triangle::Triangle;
 use crate::tracer::object::rectangle::Rectangle;
-use crate::tracer::object::aabb::AxisAlignedBoundingBox;
+use crate::tracer::object::aabb::{AaBoundingBox, Bounded};
 
 /* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
@@ -32,8 +32,8 @@ pub mod rectangle;
 pub mod medium;
 /// Axis aligned bounding boxes
 pub mod aabb;
-/// Bounding volume hierarchy
-pub mod bvh;
+/// kD-trees, used for complex meshes
+pub mod kdtree;
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
