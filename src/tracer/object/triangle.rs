@@ -22,16 +22,16 @@ impl Triangle {
     /// # Arguments
     /// * `a,b,c` - Three vertices of the triangle
     /// * `material` - Material of the triangle
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, material: Material)
+    pub fn new(abc: (DVec3, DVec3, DVec3), material: Material)
                -> Box<Self> {
         /* check degeneracy */
-        assert!((b - a).cross(c - a).length() != 0.0);
-
-        let norm = (b - a).cross(c - a).normalize();
+        let norm = (abc.1 - abc.0).cross(abc.2 - abc.0);
+        assert!(norm.length() != 0.0);
+        let norm = norm.normalize();
         Box::new(Self {
-            a,
-            b,
-            c,
+            a: abc.0,
+            b: abc.1,
+            c: abc.2,
             material,
             na: norm,
             nb: norm,
@@ -45,7 +45,7 @@ impl Triangle {
     /// # Arguments
     /// * `abc` - Triple of the triangle vertices
     /// * `nabc` - Triple of the normals at the vertices
-    pub fn from_obj(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3))
+    pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3))
                     -> Self {
         Self {
             a: abc.0,

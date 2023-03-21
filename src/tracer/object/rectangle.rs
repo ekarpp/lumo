@@ -18,13 +18,13 @@ impl Rectangle {
     {
         /* figure out the correct order of points... */
         let t1 = Triangle::new(
-            abc.col(0), abc.col(1), abc.col(2), Material::Blank
+            (abc.col(0), abc.col(1), abc.col(2)), Material::Blank
         );
         let t2 = {
             /* d is b "mirrored" */
             let d = _triangle_to_rect(abc);
             Triangle::new(
-                abc.col(2), d, abc.col(0), Material::Blank
+                (abc.col(2), d, abc.col(0)), Material::Blank
             )
         };
         Box::new(Self {

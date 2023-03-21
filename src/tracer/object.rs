@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3, DVec2, DAffine3, DQuat};
+use crate::{DVec3, DMat3, DVec2, DAffine3};
 use std::f64::{INFINITY, consts::PI};
 use crate::onb::Onb;
 use crate::rand_utils;

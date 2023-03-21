@@ -1,6 +1,7 @@
 use crate::DVec3;
 use std::fs::File;
 use std::io::{self, Result, BufReader, BufRead};
+use crate::tracer::material::Material;
 use crate::tracer::object::triangle::Triangle;
 
 /// Function to create io::Error
@@ -77,29 +78,28 @@ fn parse_face(
     for token in &tokens[1..] {
         let arguments: Vec<&str> = token.split("/").collect();
 
-        if arguments.len() != 3 {
-            return Err(io_error(
-                format!("unsupported face, need normals: {}", token)
-            ));
-        }
-
         let vidx = parse_idx(arguments[0], vidxs.len())?;
         vidxs.push(vidx);
-
-        let nidx = parse_idx(arguments[2], nidxs.len())?;
-        nidxs.push(nidx);
+        if arguments.len() >= 3 {
+            let nidx = parse_idx(arguments[2], nidxs.len())?;
+            nidxs.push(nidx);
+        }
     }
 
     let mut triangles: Vec<Triangle> = Vec::new();
 
     for i in 1..vidxs.len()-1 {
         let (a, b, c) = (0, i, i+1);
+        let (va, vb, vc) = (vidxs[a], vidxs[b], vidxs[c]);
+        let abc = (vertices[va], vertices[vb], vertices[vc]);
 
-        let abc = (vertices[vidxs[a]], vertices[vidxs[b]], vertices[vidxs[c]]);
-
-        let nabc = (normals[nidxs[a]], normals[nidxs[b]], normals[nidxs[c]]);
-
-        triangles.push(Triangle::from_obj(abc, nabc));
+        if nidxs.is_empty() {
+            triangles.push(*Triangle::new(abc, Material::Blank));
+        } else {
+            let (na, nb, nc) = (nidxs[a], nidxs[b], nidxs[c]);
+            let nabc = (normals[nc], normals[nb], normals[nc]);
+            triangles.push(Triangle::new_w_normals(abc, nabc));
+        }
     }
 
     Ok(triangles)
