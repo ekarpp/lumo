@@ -3,21 +3,20 @@ use super::*;
 #[cfg(test)]
 mod triangle_tests;
 
-/* barycentric interpolation ~ different texture at each point of triangle */
-/* normal inside?? */
-
 /// Triangle specified by three points
 pub struct Triangle {
     a: DVec3,
     b: DVec3,
     c: DVec3,
     /// Unidirectional normal
-    norm: DVec3,
+    na: DVec3,
+    nb: DVec3,
+    nc: DVec3,
     material: Material,
 }
 
 impl Triangle {
-    /// Constructs triangle from three points and specifies normal direction
+    /// Constructs triangle from three points and specified normal direction
     ///
     /// # Arguments
     /// * `a,b,c` - Three vertices of the triangle
@@ -29,13 +28,34 @@ impl Triangle {
         assert!((b - a).cross(c - a).length() != 0.0);
 
         let norm = (b - a).cross(c - a).normalize();
-
+        let norm = if norm.dot(norm_dir) > 0.0 { norm } else { -norm };
         Box::new(Self {
             a,
             b,
             c,
             material,
-            norm: if norm.dot(norm_dir) > 0.0 { norm } else { -norm },
+            na: norm,
+            nb: norm,
+            nc: norm,
+        })
+    }
+
+    /// Create triangle with a specified normal at each vertex. Assigns blank
+    /// material, kD-tree should store this and have the material.
+    ///
+    /// # Arguments
+    /// * `abc` - Triple of the triangle vertices
+    /// * `nabc` - Triple of the normals at the vertices
+    pub fn from_obj(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3))
+                    -> Box<Self> {
+        Box::new(Self {
+            a: abc.0,
+            b: abc.1,
+            c: abc.2,
+            na: nabc.0,
+            nb: nabc.1,
+            nc: nabc.2,
+            material: Material::Blank,
         })
     }
 }
@@ -97,11 +117,15 @@ impl Object for Triangle {
         if t < t_min + EPSILON  || t > t_max - EPSILON {
             None
         } else {
+            let alpha = 1.0 - beta - gamma;
+            // correct order?
+            let norm = alpha * self.na + beta * self.nb + gamma * self.nc;
+
             Hit::new(
                 t,
                 self,
                 r.at(t),
-                self.norm,
+                norm,
             )
         }
     }
