@@ -1,11 +1,15 @@
 use super::*;
 
+pub type Mesh = KdTree<Triangle>;
+
 pub struct KdTree<T> {
     objects: Vec<T>,
     boundary: AaBoundingBox,
     root: Box<KdNode>,
 }
 
+/// https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs
+/// https://github.com/fogleman/pt/blob/master/pt/tree.go
 impl<T: Bounded> KdTree<T> {
     pub fn new(objects: Vec<T>) -> Self {
         let indices = (0..objects.len()).collect();

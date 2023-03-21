@@ -47,8 +47,8 @@ impl Triangle {
     /// * `abc` - Triple of the triangle vertices
     /// * `nabc` - Triple of the normals at the vertices
     pub fn from_obj(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3))
-                    -> Box<Self> {
-        Box::new(Self {
+                    -> Self {
+        Self {
             a: abc.0,
             b: abc.1,
             c: abc.2,
@@ -56,7 +56,7 @@ impl Triangle {
             nb: nabc.1,
             nc: nabc.2,
             material: Material::Blank,
-        })
+        }
     }
 }
 

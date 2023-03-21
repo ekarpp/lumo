@@ -4,6 +4,8 @@ use crate::image::Image;
 use crate::tracer::scene::Scene;
 use crate::tracer::camera::Camera;
 
+/// .OBJ file loader
+mod obj;
 /// Utility struct for orthonormal basis.
 mod onb;
 /// Implementation of different probability density functions for sampling.
