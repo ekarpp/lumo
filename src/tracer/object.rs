@@ -34,6 +34,9 @@ pub mod medium;
 pub mod aabb;
 /// kD-trees, used for complex meshes
 pub mod kdtree;
+/// Instance of an object i.e. an object to wich Euclidean (+ scaling)
+/// transformations have been applied to.
+pub mod instance;
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
