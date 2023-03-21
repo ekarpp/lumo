@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3, DAffine3};
+use crate::{DVec3, DMat3};
 use std::f64::{INFINITY, consts::PI};
 use crate::rand_utils;
 #[allow(unused_imports)]
@@ -9,7 +9,7 @@ use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use crate::tracer::material::Material;
 use crate::tracer::object::{Object, plane::Plane, rectangle::Rectangle};
-use crate::tracer::object::{cuboid::Cuboid, sphere::Sphere};
+use crate::tracer::object::{cube::Cube, sphere::Sphere, instance::Instanceable};
 
 #[cfg(test)]
 mod scene_tests;

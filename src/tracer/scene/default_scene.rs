@@ -45,19 +45,18 @@ impl Scene {
                     DVec3::new(-1.0, 0.0, 0.0),
                     Material::Mirror,
                 ),
-                Cuboid::new(
-                    DAffine3::from_translation(
-                        DVec3::new(-0.4, -0.5, -0.6))
-                        * DAffine3::from_scale(DVec3::splat(0.15))
-                        * DAffine3::from_rotation_y(PI / 4.0),
+                Cube::new(
                     Material::Diffuse(Texture::Checkerboard(
                         Box::new(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
                         Box::new(Texture::Solid(
                             DVec3::new(50.0, 205.0, 50.0) / 255.9
                         )),
                         9.0,
-                    )),
-                ),
+                    )))
+                    .rotate_y(PI / 4.0)
+                    .scale(DVec3::splat(0.15))
+                    .translate(DVec3::new(-0.4, -0.5, -0.6))
+                    .make_box(),
                 // left
                 Plane::new(
                     DVec3::new(-3.0, 0.0, -3.0),

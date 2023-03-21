@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::*;
 
 /// Instance of an object i.e. an object to which affine transformations have
@@ -12,8 +13,7 @@ pub struct Instance<T> {
 impl<T> Instance<T> {
     pub fn new(object: T, transform: DAffine3) -> Self {
         let inv_transform = transform.inverse();
-        let linear_transform = transform.matrix3;
-        let normal_transform = linear_transform.inverse().transpose();
+        let normal_transform = inv_transform.matrix3.transpose();
 
         Self {
             object,
@@ -22,6 +22,12 @@ impl<T> Instance<T> {
             normal_transform,
         }
     }
+
+    /// Helper to make boxing easy
+    pub fn make_box(self) -> Box<Instance<T>> {
+        Box::new(self)
+    }
+
 }
 
 impl<T: Object> Object for Instance<T> {
@@ -34,6 +40,8 @@ impl<T: Object> Object for Instance<T> {
         self.object.hit(&ray_local, t_min, t_max)
             .map(|mut h| {
                 h.norm = (self.normal_transform * h.norm).normalize();
+                // something smarter should be done here...
+                h.p = self.transform.transform_point3(h.p);
                 h
             })
     }

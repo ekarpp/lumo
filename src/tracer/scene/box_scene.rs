@@ -30,17 +30,15 @@ impl Scene {
                     0.5*r,
                     Material::Glass,
                 ),
-                Cuboid::new(
-                    DAffine3::from_translation(
-                        DVec3::new(light_xy, yg, 1.7*light_z))
-                        * DAffine3::from_scale(
-                            DVec3::new(light_xy, 2.0*light_xy, light_xy))
-                        * DAffine3::from_rotation_y(PI / 10.0),
+                Cube::new(
                     Material::specular(
                         Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
                         0.1,
-                    ),
-                ),
+                    ))
+                    .rotate_y(PI / 10.0)
+                    .scale(DVec3::new(light_xy, 2.0*light_xy, light_xy))
+                    .translate(DVec3::new(light_xy, yg, 1.7*light_z))
+                    .make_box(),
                 /* roof */
                 Rectangle::new(
                     DMat3::from_cols(

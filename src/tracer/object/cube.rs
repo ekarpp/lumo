@@ -1,33 +1,32 @@
 use super::*;
 
-pub struct Cuboid {
+pub struct Cube {
     rectangles: [Rectangle; 6],
     material: Material,
 }
 
-impl Cuboid {
+impl Cube {
 
     /* applies the aff to the unit cube. some affines might break this */
-    /// Constructs a cuboid by applying an affine transformation
-    /// to the unit cube. NOTE! Some affines may break this.
+    /// Constructs an unit cube. To get the desired shape, one should instance
+    /// this.
     ///
     /// # Arguments
-    /// * `aff` - Affine transformation to be applied to the unit cube
-    /// * `m` - Material of the cuboid
-    pub fn new(aff: DAffine3, m: Material) -> Box<Self> {
+    /// * `m` - Material of the cube
+    pub fn new(m: Material) -> Self {
         /* triangles are parallel to xz-plane */
         Self::from_triangles(
             DMat3::from_cols(
-                aff.transform_point3(DVec3::new(1.0, 0.0, 0.0)),
-                aff.transform_point3(DVec3::new(0.0, 0.0, 0.0)),
-                aff.transform_point3(DVec3::new(0.0, 0.0, 1.0)),
+                DVec3::new(1.0, 0.0, 0.0),
+                DVec3::new(0.0, 0.0, 0.0),
+                DVec3::new(0.0, 0.0, 1.0),
             ),
             DMat3::from_cols(
-                aff.transform_point3(DVec3::new(1.0, 1.0, 0.0)),
-                aff.transform_point3(DVec3::new(0.0, 1.0, 0.0)),
-                aff.transform_point3(DVec3::new(0.0, 1.0, 1.0)),
+                DVec3::new(1.0, 1.0, 0.0),
+                DVec3::new(0.0, 1.0, 0.0),
+                DVec3::new(0.0, 1.0, 1.0),
             ),
-            aff.transform_point3(DVec3::new(0.0, -1.0, 0.0)),
+            DVec3::new(0.0, -1.0, 0.0),
             m,
         )
     }
@@ -40,13 +39,13 @@ impl Cuboid {
     /// Helper function to construct cuboids from affine transformations.
     /// `n1` is the direction of the normal defined by `r1`.
     fn from_triangles(r1: DMat3, r2: DMat3, n1: DVec3, m: Material)
-                      -> Box<Self> {
+                      -> Self {
         let d1 = _triangle_to_rect(r1);
 
         let norm_xz = n1.normalize();
         let norm_yz = DQuat::from_rotation_z(-PI / 2.0).mul_vec3(norm_xz);
         let norm_xy = DQuat::from_rotation_x(PI / 2.0).mul_vec3(norm_xz);
-        Box::new(Self {
+        Self {
             material: m,
             rectangles: [
                 /* directions given assuming unit cube */
@@ -97,7 +96,7 @@ impl Cuboid {
                     Material::Blank,
                 ),
             ],
-        })
+        }
     }
 
     /// Choose a rectangle uniformly at random
@@ -111,7 +110,7 @@ impl Cuboid {
     }
 }
 
-impl Object for Cuboid {
+impl Object for Cube {
     /// Shoot ray forwards and backwards. If both hit, we are inside.
     /// Probably faster ways to do this.
     fn inside(&self, p: DVec3) -> bool {

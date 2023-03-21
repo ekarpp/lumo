@@ -20,8 +20,8 @@ fn _triangle_to_rect(abc: DMat3) -> DVec3 {
 
 /// Defines infinite planes
 pub mod plane;
-/// Defines cuboids. Built from six rectangles.
-pub mod cuboid;
+/// Defines a unit cube. Transform to desired shape with instances.
+pub mod cube;
 /// Defines spheres.
 pub mod sphere;
 /// Defines triangles.

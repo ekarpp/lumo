@@ -113,13 +113,14 @@ fn main() {
     let scene = if cli_args.boxx {
         Scene::box_scene(fl)
     } else {
-        Scene::obj_scene()//default_scene()
+        //Scene::obj_scene()
+        Scene::default_scene()
     };
     let cam = Camera::new(
         img_width as f64 / img_height as f64,
         cli_args.vfov.unwrap_or(90.0),
-        DVec3::new(-2.0, 0.0, 2.0), /* origin */
-        DVec3::new(0.0, 0.0, 0.0), /* towards */
+        DVec3::new(0.0, 0.0, 0.0), /* origin */
+        DVec3::new(0.0, 0.0, -1.0), /* towards */
         DVec3::new(0.0, 1.0, 0.0), /* up */
         fl, /* focal length */
     );
