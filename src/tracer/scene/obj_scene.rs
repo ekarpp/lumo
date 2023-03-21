@@ -29,9 +29,10 @@ impl Scene {
                     Material::diffuse(
                         Texture::Solid(DVec3::new(0.0, 1.0, 0.0))
                     ))
-                    .rotate_y(PI / 10.0)
-                    .scale(DVec3::new(light_xy, 2.0*light_xy, light_xy))
-                    .translate(DVec3::new(light_xy, yg, 1.7*light_z))
+                    .scale(DVec3::splat(0.025))
+                    .rotate_z(PI / 2.0)
+                    .rotate_x(-PI / 2.0)
+                    .translate(DVec3::new(0.0, -0.5, -0.5))
                     .make_box(),
                 Rectangle::new(
                     DMat3::from_cols(

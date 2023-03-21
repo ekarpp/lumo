@@ -103,6 +103,21 @@ impl<T: Bounded> KdTree<T> {
             }
         }
     }
+
+    fn hit_slow(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        self.objects.iter().fold(None, |closest, obj| {
+            let hit = obj.hit(r, t_min, t_max);
+            if closest.is_none() || (hit.is_some() && hit < closest) {
+                hit
+            } else {
+                closest
+            }
+        })
+            .map(|mut h| {
+                h.object = self;
+                h
+            })
+    }
 }
 
 impl<T: Bounded> Bounded for KdTree<T> {
@@ -115,6 +130,7 @@ impl<T: Bounded> Object for KdTree<T> {
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        //return self.hit_slow(r, t_min, t_max);
         let (bb_min, bb_max) = self.boundary.intersect(r);
 
         if bb_min.max(t_min) > bb_max.min(t_max) {

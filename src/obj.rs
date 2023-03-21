@@ -41,6 +41,7 @@ pub fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
         }
     }
 
+    println!("parsed .OBJ file with {} triangles", triangles.len());
     Ok(triangles)
 }
 
