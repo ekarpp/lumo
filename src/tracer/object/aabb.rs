@@ -2,13 +2,10 @@
 use super::*;
 
 /// Axis aligned bounding box
+#[derive(Copy, Clone)]
 pub struct AaBoundingBox {
     pub ax_min: DVec3,
     pub ax_max: DVec3,
-}
-
-pub trait Bounded: Object {
-    fn bounding_box(&self) -> AaBoundingBox;
 }
 
 impl Default for AaBoundingBox {
@@ -65,10 +62,37 @@ impl AaBoundingBox {
         ts < te && te > EPSILON
     }
 
+    /// Combine self and other to a new bigger AABB
     pub fn merge(&self, other: &Self) -> Self {
         Self {
             ax_min: self.ax_min.min(other.ax_min),
             ax_max: self.ax_max.max(other.ax_max),
         }
+    }
+
+    /// Split `self` along `axis` (x=0, y=1, z=2) at `value`
+    pub fn split(&self, axis: usize, value: f64) -> (Self, Self) {
+        let mut ax_mid_max = self.ax_max;
+        let mut ax_mid_min = self.ax_min;
+        match axis {
+            0 => {
+                ax_mid_max.x = value;
+                ax_mid_min.x = value;
+            }
+            1 => {
+                ax_mid_max.y = value;
+                ax_mid_min.y = value;
+            }
+            2 => {
+                ax_mid_max.z = value;
+                ax_mid_min.z = value;
+            }
+            _ => panic!(),
+        }
+
+        (
+            Self::new(self.ax_min, ax_mid_max),
+            Self::new(ax_mid_min, self.ax_max),
+        )
     }
 }

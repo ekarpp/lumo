@@ -6,12 +6,13 @@ pub struct KdTree<T> {
     objects: Vec<T>,
     boundary: AaBoundingBox,
     root: Box<KdNode>,
+    material: Material,
 }
 
 /// https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs
 /// https://github.com/fogleman/pt/blob/master/pt/tree.go
 impl<T: Bounded> KdTree<T> {
-    pub fn new(objects: Vec<T>) -> Self {
+    pub fn new(objects: Vec<T>, material: Material) -> Self {
         let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects.iter()
             .map(|obj| obj.bounding_box()).collect();
@@ -23,7 +24,36 @@ impl<T: Bounded> KdTree<T> {
             root: KdNode::construct(&objects, &bounds, indices),
             objects,
             boundary,
+            material,
         }
+    }
+}
+
+impl<T: Bounded> Bounded for KdTree<T> {
+    fn bounding_box(&self) -> AaBoundingBox {
+        self.boundary
+    }
+}
+
+impl<T: Bounded> Object for KdTree<T> {
+    fn material(&self) -> &Material { &self.material }
+
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        todo!()
+    }
+
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
+        // pick at random a triangle and do it
+        todo!()
+    }
+
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
+        // pick at random a triangle and do it
+        todo!()
+    }
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+        // pick at random a triangle and do it
+        todo!()
     }
 }
 

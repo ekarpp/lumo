@@ -2,7 +2,6 @@ use crate::DVec3;
 use std::fs::File;
 use std::io::{self, Result, BufReader, BufRead};
 use crate::tracer::object::triangle::Triangle;
-use crate::tracer::object::kdtree::Mesh;
 
 /// Function to create io::Error
 fn io_error(message: String) -> io::Error {
@@ -11,7 +10,7 @@ fn io_error(message: String) -> io::Error {
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-pub fn load_obj_file(file: File) -> Result<Mesh> {
+pub fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();
@@ -41,7 +40,7 @@ pub fn load_obj_file(file: File) -> Result<Mesh> {
         }
     }
 
-    Ok(Mesh::new(triangles))
+    Ok(triangles)
 }
 
 fn parse_double(token: &str) -> Result<f64> {

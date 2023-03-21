@@ -8,7 +8,7 @@ use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::object::triangle::Triangle;
 use crate::tracer::object::rectangle::Rectangle;
-use crate::tracer::object::aabb::{AaBoundingBox, Bounded};
+use crate::tracer::object::aabb::AaBoundingBox;
 
 /* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
@@ -44,7 +44,7 @@ pub trait Object: Sync {
     fn material(&self) -> &Material;
 
     /// Is the point inside the object? Care with epsilons here.
-    /// How about planar/solid objects?
+    /// How about planar/solid objects? Get rid of this, just check from normal
     fn inside(&self, _p: DVec3) -> bool { false }
 
     /// Sample random point on the surface of the object
@@ -63,4 +63,9 @@ pub trait Object: Sync {
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
     fn sample_towards_pdf(&self, ri: &Ray) -> f64;
+}
+
+/// Objects that can be contained within an AABB
+pub trait Bounded: Object {
+    fn bounding_box(&self) -> AaBoundingBox;
 }
