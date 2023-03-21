@@ -3,8 +3,8 @@ use super::*;
 
 /// Axis aligned bounding box
 pub struct AaBoundingBox {
-    ax_min: DVec3,
-    ax_max: DVec3,
+    pub ax_min: DVec3,
+    pub ax_max: DVec3,
 }
 
 pub trait Bounded: Object {
@@ -25,6 +25,26 @@ impl AaBoundingBox {
         Self {
             ax_min,
             ax_max,
+        }
+    }
+
+    /// Get minimum value in `axis` (`0=x, 1=y, 2=z`).
+    pub fn get_min_axis(&self, axis: usize) -> f64 {
+        match axis {
+            0 => self.ax_min.x,
+            1 => self.ax_min.y,
+            2 => self.ax_min.z,
+            _ => panic!(),
+        }
+    }
+
+    /// Get maximum value in `axis` (`0=x, 1=y, 2=z`).
+    pub fn get_max_axis(&self, axis: usize) -> f64 {
+        match axis {
+            0 => self.ax_max.x,
+            1 => self.ax_max.y,
+            2 => self.ax_max.z,
+            _ => panic!(),
         }
     }
 
