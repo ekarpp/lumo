@@ -113,8 +113,8 @@ fn main() {
     let scene = if cli_args.boxx {
         Scene::box_scene(fl)
     } else {
-        //Scene::obj_scene()
-        Scene::default_scene()
+        Scene::obj_scene(fl)
+        //Scene::default_scene()
     };
     let cam = Camera::new(
         img_width as f64 / img_height as f64,

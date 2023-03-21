@@ -10,44 +10,97 @@ impl Scene {
         obj::load_obj_file(File::open(fname)?)
     }
 
-    pub fn obj_scene() -> Self {
+    pub fn obj_scene(focal_length: f64) -> Self {
         let tringl = match Self::load_obj("test.obj") {
             Err(e) => panic!("{}", e),
             Ok(ts) => ts,
         };
 
-        let mesh = Mesh::new(
-            tringl,
-            Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)))
-        );
+        let yg = -focal_length;
+        let col = DVec3::splat(0.95);
+        let light_z = yg;
+        let light_xy = 0.2*focal_length;
+        let r = 0.2*focal_length;
 
         Self::new(
             vec![
-                Box::new(mesh),
-                Sphere::new(
-                    DVec3::new(-2.0, 1.0, -2.0),
-                    0.5,
+                Mesh::new(
+                    tringl,
+                    Material::diffuse(
+                        Texture::Solid(DVec3::new(0.0, 1.0, 0.0))
+                    ))
+                    .rotate_y(PI / 10.0)
+                    .scale(DVec3::new(light_xy, 2.0*light_xy, light_xy))
+                    .translate(DVec3::new(light_xy, yg, 1.7*light_z))
+                    .make_box(),
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-2.0*light_xy, -yg - EPSILON, light_z + 2.0*light_xy),
+                        DVec3::new(-2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
+                        DVec3::new(2.0*light_xy, -yg - EPSILON, light_z - 2.0*light_xy),
+                    ),
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
-                Sphere::new(
-                    DVec3::ZERO,
-                    15.0,
-                    Material::diffuse(Texture::Solid(DVec3::splat(0.5)))
+                /* roof */
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(yg - light_xy, -yg, 0.0),
+                        DVec3::new(yg - light_xy, -yg, 2.0*light_z),
+                        DVec3::new(-yg + light_xy, -yg, 2.0*light_z),
+                    ),
+                    Material::diffuse(Texture::Solid(col)),
                 ),
-                Plane::new(
-                    DVec3::new(0.0, -0.5, 0.0),
-                    DVec3::new(0.0, 1.0, 0.0),
-                    Material::Diffuse(Texture::Checkerboard(
-                        Box::new(Texture::Checkerboard(
-                            Box::new(Texture::Solid(DVec3::ZERO)),
-                            Box::new(Texture::Solid(DVec3::ONE)),
-                            4.0,
-                        )),
-                        Box::new(Texture::Marble(
-                            Perlin::new(DVec3::splat(192.0) / 255.9)
-                        )),
-                        1.0,
-                    )),
+                /* floor */
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(yg, yg, 2.0*light_z),
+                        DVec3::new(yg, yg, 0.0),
+                        DVec3::new(-yg, yg, 0.0),
+                    ),
+                    Material::metal(
+                        Texture::Checkerboard(
+                            Box::new(Texture::Solid(col)),
+                            Box::new(Texture::Solid(DVec3::new(0.0, 0.0, 0.9))),
+                            2.42,
+                        ),
+                        0.01,
+                    ),
+                ),
+                /* front wall */
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-yg, -yg, 2.0*light_z + 4.0*EPSILON),
+                        DVec3::new(yg, -yg, 2.0*light_z + 4.0*EPSILON),
+                        DVec3::new(yg, yg, 2.0*light_z + 4.0*EPSILON),
+                    ),
+                    Material::diffuse(Texture::Solid(col)),
+                ),
+                /* left wall */
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(yg, yg - light_xy, 2.0*light_z),
+                        DVec3::new(yg, -yg + light_xy, 2.0*light_z),
+                        DVec3::new(yg, -yg + light_xy, 0.0),
+                    ),
+                    Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+                ),
+                /* right wall */
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(-yg - 5.0*EPSILON, -yg + 5.0*EPSILON, 0.0),
+                        DVec3::new(-yg - 5.0*EPSILON, -yg + 5.0*EPSILON, 2.0*light_z),
+                        DVec3::new(-yg - 5.0*EPSILON, yg - 5.0*EPSILON, 2.0*light_z),
+                    ),
+                    Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+                ),
+                // background
+                Rectangle::new(
+                    DMat3::from_cols(
+                        DVec3::new(yg, -yg, 0.0),
+                        DVec3::new(-yg, -yg, 0.0),
+                        DVec3::new(-yg, yg, 0.0),
+                    ),
+                    Material::diffuse(Texture::Solid(DVec3::ZERO)),
                 ),
             ]
         )

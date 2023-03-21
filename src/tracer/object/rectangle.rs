@@ -7,10 +7,6 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    /* consider otherways of doing rectangles?
-     * (plane aligned, then transform?? [instances in book])
-     * seemed boring, check if ray hits plane then check if inside rect */
-
     /// Constructs a rectangle from three points. Fourth point, namely `b`,
     /// is mirrored around the triangle
     ///
@@ -18,17 +14,17 @@ impl Rectangle {
     /// * `abc` - Points `a,b,c` stored in the columns
     /// * `norm_dir` - Direction towards which the normal should point
     /// * `material` - Material of the rectangle
-    pub fn new(abc: DMat3, norm_dir: DVec3, material: Material) -> Box<Self>
+    pub fn new(abc: DMat3, material: Material) -> Box<Self>
     {
         /* figure out the correct order of points... */
         let t1 = Triangle::new(
-            abc.col(0), abc.col(1), abc.col(2), norm_dir, Material::Blank
+            abc.col(0), abc.col(1), abc.col(2), Material::Blank
         );
         let t2 = {
             /* d is b "mirrored" */
             let d = _triangle_to_rect(abc);
             Triangle::new(
-                abc.col(0), d, abc.col(2), norm_dir, Material::Blank
+                abc.col(2), d, abc.col(0), Material::Blank
             )
         };
         Box::new(Self {

@@ -42,7 +42,6 @@ impl Scene {
                         DVec3::new(0.8, 0.6, -0.4),
                         DVec3::new(0.4, 0.6, -0.8),
                     ),
-                    DVec3::new(-1.0, 0.0, 0.0),
                     Material::Mirror,
                 ),
                 Cube::new(

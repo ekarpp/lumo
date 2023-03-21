@@ -16,19 +16,18 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    /// Constructs triangle from three points and specified normal direction
+    /// Constructs triangle from three points. Normal determined from order of
+    /// the points, they are in counter-clockwise order.
     ///
     /// # Arguments
     /// * `a,b,c` - Three vertices of the triangle
-    /// * `norm_dir` - Direction where normal should point
     /// * `material` - Material of the triangle
-    pub fn new(a: DVec3, b: DVec3, c: DVec3, norm_dir: DVec3, material: Material)
+    pub fn new(a: DVec3, b: DVec3, c: DVec3, material: Material)
                -> Box<Self> {
         /* check degeneracy */
         assert!((b - a).cross(c - a).length() != 0.0);
 
         let norm = (b - a).cross(c - a).normalize();
-        let norm = if norm.dot(norm_dir) > 0.0 { norm } else { -norm };
         Box::new(Self {
             a,
             b,
