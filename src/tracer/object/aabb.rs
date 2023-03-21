@@ -25,26 +25,6 @@ impl AaBoundingBox {
         }
     }
 
-    /// Get minimum value in `axis` (`0=x, 1=y, 2=z`).
-    pub fn get_min_axis(&self, axis: usize) -> f64 {
-        match axis {
-            0 => self.ax_min.x,
-            1 => self.ax_min.y,
-            2 => self.ax_min.z,
-            _ => panic!(),
-        }
-    }
-
-    /// Get maximum value in `axis` (`0=x, 1=y, 2=z`).
-    pub fn get_max_axis(&self, axis: usize) -> f64 {
-        match axis {
-            0 => self.ax_max.x,
-            1 => self.ax_max.y,
-            2 => self.ax_max.z,
-            _ => panic!(),
-        }
-    }
-
     pub fn intersect(&self, r: &Ray) -> (f64, f64) {
         let mut t_max = -f64::INFINITY;
         let mut t_min = f64::INFINITY;
