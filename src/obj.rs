@@ -77,7 +77,7 @@ fn parse_face(
     let mut nidxs: Vec<usize> = Vec::new();
 
     for token in &tokens[1..] {
-        let arguments: Vec<&str> = token.split("/").collect();
+        let arguments: Vec<&str> = token.split('/').collect();
 
         let vidx = parse_idx(arguments[0], vidxs.len())?;
         vidxs.push(vidx);

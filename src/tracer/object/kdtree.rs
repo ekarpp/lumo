@@ -17,7 +17,7 @@ impl<T: Bounded> KdTree<T> {
         let bounds: Vec<AaBoundingBox> = objects.iter()
             .map(|obj| obj.bounding_box()).collect();
         let boundary = bounds.iter()
-            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(&b2));
+            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
 
 
         Self {

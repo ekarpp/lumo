@@ -14,9 +14,10 @@ pub struct MicrofacetConfig {
 
 impl MicrofacetConfig {
     pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64) -> Self {
-        assert!(roughness <= 1.0 && roughness >= 0.0);
+        assert!((0.0..=1.0).contains(&roughness));
+        assert!((0.0..=1.0).contains(&metallicity));
         assert!(refraction_idx >= 1.0);
-        assert!(metallicity <= 1.0 && metallicity >= 0.0);
+
         Self {
             roughness,
             refraction_idx,
@@ -59,7 +60,7 @@ impl MfDistribution {
     /// Getter, better way to do this?
     fn get_config(&self) -> &MicrofacetConfig {
         match self {
-            Self::Ggx(cfg) | Self::Beckmann(cfg) => &cfg,
+            Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg,
         }
     }
 
