@@ -11,8 +11,8 @@ pub struct AaBoundingBox {
 impl Default for AaBoundingBox {
     fn default() -> Self {
         Self {
-            ax_min: DVec3::splat(-INFINITY),
-            ax_max: DVec3::splat(INFINITY),
+            ax_min: DVec3::splat(INFINITY),
+            ax_max: DVec3::splat(-INFINITY),
         }
     }
 }
@@ -64,10 +64,10 @@ impl AaBoundingBox {
 
     /// Combine self and other to a new bigger AABB
     pub fn merge(&self, other: &Self) -> Self {
-        Self {
-            ax_min: self.ax_min.min(other.ax_min),
-            ax_max: self.ax_max.max(other.ax_max),
-        }
+        Self::new(
+            self.ax_min.min(other.ax_min),
+            self.ax_max.max(other.ax_max),
+        )
     }
 
     /// Split `self` along `axis` (x=0, y=1, z=2) at `value`
