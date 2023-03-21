@@ -20,7 +20,6 @@ impl Scene {
         let col = DVec3::splat(0.95);
         let light_z = yg;
         let light_xy = 0.2*focal_length;
-        let r = 0.2*focal_length;
 
         Self::new(
             vec![

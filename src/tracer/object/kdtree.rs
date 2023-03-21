@@ -185,7 +185,6 @@ impl KdNode {
             }
         });
 
-        let f64_cmp = |a: &f64, b: &f64| a.partial_cmp(b).unwrap();
         (0..3).for_each(|ax| {
             bb_vals[ax].sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
         });

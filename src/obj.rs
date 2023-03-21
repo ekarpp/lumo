@@ -98,7 +98,7 @@ fn parse_face(
             triangles.push(*Triangle::new(abc, Material::Blank));
         } else {
             let (na, nb, nc) = (nidxs[a], nidxs[b], nidxs[c]);
-            let nabc = (normals[nc], normals[nb], normals[nc]);
+            let nabc = (normals[na], normals[nb], normals[nc]);
             triangles.push(Triangle::new_w_normals(abc, nabc));
         }
     }
