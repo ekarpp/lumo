@@ -45,9 +45,9 @@ impl AaBoundingBox {
         }
     }
 
-    pub fn intersect(&self, r: &Ray) -> bool {
-        let mut ts = -f64::INFINITY;
-        let mut te = f64::INFINITY;
+    pub fn intersect(&self, r: &Ray) -> (f64, f64) {
+        let mut t_max = -f64::INFINITY;
+        let mut t_min = f64::INFINITY;
         let ro_min = (self.ax_min - r.origin).to_array();
         let ro_max = (self.ax_max - r.origin).to_array();
         let rd = r.dir.to_array();
@@ -55,11 +55,11 @@ impl AaBoundingBox {
         (0..3).for_each(|i: usize| {
             let t1 = ro_min[i] / rd[i];
             let t2 = ro_max[i] / rd[i];
-            ts = ts.max(t1);
-            te = te.min(t2);
+            t_max = t_max.max(t1);
+            t_min = t_min.min(t2);
         });
 
-        ts < te && te > EPSILON
+        (t_min, t_max)
     }
 
     /// Combine self and other to a new bigger AABB

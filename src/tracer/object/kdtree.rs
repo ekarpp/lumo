@@ -27,6 +27,82 @@ impl<T: Bounded> KdTree<T> {
             material,
         }
     }
+
+    fn hit_subtree(
+        &self,
+        node: &KdNode,
+        r: &Ray,
+        t_min: f64,
+        t_max: f64,
+        aabb: &AaBoundingBox
+    ) -> Option<Hit> {
+        let (axis, median, node_left, node_right) = match node {
+            KdNode::Split(axis, median, left, right) => {
+                (*axis, *median, left, right)
+            }
+            KdNode::Leaf(indices) => {
+                return indices.iter()
+                    .map(|idx| self.objects[*idx].hit(r, t_min, t_max))
+                    .fold(None, |closest, hit| {
+                        if closest.is_none() || (hit.is_some() && hit < closest) {
+                            hit
+                        } else {
+                            closest
+                        }
+                    })
+                    .map(|mut h| {
+                        h.object = self;
+                        h
+                    })
+            }
+        };
+
+        let axis_ro = r.origin.to_array()[axis];
+        let axis_rd = r.dir.to_array()[axis];
+        let t_split = (median - axis_ro) / axis_rd;
+        // ??
+        let left_first = (axis_ro < median)
+            || (axis_ro == median && axis_rd <= 0.0);
+
+        let (aabb_first, aabb_second) = {
+            let (aabb_left, aabb_right) = aabb.split(axis, median);
+            if left_first {
+                (aabb_left, aabb_right)
+            } else {
+                (aabb_right, aabb_left)
+            }
+        };
+
+        let (first, second) = {
+            if left_first {
+                (node_left, node_right)
+            } else {
+                (node_right, node_left)
+            }
+        };
+
+        let (bb_min, bb_max) = aabb.intersect(r);
+
+        if t_split > bb_max.min(t_max) || t_split <= 0.0 {
+            self.hit_subtree(first, r, t_min, t_max, &aabb_first)
+        } else if t_split < bb_min.max(t_min) {
+            self.hit_subtree(second, r, t_min, t_max, &aabb_second)
+        } else {
+            let h1 =
+                self.hit_subtree(first, r, t_min, t_max, &aabb_first);
+            if h1.as_ref().filter(|h| h.t < t_split).is_some() {
+                h1
+            } else {
+                let h2 =
+                    self.hit_subtree(second, r, t_min, t_max, &aabb_second);
+                if h1.is_some() && h2.is_some() {
+                    if h1 < h2 { h1 } else { h2 }
+                } else {
+                    h1.and(h2)
+                }
+            }
+        }
+    }
 }
 
 impl<T: Bounded> Bounded for KdTree<T> {
@@ -39,7 +115,13 @@ impl<T: Bounded> Object for KdTree<T> {
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        todo!()
+        let (bb_min, bb_max) = self.boundary.intersect(r);
+
+        if bb_min.max(t_min) > bb_max.min(t_max) {
+            None
+        } else {
+            self.hit_subtree(&self.root, r, t_min, t_max, &self.boundary)
+        }
     }
 
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
@@ -59,12 +141,8 @@ impl<T: Bounded> Object for KdTree<T> {
 
 /// A node in the kD-tree. Can be either a plane split or a leaf node.
 pub enum KdNode {
-    /// X-split, split point and child nodes
-    SplitX(f64, Box<KdNode>, Box<KdNode>),
-    /// Y-split, split point and child nodes
-    SplitY(f64, Box<KdNode>, Box<KdNode>),
-    /// Z-split, split point and child nodes
-    SplitZ(f64, Box<KdNode>, Box<KdNode>),
+    /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
+    Split(usize, f64, Box<KdNode>, Box<KdNode>),
     /// Stores indices to the object vector in the kD-tree
     Leaf(Vec<usize>),
 }
@@ -151,35 +229,13 @@ impl KdNode {
 
         let (left, right) = partition(axis, median);
 
-        match axis {
-            0 => {
-                Box::new(
-                    Self::SplitX(
-                        median,
-                        Self::construct(objects, bounds, left),
-                        Self::construct(objects, bounds, right),
-                    )
-                )
-            }
-            1 => {
-                Box::new(
-                    Self::SplitY(
-                        median,
-                        Self::construct(objects, bounds, left),
-                        Self::construct(objects, bounds, right),
-                    )
-                )
-            }
-            2 => {
-                Box::new(
-                    Self::SplitY(
-                        median,
-                        Self::construct(objects, bounds, left),
-                        Self::construct(objects, bounds, right),
-                    )
-                )
-            }
-            _ => panic!(),
-        }
+        Box::new(
+            Self::Split(
+                axis,
+                median,
+                Self::construct(objects, bounds, left),
+                Self::construct(objects, bounds, right),
+            )
+        )
     }
 }
