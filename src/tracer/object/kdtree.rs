@@ -20,11 +20,12 @@ impl<T: Bounded> KdTree<T> {
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
         let indices = (0..objects.len()).collect();
+
         let bounds: Vec<AaBoundingBox> = objects.iter()
-            .map(|obj| obj.bounding_box()).collect();
+            .map(|obj| obj.bounding_box())
+            .collect();
         let boundary = bounds.iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
-
 
         Self {
             root: KdNode::construct(&objects, &bounds, indices),
@@ -165,7 +166,8 @@ impl KdNode {
         }
 
         let aabbs: Vec<&AaBoundingBox> = indices.iter()
-            .map(|idx| &bounds[*idx]).collect();
+            .map(|idx| &bounds[*idx])
+            .collect();
 
         let mut bb_vals: [Vec<f64>; 3] = Default::default();
         aabbs.iter().for_each(|aabb| {
@@ -204,9 +206,13 @@ impl KdNode {
 
         let scores: Vec<usize> = (0..3).map(|ax| score(ax, med[ax])).collect();
 
-        let (best_score, axis, median) =
-            (1..3).fold((scores[0], 0, med[0]), |best, ax| {
-                if scores[ax] > best.0 { (scores[ax], ax, med[ax]) } else { best }
+        let (best_score, axis, median) = (1..3)
+            .fold((scores[0], 0, med[0]), |best, ax| {
+                if scores[ax] > best.0 {
+                    (scores[ax], ax, med[ax])
+                } else {
+                    best
+                }
             });
 
         let threshold = (indices.len() as f64 * 0.85) as usize;
@@ -217,14 +223,16 @@ impl KdNode {
         let partition = |axis: usize, median: f64| {
             let mut left = Vec::new();
             let mut right = Vec::new();
-            aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
-                if aabb.ax_min.to_array()[axis] <= median {
-                    left.push(idx);
-                }
-                if aabb.ax_max.to_array()[axis] >= median {
-                    right.push(idx);
-                }
-            });
+            aabbs.iter()
+                .zip(indices)
+                .for_each(|(aabb, idx)| {
+                    if aabb.ax_min.to_array()[axis] <= median {
+                        left.push(idx);
+                    }
+                    if aabb.ax_max.to_array()[axis] >= median {
+                        right.push(idx);
+                    }
+                });
             (left, right)
         };
 

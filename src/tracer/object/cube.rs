@@ -96,7 +96,8 @@ impl Object for Cube {
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.rectangles.iter().map(|rect| rect.hit(r, t_min, t_max))
+        self.rectangles.iter()
+            .map(|rect| rect.hit(r, t_min, t_max))
             .fold(None, |closest, hit| {
                 if closest.is_none() || (hit.is_some() && hit < closest) {
                     hit

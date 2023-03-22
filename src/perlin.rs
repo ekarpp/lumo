@@ -71,8 +71,8 @@ impl Perlin {
         let weight = p.fract();
         let floor = p.floor();
 
-        let normals = (0..2).cartesian_product(0..2)
-            .cartesian_product(0..2).map(|((i,j),k)| {
+        let normals = (0..2).cartesian_product(0..2).cartesian_product(0..2)
+            .map(|((i,j),k)| {
                 self.lattice[
                     self._hash(
                         floor.x as usize + i,
@@ -80,7 +80,8 @@ impl Perlin {
                         floor.z as usize + k
                     )
                 ]
-        }).collect();
+            })
+            .collect();
 
         self.interp(normals, self._smootherstep(weight))
     }
@@ -108,12 +109,14 @@ impl Perlin {
     /// * `normals` - Normals to perform interpolation with
     /// * `w` - Fractional part of the point. Gives distances to each normal.
     fn interp(&self, normals: Vec<DVec3>, w: DVec3) -> f64 {
-        (0..2).cartesian_product(0..2)
-            .cartesian_product(0..2).zip(normals).map(|(((x,y),z), norm)| {
+        (0..2).cartesian_product(0..2).cartesian_product(0..2)
+            .zip(normals)
+            .map(|(((x,y),z), norm)| {
                 let idx = UVec3::new(x, y, z).as_dvec3();
                 let widx = 2.0*w*idx + DVec3::ONE - w - idx;
 
                 widx.x * widx.y * widx.z * norm.dot(w - idx)
-            }).fold(0.0, |acc, v| acc + v)
+            })
+            .fold(0.0, |acc, v| acc + v)
     }
 }

@@ -59,8 +59,7 @@ impl Renderer {
     pub fn render(&self) -> Image {
         let start = Instant::now();
 
-        let buffer: Vec<DVec3> = (0..self.img_height)
-            .into_par_iter()
+        let buffer: Vec<DVec3> = (0..self.img_height).into_par_iter()
             .flat_map(|y: i32| {
                 (0..self.img_width)
                     .map(|x: i32| self.get_color(x, y))
@@ -89,18 +88,20 @@ impl Renderer {
         let v = (2 * (self.img_height - y) - 1 - self.img_height) as f64
             / max_dim;
 
-        PxSampler::new(self.num_samples).map(|rand_sq: DVec2| {
-            // random offsets
-            let ou = rand_sq.x / max_dim;
-            let ov = rand_sq.y / max_dim;
-            self.integrator.integrate(
-                &self.scene,
-                &self.camera.ray_at(
-                    u + ou,
-                    v + ov
-                ),
-            )
-        }).fold(DVec3::ZERO, |acc: DVec3, c: DVec3| acc + c)
+        PxSampler::new(self.num_samples)
+            .map(|rand_sq: DVec2| {
+                // random offsets
+                let ou = rand_sq.x / max_dim;
+                let ov = rand_sq.y / max_dim;
+                self.integrator.integrate(
+                    &self.scene,
+                    &self.camera.ray_at(
+                        u + ou,
+                        v + ov
+                    ),
+                )
+            })
+            .fold(DVec3::ZERO, |acc: DVec3, c: DVec3| acc + c)
             / self.num_samples as f64
     }
 }
