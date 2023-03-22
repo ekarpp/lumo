@@ -20,7 +20,7 @@ fn main() -> Result<(), std::io::Error> {
 
     scene.add(
         Mesh::new(
-            obj::load_obj_file(File::open("test.obj")?)?,
+            obj::load_obj_file(File::open("examples/humanoid.obj")?)?,
             Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)))
         )
             .scale(DVec3::splat(0.025))
