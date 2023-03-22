@@ -150,7 +150,10 @@ fn main() {
     );
 
     let start_png = std::time::SystemTime::now();
-    image.save();
+    match image.save() {
+        Ok(()) => (),
+        Err(e) => println!("error during png encoding {e:?}"),
+    }
     match start_png.elapsed() {
         Ok(v) => println!("created png in {v:?}"),
         Err(e) => println!("png done, error measuring duration {e:?}"),
