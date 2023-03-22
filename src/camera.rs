@@ -16,7 +16,6 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self::new(
-            90.0,
             DVec3::ZERO,
             DVec3::new(0.0, 0.0, -1.0),
             DVec3::new(0.0, 1.0, 0.0),
@@ -43,22 +42,17 @@ impl Camera {
     ///
     /// # Arguments
     ///
-    /// * `vfov` - Vertical field of view, in degrees
     /// * `origin` - Camera origin
     /// * `towards` - Camera is looking at this point
     /// * `up_dir` - Defines up direction for the camera
     /// * `focal_length` - Focal length of the camera
     fn new(
-        vfov: f64,
         origin: DVec3,
         towards: DVec3,
         up_dir: DVec3,
         focal_length: f64
     ) -> Self {
         assert!(origin != towards);
-        assert!(vfov > 0.0 && vfov < 180.0);
-
-        let h = (vfov.to_radians() / 2.0).tan();
 
         let forward = (towards - origin).normalize() * focal_length;
         let right = up_dir.cross(forward).normalize();
