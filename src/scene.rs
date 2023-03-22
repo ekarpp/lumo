@@ -14,6 +14,8 @@ use crate::tracer::object::{cube::Cube, sphere::Sphere, instance::Instanceable};
 #[cfg(test)]
 mod scene_tests;
 
+/// Empty cornell box, custome left right bot material
+pub mod empty_box;
 /// "Cornell Box"
 pub mod box_scene;
 /// Scene showing capabilities of the renderer
@@ -45,7 +47,7 @@ impl Scene {
         }
     }
 
-    /// Choose one of the lights uniformly at random.
+    /// Choose one of the lights uniformly at random. Crash if no lights.
     pub fn uniform_random_light(&self) -> &dyn Object {
         let rnd = rand_utils::rand_f64();
         let idx = (rnd * self.lights.len() as f64).floor() as usize;
