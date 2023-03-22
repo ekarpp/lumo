@@ -5,13 +5,13 @@ use crate::rand_utils;
 /// Choose each sample point uniformly at random
 pub struct UniformSampler {
     /// How many samples have been given?
-    state: usize,
+    state: u32,
     /// How many samples was asked?
-    samples: usize,
+    samples: u32,
 }
 
 impl UniformSampler {
-    pub fn new(samples: usize) -> Self {
+    pub fn new(samples: u32) -> Self {
         Self {
             samples,
             state: 0,
@@ -37,17 +37,17 @@ pub struct JitteredSampler {
     /// Width of one strata
     scale: f64,
     /// How many samples have been given?
-    state: usize,
+    state: u32,
     /// How many strata per dimension?
-    strata_dim: usize,
+    strata_dim: u32,
     /// How many samples have been asked for? Should be a square,
     /// otherwise gets rounded down to the nearest square.
-    samples: usize,
+    samples: u32,
 }
 
 impl JitteredSampler {
-    pub fn new(samples: usize) -> Self {
-        let dim = (samples as f64).sqrt() as usize;
+    pub fn new(samples: u32) -> Self {
+        let dim = (samples as f64).sqrt() as u32;
         Self {
             scale: (dim as f64).recip(),
             samples: dim*dim,

@@ -9,15 +9,15 @@ pub struct Image {
     /// Image buffer storing RGB-channels in range \[0,1\].
     pub buffer: Vec<DVec3>,
     /// Width of rendered image.
-    pub width: usize,
+    pub width: u32,
     /// Height of rendered image.
-    pub height: usize,
+    pub height: u32,
     /// Filename of the output file.
     pub fname: String,
 }
 
 impl Image {
-    pub fn new(buffer: Vec<DVec3>, width: usize, height: usize, fname: String)
+    pub fn new(buffer: Vec<DVec3>, width: u32, height: u32, fname: String)
                -> Self {
         Self {
             buffer,
@@ -30,19 +30,9 @@ impl Image {
     /// to discrete range \[0,255\]. Applies gamma correction.
     #[allow(clippy::identity_op)]
     fn rgb(&self) -> Vec<u8> {
-        let mut rgb_img: Vec<u8> = vec![0; self.width * self.height * 3];
-
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let px = self.buffer[x + y*self.width];
-                let idx = 3*(x + y*self.width);
-                rgb_img[idx + 0] = self.to_srgb(px.x);
-                rgb_img[idx + 1] = self.to_srgb(px.y);
-                rgb_img[idx + 2] = self.to_srgb(px.z);
-            }
-        }
-
-        rgb_img
+        self.buffer.iter().flat_map(|px: &DVec3| {
+            [self.to_srgb(px.x), self.to_srgb(px.y), self.to_srgb(px.z)]
+        }).collect()
     }
 
     fn to_srgb(&self, c: f64) -> u8 {
