@@ -103,21 +103,6 @@ impl<T: Bounded> KdTree<T> {
             }
         }
     }
-
-    fn hit_slow(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.objects.iter().fold(None, |closest, obj| {
-            let hit = obj.hit(r, t_min, t_max);
-            if closest.is_none() || (hit.is_some() && hit < closest) {
-                hit
-            } else {
-                closest
-            }
-        })
-            .map(|mut h| {
-                h.object = self;
-                h
-            })
-    }
 }
 
 impl<T: Bounded> Bounded for KdTree<T> {
@@ -148,7 +133,7 @@ impl<T: Bounded> Object for KdTree<T> {
         // pick at random a triangle and do it
         todo!()
     }
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
         // pick at random a triangle and do it
         todo!()
     }

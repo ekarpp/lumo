@@ -86,7 +86,7 @@ impl Object for Triangle {
         let vec_b = r.origin - self.a;
 
         let beta = vec_b.dot(pde2) / det_a;
-        if beta < 0.0 || beta > 1.0 {
+        if !(0.0..=1.0).contains(&beta) {
             return None;
         }
 
