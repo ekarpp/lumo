@@ -2,9 +2,10 @@ use super::*;
 
 impl Scene {
     pub fn empty_box(
+        def_color: DVec3,
         mat_left: Material,
         mat_right: Material,
-        mat_floor: Material
+        mat_floor: Material,
     ) -> Self {
 
         // aka Y of ground, negate for roof
@@ -15,8 +16,6 @@ impl Scene {
         let front = -2.0;
         // 0.5x of sidelength of area light
         let light_dim = 0.4;
-
-        let def_color = DVec3::splat(0.95);
 
         Self::new(
             vec![

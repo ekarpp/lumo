@@ -1,6 +1,5 @@
 //! Just a path tracer :)
-use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
-pub use glam;
+pub use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 
 pub use consts::*;
 pub use image::*;
@@ -30,7 +29,7 @@ mod pdfs;
 /// Wrapper for writing image buffer to file.
 mod image;
 /// The heart.
-mod tracer;
+pub mod tracer;
 /// Various constants used around the crate.
 mod consts;
 /// Perlin noise generator.

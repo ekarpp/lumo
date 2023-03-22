@@ -16,8 +16,6 @@ mod scene_tests;
 
 /// Empty cornell box, custome left right bot material
 pub mod empty_box;
-/// "Cornell Box"
-pub mod box_scene;
 /// Scene showing capabilities of the renderer
 pub mod default_scene;
 /// Test .OBJ files
@@ -45,6 +43,14 @@ impl Scene {
             objects,
             lights,
         }
+    }
+
+    pub fn add(&mut self, obj: Box<dyn Object>) {
+        // add index to light vector if object is light
+        if matches!(obj.material(), Material::Light(_)) {
+            self.lights.push(self.objects.len());
+        }
+        self.objects.push(obj);
     }
 
     /// Choose one of the lights uniformly at random. Crash if no lights.
