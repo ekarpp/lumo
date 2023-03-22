@@ -26,18 +26,14 @@ impl AaBoundingBox {
     }
 
     pub fn intersect(&self, r: &Ray) -> (f64, f64) {
-        let mut t_max = -f64::INFINITY;
-        let mut t_min = f64::INFINITY;
-        let ro_min = (self.ax_min - r.origin).to_array();
-        let ro_max = (self.ax_max - r.origin).to_array();
-        let rd = r.dir.to_array();
+        let ro_min = self.ax_min - r.origin;
+        let ro_max = self.ax_max - r.origin;
 
-        (0..3).for_each(|i: usize| {
-            let t1 = ro_min[i] / rd[i];
-            let t2 = ro_max[i] / rd[i];
-            t_max = t_max.max(t1);
-            t_min = t_min.min(t2);
-        });
+        let t1 = ro_min / r.dir;
+        let t2 = ro_max / r.dir;
+
+        let t_max = t1.max_element();
+        let t_min = t2.min_element();
 
         (t_min, t_max)
     }
