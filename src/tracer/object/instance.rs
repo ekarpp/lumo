@@ -27,7 +27,6 @@ impl<T> Instance<T> {
     pub fn make_box(self) -> Box<Instance<T>> {
         Box::new(self)
     }
-
 }
 
 impl<T: Object> Object for Instance<T> {
@@ -97,7 +96,7 @@ impl<T: Object> Instanceable<T> for T {
 /// Prevent nested Instance structs
 impl<T: Object> Instance<T> {
     /// Apply translation AFTER curret transformations
-    fn translate(self, t: DVec3) -> Instance<T> {
+    pub fn translate(self, t: DVec3) -> Self {
         Self::new(
             self.object,
             DAffine3::from_translation(t) * self.transform,
@@ -105,7 +104,7 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply scale AFTER current transformations
-    fn scale(self, s: DVec3) -> Instance<T> {
+    pub fn scale(self, s: DVec3) -> Self {
         Self::new(
             self.object,
             DAffine3::from_scale(s) * self.transform,
@@ -113,7 +112,7 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply x-rotation AFTER current transformations
-    fn rotate_x(self, r: f64) -> Instance<T> {
+    pub fn rotate_x(self, r: f64) -> Self {
         Self::new(
             self.object,
             DAffine3::from_rotation_x(r) * self.transform,
@@ -121,7 +120,7 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply y-rotation AFTER current transformations
-    fn rotate_y(self, r: f64) -> Instance<T> {
+    pub fn rotate_y(self, r: f64) -> Self {
         Self::new(
             self.object,
             DAffine3::from_rotation_y(r) * self.transform,
@@ -129,7 +128,7 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply z-rotation AFTER current transformations
-    fn rotate_z(self, r: f64) -> Instance<T> {
+    pub fn rotate_z(self, r: f64) -> Self {
         Self::new(
             self.object,
             DAffine3::from_rotation_z(r) * self.transform,
