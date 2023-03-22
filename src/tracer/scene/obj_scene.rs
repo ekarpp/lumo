@@ -31,7 +31,7 @@ impl Scene {
                     .scale(DVec3::splat(0.025))
                     .rotate_z(PI / 2.0)
                     .rotate_x(-PI / 2.0)
-                    .translate(DVec3::new(0.0, -0.5, -0.5))
+                    .translate(DVec3::new(0.0, -1.0, -1.5))
                     .make_box(),
                 Rectangle::new(
                     DMat3::from_cols(

@@ -130,9 +130,9 @@ impl<T: Bounded> Object for KdTree<T> {
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        let (bb_min, bb_max) = self.boundary.intersect(r);
+        let (bb_strt, bb_end) = self.boundary.intersect(r);
 
-        if bb_min.max(t_min) > bb_max.min(t_max) {
+        if bb_strt.max(t_min) > bb_end.min(t_max) {
             None
         } else {
             self.hit_subtree(&self.root, r, t_min, t_max, &self.boundary)
