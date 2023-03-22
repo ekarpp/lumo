@@ -1,18 +1,29 @@
 #![allow(unused_variables, dead_code)]
 use super::*;
 
-
-
 use crate::tracer::object::sphere::Sphere;
 use crate::tracer::texture::Texture;
 
+/// An object of type medium. Mediums represent space where rays can scatter
+/// at random depending on density. Examples of real life mediums include smoke,
+/// fog, and clouds.
 pub struct Medium {
+    /// Density of the medium
     density: f64,
+    /// Bounding sphere of the medium
     boundary: Sphere,
+    /// Material of the medium
     isotropic: Material,
 }
 
 impl Medium {
+    /// Constructs a medium contained in an invisible sphere.
+    ///
+    /// # Arguments
+    /// * `density` - Density of the medium. In range \[0,1\]
+    /// * `origin` - Origin of the sphere containing the medium
+    /// * `radius` - Radius of the sphere containing the medium
+    /// * `color` - Color of the medium
     pub fn new(density: f64, origin: DVec3, radius: f64, color: DVec3)
                -> Box<Self> {
         Box::new(Self {

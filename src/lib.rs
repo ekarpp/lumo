@@ -1,4 +1,6 @@
 //! Just a path tracer :)
+#![warn(missing_docs)]
+
 pub use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
 
 pub use obj::*;

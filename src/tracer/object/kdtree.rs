@@ -1,7 +1,11 @@
 use super::*;
 
+/// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
 
+/// A k dimensional tree used to accelerate ray intersection calculations.
+/// Implements a binary tree that splits a large mesh of objects to smaller
+/// subobjects.
 pub struct KdTree<T> {
     objects: Vec<T>,
     boundary: AaBoundingBox,
@@ -12,6 +16,8 @@ pub struct KdTree<T> {
 /// https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs
 /// https://github.com/fogleman/pt/blob/master/pt/tree.go
 impl<T: Bounded> KdTree<T> {
+    /// Constructs a kD-tree of the given objects with the given material.
+    /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
         let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects.iter()
@@ -148,6 +154,7 @@ pub enum KdNode {
 }
 
 impl KdNode {
+    /// Constructs nodes of the kD-tree recursively. Naive implementation
     pub fn construct<T: Bounded>(
         objects: &[T],
         bounds: &[AaBoundingBox],

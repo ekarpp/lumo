@@ -11,6 +11,8 @@ pub struct Instance<T> {
 }
 
 impl<T> Instance<T> {
+    /// Constructs an instance of `object` that is transformed with
+    /// `transform`.
     pub fn new(object: T, transform: DAffine3) -> Self {
         let inv_transform = transform.inverse();
         let normal_transform = inv_transform.matrix3.transpose();

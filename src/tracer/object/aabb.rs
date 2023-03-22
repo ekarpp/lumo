@@ -4,7 +4,9 @@ use super::*;
 /// Axis aligned bounding box
 #[derive(Copy, Clone)]
 pub struct AaBoundingBox {
+    /// Minimum values along each axis
     pub ax_min: DVec3,
+    /// Maximum values along each axis
     pub ax_max: DVec3,
 }
 
@@ -18,6 +20,11 @@ impl Default for AaBoundingBox {
 }
 
 impl AaBoundingBox {
+    /// Constructs a AABB of given size.
+    ///
+    /// # Arguments
+    /// * `ax_min` - The minimum values in each dimension
+    /// * `ax_max` - The maxiumum values in each dimension
     pub fn new(ax_min: DVec3, ax_max: DVec3) -> Self {
         Self {
             ax_min,
@@ -25,6 +32,7 @@ impl AaBoundingBox {
         }
     }
 
+    /// Find `t_start` and `t_end` for ray intersection
     pub fn intersect(&self, r: &Ray) -> (f64, f64) {
         let ro_min = (self.ax_min - r.origin).to_array();
         let ro_max = (self.ax_max - r.origin).to_array();

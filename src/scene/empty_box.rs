@@ -1,6 +1,15 @@
 use super::*;
 
 impl Scene {
+    /// Constructs an empty "Cornell box". Middle of the box is at
+    /// `(0.0, 0.0, -1.0)` and it has dimensions `2x2x2`.
+    /// Perfect for the default camera.
+    ///
+    /// # Arguments
+    /// * `def_color` - Color of the roof, and the front wall
+    /// * `mat_left` - Material of the left wall
+    /// * `mat_right` - Material of the right wall
+    /// * `mat_floor` - Material of the floor
     pub fn empty_box(
         def_color: DVec3,
         mat_left: Material,

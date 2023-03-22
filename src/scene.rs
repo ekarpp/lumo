@@ -25,6 +25,7 @@ pub struct Scene {
 }
 
 impl Scene {
+    /// Constructs a scene of the given objects
     pub fn new(objects: Vec<Box<dyn Object>>) -> Self {
         let lights = (0..objects.len()).map(|i: usize| {
             match objects[i].material() {
@@ -39,6 +40,7 @@ impl Scene {
         }
     }
 
+    /// Add an object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
         // add index to light vector if object is light
         if matches!(obj.material(), Material::Light(_)) {

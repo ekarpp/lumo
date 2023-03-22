@@ -13,7 +13,7 @@ pub struct Plane {
 }
 
 impl Plane {
-    /* assume n != 0 */
+    /// Constructs an infinite plane given a point and a normal
     pub fn new(p: DVec3, n: DVec3, material: Material) -> Box<Self> {
         assert!(n.dot(n) != 0.0);
         let norm = n.normalize();

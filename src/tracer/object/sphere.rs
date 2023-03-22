@@ -5,8 +5,11 @@ mod sphere_tests;
 
 /// Sphere specified by its radius and origin
 pub struct Sphere {
+    /// Origin of the sphere
     pub origin: DVec3,
+    /// Radius of the sphere
     pub radius: f64,
+    /// Material of the sphere
     material: Material,
 }
 

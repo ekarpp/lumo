@@ -11,6 +11,7 @@ pub struct UniformSampler {
 }
 
 impl UniformSampler {
+    /// Constructs an uniform sampler with `samples` samples
     pub fn new(samples: u32) -> Self {
         Self {
             samples,
@@ -46,6 +47,7 @@ pub struct JitteredSampler {
 }
 
 impl JitteredSampler {
+    /// Constructs a jittered sampler with `floor(sqrt(samples))^2` samples
     pub fn new(samples: u32) -> Self {
         let dim = (samples as f64).sqrt() as u32;
         Self {

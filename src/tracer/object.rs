@@ -76,5 +76,6 @@ pub trait Object: Sync {
 
 /// Objects that can be contained within an AABB
 pub trait Bounded: Object {
+    /// Axis aligned box that contains the object
     fn bounding_box(&self) -> AaBoundingBox;
 }

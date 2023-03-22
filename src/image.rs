@@ -16,6 +16,8 @@ pub struct Image {
 }
 
 impl Image {
+    /// Image constructor. Buffer is of length `width * height` with linear
+    /// RGB values in range \[0,1\].
     pub fn new(buffer: Vec<DVec3>, width: i32, height: i32) -> Self {
         Self {
             buffer,

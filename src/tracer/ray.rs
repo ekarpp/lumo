@@ -9,6 +9,7 @@ pub struct Ray {
 }
 
 impl Ray {
+    /// Constructs a ray. Normalize direction?
     pub fn new(origin: DVec3, dir: DVec3) -> Self {
         Self {
             origin,
@@ -16,6 +17,7 @@ impl Ray {
         }
     }
 
+    /// Position of the ray at time `t`
     pub fn at(&self, t: f64) -> DVec3 {
         self.origin + t*self.dir
     }

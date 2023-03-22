@@ -1,7 +1,10 @@
 use super::*;
 
+/// A cube consisting of 6 rectangles
 pub struct Cube {
+    /// The rectangle faces of the cube
     rectangles: [Rectangle; 6],
+    /// Material of the cube. Make the rectangles have their own material?
     material: Material,
 }
 

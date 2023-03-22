@@ -9,24 +9,26 @@ use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
 use crate::scene::Scene;
 
-/// Implements the path tracing algorithm with
-/// Russian Roulette (With probability `p` terminate each path.
-/// Multiply contributions by reciprocal of `1-p`) and
-/// next event estimation (Importance sample light at each impact).
+
 mod path_trace;
-/// Naive integrator that importance samples light once.
 mod direct_light;
-/// bidirectional path tracing
 mod bd_path_trace;
 
 /// Enum to choose which integrator to use
 pub enum Integrator {
+    /// Implements the path tracing algorithm with
+    /// Russian Roulette (With probability `p` terminate each path.
+    /// Multiply contributions by reciprocal of `1-p`) and
+    /// next event estimation (Importance sample light at each impact).
     PathTrace,
+    /// Naive integrator that importance samples light once.
     DirectLight,
+    /// Bidirectional path tracing. Not implemented.
     BDPathTrace,
 }
 
 impl Integrator {
+    /// Calls the corresponding integration function
     pub fn integrate(&self, s: &Scene, r: &Ray) -> DVec3 {
         match self {
             Self::PathTrace => path_trace::integrate(s, r, true),

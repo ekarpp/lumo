@@ -28,6 +28,8 @@ impl Default for Perlin {
 }
 
 impl Perlin {
+    /// Constructs new perlin generator with the given underlying colour.
+    /// Pass texture instead?
     pub fn new(albedo: DVec3) -> Self {
         Self {
             albedo,
@@ -40,6 +42,8 @@ impl Perlin {
         }
     }
 
+    /// Computes color of the noise at point `p`. Perlin noise
+    /// with turbulence.
     pub fn albedo_at(&self, p: DVec3) -> DVec3 {
         self.albedo * self._scale_turb(
             p.x,
@@ -51,6 +55,8 @@ impl Perlin {
         1.0 - (0.5 + 0.5*(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(6)
     }
 
+    /// Computes the turbulence for the noise. I.e. absolute values of the
+    /// noise at different octaves are summed together.
     fn turbulence(&self, acc: f64, p: DVec3, depth: i32) -> f64 {
         if depth >= PERLIN_OCTAVES {
             return acc;
@@ -60,6 +66,7 @@ impl Perlin {
         self.turbulence(acc + w*self.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
 
+    /// Computes traditional perlin noise at point `p`
     fn noise_at(&self, p: DVec3) -> f64 {
         let weight = p.fract();
         let floor = p.floor();
