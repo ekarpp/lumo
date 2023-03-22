@@ -13,12 +13,18 @@ struct PermutationXyz {
 
 /// Instance of Perlin noise generator.
 pub struct Perlin {
-    /// a.k.a the underlying colour
+    /// a.k.a the underlying colour. use texture instead?
     albedo: DVec3,
     /// Random normals of the Perlin lattice
     lattice: Vec<DVec3>,
     /// Permutation directions
     perm: PermutationXyz,
+}
+
+impl Default for Perlin {
+    fn default() -> Self {
+        Self::new(DVec3::ONE)
+    }
 }
 
 impl Perlin {

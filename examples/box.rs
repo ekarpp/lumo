@@ -14,8 +14,11 @@ fn main() {
     let def_color = DVec3::splat(0.95);
     let mut scene = Scene::empty_box(
         def_color,
+        // left
         Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+        // right
         Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+        // floor
         Material::metal(
             Texture::Checkerboard(
                 Box::new(Texture::Solid(def_color)),

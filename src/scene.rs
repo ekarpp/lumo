@@ -18,8 +18,6 @@ mod scene_tests;
 pub mod empty_box;
 /// Scene showing capabilities of the renderer
 pub mod default_scene;
-/// Test .OBJ files
-pub mod obj_scene;
 
 /// Defines a scene in 3D space
 pub struct Scene {

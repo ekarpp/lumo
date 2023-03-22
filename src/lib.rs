@@ -21,7 +21,7 @@ pub mod camera;
 
 
 /// .OBJ file loader
-mod obj;
+pub mod obj;
 /// Utility struct for orthonormal basis.
 mod onb;
 /// Implementation of different probability density functions for sampling.
@@ -33,7 +33,7 @@ pub mod tracer;
 /// Various constants used around the crate.
 mod consts;
 /// Perlin noise generator.
-mod perlin;
+pub mod perlin;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
 /// Main renderer.

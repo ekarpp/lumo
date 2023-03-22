@@ -31,19 +31,19 @@ impl Renderer {
         }
     }
 
-    pub fn set_width(mut self, img_width: i32) {
+    pub fn set_width(&mut self, img_width: i32) {
         self.img_width = img_width;
     }
 
-    pub fn set_height(mut self, img_height: i32) {
+    pub fn set_height(&mut self, img_height: i32) {
         self.img_height = img_height;
     }
 
-    pub fn set_samples(mut self, num_samples: u32) {
+    pub fn set_samples(&mut self, num_samples: u32) {
         self.num_samples = num_samples;
     }
 
-    pub fn set_integrator(mut self, integrator: Integrator) {
+    pub fn set_integrator(&mut self, integrator: Integrator) {
         self.integrator = integrator;
     }
 
