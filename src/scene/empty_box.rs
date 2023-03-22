@@ -41,58 +41,39 @@ impl Scene {
                     Material::Light(Texture::Solid(DVec3::ONE)),
                 ),
                 /* floor */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(right, ground, -front),
-                        DVec3::new(right, ground, front),
-                        DVec3::new(-right, ground, front),
-                    ),
+                Plane::new(
+                    DVec3::new(0.0, ground, 0.0),
+                    DVec3::new(0.0, 1.0, 0.0),
                     mat_floor,
                 ),
                 /* left wall */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(-right, ground, -front),
-                        DVec3::new(-right, ground, front),
-                        DVec3::new(-right, -ground, front),
-                    ),
+                Plane::new(
+                    DVec3::new(-right, 0.0, 0.0),
+                    DVec3::new(1.0, 0.0, 0.0),
                     mat_left,
                 ),
                 /* right wall */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(right, ground, front),
-                        DVec3::new(right, ground, -front),
-                        DVec3::new(right, -ground, -front),
-                    ),
+                Plane::new(
+                    DVec3::new(right, 0.0, 0.0),
+                    DVec3::new(-1.0, 0.0, 0.0),
                     mat_right,
                 ),
-
                 /* roof */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(right, -ground, front),
-                        DVec3::new(right, -ground, -front),
-                        DVec3::new(-right, -ground, -front),
-                    ),
+                Plane::new(
+                    DVec3::new(0.0, -ground, 0.0),
+                    DVec3::new(0.0, -1.0, 0.0),
                     Material::diffuse(Texture::Solid(def_color)),
                 ),
                 /* front wall */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(right, ground, front),
-                        DVec3::new(right, -ground, front),
-                        DVec3::new(-right, -ground, front),
-                    ),
+                Plane::new(
+                    DVec3::new(0.0, 0.0, front),
+                    DVec3::new(0.0, 0.0, 1.0),
                     Material::diffuse(Texture::Solid(def_color)),
                 ),
                 /* background */
-                Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::new(right, -ground, -front),
-                        DVec3::new(right, ground, -front),
-                        DVec3::new(-right, ground, -front),
-                    ),
+                Plane::new(
+                    DVec3::new(0.0, 0.0, -front),
+                    DVec3::new(0.0, 0.0, -1.0),
                     Material::diffuse(Texture::Solid(DVec3::ZERO)),
                 ),
             ],
