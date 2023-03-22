@@ -12,8 +12,15 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                 Some(scatter_pdf) => {
                     match material {
                         Material::Diffuse(_) | Material::Microfacet(..) => {
-                            shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(),
-                                       rand_utils::unit_square())
+                            JitteredSampler::new(SHADOW_SPLITS)
+                                .fold(DVec3::ZERO, |acc, rand_sq| {
+                                    acc + shadow_ray(scene,
+                                                     ro,
+                                                     &ho,
+                                                     scatter_pdf.as_ref(),
+                                                     rand_sq)
+                                }) / SHADOW_SPLITS as f64
+
                         }
                         Material::Glass | Material::Mirror => {
                             let ri = scatter_pdf.sample_ray(
