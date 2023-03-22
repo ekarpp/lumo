@@ -1,15 +1,16 @@
 use crate::{DVec3, DVec2};
+use std::time::Instant;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::scene::Scene;
 use crate::camera::Camera;
-#[allow(unused_imports)]
 use crate::tracer::integrator::Integrator;
 
 type PxSampler = JitteredSampler;
 
+/// Configures the image to be rendered
 pub struct Renderer {
     scene: Scene,
     camera: Camera,
@@ -20,6 +21,9 @@ pub struct Renderer {
 }
 
 impl Renderer {
+
+    /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
+    /// per pixel and path tracing as the integrator.
     pub fn new(scene: Scene, camera: Camera) -> Self {
         Self {
             scene,
@@ -31,23 +35,30 @@ impl Renderer {
         }
     }
 
+    /// Sets width of the rendered image
     pub fn set_width(&mut self, img_width: i32) {
         self.img_width = img_width;
     }
 
+    /// Sets height of the rendered image
     pub fn set_height(&mut self, img_height: i32) {
         self.img_height = img_height;
     }
 
+    /// Sets how many samples per pixel are computed
     pub fn set_samples(&mut self, num_samples: u32) {
         self.num_samples = num_samples;
     }
 
+    /// Sets the integration algorithm used
     pub fn set_integrator(&mut self, integrator: Integrator) {
         self.integrator = integrator;
     }
 
+    /// Starts the rendering process and returns the rendered image
     pub fn render(&self) -> Image {
+        let start = Instant::now();
+
         let buffer: Vec<DVec3> = (0..self.img_height)
             .into_par_iter()
             .flat_map(|y: i32| {
@@ -57,6 +68,12 @@ impl Renderer {
             })
             .collect();
 
+        println!("rendered {}x{} image with {} samples per pixel in {:#?}",
+                 self.img_width,
+                 self.img_height,
+                 self.num_samples,
+                 start.elapsed());
+
         Image::new(
             buffer,
             self.img_width,
@@ -64,6 +81,7 @@ impl Renderer {
         )
     }
 
+    /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_color(&self, x: i32, y: i32) -> DVec3 {
         let max_dim = self.img_height.max(self.img_width) as f64;
         /* (u,v) in [-1, 1]^2 */
