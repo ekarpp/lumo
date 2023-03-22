@@ -55,7 +55,7 @@ impl Camera {
         assert!(origin != towards);
 
         let forward = (towards - origin).normalize() * focal_length;
-        let right = up_dir.cross(forward).normalize();
+        let right = forward.cross(up_dir).normalize();
         let up = forward.cross(right);
 
         Self {
