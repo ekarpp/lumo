@@ -71,47 +71,32 @@ impl Bounded for Triangle {
 impl Object for Triangle {
     fn material(&self) -> &Material { &self.material }
 
-    /// Barycentric triangle intersection with Cramer's rule
+    /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        /* can store a-c, a-b, and a instead. saves some computation.
-         * compiler should do it? */
-
-        let mat_a = DMat3::from_cols(
-            self.a - self.b,
-            self.a - self.c,
-            r.dir
-        );
-
-        let det_a = mat_a.determinant();
-
+        /* can cache some results on triangle.
+         * this faster? https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates */
+        let e1 = self.b - self.a;
+        let e2 = self.c - self.a;
+        let pde2 = r.dir.cross(e2);
+        let det_a = e1.dot(pde2);
         if det_a.abs() < EPSILON {
             return None;
         }
 
-        let vec_b = self.a - r.origin;
+        let vec_b = r.origin - self.a;
 
-        let beta = DMat3::from_cols(
-            vec_b,
-            mat_a.col(1),
-            mat_a.col(2),
-        ).determinant() / det_a;
+        let beta = vec_b.dot(pde2) / det_a;
+        if beta < 0.0 || beta > 1.0 {
+            return None;
+        }
 
-        let gamma = DMat3::from_cols(
-            mat_a.col(0),
-            vec_b,
-            mat_a.col(2),
-        ).determinant() / det_a;
+        let pbe1 = vec_b.cross(e1);
+        let gamma = r.dir.dot(pbe1) / det_a;
 
-        if beta < 0.0 || gamma < 0.0
-            || beta + gamma > 1.0 {
-                return None;
-            }
-
-        let t = DMat3::from_cols(
-            mat_a.col(0),
-            mat_a.col(1),
-            vec_b,
-        ).determinant() / det_a;
+        if gamma < 0.0 || gamma + beta > 1.0 {
+            return None;
+        }
+        let t = e2.dot(pbe1) / det_a;
 
         if t < t_min + EPSILON  || t > t_max - EPSILON {
             None

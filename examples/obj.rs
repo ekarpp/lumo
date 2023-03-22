@@ -31,7 +31,7 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_samples(4);
+    renderer.set_samples(1);
     renderer.render().save("render.png")?;
     Ok(())
 }
