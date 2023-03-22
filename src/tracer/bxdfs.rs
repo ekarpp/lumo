@@ -1,5 +1,5 @@
 use crate::DVec3;
-use crate::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf, MfdPdf};
+use crate::tracer::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf, MfdPdf};
 use std::f64::consts::PI;
 use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;

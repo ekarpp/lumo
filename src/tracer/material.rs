@@ -1,6 +1,6 @@
 use crate::DVec3;
 use std::f64::consts::PI;
-use crate::pdfs::Pdf;
+use crate::tracer::pdfs::Pdf;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::bxdfs;
