@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Sphere","Sphere specified by its radius and origin"]]};

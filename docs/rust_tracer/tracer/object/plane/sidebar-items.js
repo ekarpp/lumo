@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Plane","Plane defined by a single point and a normal"]]};

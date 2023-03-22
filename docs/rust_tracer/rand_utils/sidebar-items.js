@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["RandomShape","Enum to generate different random unit geometrical objects TODO: rewrite this"]],"fn":[["_get_rng",""],["perm_n","Random permutation of 0..n"],["rand_f64","Random f64"],["rand_vec_dvec3","return `n` normalized random DVec3s in a vector"]],"type":[["MyRng",""]]};

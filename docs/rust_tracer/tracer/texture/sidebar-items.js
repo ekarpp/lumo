@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["Texture","Defines a texture to choose a colour of material at each point."]]};

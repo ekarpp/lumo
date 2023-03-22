@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Rectangle","Rectangle defined by two triangles"]]};

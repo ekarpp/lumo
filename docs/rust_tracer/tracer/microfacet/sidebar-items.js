@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["MfDistribution","Defines a distribution of normals for a microfacet. `f64` parameter is the roughness (α) of the surface."]]};

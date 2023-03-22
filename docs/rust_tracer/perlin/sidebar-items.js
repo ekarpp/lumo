@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Perlin","Instance of Perlin noise generator."],["PermutationXyz","Helper struct to store permutation vectors for each dimension."]]};
