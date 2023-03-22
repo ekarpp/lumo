@@ -1,7 +1,6 @@
 use crate::{DVec3, DMat3};
-use std::f64::{INFINITY, consts::PI};
+use std::f64::INFINITY;
 use crate::rand_utils;
-#[allow(unused_imports)]
 use crate::perlin::Perlin;
 use crate::consts::EPSILON;
 use crate::tracer::hit::Hit;
@@ -9,14 +8,14 @@ use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use crate::tracer::material::Material;
 use crate::tracer::object::{Object, plane::Plane, rectangle::Rectangle};
-use crate::tracer::object::{cube::Cube, sphere::Sphere, instance::Instanceable};
+use crate::tracer::object::sphere::Sphere;
 
 #[cfg(test)]
 mod scene_tests;
 
 /// Empty cornell box, custome left right bot material
 pub mod empty_box;
-/// Scene showing capabilities of the renderer
+/// Default scene, ground plane with sphere light and surrounding sphere
 pub mod default_scene;
 
 /// Defines a scene in 3D space
