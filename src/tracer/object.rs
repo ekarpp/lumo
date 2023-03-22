@@ -6,9 +6,6 @@ use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
-use crate::tracer::object::triangle::Triangle;
-use crate::tracer::object::rectangle::Rectangle;
-use crate::tracer::object::aabb::AaBoundingBox;
 
 /* given a triangle, mirror the middle point around to get a rectangle.
  * this is a dumb way... the triangle order matters now.*/
@@ -17,6 +14,15 @@ use crate::tracer::object::aabb::AaBoundingBox;
 fn _triangle_to_rect(abc: DMat3) -> DVec3 {
     abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
 }
+
+pub use plane::Plane;
+pub use cube::Cube;
+pub use sphere::Sphere;
+pub use triangle::Triangle;
+pub use rectangle::Rectangle;
+pub use aabb::AaBoundingBox;
+pub use kdtree::*;
+pub use instance::*;
 
 /// Defines infinite planes
 pub mod plane;

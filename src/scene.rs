@@ -3,12 +3,9 @@ use std::f64::INFINITY;
 use crate::rand_utils;
 use crate::perlin::Perlin;
 use crate::consts::EPSILON;
-use crate::tracer::hit::Hit;
-use crate::tracer::ray::Ray;
-use crate::tracer::texture::Texture;
-use crate::tracer::material::Material;
-use crate::tracer::object::{Object, plane::Plane, rectangle::Rectangle};
-use crate::tracer::object::sphere::Sphere;
+use crate::tracer::{Ray, Hit, Texture, Material};
+use crate::tracer::{Object, Plane, Rectangle};
+use crate::tracer::Sphere;
 
 #[cfg(test)]
 mod scene_tests;

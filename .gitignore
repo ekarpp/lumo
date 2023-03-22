@@ -3,3 +3,4 @@ target/
 *.png
 *.svg
 perf.*
+teapot.obj.tmp

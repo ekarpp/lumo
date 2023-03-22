@@ -1,5 +1,5 @@
 use crate::DVec3;
-use crate::tracer::ray::Ray;
+use crate::tracer::Ray;
 
 /// Abstraction for a camera, with the image plane modeled as a \[-1,1\]^2 square
 pub struct Camera {

@@ -1,12 +1,6 @@
 use rust_tracer::*;
-use std::fs::File;
 use std::f64::consts::PI;
-use rust_tracer::obj;
-use rust_tracer::texture::Texture;
-use rust_tracer::material::Material;
-use rust_tracer::tracer::object::kdtree::Mesh;
-use rust_tracer::object::instance::Instanceable;
-
+use std::fs::File;
 
 fn main() -> Result<(), std::io::Error> {
     let camera = Camera::default();
@@ -20,7 +14,7 @@ fn main() -> Result<(), std::io::Error> {
 
     scene.add(
         Mesh::new(
-            obj::load_obj_file(File::open("examples/humanoid.obj")?)?,
+            load_obj_file(File::open("examples/humanoid.obj")?)?,
             Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)))
         )
             .scale(DVec3::splat(0.025))

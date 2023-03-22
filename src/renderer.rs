@@ -6,7 +6,7 @@ use crate::image::Image;
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::scene::Scene;
 use crate::camera::Camera;
-use crate::tracer::integrator::Integrator;
+use crate::tracer::Integrator;
 
 type PxSampler = JitteredSampler;
 

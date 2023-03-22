@@ -1,8 +1,7 @@
 use crate::DVec3;
 use std::fs::File;
 use std::io::{self, Result, BufReader, BufRead};
-use crate::tracer::material::Material;
-use crate::tracer::object::triangle::Triangle;
+use crate::tracer::{Material, Triangle};
 
 /// Function to create io::Error
 fn io_error(message: String) -> io::Error {

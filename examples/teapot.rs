@@ -1,13 +1,6 @@
 use rust_tracer::*;
 use std::fs::File;
-use std::io::Write;
-use std::io::Seek;
-use rust_tracer::tracer::integrator::Integrator;
-use rust_tracer::object::triangle::Triangle;
-use rust_tracer::object::kdtree::Mesh;
-use rust_tracer::object::instance::Instanceable;
-use rust_tracer::material::Material;
-use rust_tracer::texture::Texture;
+use std::io::{Seek, Write};
 
 const FNAME_TMP: &str = "teapot.obj.tmp";
 const TEAPOT_URL: &str = "https://graphics.stanford.edu/courses/cs148-10-summer/as3/code/as3/teapot.obj";
@@ -26,7 +19,7 @@ fn teapot() -> Result<Vec<Triangle>, Box<dyn std::error::Error>> {
     let mut file = File::create(FNAME_TMP)?;
     file.write_all(&bytes)?;
     file.rewind()?;
-    let tringls = obj::load_obj_file(File::open(FNAME_TMP)?)?;
+    let tringls = load_obj_file(File::open(FNAME_TMP)?)?;
 
     Ok(tringls)
 }

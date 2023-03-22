@@ -1,12 +1,4 @@
-use rust_tracer::DVec3;
-use rust_tracer::Renderer;
-use rust_tracer::Camera;
-use rust_tracer::Scene;
-use rust_tracer::material::Material;
-use rust_tracer::texture::Texture;
-use rust_tracer::object::sphere::Sphere;
-use rust_tracer::object::cube::Cube;
-use rust_tracer::object::instance::Instanceable;
+use rust_tracer::*;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {
