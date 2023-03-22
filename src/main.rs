@@ -43,26 +43,9 @@ fn main() {
 
     let mut renderer = Renderer::new(scene, cam);
     let start_img = std::time::SystemTime::now();
-    let image_buffer = renderer.render();
+    renderer.render().save(FNAME);
     match start_img.elapsed() {
         Ok(v) => println!("rendered scene in {v:?}"),
         Err(e) => println!("rendering done, error measuring duration {e:?}"),
-    }
-
-    let image = Image::new(
-        image_buffer,
-        1000,
-        1000,
-        String::from(FNAME),
-    );
-
-    let start_png = std::time::SystemTime::now();
-    match image.save() {
-        Ok(()) => (),
-        Err(e) => println!("error during png encoding {e:?}"),
-    }
-    match start_png.elapsed() {
-        Ok(v) => println!("created png in {v:?}"),
-        Err(e) => println!("png done, error measuring duration {e:?}"),
     }
 }

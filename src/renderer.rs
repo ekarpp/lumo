@@ -1,5 +1,6 @@
 use crate::{DVec3, DVec2};
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
+use crate::image::Image;
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::tracer::scene::Scene;
@@ -46,10 +47,18 @@ impl Renderer {
         self.integrator = integrator;
     }
 
-    pub fn render(&self) -> Vec<DVec3> {
+    pub fn render(&self) -> Image {
+        Image::new(
+            self.compute_buffer(),
+            self.img_width,
+            self.img_height,
+        )
+    }
+
+    fn compute_buffer(&self) -> Vec<DVec3> {
         let px_height = 1.0 / (self.img_height - 1) as f64;
         let px_width = 1.0 / (self.img_width - 1) as f64;
-        //let integrator = Integrator::DirectLight;
+
         (0..self.img_height).into_par_iter().flat_map(|y: u32| {
             (0..self.img_width).map(|x: u32| {
                 let u = x as f64 * px_width;

@@ -12,18 +12,15 @@ pub struct Image {
     pub width: u32,
     /// Height of rendered image.
     pub height: u32,
-    /// Filename of the output file.
-    pub fname: String,
+
 }
 
 impl Image {
-    pub fn new(buffer: Vec<DVec3>, width: u32, height: u32, fname: String)
-               -> Self {
+    pub fn new(buffer: Vec<DVec3>, width: u32, height: u32) -> Self {
         Self {
             buffer,
             width,
             height,
-            fname,
         }
     }
     /// Translates the image buffer of RGB values in range \[0,1\]
@@ -40,8 +37,8 @@ impl Image {
     }
 
     /// Creates the PNG file
-    pub fn save(&self) -> Result<(), EncodingError> {
-        let path = Path::new(&self.fname);
+    pub fn save(&self, fname: &str) -> Result<(), EncodingError> {
+        let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);
         let mut encoder = Encoder::new(
