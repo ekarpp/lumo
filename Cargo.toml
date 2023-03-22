@@ -8,6 +8,9 @@ keywords = ["rendering", "path-tracing", "graphics"]
 categories = ["graphics", "rendering::engine", ]
 edition = "2018"
 
+[profile.release]
+debug = true
+
 [dependencies]
 glam = "0.23.0"
 itertools = "0.10.5"
