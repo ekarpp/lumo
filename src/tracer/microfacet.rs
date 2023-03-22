@@ -10,10 +10,17 @@ pub struct MicrofacetConfig {
     pub refraction_idx: f64,
     /// Ratio of how metallic the material is [0,1]
     pub metallicity: f64,
+    /// Transparency of the material
+    pub transparent: bool,
 }
 
 impl MicrofacetConfig {
-    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64) -> Self {
+    pub fn new(
+        roughness: f64,
+        refraction_idx: f64,
+        metallicity: f64,
+        transparent: bool,
+    ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
         assert!((0.0..=1.0).contains(&metallicity));
         assert!(refraction_idx >= 1.0);
@@ -22,6 +29,7 @@ impl MicrofacetConfig {
             roughness,
             refraction_idx,
             metallicity,
+            transparent,
         }
     }
 }
@@ -40,16 +48,42 @@ pub enum MfDistribution {
 impl MfDistribution {
     /// Metallic material
     pub fn metallic(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 1.0))
+        Self::Ggx(MicrofacetConfig {
+            roughness,
+            refraction_idx: 1.5,
+            metallicity: 1.0,
+            transparent: false,
+        })
     }
 
     /// Specular material
     pub fn specular(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0))
+        Self::Ggx(MicrofacetConfig {
+            roughness,
+            refraction_idx: 1.5,
+            metallicity: 0.0,
+            transparent: false,
+        })
     }
 
+    /// Diffuse material
     pub fn diffuse() -> Self {
-        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0))
+        Self::Ggx(MicrofacetConfig {
+            roughness: 1.0,
+            refraction_idx: 1.5,
+            metallicity: 0.0,
+            transparent: false,
+        })
+    }
+
+    /// Transparent material f.ex. glass
+    pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
+        Self::Ggx(MicrofacetConfig {
+            roughness,
+            refraction_idx,
+            metallicity: 0.0,
+            transparent: true
+        })
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?

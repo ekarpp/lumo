@@ -42,6 +42,14 @@ impl Material {
         Self::Microfacet(texture, MfDistribution::diffuse())
     }
 
+    /// Transparent material
+    pub fn transparent(texture: Texture, rfrct_idx: f64, roughness: f64) -> Self {
+        Self::Microfacet(
+            texture,
+            MfDistribution::transparent(rfrct_idx, roughness)
+        )
+    }
+
     /// Is the material specular? i.e does it reflect/refract light
     pub fn is_specular(&self) -> bool {
         match self {
