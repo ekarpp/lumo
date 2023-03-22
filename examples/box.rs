@@ -9,7 +9,7 @@ use rust_tracer::object::cube::Cube;
 use rust_tracer::object::instance::Instanceable;
 use std::f64::consts::PI;
 
-fn main() {
+fn main() -> Result<(), std::io::Error> {
     let camera = Camera::default();
     let def_color = DVec3::splat(0.95);
     let mut scene = Scene::empty_box(
@@ -55,5 +55,6 @@ fn main() {
 
 
     let renderer = Renderer::new(scene, camera);
-    renderer.render().save("out.png");
+    renderer.render().save("box.png")?;
+    Ok(())
 }
