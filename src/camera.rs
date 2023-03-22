@@ -1,28 +1,41 @@
 use crate::DVec3;
 use crate::tracer::ray::Ray;
 
-/// Abstraction for a camera
+/// Abstraction for a camera, with the image plane modeled as a \[-1,1\]^2 square
 pub struct Camera {
     /// Origin of the camera
     origin: DVec3,
-    /// Vector pointing from BLC to the ULC
-    horiz: DVec3,
-    /// Vector pointing from BLC to BRC
-    vert: DVec3,
-    /// Bottom left corner of the image plane
-    blc: DVec3
+    /// Unit vector pointing to the right in the image plane
+    right: DVec3,
+    /// Unit vector pointing up in the image plane
+    up: DVec3,
+    /// Vector from camera origin to middle of image plane
+    forward: DVec3,
 }
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self::new(
+            90.0,
+            DVec3::ZERO,
+            DVec3::new(0.0, 0.0, -1.0),
+            DVec3::new(0.0, 1.0, 0.0),
+            1.0,
+        )
+    }
+}
+
 
 impl Camera {
     /// Returns a ray pointing towards a point on the image plane.
     ///
     /// # Arguments
-    /// * `x` - fraction of the width of the desired point on the plane
-    /// * `y` - fraction of the height of the desired point on the plane
+    /// * `x` - x coordinate in a normalized \[-1,1\]^2 square
+    /// * `y` - y coordinate in a normalized \[-1,1\]^2 square
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
         Ray::new(
             self.origin,
-            self.blc + x*self.horiz + y*self.vert - self.origin,
+            self.forward + x * self.right + y * self.up
         )
     }
 
@@ -30,41 +43,32 @@ impl Camera {
     ///
     /// # Arguments
     ///
-    /// * `aspect_ratio` - Aspect ratio of the image plane
     /// * `vfov` - Vertical field of view, in degrees
     /// * `origin` - Camera origin
     /// * `towards` - Camera is looking at this point
-    /// * `up` - Defines up direction for the camera
+    /// * `up_dir` - Defines up direction for the camera
     /// * `focal_length` - Focal length of the camera
-    pub fn new(
-        aspect_ratio: f64,
+    fn new(
         vfov: f64,
         origin: DVec3,
         towards: DVec3,
-        up: DVec3,
+        up_dir: DVec3,
         focal_length: f64
     ) -> Self {
         assert!(origin != towards);
-        assert!(vfov != 0.0);
+        assert!(vfov > 0.0 && vfov < 180.0);
 
         let h = (vfov.to_radians() / 2.0).tan();
-        /* viewport height */
-        let vph = 2.0 * h;
-        /* viewport width */
-        let vpw = vph * aspect_ratio;
 
-        let z = (origin - towards).normalize();
-        let x = up.cross(z).normalize();
-        let y = z.cross(x);
-
-        let horiz = x * vpw * focal_length;
-        let vert = y * vph * focal_length;
+        let forward = (towards - origin).normalize() * focal_length;
+        let right = up_dir.cross(forward).normalize();
+        let up = forward.cross(right);
 
         Self {
             origin,
-            horiz,
-            vert,
-            blc: origin - (horiz + vert) / 2.0 - z*focal_length,
+            forward,
+            right,
+            up,
         }
     }
 }

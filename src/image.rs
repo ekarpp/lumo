@@ -9,14 +9,14 @@ pub struct Image {
     /// Image buffer storing RGB-channels in range \[0,1\].
     pub buffer: Vec<DVec3>,
     /// Width of rendered image.
-    pub width: u32,
+    pub width: i32,
     /// Height of rendered image.
-    pub height: u32,
+    pub height: i32,
 
 }
 
 impl Image {
-    pub fn new(buffer: Vec<DVec3>, width: u32, height: u32) -> Self {
+    pub fn new(buffer: Vec<DVec3>, width: i32, height: i32) -> Self {
         Self {
             buffer,
             width,
