@@ -7,7 +7,7 @@ use crate::consts::{PATH_TRACE_RR, SHADOW_SPLITS};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
-use crate::tracer::scene::Scene;
+use crate::scene::Scene;
 
 /// Implements the path tracing algorithm with
 /// Russian Roulette (With probability `p` terminate each path.

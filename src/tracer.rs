@@ -4,10 +4,6 @@ pub mod hit;
 pub mod ray;
 /// Different BSDFs.
 pub mod bxdfs;
-/// Scene that describes the 3D world to render.
-pub mod scene;
-/// Abstraction for a camera
-pub mod camera;
 /// Abstractions for objects in the 3D world
 pub mod object;
 /// Textures that can be given to some materials

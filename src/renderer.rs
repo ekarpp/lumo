@@ -3,8 +3,8 @@ use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
-use crate::tracer::scene::Scene;
-use crate::tracer::camera::Camera;
+use crate::scene::Scene;
+use crate::camera::Camera;
 #[allow(unused_imports)]
 use crate::tracer::integrator::Integrator;
 
