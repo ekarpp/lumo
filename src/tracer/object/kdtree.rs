@@ -1,4 +1,5 @@
 use super::*;
+use std::time::Instant;
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
@@ -19,16 +20,22 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
-        let indices = (0..objects.len()).collect();
+        let start = Instant::now();
 
+        let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects.iter()
             .map(|obj| obj.bounding_box())
             .collect();
         let boundary = bounds.iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
+        let root = KdNode::construct(&objects, &bounds, indices);
+
+        println!("constructed kd-tree of {} triangles in {:#?}",
+                 objects.len(),
+                 start.elapsed());
 
         Self {
-            root: KdNode::construct(&objects, &bounds, indices),
+            root,
             objects,
             boundary,
             material,

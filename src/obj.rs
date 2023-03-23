@@ -78,10 +78,10 @@ fn parse_face(
     for token in &tokens[1..] {
         let arguments: Vec<&str> = token.split('/').collect();
 
-        let vidx = parse_idx(arguments[0], vidxs.len())?;
+        let vidx = parse_idx(arguments[0], vertices.len())?;
         vidxs.push(vidx);
         if arguments.len() >= 3 {
-            let nidx = parse_idx(arguments[2], nidxs.len())?;
+            let nidx = parse_idx(arguments[2], normals.len())?;
             nidxs.push(nidx);
         }
     }
