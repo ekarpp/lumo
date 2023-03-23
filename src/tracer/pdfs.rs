@@ -222,8 +222,7 @@ impl Pdf for MfdPdf {
             / (4.0 * self.wo.dot(wh));
 
         let hemisphere = wi.dot(self.no).max(0.0) / PI;
-
-        let prob_ndf = self.mfd.probability_ndf_sample();
+        let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
 
         prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
     }
