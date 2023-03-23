@@ -46,7 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .make_box()
     );
 
-
     let mut renderer = Renderer::new(scene, camera);
     renderer.set_width(500);
     renderer.set_height(500);

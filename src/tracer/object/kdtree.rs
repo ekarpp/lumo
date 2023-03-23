@@ -204,23 +204,45 @@ impl KdNode {
 
         // score each axis by how well objects are split between the medians
         let scores: Vec<usize> = (0..3).map(|ax| score(ax, med[ax])).collect();
-
-        let (best_score, axis, median) = (1..3)
-            .fold((scores[0], 0, med[0]), |best, ax| {
-                if scores[ax] > best.0 {
-                    (scores[ax], ax, med[ax])
-                } else {
-                    best
-                }
-            });
-
         let threshold = (indices.len() as f64 * 0.85) as usize;
 
         // no good splits, make it a leaf
-        if best_score >= threshold {
+        if scores[0].min(scores[1].min(scores[2])) >= threshold {
             return Box::new(Self::Leaf(indices));
         }
 
+        let mut split_axis = 3;
+        let curr_bounds = aabbs.iter()
+            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(&b2));
+
+        let max_width = curr_bounds.ax_max - curr_bounds.ax_min;
+
+        // check if axis with maximum width has better score than threshold
+        if max_width.x > max_width.y && max_width.x > max_width.z {
+            if scores[0] < threshold {
+                split_axis = 0;
+            }
+        } else if max_width.y > max_width.z {
+            if scores[1] < threshold {
+                split_axis = 1;
+            }
+        } else if scores[2] < threshold {
+            split_axis = 2;
+        }
+
+
+        // otherwise take the axis with the best score
+        if split_axis == 3 {
+            if scores[0] < scores[1] && scores[0] < scores[2] {
+                split_axis = 0;
+            } else if scores[1] < scores[2] {
+                split_axis = 1;
+            } else {
+                split_axis = 2;
+            }
+        }
+
+        let median = med[split_axis];
         let partition = |axis: usize, median: f64| {
             let mut left = Vec::new();
             let mut right = Vec::new();
@@ -237,12 +259,12 @@ impl KdNode {
             (left, right)
         };
 
-        // split among the best axis
-        let (left, right) = partition(axis, median);
+        // split among the chosen axis
+        let (left, right) = partition(split_axis, median);
 
         Box::new(
             Self::Split(
-                axis,
+                split_axis,
                 median,
                 Self::construct(objects, bounds, left),
                 Self::construct(objects, bounds, right),
