@@ -44,7 +44,7 @@ impl<T: Bounded> KdTree<T> {
         aabb: &AaBoundingBox
     ) -> Option<Hit> {
         // extract split info or check for hit at leaf node
-        let (axis, median, node_left, node_right) = match node {
+        let (axis, median, mut node_first, mut node_second) = match node {
             KdNode::Split(axis, median, left, right) => {
                 (*axis, *median, left, right)
             }
@@ -65,28 +65,41 @@ impl<T: Bounded> KdTree<T> {
             }
         };
 
-        /* split to get the child AABBs. if we intersect with child AABB
-         * then call hit_subtree recursively on the child. */
-        let (aabb_left, aabb_right) = aabb.split(axis, median);
-        let (left_start, left_end) = aabb_left.intersect(r);
-        let (right_start, right_end) = aabb_right.intersect(r);
+        let (t_start, t_end) = aabb.intersect(r);
+        let t_split = (median - r.o(axis)) / r.d(axis);
 
-        let h_left = if left_end < t_min || left_start > left_end {
-            None
-        } else {
-            self.hit_subtree(node_left, r, t_min, t_max, &aabb_left)
-        };
+        let (mut aabb_first, mut aabb_second) = aabb.split(axis, median);
 
-        let h_right = if right_end < t_min || right_start > right_end {
-            None
-        } else {
-            self.hit_subtree(node_right, r, t_min, t_max, &aabb_right)
-        };
+        let left_first = r.o(axis) < median ||
+            (r.o(axis) == median && r.d(axis) <= 0.0);
+        // intersect the AABB that we reach first
+        if !left_first {
+            std::mem::swap(&mut aabb_first, &mut aabb_second);
+            std::mem::swap(&mut node_first, &mut node_second);
+        }
 
-        if h_left.is_some() && h_right.is_some() {
-            if h_left < h_right { h_left } else { h_right }
+        // PBR Figure 4.19 (a)
+        if t_split > t_end.min(t_max) || t_split <= 0.0 {
+            self.hit_subtree(node_first, r, t_min, t_max, &aabb_first)
+        // PBR Figure 4.19 (b)
+        } else if t_split < t_start.max(t_min) {
+            self.hit_subtree(node_second, r, t_min, t_max, &aabb_second)
         } else {
-            h_left.or(h_right)
+            let h1 = self.hit_subtree(node_first, r, t_min, t_max, &aabb_first);
+
+            /* if we hit something in the first AABB before the split, there
+             * is no need to process the other subtree. */
+            if h1.as_ref().filter(|h| h.t < t_split).is_some() {
+                h1
+            } else {
+                let h2 =
+                    self.hit_subtree(node_second, r, t_min, t_max, &aabb_second);
+                if h1.is_some() && h2.is_some() {
+                    if h1 < h2 { h1 } else { h2 }
+                } else {
+                    h1.or(h2)
+                }
+            }
         }
     }
 }

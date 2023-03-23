@@ -21,4 +21,24 @@ impl Ray {
     pub fn at(&self, t: f64) -> DVec3 {
         self.origin + t*self.dir
     }
+
+    /// Coordinate of origin along axis
+    pub fn o(&self, axis: usize) -> f64 {
+        match axis {
+            0 => self.origin.x,
+            1 => self.origin.y,
+            2 => self.origin.z,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Coordinate of direction along axis
+    pub fn d(&self, axis: usize) -> f64 {
+        match axis {
+            0 => self.dir.x,
+            1 => self.dir.y,
+            2 => self.dir.z,
+            _ => unreachable!(),
+        }
+    }
 }
