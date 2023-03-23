@@ -1,6 +1,6 @@
 Ray tracer written in rust
 
-![](https://imgur.com/zREVJF3)
+![](https://i.imgur.com/zREVJF3.png)
 
 Useful resources:
 
