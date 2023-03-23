@@ -143,7 +143,7 @@ impl Pdf for DeltaPdf {
 pub struct MfdPdf {
     /// Point of impact
     xo: DVec3,
-    /// Direction from camera to point of impact
+    /// Direction from point of impact to camera
     wo: DVec3,
     /// Macrosurface normal
     no: DVec3,
@@ -180,6 +180,29 @@ impl Pdf for MfdPdf {
             // if angle between wm and wo > 90 deg, its bad.
             // VNDF fixes this?
             if wi.dot(self.no) < 0.0 { -wi } else { wi }
+        } else if self.mfd.is_transparent() {
+            let inside = self.no.dot(self.wo) < 0.0;
+            let eta_ratio = if inside {
+                self.mfd.get_rfrct_idx()
+            } else {
+                1.0 / self.mfd.get_rfrct_idx()
+            };
+            let wm = self.uvw.to_uvw_basis(
+                self.mfd.sample_normal(rand_sq)
+            ).normalize();
+            let wm = if inside { -wm } else { wm };
+
+            /* Snell-Descartes law */
+            let cos_in = wm.dot(self.wo).min(1.0);
+            let sin_out = (1.0 - cos_in * cos_in) * eta_ratio * eta_ratio;
+
+            /* total reflection */
+            if sin_out > 1.0 {
+                2.0 * self.wo.project_onto(wm) - self.wo
+            } else {
+                eta_ratio * self.wo + wm *
+                    (eta_ratio * cos_in - (1.0 - sin_out).sqrt())
+            }
         } else {
             self.uvw.to_uvw_basis(
                 rand_utils::square_to_cos_hemisphere(rand_sq)
@@ -200,7 +223,7 @@ impl Pdf for MfdPdf {
 
         let hemisphere = wi.dot(self.no).max(0.0) / PI;
 
-        let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
+        let prob_ndf = self.mfd.probability_ndf_sample();
 
         prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
     }

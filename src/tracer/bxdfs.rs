@@ -6,7 +6,8 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::microfacet::MfDistribution;
 
-/// Shading for microfacet. Computed as diffuse + specular, where (`D`, `F`, `G` values from the microfacet distribution):
+/// Shading for microfacet. Computed as diffuse + specular, where
+/// (`D`, `F`, `G` values from the microfacet distribution):
 ///
 /// `specular = D(wh) * F(wo, wh) * G(wo, wi) / (4.0 * (n • wo) * (n • wi))`
 /// `diffuse = disney_term * albedo / π`
@@ -19,21 +20,43 @@ pub fn brdf_microfacet(
 ) -> DVec3 {
     let v = -ro.dir.normalize();
     let wi = ri.dir.normalize();
-    let wh = (wi + v).normalize();
-
-    let d = mfd.d(wh, no);
-    let f = mfd.f(v, wh, color);
-    let g = mfd.g(v, wi, no);
-
     let no_dot_wi = no.dot(wi);
     let no_dot_v = no.dot(v);
-    let no_dot_wh = no.dot(wh);
 
-    let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
-    let diffuse = color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
-        / PI;
+    let ro_inside = no_dot_v.is_sign_positive();
+    let ri_inside = no_dot_wi.is_sign_positive();
+    if ro_inside == ri_inside {
+        let wh = (wi + v).normalize();
+        let no_dot_wh = no.dot(wh);
 
-    diffuse + specular
+        let d = mfd.d(wh, no);
+        let f = mfd.f(v, wh, color);
+        let g = mfd.g(v, wi, no);
+
+        let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
+        let diffuse = color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
+            / PI;
+
+        diffuse + specular
+    } else {
+        let (eta_in, eta_out) = if ro_inside {
+            (1.5, 1.0)
+        } else {
+            (1.0, 1.5)
+        };
+
+        let wh = (wi*eta_in + v*eta_out).normalize();
+        let wh_dot_wi = wh.dot(wi);
+        let wh_dot_v = wh.dot(v);
+
+        let d = mfd.d(wh, no);
+        let f = mfd.f(v, wh, color);
+        let g = mfd.g(v, wi, no);
+
+        (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
+            * eta_out * eta_out * d * (DVec3::ONE - f) * g
+            / (eta_in * wh_dot_wi + eta_out * wh_dot_v).powi(2)
+    }
 }
 
 /// Scattering function for diffuse material.

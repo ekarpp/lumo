@@ -33,6 +33,16 @@ fn main() -> Result<(), std::io::Error> {
         Material::Glass,
     ));
 
+    scene.add(Sphere::new(
+        DVec3::new(0.5, -0.9, -1.2),
+        0.1,
+        Material::transparent(
+            Texture::Solid(DVec3::ONE),
+            1.5,
+            0.1,
+        ),
+    ));
+
     scene.add(
         Cube::new(
             Material::specular(

@@ -91,6 +91,16 @@ impl MfDistribution {
         self.get_config().roughness <= 0.05
     }
 
+    /// Is the material transparent?
+    pub fn is_transparent(&self) -> bool {
+        self.get_config().transparent
+    }
+
+    /// Gets the refraction index
+    pub fn get_rfrct_idx(&self) -> f64 {
+        self.get_config().refraction_idx
+    }
+
     /// Getter, better way to do this?
     fn get_config(&self) -> &MicrofacetConfig {
         match self {
