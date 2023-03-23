@@ -40,9 +40,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bunny()?,
             Material::specular(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)), 0.2),
         )
-            .scale(DVec3::splat(0.1))
-        //.translate(DVec3::new(0.0, -1.1, -1.3))
-            .translate(DVec3::new(0.0, -0.5, -1.3))
+            .scale(DVec3::splat(0.3))
+            .translate(DVec3::new(0.0, -0.9, -1.5))
             .make_box()
     );
 
