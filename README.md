@@ -1,6 +1,6 @@
 Ray tracer written in rust
 
-![](https://github.com/ekarpp/rust_tracer/blob/master/render.png?raw=true)
+![](https://imgur.com/zREVJF3)
 
 Useful resources:
 
