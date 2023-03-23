@@ -16,6 +16,7 @@ opt-level = 2
 
 [dev-dependencies]
 ureq = "2.6.2"
+zip = "0.6.4"
 
 [dependencies]
 glam = "0.23.0"
