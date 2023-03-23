@@ -56,7 +56,7 @@ fn main() -> Result<(), std::io::Error> {
     );
 
 
-    let renderer = Renderer::new(scene, camera);
+    let mut renderer = Renderer::new(scene, camera);
     renderer.render().save("box.png")?;
     Ok(())
 }

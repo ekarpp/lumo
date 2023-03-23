@@ -35,16 +35,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
             .scale(DVec3::splat(0.1))
             .rotate_y(3.14)
-            .translate(DVec3::new(0.0, -0.5, -1.5))
+            .translate(DVec3::new(0.5, -0.5, -1.5))
             .make_box()
     );
 
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_width(640);
-    renderer.set_height(360);
-    renderer.set_integrator(Integrator::DirectLight);
+    renderer.set_width(500);
+    renderer.set_height(500);
+    //renderer.set_integrator(Integrator::DirectLight);
     renderer.render()
-        .save("def.png")?;
+        .save("teapot.png")?;
     Ok(())
 }

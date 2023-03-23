@@ -43,6 +43,7 @@ impl<T: Bounded> KdTree<T> {
         t_max: f64,
         aabb: &AaBoundingBox
     ) -> Option<Hit> {
+        // extract split info or check for hit at leaf node
         let (axis, median, node_left, node_right) = match node {
             KdNode::Split(axis, median, left, right) => {
                 (*axis, *median, left, right)
@@ -64,50 +65,28 @@ impl<T: Bounded> KdTree<T> {
             }
         };
 
-        let axis_ro = r.origin.to_array()[axis];
-        let axis_rd = r.dir.to_array()[axis];
-        let t_split = (median - axis_ro) / axis_rd;
-        // ??
-        let left_first = (axis_ro < median)
-            || (axis_ro == median && axis_rd <= 0.0);
+        /* split to get the child AABBs. if we intersect with child AABB
+         * then call hit_subtree recursively on the child. */
+        let (aabb_left, aabb_right) = aabb.split(axis, median);
+        let (left_start, left_end) = aabb_left.intersect(r);
+        let (right_start, right_end) = aabb_right.intersect(r);
 
-        let (aabb_first, aabb_second) = {
-            let (aabb_left, aabb_right) = aabb.split(axis, median);
-            if left_first {
-                (aabb_left, aabb_right)
-            } else {
-                (aabb_right, aabb_left)
-            }
-        };
-
-        let (first, second) = {
-            if left_first {
-                (node_left, node_right)
-            } else {
-                (node_right, node_left)
-            }
-        };
-
-        let (bb_min, bb_max) = aabb.intersect(r);
-
-        if t_split > bb_max.min(t_max) || t_split <= 0.0 {
-            self.hit_subtree(first, r, t_min, t_max, &aabb_first)
-        } else if t_split < bb_min.max(t_min) {
-            self.hit_subtree(second, r, t_min, t_max, &aabb_second)
+        let h_left = if left_end < t_min || left_start > left_end {
+            None
         } else {
-            let h1 =
-                self.hit_subtree(first, r, t_min, t_max, &aabb_first);
-            if h1.as_ref().filter(|h| h.t < t_split).is_some() {
-                h1
-            } else {
-                let h2 =
-                    self.hit_subtree(second, r, t_min, t_max, &aabb_second);
-                if h1.is_some() && h2.is_some() {
-                    if h1 < h2 { h1 } else { h2 }
-                } else {
-                    h1.and(h2)
-                }
-            }
+            self.hit_subtree(node_left, r, t_min, t_max, &aabb_left)
+        };
+
+        let h_right = if right_end < t_min || right_start > right_end {
+            None
+        } else {
+            self.hit_subtree(node_right, r, t_min, t_max, &aabb_right)
+        };
+
+        if h_left.is_some() && h_right.is_some() {
+            if h_left < h_right { h_left } else { h_right }
+        } else {
+            h_left.or(h_right)
         }
     }
 }
@@ -122,9 +101,10 @@ impl<T: Bounded> Object for KdTree<T> {
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        let (bb_strt, bb_end) = self.boundary.intersect(r);
+        let (t_start, t_end) = self.boundary.intersect(r);
 
-        if bb_strt.max(t_min) > bb_end.min(t_max) {
+        // box missed / is behind
+        if t_start.max(t_min) > t_end.min(t_max) {
             None
         } else {
             self.hit_subtree(&self.root, r, t_min, t_max, &self.boundary)
@@ -155,7 +135,8 @@ pub enum KdNode {
 }
 
 impl KdNode {
-    /// Constructs nodes of the kD-tree recursively. Naive implementation
+    /// Constructs nodes of the kD-tree recursively. Median splits among the
+    /// axes.
     pub fn construct<T: Bounded>(
         objects: &[T],
         bounds: &[AaBoundingBox],
@@ -165,10 +146,12 @@ impl KdNode {
             return Box::new(Self::Leaf(indices));
         }
 
+        // filter relevant AABBs
         let aabbs: Vec<&AaBoundingBox> = indices.iter()
             .map(|idx| &bounds[*idx])
             .collect();
 
+        // get AABB min/max values for each axis
         let mut bb_vals: [Vec<f64>; 3] = Default::default();
         aabbs.iter().for_each(|aabb| {
             let mx = aabb.ax_max.to_array();
@@ -179,6 +162,7 @@ impl KdNode {
             }
         });
 
+        // sort AABB min/max values
         (0..3).for_each(|ax| {
             bb_vals[ax].sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
         });
@@ -192,6 +176,7 @@ impl KdNode {
             }
         };
 
+        // find median among each axis
         let med: Vec<f64> = (0..3).map(|ax| median(&bb_vals[ax])).collect();
 
         let score = |axis: usize, median: f64| -> usize {
@@ -204,6 +189,7 @@ impl KdNode {
             left.max(right)
         };
 
+        // score each axis by how well objects are split between the medians
         let scores: Vec<usize> = (0..3).map(|ax| score(ax, med[ax])).collect();
 
         let (best_score, axis, median) = (1..3)
@@ -216,6 +202,8 @@ impl KdNode {
             });
 
         let threshold = (indices.len() as f64 * 0.85) as usize;
+
+        // no good splits, make it a leaf
         if best_score >= threshold {
             return Box::new(Self::Leaf(indices));
         }
@@ -236,6 +224,7 @@ impl KdNode {
             (left, right)
         };
 
+        // split among the best axis
         let (left, right) = partition(axis, median);
 
         Box::new(
