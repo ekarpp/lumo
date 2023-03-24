@@ -56,43 +56,43 @@ impl<T: Bounded> KdTree<T> {
                 (*axis, *median, left, right)
             }
             KdNode::Leaf(indices) => {
-                return indices.iter()
-                    .map(|idx| self.objects[*idx].hit(r, t_min, t_max))
-                    .fold(None, |closest, hit| {
-                        if closest.is_none() || (hit.is_some() && hit < closest) {
-                            hit
-                        } else {
-                            closest
-                        }
-                    })
-                    .map(|mut h| {
-                        h.object = self;
-                        h
-                    })
+                let mut tt = t_max;
+                let mut h = None;
+                for idx in indices {
+                    h = self.objects[*idx].hit(r, t_min, tt)
+                        .or(h);
+                    tt = h.as_ref().map_or(tt, |hit| hit.t);
+                }
+                return h.map(|mut h| {
+                    h.object = self;
+                    h
+                });
             }
         };
 
-        let (t_start, t_end) = aabb.intersect(r);
         let t_split = (median - r.o(axis)) / r.d(axis);
 
         let (mut aabb_first, mut aabb_second) = aabb.split(axis, median);
 
         let left_first = r.o(axis) < median ||
             (r.o(axis) == median && r.d(axis) <= 0.0);
-        // intersect the AABB that we reach first
+        // intersect first the AABB that we reach first
         if !left_first {
             std::mem::swap(&mut aabb_first, &mut aabb_second);
             std::mem::swap(&mut node_first, &mut node_second);
         }
 
-        // PBR Figure 4.19 (a)
-        if t_split > t_end.min(t_max) || t_split <= 0.0 {
-            self.hit_subtree(node_first, r, t_min, t_max, &aabb_first)
-        // PBR Figure 4.19 (b)
-        } else if t_split < t_start.max(t_min) {
-            self.hit_subtree(node_second, r, t_min, t_max, &aabb_second)
+        let (t_start, t_end) = aabb.intersect(r);
+        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
+
+        // PBR Figure 4.19 (a). we hit only the first aabb.
+        if t_split > t_end || t_split <= 0.0 {
+            self.hit_subtree(node_first, r, t_start, t_end, &aabb_first)
+        // PBR Figure 4.19 (b). we hit only the second aabb.
+        } else if t_split < t_start {
+            self.hit_subtree(node_second, r, t_start, t_end, &aabb_second)
         } else {
-            let h1 = self.hit_subtree(node_first, r, t_min, t_max, &aabb_first);
+            let h1 = self.hit_subtree(node_first, r, t_start, t_end, &aabb_first);
 
             /* if we hit something in the first AABB before the split, there
              * is no need to process the other subtree. */
@@ -100,7 +100,7 @@ impl<T: Bounded> KdTree<T> {
                 h1
             } else {
                 let h2 =
-                    self.hit_subtree(node_second, r, t_min, t_max, &aabb_second);
+                    self.hit_subtree(node_second, r, t_start, t_end, &aabb_second);
                 if h1.is_some() && h2.is_some() {
                     if h1 < h2 { h1 } else { h2 }
                 } else {
@@ -122,12 +122,12 @@ impl<T: Bounded> Object for KdTree<T> {
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let (t_start, t_end) = self.boundary.intersect(r);
-
+        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
         // box missed / is behind
-        if t_start.max(t_min) > t_end.min(t_max) {
+        if t_start > t_end {
             None
         } else {
-            self.hit_subtree(&self.root, r, t_min, t_max, &self.boundary)
+            self.hit_subtree(&self.root, r, t_start, t_end, &self.boundary)
         }
     }
 
