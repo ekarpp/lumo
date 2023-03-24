@@ -1,5 +1,5 @@
 use crate::DVec3;
-use crate::tracer::pdfs::{Pdf, CosPdf, DeltaPdf, IsotropicPdf, MfdPdf};
+use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
 use std::f64::consts::PI;
 use crate::consts::{EPSILON, ETA};
 use crate::tracer::hit::Hit;
@@ -57,17 +57,6 @@ pub fn bsdf_microfacet(
             * eta_out * eta_out * d * (DVec3::ONE - f) * g
             / (eta_in * wh_dot_wi + eta_out * wh_dot_v).powi(2)
     }
-}
-
-/// Scattering function for diffuse material.
-///
-/// # Arguments
-/// * `ho` - The hit from which we scatter.
-/// * `ro` - Incoming ray to the hit point.
-pub fn brdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
-    let xo = ho.p;
-    let no = ho.norm;
-    Some( Box::new(CosPdf::new(xo, no)) )
 }
 
 /// Scattering function for microfacet surfaces

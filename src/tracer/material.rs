@@ -1,5 +1,4 @@
 use crate::DVec3;
-use std::f64::consts::PI;
 use crate::tracer::pdfs::Pdf;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
@@ -9,8 +8,6 @@ use crate::tracer::microfacet::MfDistribution;
 
 /// Describes which material an object is made out of
 pub enum Material {
-    /// Matte
-    Diffuse(Texture),
     /// Glossy
     Microfacet(Texture, MfDistribution),
     /// Emits light
@@ -62,7 +59,7 @@ impl Material {
     /// Is the material diffuse? I.e. do shadow rays have effect on it.
     /// (CORRECT TERM?)
     pub fn is_diffuse(&self) -> bool {
-        matches!(self, Self::Microfacet(..) | Self::Diffuse(_))
+        matches!(self, Self::Microfacet(..))
     }
 
     /// How much light emitted at `h`?
@@ -77,7 +74,6 @@ impl Material {
     pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, no: DVec3) -> DVec3 {
         let xo = ri.origin;
         match self {
-            Self::Diffuse(t) => t.albedo_at(xo) * PI.recip(),
             Self::Isotropic(t) => t.albedo_at(xo),
             Self::Mirror | Self::Glass => DVec3::ONE,
             Self::Microfacet(t, mfd) => {
@@ -92,7 +88,6 @@ impl Material {
         match self {
             Self::Glass => bxdfs::btdf_glass_pdf(ho, ro),
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
-            Self::Diffuse(_) => bxdfs::brdf_diffuse_pdf(ho, ro),
             Self::Microfacet(_, mfd) => bxdfs::bsdf_microfacet_pdf(ho, ro, mfd),
             Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,

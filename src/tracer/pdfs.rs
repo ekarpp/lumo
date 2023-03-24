@@ -204,6 +204,7 @@ impl Pdf for MfdPdf {
                     (eta_ratio * cos_in - (1.0 - sin_out).sqrt())
             }
         } else {
+            // use cosPdf?
             self.uvw.to_uvw_basis(
                 rand_utils::square_to_cos_hemisphere(rand_sq)
             )

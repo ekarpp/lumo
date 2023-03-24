@@ -18,7 +18,7 @@ impl Default for Scene {
                 Plane::new(
                     DVec3::new(0.0, -1.0, 0.0),
                     DVec3::new(0.0, 1.0, 0.0),
-                    Material::Diffuse(Texture::Checkerboard(
+                    Material::diffuse(Texture::Checkerboard(
                         Box::new(Texture::Checkerboard(
                             Box::new(Texture::Solid(DVec3::ZERO)),
                             Box::new(Texture::Solid(DVec3::ONE)),
