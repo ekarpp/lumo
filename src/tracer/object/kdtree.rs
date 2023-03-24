@@ -30,7 +30,7 @@ impl<T: Bounded> KdTree<T> {
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
         let root = KdNode::construct(&objects, &bounds, indices);
 
-        println!("constructed kd-tree of {} triangles in {:#?}",
+        println!("Constructed kd-tree of {} triangles in {:#?}",
                  objects.len(),
                  start.elapsed());
 
