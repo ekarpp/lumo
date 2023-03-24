@@ -81,7 +81,7 @@ impl Material {
             Self::Isotropic(t) => t.albedo_at(xo),
             Self::Mirror | Self::Glass => DVec3::ONE,
             Self::Microfacet(t, mfd) => {
-                bxdfs::brdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
+                bxdfs::bsdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
             }
             _ => DVec3::ZERO,
         }
@@ -90,9 +90,9 @@ impl Material {
     /// How does `r` get scattered at `h`?
     pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
-            Self::Glass => bxdfs::bsdf_glass_pdf(ho, ro),
-            Self::Mirror => bxdfs::bsdf_mirror_pdf(ho, ro),
-            Self::Diffuse(_) => bxdfs::bsdf_diffuse_pdf(ho, ro),
+            Self::Glass => bxdfs::btdf_glass_pdf(ho, ro),
+            Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
+            Self::Diffuse(_) => bxdfs::brdf_diffuse_pdf(ho, ro),
             Self::Microfacet(_, mfd) => bxdfs::bsdf_microfacet_pdf(ho, ro, mfd),
             Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,

@@ -11,7 +11,7 @@ use crate::tracer::microfacet::MfDistribution;
 ///
 /// `specular = D(wh) * F(wo, wh) * G(wo, wi) / (4.0 * (n • wo) * (n • wi))`
 /// `diffuse = disney_term * albedo / π`
-pub fn brdf_microfacet(
+pub fn bsdf_microfacet(
     ro: &Ray,
     ri: &Ray,
     no: DVec3,
@@ -64,7 +64,7 @@ pub fn brdf_microfacet(
 /// # Arguments
 /// * `ho` - The hit from which we scatter.
 /// * `ro` - Incoming ray to the hit point.
-pub fn bsdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
+pub fn brdf_diffuse_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     Some( Box::new(CosPdf::new(xo, no)) )
@@ -91,7 +91,7 @@ pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
 }
 
 /// Scattering function for mirror material. Perfect reflection.
-pub fn bsdf_mirror_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
+pub fn brdf_mirror_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
     let no = ho.norm;
     let wi = xo - 2.0 * xo.project_onto(no);
@@ -100,7 +100,7 @@ pub fn bsdf_mirror_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
 
 /// Scattering function for glass material.
 /// Refracts according to Snell-Descartes law.
-pub fn bsdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
+pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let inside = ho.object.inside(ro.origin + EPSILON*ro.dir);
     let eta_ratio = if inside { ETA } else { ETA.recip() };
     let no = if inside { -ho.norm } else { ho.norm };
@@ -113,7 +113,7 @@ pub fn bsdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
 
     /* total reflection */
     if sin_out > 1.0 {
-        return bsdf_mirror_pdf(ho, ro);
+        return brdf_mirror_pdf(ho, ro);
     }
 
     let wi = eta_ratio * wo + no *
