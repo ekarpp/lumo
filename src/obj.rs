@@ -58,7 +58,7 @@ pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-fn load_obj_file(file: File) -> io::Result<Vec<Triangle>> {
+fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();

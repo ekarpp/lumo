@@ -220,7 +220,7 @@ impl KdNode {
 
         let mut split_axis = 3;
         let curr_bounds = aabbs.iter()
-            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(&b2));
+            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
 
         let max_width = curr_bounds.ax_max - curr_bounds.ax_min;
 
