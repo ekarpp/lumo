@@ -24,8 +24,8 @@ fn main() -> Result<(), std::io::Error> {
             .make_box(),
     );
 
-    let mut renderer = Renderer::new(scene, camera);
-    renderer.set_samples(1);
-    renderer.render().save("obj.png")?;
+    let renderer = Renderer::new(scene, camera);
+    renderer.render()
+        .save("obj.png")?;
     Ok(())
 }

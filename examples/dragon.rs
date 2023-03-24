@@ -52,11 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     rayon::ThreadPoolBuilder::new().num_threads(30).build_global().unwrap();
 
-    let mut renderer = Renderer::new(scene, camera);
-    renderer.set_width(1000);
-    renderer.set_height(1000);
-    renderer.set_samples(1);
-    renderer.set_integrator(Integrator::PathTrace);
+    let renderer = Renderer::new(scene, camera);
     renderer.render()
         .save("dragon.png")?;
     Ok(())

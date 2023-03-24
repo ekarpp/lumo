@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use crate::{DVec3, DVec2};
+use std::fmt;
 use crate::rand_utils;
 use crate::samplers::JitteredSampler;
 use crate::tracer::pdfs::{Pdf, ObjectPdf};
@@ -25,6 +26,16 @@ pub enum Integrator {
     DirectLight,
     /// Bidirectional path tracing. Not implemented.
     BDPathTrace,
+}
+
+impl fmt::Display for Integrator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::PathTrace => write!(f, "path tracing"),
+            Self::DirectLight => write!(f, "direct light integration"),
+            Self::BDPathTrace => write!(f, "bidirectional path tracing"),
+        }
+    }
 }
 
 impl Integrator {

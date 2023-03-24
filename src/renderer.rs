@@ -2,11 +2,13 @@ use crate::{DVec3, DVec2};
 use std::time::Instant;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
+use crate::cli::TracerCli;
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::scene::Scene;
 use crate::camera::Camera;
 use crate::tracer::Integrator;
+
 
 type PxSampler = JitteredSampler;
 
@@ -25,29 +27,19 @@ impl Renderer {
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
     /// per pixel and path tracing as the integrator.
     pub fn new(scene: Scene, camera: Camera) -> Self {
+        let cli_args: TracerCli = argh::from_env();
+
+        cli_args.set_threads();
+        cli_args.output_cfg();
+
         Self {
             scene,
             camera,
-            img_width: 1000,
-            img_height: 1000,
-            num_samples: 1,
+            img_width: cli_args.get_width(),
+            img_height: cli_args.get_height(),
+            num_samples: cli_args.get_samples(),
             integrator: Integrator::PathTrace,
         }
-    }
-
-    /// Sets width of the rendered image
-    pub fn set_width(&mut self, img_width: i32) {
-        self.img_width = img_width;
-    }
-
-    /// Sets height of the rendered image
-    pub fn set_height(&mut self, img_height: i32) {
-        self.img_height = img_height;
-    }
-
-    /// Sets how many samples per pixel are computed
-    pub fn set_samples(&mut self, num_samples: u32) {
-        self.num_samples = num_samples;
     }
 
     /// Sets the integration algorithm used
@@ -67,11 +59,7 @@ impl Renderer {
             })
             .collect();
 
-        println!("rendered {}x{} image with {} samples per pixel in {:#?}",
-                 self.img_width,
-                 self.img_height,
-                 self.num_samples,
-                 start.elapsed());
+        println!("Finished rendering in {:#?}", start.elapsed());
 
         Image::new(
             buffer,

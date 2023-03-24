@@ -42,6 +42,7 @@ impl Image {
 
     /// Creates the PNG file
     pub fn save(&self, fname: &str) -> Result<(), EncodingError> {
+        println!("Saving to \"{}\"", fname);
         let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);

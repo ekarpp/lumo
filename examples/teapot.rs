@@ -40,10 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
 
-    let mut renderer = Renderer::new(scene, camera);
-    renderer.set_width(500);
-    renderer.set_height(500);
-    //renderer.set_integrator(Integrator::DirectLight);
+    let renderer = Renderer::new(scene, camera);
     renderer.render()
         .save("teapot.png")?;
     Ok(())

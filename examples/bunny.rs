@@ -46,9 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_width(500);
-    renderer.set_height(500);
-    renderer.set_integrator(Integrator::DirectLight);
     renderer.render()
         .save("bunny.png")?;
     Ok(())

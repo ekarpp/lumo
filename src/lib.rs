@@ -14,6 +14,8 @@ pub use renderer::*;
 pub use samplers::*;
 pub use rand_utils::*;
 
+/// Command line interface
+mod cli;
 /// Abstraction for a camera
 mod camera;
 /// Various constants used around the crate.
