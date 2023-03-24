@@ -180,7 +180,12 @@ impl Pdf for MfdPdf {
             // if angle between wm and wo > 90 deg, its bad.
             // VNDF fixes this?
             if wi.dot(self.no) < 0.0 { -wi } else { wi }
-        } else if self.mfd.is_transparent() {
+        } else if !self.mfd.is_transparent() {
+            // use cosPdf?
+            self.uvw.to_uvw_basis(
+                rand_utils::square_to_cos_hemisphere(rand_sq)
+            )
+        } else {
             let inside = self.no.dot(self.wo) < 0.0;
             let eta_ratio = if inside {
                 self.mfd.get_rfrct_idx()
@@ -203,11 +208,6 @@ impl Pdf for MfdPdf {
                 eta_ratio * self.wo + wm *
                     (eta_ratio * cos_in - (1.0 - sin_out).sqrt())
             }
-        } else {
-            // use cosPdf?
-            self.uvw.to_uvw_basis(
-                rand_utils::square_to_cos_hemisphere(rand_sq)
-            )
         };
 
         Ray::new(self.xo, wi)
@@ -222,6 +222,7 @@ impl Pdf for MfdPdf {
         let ndf = self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
             / (4.0 * self.wo.dot(wh));
 
+        // incorrect, should be different for transparent materials
         let hemisphere = wi.dot(self.no).max(0.0) / PI;
         let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
 

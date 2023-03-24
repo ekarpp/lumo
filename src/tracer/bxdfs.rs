@@ -34,10 +34,14 @@ pub fn bsdf_microfacet(
         let g = mfd.g(v, wi, no);
 
         let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
-        let diffuse = color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
-            / PI;
 
-        diffuse + specular
+        if mfd.is_transparent() {
+            specular
+        } else {
+            let diffuse = mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
+                * color / PI;
+            diffuse + specular
+        }
     } else {
         let (eta_in, eta_out) = if ro_inside {
             (1.5, 1.0)
