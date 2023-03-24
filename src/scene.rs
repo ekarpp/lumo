@@ -58,36 +58,36 @@ impl Scene {
 
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
-        self.objects.iter()
-            .map(|obj| obj.hit(r, 0.0, INFINITY))
-            .fold(None, |closest, hit| {
-                if closest.is_none() || (hit.is_some() && hit < closest) {
-                    hit
-                } else {
-                    closest
-                }
-            })
+        let mut t_max = INFINITY;
+        let mut h = None;
+
+        for object in &self.objects {
+            // if we hit an object, it must be closer than what we have
+            h = object.hit(r, 0.0, t_max)
+                .or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
+
+        h
     }
 
     /// Does ray `r` reach the light object `light`? TODO: rewrite
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object)
                      -> Option<Hit> {
-        let light_hit = light.hit(r, 0.0, INFINITY).map(|mut h| {
-            h.t -= EPSILON;
-            h
-        });
+        let light_hit = light.hit(r, 0.0, INFINITY);
+        let t_max = light_hit.as_ref().map_or(INFINITY, |hit| hit.t - EPSILON);
 
-        // ...
-        let no_block_light = |obj: &&dyn Object| -> bool {
-            let hi = obj.hit(r, 0.0, INFINITY);
-            hi.is_none() || hi > light_hit
-        };
+        if t_max == INFINITY {
+            return None;
+        }
 
-        let reached_light = self.objects.iter()
-            .map(|obj| &**obj) // ...
-            .take_while(no_block_light)
-            .count() == self.objects.len();
+        for object in &self.objects {
+            if object.hit(r, 0.0, t_max).is_some() {
+                return None;
+            }
+        }
 
-        if reached_light { light_hit } else { None }
+        light_hit
     }
 }
