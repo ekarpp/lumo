@@ -3,18 +3,18 @@ use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {
     let camera = Camera::default();
-    let def_color = DVec3::splat(0.95);
+    let def_color = srgb_to_lin(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
         // left
-        Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 1.0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(0, 255, 255))),
         // right
-        Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 1.0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(255, 0, 255))),
         // floor
         Material::metal(
             Texture::Checkerboard(
                 Box::new(Texture::Solid(def_color)),
-                Box::new(Texture::Solid(DVec3::new(0.0, 0.0, 0.9))),
+                Box::new(Texture::Solid(srgb_to_lin(0, 0, 230))),
                 2.42,
             ),
             0.01,
@@ -37,7 +37,7 @@ fn main() -> Result<(), std::io::Error> {
         DVec3::new(0.5, -0.9, -1.2),
         0.1,
         Material::transparent(
-            Texture::Solid(DVec3::ONE),
+            Texture::Solid(srgb_to_lin(255, 255, 255)),
             1.5,
             0.1,
         ),
@@ -46,7 +46,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(
         Cube::new(
             Material::specular(
-                Texture::Solid(DVec3::new(0.0, 0.9, 0.0)),
+                Texture::Solid(srgb_to_lin(0, 230, 0)),
                 0.1,
             ))
             .rotate_y(PI / 10.0)

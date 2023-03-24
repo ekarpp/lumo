@@ -4,18 +4,18 @@ const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::default();
-    let def_color = DVec3::splat(0.95);
+    let def_color = srgb_to_lin(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
-        Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
-        Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(255, 0, 0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(0, 255, 0))),
         Material::metal(Texture::Marble(Perlin::new(def_color)), 0.05),
     );
 
     scene.add(
         Mesh::new(
             obj_from_url(BUNNY_URL)?,
-            Material::specular(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)), 0.2),
+            Material::specular(Texture::Solid(srgb_to_lin(0, 255, 0)), 0.2)
         )
             .scale(DVec3::splat(0.3))
             .translate(DVec3::new(0.0, -0.9, -1.5))

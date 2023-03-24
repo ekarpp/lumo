@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(
         Mesh::new(
             obj_from_url(TEAPOT_URL)?,
-            Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0))),
+            Material::diffuse(Texture::Solid(srgb_to_lin(0, 255, 0))),
         )
             .scale(DVec3::splat(0.1))
             .rotate_y(3.14)

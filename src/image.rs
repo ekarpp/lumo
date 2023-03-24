@@ -31,12 +31,17 @@ impl Image {
     fn rgb(&self) -> Vec<u8> {
         self.buffer.iter()
             .flat_map(|px: &DVec3| {
-                [self.to_srgb(px.x), self.to_srgb(px.y), self.to_srgb(px.z)]
+                [
+                    self.lin_to_srgb(px.x),
+                    self.lin_to_srgb(px.y),
+                    self.lin_to_srgb(px.z),
+                ]
             })
             .collect()
     }
 
-    fn to_srgb(&self, c: f64) -> u8 {
+    /// 2.2 Gamma encodes the linear RGB channel
+    fn lin_to_srgb(&self, c: f64) -> u8 {
         (c.powf(1.0 / 2.2) * 255.0) as u8
     }
 

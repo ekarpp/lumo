@@ -7,15 +7,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let def_color = DVec3::splat(0.95);
     let mut scene = Scene::empty_box(
         def_color,
-        Material::diffuse(Texture::Solid(DVec3::new(1.0, 0.0, 0.0))),
-        Material::diffuse(Texture::Solid(DVec3::new(0.0, 1.0, 0.0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(255, 0, 0))),
+        Material::diffuse(Texture::Solid(srgb_to_lin(0, 255, 0))),
         Material::diffuse(Texture::Solid(def_color)),
     );
 
     scene.add(
         Mesh::new(
             obj_from_url(HOMER_URL)?,
-            Material::diffuse(Texture::Solid(DVec3::new(1.0, 1.0, 0.0))),
+            Material::diffuse(Texture::Solid(srgb_to_lin(255, 255, 0))),
         )
             .scale(DVec3::splat(1.5))
             .translate(DVec3::new(-0.73, -1.23, -2.0))

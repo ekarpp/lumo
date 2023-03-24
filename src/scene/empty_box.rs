@@ -47,7 +47,7 @@ impl Scene {
                             0.5 * front - light_dim,
                         ),
                     ),
-                    Material::Light(Texture::Solid(DVec3::ONE)),
+                    Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255))),
                 ),
                 /* floor */
                 Plane::new(
@@ -83,7 +83,7 @@ impl Scene {
                 Plane::new(
                     DVec3::new(0.0, 0.0, -front),
                     DVec3::new(0.0, 0.0, -1.0),
-                    Material::diffuse(Texture::Solid(DVec3::ZERO)),
+                    Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0))),
                 ),
             ],
         )

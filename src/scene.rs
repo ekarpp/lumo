@@ -1,6 +1,7 @@
 use crate::{DVec3, DMat3};
 use std::f64::INFINITY;
 use crate::rand_utils;
+use crate::srgb_to_lin;
 use crate::perlin::Perlin;
 use crate::consts::EPSILON;
 use crate::tracer::{Ray, Hit, Texture, Material};
