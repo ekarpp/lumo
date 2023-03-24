@@ -28,7 +28,7 @@ fn main() -> Result<(), std::io::Error> {
     ));
 
     scene.add(Sphere::new(
-        DVec3::new(0.0, -0.9, -1.2),
+        DVec3::new(0.0, -0.8, -1.2),
         0.1,
         Material::Glass,
     ));
