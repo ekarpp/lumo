@@ -2,7 +2,7 @@ use super::*;
 use crate::tracer::texture::Texture;
 
 fn get_mat() -> Material {
-    Material::Diffuse(Texture::Solid(DVec3::ONE))
+    Material::diffuse(Texture::Solid(DVec3::ONE))
 }
 
 #[test]
