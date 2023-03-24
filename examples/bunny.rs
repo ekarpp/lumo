@@ -1,29 +1,6 @@
 use rust_tracer::*;
-use std::fs::File;
-use std::io::{Seek, Write, Cursor, Read};
-use zip::ZipArchive;
 
-const FNAME_TMP: &str = "bunny.obj.tmp";
 const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
-
-fn bunny() -> Result<Vec<Triangle>, Box<dyn std::error::Error>> {
-    let mut bytes = Vec::new();
-    ureq::get(BUNNY_URL)
-        .call()?
-        .into_reader()
-        .read_to_end(&mut bytes)?;
-
-    let mut zip = ZipArchive::new(Cursor::new(bytes))?;
-    let mut bytes = Vec::new();
-    zip.by_name("bunny.obj")?.read_to_end(&mut bytes)?;
-
-    let mut file = File::create(FNAME_TMP)?;
-    file.write_all(&bytes)?;
-    file.rewind()?;
-    let tringls = load_obj_file(File::open(FNAME_TMP)?)?;
-
-    Ok(tringls)
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::default();
@@ -37,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            bunny()?,
+            obj_from_url(BUNNY_URL)?,
             Material::specular(Texture::Solid(DVec3::new(0.0, 1.0, 0.0)), 0.2),
         )
             .scale(DVec3::splat(0.3))
@@ -45,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .make_box()
     );
 
-    let mut renderer = Renderer::new(scene, camera);
+    let renderer = Renderer::new(scene, camera);
     renderer.render()
         .save("bunny.png")?;
     Ok(())

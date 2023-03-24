@@ -3,4 +3,3 @@ target/
 *.png
 *.svg
 perf.*
-*.obj.tmp

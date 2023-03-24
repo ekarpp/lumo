@@ -15,10 +15,6 @@ lto = "y"
 [profile.dev]
 opt-level = 2
 
-[dev-dependencies]
-ureq = "2.6.2"
-zip = "0.6.4"
-
 [dependencies]
 argh = "0.1.10"
 glam = "0.23.0"
@@ -26,3 +22,6 @@ itertools = "0.10.5"
 png = "0.17.7"
 rand = "0.8.5"
 rayon = "1.7.0"
+tempfile = "3.4.0"
+ureq = "2.6.2"
+zip = "0.6.4"

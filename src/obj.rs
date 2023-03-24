@@ -1,16 +1,64 @@
 use crate::DVec3;
 use std::fs::File;
+use std::io::{Seek, Write, Cursor, Read};
+use zip::ZipArchive;
 use std::io::{self, Result, BufReader, BufRead};
 use crate::tracer::{Material, Triangle};
 
 /// Function to create io::Error
-fn io_error(message: String) -> io::Error {
+fn obj_error(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
+}
+
+/// Loads a .OBJ file at the given path
+pub fn obj_from_path(path: &str) -> Result<Vec<Triangle>> {
+    load_obj_file(File::open(path)?)
+}
+
+/// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
+/// .OBJ files within a zip archive.
+pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
+    println!("Loading .OBJ from \"{}\"", url);
+    let mut bytes = Vec::new();
+    ureq::get(url)
+        .call()
+        .map_err(|_| {
+            obj_error("Error during HTTP, error parsing not implemented")
+        })?
+        .into_reader()
+        .read_to_end(&mut bytes)?;
+
+    if url.ends_with(".zip") {
+        println!("Found zip archive, searching for .OBJ files");
+        let mut zip = ZipArchive::new(Cursor::new(bytes))?;
+        bytes = Vec::new();
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i)?;
+
+            if file.name().ends_with("obj") {
+                println!("Extracting \"{}\"", file.name());
+                file.read_to_end(&mut bytes)?;
+                break;
+            }
+        }
+        if bytes.is_empty() {
+            return Err(obj_error("Could not find .OBJ files in the archive"));
+        }
+    } else if !url.ends_with(".obj") {
+        return Err(obj_error(
+            "Bad URL, or at least does not end with .zip or .obj"
+        ));
+    }
+
+    let mut tmp_file = tempfile::tempfile()?;
+    tmp_file.write_all(&bytes)?;
+    tmp_file.rewind()?;
+    load_obj_file(tmp_file)
 }
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-pub fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
+fn load_obj_file(file: File) -> io::Result<Vec<Triangle>> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();
@@ -36,17 +84,17 @@ pub fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
                 let face = parse_face(&tokens, &vertices, &normals)?;
                 triangles.extend(face);
             }
-            _ => println!("skipping {} during .OBJ parsing", tokens[0]),
+            _ => println!("Skipping {} during .OBJ parsing", tokens[0]),
         }
     }
 
-    println!("parsed .OBJ file with {} triangles", triangles.len());
+    println!("Parsed .OBJ file with {} triangles", triangles.len());
     Ok(triangles)
 }
 
 fn parse_double(token: &str) -> Result<f64> {
     token.parse()
-        .map_err(|_| io_error("could not parse double in .OBJ".to_string()))
+        .map_err(|_| obj_error("Could not parse double in .OBJ"))
 }
 
 fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
@@ -64,7 +112,7 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
         } else {
             (vec_len as i32 + idx) as usize
         }
-    }).map_err(|_| io_error("could not parse index in .OBJ".to_string()))
+    }).map_err(|_| obj_error("Could not parse index in .OBJ"))
 }
 
 fn parse_face(
