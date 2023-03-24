@@ -38,7 +38,7 @@ impl Renderer {
             img_width: cli_args.get_width(),
             img_height: cli_args.get_height(),
             num_samples: cli_args.get_samples(),
-            integrator: Integrator::PathTrace,
+            integrator: cli_args.get_integrator(),
         }
     }
 
