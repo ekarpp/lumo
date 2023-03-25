@@ -27,6 +27,8 @@ impl Renderer {
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
     /// per pixel and path tracing as the integrator.
     pub fn new(scene: Scene, camera: Camera) -> Self {
+        assert!(scene.num_lights() != 0);
+
         let cli_args: TracerCli = argh::from_env();
 
         cli_args.set_threads();

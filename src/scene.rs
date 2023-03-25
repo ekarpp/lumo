@@ -2,19 +2,15 @@ use crate::{DVec3, DMat3};
 use std::f64::INFINITY;
 use crate::rand_utils;
 use crate::srgb_to_lin;
-use crate::perlin::Perlin;
 use crate::consts::EPSILON;
 use crate::tracer::{Ray, Hit, Texture, Material};
 use crate::tracer::{Object, Plane, Rectangle};
-use crate::tracer::Sphere;
 
 #[cfg(test)]
 mod scene_tests;
 
 /// Empty cornell box, custome left right bot material
 pub mod empty_box;
-/// Default scene, ground plane with sphere light and surrounding sphere
-pub mod default_scene;
 
 /// Defines a scene in 3D space
 pub struct Scene {
@@ -25,20 +21,25 @@ pub struct Scene {
 
 }
 
+impl Default for Scene {
+    fn default() -> Self {
+        Self {
+            objects: Vec::new(),
+            lights: Vec::new(),
+        }
+    }
+}
+
 impl Scene {
     /// Constructs a scene of the given objects
     pub fn new(objects: Vec<Box<dyn Object>>) -> Self {
-        let lights = (0..objects.len()).map(|i: usize| {
-            match objects[i].material() {
-                Material::Light(_) => i,
-                _ => objects.len(),
-            }
-        }).filter(|i: &usize| *i != objects.len()).collect();
+        let mut scene = Scene::default();
 
-        Self {
-            objects,
-            lights,
+        for obj in objects {
+            scene.add(obj);
         }
+
+        scene
     }
 
     /// Add an object to the scene
@@ -48,6 +49,11 @@ impl Scene {
             self.lights.push(self.objects.len());
         }
         self.objects.push(obj);
+    }
+
+    /// Returns number of lights in the scene
+    pub fn num_lights(&self) -> usize {
+        self.lights.len()
     }
 
     /// Choose one of the lights uniformly at random. Crash if no lights.
