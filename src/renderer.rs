@@ -81,22 +81,22 @@ impl Renderer {
         let v = (2 * (self.img_height - y) - 1 - self.img_height) as f64
             / max_dim;
 
-        let mut samples = PxSampler::new(self.num_samples)
+        PxSampler::new(self.num_samples)
             .map(|rand_sq: DVec2| {
                 // random offsets
                 let ou = rand_sq.x / max_dim;
                 let ov = rand_sq.y / max_dim;
-                self.integrator.integrate(
+                let rgb = self.integrator.integrate(
                     &self.scene,
                     &self.camera.ray_at(
                         u + ou,
                         v + ov
                     ),
-                )
-            })
-            .collect();
-        self.tone_map.map(&mut samples);
+                );
 
-        samples.iter().sum::<DVec3>() / self.num_samples as f64
+                self.tone_map.map(rgb)
+            })
+            .fold(DVec3::ZERO, |acc, c| acc + c)
+            / self.num_samples as f64
     }
 }
