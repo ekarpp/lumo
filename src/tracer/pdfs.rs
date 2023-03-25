@@ -144,8 +144,8 @@ impl Pdf for DeltaPdf {
 pub struct MfdPdf {
     /// Point of impact
     xo: DVec3,
-    /// Direction from point of impact to camera
-    wo: DVec3,
+    /// Direction from point of impact to viewer
+    v: DVec3,
     /// Macrosurface normal
     no: DVec3,
     /// ONB for macrosurface normal
@@ -155,10 +155,10 @@ pub struct MfdPdf {
 }
 
 impl MfdPdf {
-    pub fn new(xo: DVec3, wo: DVec3, no: DVec3, mfd: MfDistribution) -> Self {
+    pub fn new(xo: DVec3, v: DVec3, no: DVec3, mfd: MfDistribution) -> Self {
         Self {
             xo,
-            wo: wo.normalize(),
+            v: v.normalize(),
             uvw: Onb::new(no),
             no,
             mfd,
@@ -177,7 +177,7 @@ impl Pdf for MfdPdf {
             let wm = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
             ).normalize();
-            let wi = 2.0 * self.wo.dot(wm) * wm - self.wo;
+            let wi = 2.0 * self.v.dot(wm) * wm - self.v;
             // if angle between wm and wo > 90 deg, its bad.
             // VNDF fixes this?
             if wi.dot(self.no) < 0.0 { -wi } else { wi }
@@ -187,18 +187,18 @@ impl Pdf for MfdPdf {
                 rand_utils::square_to_cos_hemisphere(rand_sq)
             )
         } else {
-            let inside = self.no.dot(self.wo) < 0.0;
+            let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
                 1.0 / self.mfd.get_rfrct_idx()
             } else {
                 self.mfd.get_rfrct_idx()
             };
-            let wm = self.uvw.to_uvw_basis(
+            let wh = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
             ).normalize();
-            let wm = if inside { -wm } else { wm };
+            let wh = if inside { -wh } else { wh };
 
-            bxdfs::refract(eta_ratio, self.wo, wm)
+            bxdfs::refract(eta_ratio, self.v, wh)
         };
 
         Ray::new(self.xo, wi)
@@ -208,15 +208,38 @@ impl Pdf for MfdPdf {
     /// from `wh` to `wi`.
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir.normalize();
-        let wh = (self.wo + wi).normalize();
+        let wh = (self.v + wi).normalize();
+        let wh_dot_no = wh.dot(self.no);
+        let wh_dot_v = self.v.dot(wh);
+        // probability to sample wh w.r.t. to wo
+        let ndf = self.mfd.d(wh, self.no) * wh_dot_no.abs()
+            / (4.0 * wh_dot_v);
 
-        let ndf = self.mfd.d(wh, self.no) * wh.dot(self.no).abs()
-            / (4.0 * self.wo.dot(wh));
+        // transmission / scatter probability
+        let st = if !self.mfd.is_transparent() {
+            // cos pdf?
+            wi.dot(self.no).max(0.0) / PI
+        } else {
+            if self.v.dot(wi) > 0.0 {
+                0.0
+            } else {
+                let inside = self.no.dot(self.v) < 0.0;
+                let eta_ratio = if inside {
+                    1.0 / self.mfd.get_rfrct_idx()
+                } else {
+                    self.mfd.get_rfrct_idx()
+                };
+                let wh = (self.v + wi * eta_ratio).normalize();
+                let wh_dot_wi = wi.dot(wh);
 
-        // incorrect, should be different for transparent materials
-        let hemisphere = wi.dot(self.no).max(0.0) / PI;
-        let prob_ndf = ndf * ndf / (ndf * ndf + hemisphere * hemisphere);
+                self.mfd.d(wh, self.no) * wh_dot_no.abs()
+                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            }
+        };
 
-        prob_ndf * ndf + (1.0 - prob_ndf) * hemisphere
+        let prob_ndf = ndf * ndf / (ndf * ndf + st * st);
+
+        prob_ndf * ndf + (1.0 - prob_ndf) * st
     }
 }

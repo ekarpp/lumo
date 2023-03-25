@@ -131,7 +131,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let no = if inside { -ho.norm } else { ho.norm };
     let xo = ho.p;
 
-
     let wo = ro.dir.normalize();
-    Some( Box::new(DeltaPdf::new(xo, refract(eta_ratio, -wo, no))) )
+    let wi = refract(eta_ratio, -wo, no);
+    Some( Box::new(DeltaPdf::new(xo, wi)) )
 }
