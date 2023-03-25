@@ -48,7 +48,7 @@ fn main() -> Result<(), std::io::Error> {
         Sphere::new(
             DVec3::ZERO,
             10.0,
-            Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0)))
+            Material::Blank,
         )
     );
 
