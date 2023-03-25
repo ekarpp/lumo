@@ -31,6 +31,33 @@ impl<T> Instance<T> {
     }
 }
 
+impl<T: Bounded> Bounded for Instance<T> {
+    fn bounding_box(&self) -> AaBoundingBox {
+        let AaBoundingBox { ax_min, ax_max } = self.object.bounding_box();
+        let v0 = self.transform
+            .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_min.z));
+        let v1 = self.transform
+            .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_max.z));
+        let v2 = self.transform
+            .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_min.z));
+        let v3 = self.transform
+            .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_max.z));
+        let v4 = self.transform
+            .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_min.z));
+        let v5 = self.transform
+            .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_max.z));
+        let v6 = self.transform
+            .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_min.z));
+        let v7 = self.transform
+            .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_max.z));
+
+        AaBoundingBox::new(
+            v0.min(v1).min(v2).min(v3).min(v4).min(v5).min(v6).min(v7),
+            v0.max(v1).max(v2).max(v3).max(v4).max(v5).max(v6).max(v7),
+        )
+    }
+}
+
 impl<T: Object> Object for Instance<T> {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let ray_local = Ray::new(
