@@ -15,7 +15,22 @@ pub struct Cone {
 }
 
 impl Cone {
-
+    /// Constructs a cone from the given parameters
+    pub fn new(
+        tip: DVec3,
+        axis: DVec3,
+        height: f64,
+        radius: f64,
+        material: Material
+    ) -> Box<Self> {
+        Box::new(Self {
+            tip,
+            axis: axis.normalize(),
+            height,
+            radius,
+            material,
+        })
+    }
 }
 
 impl Object for Cone {
@@ -33,17 +48,17 @@ impl Object for Cone {
         let cos2_theta = cos_theta * cos_theta;
 
         let xo = r.origin;
-        let xo_to_tip = self.tip - xo;
+        let tip_to_xo = xo - self.tip;
 
-        let wo = r.dir.normalize();
+        let wo = r.dir;
         let wo_dot_axis = wo.dot(self.axis);
-        let xt_dot_axis = xo_to_tip.dot(self.axis);
-        let wo_dot_xt = xo_to_tip.dot(wo);
-        let xt_dot_xt = xo_to_tip.dot(xo_to_tip);
+        let txo_dot_axis = tip_to_xo.dot(self.axis);
+        let wo_dot_txo = tip_to_xo.dot(wo);
+        let txo_dot_txo = tip_to_xo.dot(tip_to_xo);
 
         let a = wo_dot_axis * wo_dot_axis - cos2_theta;
-        let b = 2.0 * (wo_dot_axis * xt_dot_axis - wo_dot_xt * cos2_theta);
-        let c = xt_dot_axis * xt_dot_axis - xt_dot_xt * cos2_theta;
+        let b = 2.0 * (wo_dot_axis * txo_dot_axis - wo_dot_txo * cos2_theta);
+        let c = txo_dot_axis * txo_dot_axis - txo_dot_txo * cos2_theta;
 
         let disc = b * b - 4.0 * a * c;
 
@@ -62,7 +77,21 @@ impl Object for Cone {
 
         let xi = r.at(t);
         let tip_to_xi = xi - self.tip;
-        let ni = self.axis.cross(tip_to_xi).cross(tip_to_xi).normalize();
+        let txi_dot_axis = tip_to_xi.dot(self.axis);
+
+        if txi_dot_axis < 0.0 || txi_dot_axis > self.height {
+            return None;
+        }
+
+        let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
+        let ni = (xi - a).normalize();
+
+        /*
+
+        let txi_dot_txi = tip_to_xi.dot(tip_to_xi);
+        let ni = (tip_to_xi * txi_dot_axis
+                  / txi_dot_txi - self.axis).normalize();
+         */
 
         Hit::new(
             t,
