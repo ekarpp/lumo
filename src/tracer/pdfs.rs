@@ -219,23 +219,22 @@ impl Pdf for MfdPdf {
         let st = if !self.mfd.is_transparent() {
             // cos pdf?
             wi.dot(self.no).max(0.0) / PI
+        } else if self.v.dot(wi) > 0.0 {
+            // in the same hemisphere, zero probability for transmission
+            0.0
         } else {
-            if self.v.dot(wi) > 0.0 {
-                0.0
+            let inside = self.no.dot(self.v) < 0.0;
+            let eta_ratio = if inside {
+                1.0 / self.mfd.get_rfrct_idx()
             } else {
-                let inside = self.no.dot(self.v) < 0.0;
-                let eta_ratio = if inside {
-                    1.0 / self.mfd.get_rfrct_idx()
-                } else {
-                    self.mfd.get_rfrct_idx()
-                };
-                let wh = (self.v + wi * eta_ratio).normalize();
-                let wh_dot_wi = wi.dot(wh);
+                self.mfd.get_rfrct_idx()
+            };
+            let wh = (self.v + wi * eta_ratio).normalize();
+            let wh_dot_wi = wi.dot(wh);
 
-                self.mfd.d(wh, self.no) * wh_dot_no.abs()
-                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
-                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
-            }
+            self.mfd.d(wh, self.no) * wh_dot_no.abs()
+                * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 
         let prob_ndf = ndf * ndf / (ndf * ndf + st * st);
