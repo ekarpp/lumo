@@ -1,7 +1,7 @@
 use crate::DVec3;
 use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
 use std::f64::consts::PI;
-use crate::consts::{EPSILON, ETA};
+use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::microfacet::MfDistribution;
@@ -23,8 +23,8 @@ pub fn bsdf_microfacet(
     let no_dot_wi = no.dot(wi);
     let no_dot_v = no.dot(v);
 
-    let ro_inside = no_dot_v.is_sign_positive();
-    let ri_inside = no_dot_wi.is_sign_positive();
+    let ro_inside = no_dot_v < 0.0;
+    let ri_inside = no_dot_wi < 0.0;
     if ro_inside == ri_inside {
         let wh = (wi + v).normalize();
         let no_dot_wh = no.dot(wh);
@@ -50,6 +50,8 @@ pub fn bsdf_microfacet(
         };
 
         let wh = (wi * eta_ratio + v).normalize();
+        let wh = if wh.dot(v) < 0.0 { -wh } else { wh };
+
         let wh_dot_wi = wh.dot(wi);
         let wh_dot_v = wh.dot(v);
 
@@ -101,10 +103,10 @@ pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
     2.0 * v.project_onto(no) - v
 }
 
-/// Refract direction
+/// Refract direction with Snell-Descartes law.
 ///
 /// # Arguments
-/// * `eta_ratio` -
+/// * `eta_ratio` - Ratio of refraction indices. `from / to`
 /// * `v` - Normalized direction from refraction point to viewer
 /// * `no` - Surface normal, pointing to same hemisphere as `v`
 pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
@@ -114,7 +116,7 @@ pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
     let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
     /* total internal reflection */
-    if sin2_ti > 1.0 {
+    if sin2_ti >= 1.0 {
         return reflect(v, no);
     }
 
@@ -124,14 +126,14 @@ pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
 }
 
 /// Scattering function for glass material.
-/// Refracts according to Snell-Descartes law.
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
-    let inside = ho.object.inside(ro.origin + EPSILON*ro.dir);
+    let no = ho.norm;
+    let v = -ro.dir.normalize();
+    let inside = no.dot(v) < 0.0;
     let eta_ratio = if inside { ETA } else { ETA.recip() };
     let no = if inside { -ho.norm } else { ho.norm };
     let xo = ho.p;
 
-    let wo = ro.dir.normalize();
-    let wi = refract(eta_ratio, -wo, no);
+    let wi = refract(eta_ratio, v, no);
     Some( Box::new(DeltaPdf::new(xo, wi)) )
 }

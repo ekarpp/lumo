@@ -39,7 +39,7 @@ fn main() -> Result<(), std::io::Error> {
         Material::transparent(
             Texture::Solid(srgb_to_lin(255, 255, 255)),
             1.5,
-            0.01,
+            0.001,
         ),
     ));
 

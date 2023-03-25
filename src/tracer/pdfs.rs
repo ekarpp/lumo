@@ -189,9 +189,9 @@ impl Pdf for MfdPdf {
         } else {
             let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
-                1.0 / self.mfd.get_rfrct_idx()
-            } else {
                 self.mfd.get_rfrct_idx()
+            } else {
+                1.0 / self.mfd.get_rfrct_idx()
             };
             let wh = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
@@ -231,6 +231,7 @@ impl Pdf for MfdPdf {
             };
             let wh = (self.v + wi * eta_ratio).normalize();
             let wh_dot_wi = wi.dot(wh);
+            let wh_dot_v = wh.dot(self.v);
 
             self.mfd.d(wh, self.no) * wh_dot_no.abs()
                 * (eta_ratio * eta_ratio * wh_dot_wi).abs()

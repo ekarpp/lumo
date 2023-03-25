@@ -78,7 +78,7 @@ impl MfDistribution {
 
     /// Transparent material f.ex. glass
     pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
+        Self::Beckmann(MicrofacetConfig {
             roughness,
             refraction_idx,
             metallicity: 0.0,
@@ -112,6 +112,7 @@ impl MfDistribution {
     /// cosine weighed hemisphere. Should do something smarter here...
     pub fn probability_ndf_sample(&self) -> f64 {
         let cfg = self.get_config();
+        return 0.0;
         (1.0 - cfg.metallicity) * (1.0 - cfg.roughness) + cfg.metallicity
     }
 
