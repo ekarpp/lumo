@@ -13,21 +13,13 @@ mod scene_tests;
 pub mod empty_box;
 
 /// Defines a scene in 3D space
+#[derive(Default)]
 pub struct Scene {
     /// All of the objects in the scene.
     pub objects: Vec<Box<dyn Object>>,
     /// Contains indices to all of the lights in `objects`
     pub lights: Vec<usize>,
 
-}
-
-impl Default for Scene {
-    fn default() -> Self {
-        Self {
-            objects: Vec::new(),
-            lights: Vec::new(),
-        }
-    }
 }
 
 impl Scene {
