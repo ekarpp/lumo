@@ -3,6 +3,7 @@ use std::time::Instant;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
 use crate::cli::TracerCli;
+use crate::tone_mapping::ToneMap;
 #[allow(unused_imports)]
 use crate::samplers::{JitteredSampler, UniformSampler};
 use crate::scene::Scene;
@@ -20,6 +21,7 @@ pub struct Renderer {
     img_height: i32,
     num_samples: u32,
     integrator: Integrator,
+    tone_map: ToneMap,
 }
 
 impl Renderer {
@@ -41,6 +43,7 @@ impl Renderer {
             img_height: cli_args.get_height(),
             num_samples: cli_args.get_samples(),
             integrator: cli_args.get_integrator(),
+            tone_map: ToneMap::NoMap,
         }
     }
 
@@ -78,7 +81,7 @@ impl Renderer {
         let v = (2 * (self.img_height - y) - 1 - self.img_height) as f64
             / max_dim;
 
-        PxSampler::new(self.num_samples)
+        let mut samples = PxSampler::new(self.num_samples)
             .map(|rand_sq: DVec2| {
                 // random offsets
                 let ou = rand_sq.x / max_dim;
@@ -91,7 +94,9 @@ impl Renderer {
                     ),
                 )
             })
-            .fold(DVec3::ZERO, |acc: DVec3, c: DVec3| acc + c)
-            / self.num_samples as f64
+            .collect();
+        self.tone_map.map(&mut samples);
+
+        samples.iter().sum::<DVec3>() / self.num_samples as f64
     }
 }

@@ -13,6 +13,7 @@ pub use tracer::*;
 pub use renderer::*;
 pub use samplers::*;
 pub use rand_utils::*;
+pub use tone_mapping::*;
 
 /// Command line interface
 mod cli;
@@ -36,6 +37,8 @@ mod samplers;
 mod scene;
 /// The heart.
 mod tracer;
+/// Tone mapping functions
+mod tone_mapping;
 
 /// Decodes 8-bit sRGB encoded `r`, `g`, and `b` channels to linear RGB.
 pub fn srgb_to_lin(r: u8, g: u8, b: u8) -> DVec3 {
