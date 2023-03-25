@@ -66,13 +66,6 @@ impl Object for Sphere {
         )
     }
 
-    /// If distance to origin smaller than radius, must be inside
-    fn inside(&self, p: DVec3) -> bool {
-        self.origin.distance_squared(p)
-            < self.radius*self.radius
-    }
-
-
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);

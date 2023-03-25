@@ -83,16 +83,6 @@ impl Cube {
 }
 
 impl Object for Cube {
-    /// Shoot ray forwards and backwards. If both hit, we are inside.
-    /// Probably faster ways to do this.
-    fn inside(&self, p: DVec3) -> bool {
-        /* direction shouldn't matter */
-        let r = Ray::new(p, DVec3::new(1.0, 0.0, 0.0));
-
-        self.hit(&r, -INFINITY, 0.0).and(self.hit(&r, 0.0, INFINITY))
-            .is_some()
-    }
-
     fn material(&self) -> &Material { &self.material }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {

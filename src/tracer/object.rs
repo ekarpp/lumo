@@ -21,9 +21,12 @@ pub use sphere::Sphere;
 pub use triangle::Triangle;
 pub use rectangle::Rectangle;
 pub use aabb::AaBoundingBox;
+pub use cone::Cone;
 pub use kdtree::*;
 pub use instance::*;
 
+/// Defines cones
+pub mod cone;
 /// Defines infinite planes
 pub mod plane;
 /// Defines a unit cube. Transform to desired shape with instances.
@@ -51,10 +54,6 @@ pub trait Object: Sync {
 
     /// dumb
     fn material(&self) -> &Material;
-
-    /// Is the point inside the object? Care with epsilons here.
-    /// How about planar/solid objects? Get rid of this, just check from normal
-    fn inside(&self, _p: DVec3) -> bool { false }
 
     /// Sample random point on the surface of the object
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
