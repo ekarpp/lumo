@@ -14,7 +14,6 @@ pub struct Sphere {
 }
 
 impl Sphere {
-
     /// # Arguments
     /// * `origin` - Origin of the sphere
     /// * `radius` - Radius of the sphere
@@ -27,6 +26,13 @@ impl Sphere {
             radius,
             material,
         })
+    }
+}
+
+impl Bounded for Sphere {
+    fn bounding_box(&self) -> AaBoundingBox {
+        let r_vec = DVec3::splat(self.radius);
+        AaBoundingBox::new(self.origin - r_vec, self.origin + r_vec)
     }
 }
 

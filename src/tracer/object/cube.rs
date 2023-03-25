@@ -82,6 +82,13 @@ impl Cube {
     }
 }
 
+impl Bounded for Cube {
+    fn bounding_box(&self) -> AaBoundingBox {
+        // we only support unit cubes, so... let instances do the job.
+        AaBoundingBox::new(DVec3::ZERO, DVec3::ONE)
+    }
+}
+
 impl Object for Cube {
     fn material(&self) -> &Material { &self.material }
 
