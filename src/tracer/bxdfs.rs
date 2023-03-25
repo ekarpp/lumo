@@ -43,13 +43,13 @@ pub fn bsdf_microfacet(
             diffuse + specular
         }
     } else {
-        let (eta_in, eta_out) = if ro_inside {
-            (1.5, 1.0)
+        let eta_ratio = if ro_inside {
+            1.0 / mfd.get_rfrct_idx()
         } else {
-            (1.0, 1.5)
+            mfd.get_rfrct_idx()
         };
 
-        let wh = (wi*eta_in + v*eta_out).normalize();
+        let wh = (wi * eta_ratio + v).normalize();
         let wh_dot_wi = wh.dot(wi);
         let wh_dot_v = wh.dot(v);
 
@@ -58,8 +58,8 @@ pub fn bsdf_microfacet(
         let g = mfd.g(v, wi, no);
 
         (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
-            * eta_out * eta_out * d * (DVec3::ONE - f) * g
-            / (eta_in * wh_dot_wi + eta_out * wh_dot_v).powi(2)
+            * d * (DVec3::ONE - f) * g
+            / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
 }
 
@@ -84,11 +84,43 @@ pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
 }
 
 /// Scattering function for mirror material. Perfect reflection.
-pub fn brdf_mirror_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
+pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
+    let wo = ro.dir.normalize();
     let no = ho.norm;
-    let wi = xo - 2.0 * xo.project_onto(no);
+    let wi = reflect(-wo, no);
     Some( Box::new(DeltaPdf::new(xo, wi)) )
+}
+
+/// Reflect around normal
+///
+/// # Arguments
+/// * `v` - Normalized? direction from reflection point to viewer
+/// * `no` - Surface normal
+pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
+    2.0 * v.project_onto(no) - v
+}
+
+/// Refract direction
+///
+/// # Arguments
+/// * `eta_ratio` -
+/// * `v` - Normalized direction from refraction point to viewer
+/// * `no` - Surface normal, pointing to same hemisphere as `v`
+pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
+    /* Snell-Descartes law */
+    let cos_to = no.dot(v);
+    let sin2_to = 1.0 - cos_to * cos_to;
+    let sin2_ti = eta_ratio * eta_ratio * sin2_to;
+
+    /* total internal reflection */
+    if sin2_ti > 1.0 {
+        return reflect(v, no);
+    }
+
+    let cos_ti = (1.0 - sin2_ti).sqrt();
+
+    -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
 }
 
 /// Scattering function for glass material.
@@ -99,18 +131,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let no = if inside { -ho.norm } else { ho.norm };
     let xo = ho.p;
 
-    /* Snell-Descartes law */
+
     let wo = ro.dir.normalize();
-    let cos_in = no.dot(-wo).min(1.0);
-    let sin_out = (1.0 - cos_in * cos_in) * eta_ratio * eta_ratio;
-
-    /* total reflection */
-    if sin_out > 1.0 {
-        return brdf_mirror_pdf(ho, ro);
-    }
-
-    let wi = eta_ratio * wo + no *
-        (eta_ratio * cos_in - (1.0 - sin_out).sqrt());
-
-    Some( Box::new(DeltaPdf::new(xo, wi)) )
+    Some( Box::new(DeltaPdf::new(xo, refract(eta_ratio, -wo, no))) )
 }

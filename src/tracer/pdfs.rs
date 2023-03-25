@@ -3,6 +3,7 @@ use crate::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::tracer::onb::Onb;
 use crate::rand_utils;
+use crate::tracer::bxdfs;
 use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
@@ -188,26 +189,16 @@ impl Pdf for MfdPdf {
         } else {
             let inside = self.no.dot(self.wo) < 0.0;
             let eta_ratio = if inside {
-                self.mfd.get_rfrct_idx()
-            } else {
                 1.0 / self.mfd.get_rfrct_idx()
+            } else {
+                self.mfd.get_rfrct_idx()
             };
             let wm = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
             ).normalize();
             let wm = if inside { -wm } else { wm };
 
-            /* Snell-Descartes law */
-            let cos_in = wm.dot(self.wo).min(1.0);
-            let sin_out = (1.0 - cos_in * cos_in) * eta_ratio * eta_ratio;
-
-            /* total reflection */
-            if sin_out > 1.0 {
-                2.0 * self.wo.project_onto(wm) - self.wo
-            } else {
-                eta_ratio * self.wo + wm *
-                    (eta_ratio * cos_in - (1.0 - sin_out).sqrt())
-            }
+            bxdfs::refract(eta_ratio, self.wo, wm)
         };
 
         Ray::new(self.xo, wi)
