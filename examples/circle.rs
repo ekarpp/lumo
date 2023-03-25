@@ -32,14 +32,15 @@ fn main() -> Result<(), std::io::Error> {
         Plane::new(
             DVec3::new(0.0, ground, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
-            Material::metal(Texture::Solid(srgb_to_lin(200, 200, 200)), 0.06)
+            Material::metal(Texture::Solid(srgb_to_lin(192, 192, 192)), 0.05)
         )
     );
 
+    let r = 0.2;
     scene.add(
         Sphere::new(
-            DVec3::ZERO,
-            0.1,
+            DVec3::new(0.0, ground + r + 0.1, 0.0),
+            r,
             Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255))),
         )
     );
@@ -47,8 +48,8 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(
         Sphere::new(
             DVec3::ZERO,
-            10.0,
-            Material::Blank,
+            3.0,
+            Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0))),
         )
     );
 
