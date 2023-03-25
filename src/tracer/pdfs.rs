@@ -148,6 +148,8 @@ pub struct MfdPdf {
     v: DVec3,
     /// Macrosurface normal
     no: DVec3,
+    /// Material albedo at point of impact
+    albedo: DVec3,
     /// ONB for macrosurface normal
     uvw: Onb,
     /// The microfacet distribution of the surface
@@ -155,11 +157,18 @@ pub struct MfdPdf {
 }
 
 impl MfdPdf {
-    pub fn new(xo: DVec3, v: DVec3, no: DVec3, mfd: MfDistribution) -> Self {
+    pub fn new(
+        xo: DVec3,
+        v: DVec3,
+        no: DVec3,
+        albedo: DVec3,
+        mfd: MfDistribution,
+    ) -> Self {
         Self {
             xo,
             v: v.normalize(),
             uvw: Onb::new(no),
+            albedo,
             no,
             mfd,
         }
@@ -171,7 +180,7 @@ impl Pdf for MfdPdf {
     /// camera around the normal. Better and more complex method of sampling
     /// only visible normals due to Heitz 2014.
     fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let prob_ndf = self.mfd.probability_ndf_sample();
+        let prob_ndf = self.mfd.probability_ndf_sample(self.albedo);
 
         let wi = if rand_utils::rand_f64() < prob_ndf {
             let wm = self.uvw.to_uvw_basis(

@@ -71,12 +71,12 @@ pub fn bsdf_microfacet(
 /// * `ho` - Hit to scatter from
 /// * `ro` - Ray from viewer.
 /// * `mfd` - The microfacet distribution of the surface
-pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, mfd: &MfDistribution)
+pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, albedo: DVec3, mfd: &MfDistribution)
                            -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
     let xo = ho.p;
     let wo = -ro.dir;
-    Some( Box::new(MfdPdf::new(xo, wo, no, *mfd)) )
+    Some( Box::new(MfdPdf::new(xo, wo, no, albedo, *mfd)) )
 }
 
 /// TODO

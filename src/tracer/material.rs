@@ -70,7 +70,7 @@ impl Material {
         }
     }
 
-    /// What is the color at p?
+    /// What is the color at `ri.origin`?
     pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, no: DVec3) -> DVec3 {
         let xo = ri.origin;
         match self {
@@ -88,7 +88,10 @@ impl Material {
         match self {
             Self::Glass => bxdfs::btdf_glass_pdf(ho, ro),
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
-            Self::Microfacet(_, mfd) => bxdfs::bsdf_microfacet_pdf(ho, ro, mfd),
+            Self::Microfacet(t, mfd) => {
+                let xo = ho.p;
+                bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(xo), mfd)
+            }
             Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,
         }

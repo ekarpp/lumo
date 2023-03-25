@@ -108,12 +108,16 @@ impl MfDistribution {
         }
     }
 
-    /// Probability to do importance sampling from NDF. Otherwise done from
-    /// cosine weighed hemisphere. Should do something smarter here...
-    pub fn probability_ndf_sample(&self) -> f64 {
+    /// Probability to do importance sampling from NDF. Estimate based on
+    /// the Fresnel term.
+    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
         let cfg = self.get_config();
 
-        (1.0 - cfg.metallicity) * (1.0 - cfg.roughness) + cfg.metallicity
+        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
+        let f0 = f0 * f0;
+        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
+
+        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean
     }
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
