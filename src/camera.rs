@@ -46,7 +46,7 @@ impl Camera {
     /// * `towards` - Camera is looking at this point
     /// * `up_dir` - Defines up direction for the camera
     /// * `focal_length` - Focal length of the camera
-    fn new(
+    pub fn new(
         origin: DVec3,
         towards: DVec3,
         up_dir: DVec3,
