@@ -30,7 +30,7 @@ pub struct TracerCli {
 impl TracerCli {
     pub fn output_cfg(&self) {
         println!("Rendering scene as a {} x {} image \
-                  using {} thread(s) with {} sample(s) per pixel using {}.",
+                  with {} thread(s) and {} sample(s) per pixel using {}.",
                  self.get_width(),
                  self.get_height(),
                  rayon::current_num_threads(),
