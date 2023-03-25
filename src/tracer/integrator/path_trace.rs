@@ -27,7 +27,12 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
                     let no = ho.norm;
                     let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
                     let wi = ri.dir;
+                    let p_scatter = scatter_pdf.value_for(&ri);
 
+                    // scatter with 0 probability
+                    if p_scatter.is_nan() {
+                        return shadow;
+                    }
                     // tmp, find better way to do this.
                     let tmp = matches!(material,
                                        Material::Glass | Material::Mirror);
