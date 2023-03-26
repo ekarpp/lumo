@@ -27,7 +27,6 @@ impl Image {
     }
     /// Translates the image buffer of RGB values in range \[0,1\]
     /// to discrete range \[0,255\]. Applies gamma correction.
-    #[allow(clippy::identity_op)]
     fn rgb(&self) -> Vec<u8> {
         self.buffer.iter()
             .flat_map(|px: &DVec3| {
@@ -47,7 +46,7 @@ impl Image {
 
     /// Creates the PNG file
     pub fn save(&self, fname: &str) -> Result<(), EncodingError> {
-        println!("Saving to \"{}\"", fname);
+        println!("Saving to \"{}\".", fname);
         let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);

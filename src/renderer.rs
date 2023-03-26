@@ -27,21 +27,20 @@ pub struct Renderer {
 impl Renderer {
 
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
-    /// per pixel and path tracing as the integrator. Configured through the CLI.
+    /// per pixel and path tracing as the integrator. Configured through the CLI
+    /// or the setter functions of the struct.
     pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
         let cli_args: TracerCli = argh::from_env();
-
         cli_args.set_threads();
-        cli_args.output_cfg();
 
         Self {
             scene,
             camera,
-            img_width: cli_args.get_width(),
-            img_height: cli_args.get_height(),
-            num_samples: cli_args.get_samples(),
+            img_width: cli_args.width,
+            img_height: cli_args.height,
+            num_samples: cli_args.samples,
             integrator: cli_args.get_integrator(),
             tone_map: ToneMap::NoMap,
         }
@@ -52,8 +51,37 @@ impl Renderer {
         self.tone_map = tone_map;
     }
 
+    /// Sets number of samples per pixel
+    pub fn set_samples(&mut self, samples: u32) {
+        self.num_samples = samples;
+    }
+
+    /// Sets the width of the image
+    pub fn set_width(&mut self, width: i32) {
+        self.img_width = width;
+    }
+
+    /// Sets the height of the image
+    pub fn set_height(&mut self, height: i32) {
+        self.img_height = height;
+    }
+
+    /// Sets the integrator used to render the image
+    pub fn set_integrator(&mut self, integrator: Integrator) {
+        self.integrator = integrator;
+    }
+
     /// Starts the rendering process and returns the rendered image
     pub fn render(&self) -> Image {
+        println!("Rendering scene as a {} x {} image \
+                  with {} thread(s) and {} sample(s) per pixel using {}.",
+                 self.img_width,
+                 self.img_height,
+                 rayon::current_num_threads(),
+                 self.num_samples,
+                 self.integrator,
+        );
+
         let start = Instant::now();
 
         let buffer: Vec<DVec3> = (0..self.img_height).into_par_iter()

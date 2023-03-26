@@ -6,21 +6,22 @@ use glam::DVec3;
 /// Epsilon to avoid self intersection of objects
 const EPSILON: f64 = 1e-10;
 
-pub use consts::*;
 pub use image::Image;
+pub use cli::TracerCli;
 pub use perlin::Perlin;
 pub use renderer::Renderer;
 pub use tone_mapping::ToneMap;
 
-/// The heart.
-pub mod tracer;
 /// .OBJ file loader
 pub mod obj;
+/// The heart.
+pub mod tracer;
 
-/// Wrapper around rand. Provides functions to sample from various geometrics.
-mod rand_utils;
+
 /// Command line interface
 mod cli;
+/// Wrapper around rand. Provides functions to sample from various geometrics.
+mod rand_utils;
 /// Various constants used around the crate.
 mod consts;
 /// Wrapper for writing image buffer to file.
