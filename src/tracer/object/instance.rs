@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use super::*;
 
 /// Instance of an object i.e. an object to which affine transformations have

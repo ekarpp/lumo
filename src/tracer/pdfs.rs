@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use glam::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::EPSILON;
@@ -34,6 +33,7 @@ impl CosPdf {
     ///
     /// * `xo` - Point where sampling is done.
     /// * `no` - Normal at the point of sampling directions.
+    #[allow(dead_code)]
     pub fn new(xo: DVec3, no: DVec3) -> Self {
         Self {
             xo,

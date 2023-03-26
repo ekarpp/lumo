@@ -37,7 +37,6 @@ impl MicrofacetConfig {
 /// Defines a distribution of normals for a microfacet. `f64` parameter is the
 /// roughness (α) of the surface.
 #[derive(Copy, Clone)]
-#[allow(dead_code)]
 pub enum MfDistribution {
     /// Walter et al. 2007
     Ggx(MicrofacetConfig),
@@ -78,7 +77,7 @@ impl MfDistribution {
 
     /// Transparent material f.ex. glass
     pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
-        Self::Beckmann(MicrofacetConfig {
+        Self::Ggx(MicrofacetConfig {
             roughness,
             refraction_idx,
             metallicity: 0.0,

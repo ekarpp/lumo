@@ -4,8 +4,7 @@ use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
 use crate::cli::TracerCli;
 use crate::tone_mapping::ToneMap;
-#[allow(unused_imports)]
-use crate::samplers::{JitteredSampler, UniformSampler};
+use crate::samplers::JitteredSampler;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
 use crate::tracer::Camera;

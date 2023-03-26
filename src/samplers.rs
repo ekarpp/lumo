@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use glam::DVec2;
 use crate::rand_utils;
 
@@ -12,6 +11,7 @@ pub struct UniformSampler {
 
 impl UniformSampler {
     /// Constructs an uniform sampler with `samples` samples
+    #[allow(dead_code)]
     pub fn new(samples: u32) -> Self {
         Self {
             samples,

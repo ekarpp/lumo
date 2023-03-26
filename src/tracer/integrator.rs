@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use glam::{DVec3, DVec2};
 use std::fmt;
 use crate::rand_utils;
