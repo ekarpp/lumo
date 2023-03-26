@@ -4,6 +4,9 @@ use std::time::Instant;
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
 
+// multiplier to determine score threshold during tree construction
+const THRESHOLD_MULTIPLIER: f64 = 0.85;
+
 /// A k dimensional tree used to accelerate ray intersection calculations.
 /// Implements a binary tree that splits a large mesh of objects to smaller
 /// subobjects.
@@ -14,10 +17,10 @@ pub struct KdTree<T> {
     material: Material,
 }
 
-/// Implementation of a kd-tree. Median split / widest axis split
+/// Implementation of a kd-tree. Median split / widest axis split.
 /// References:
-/// <https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs>
-/// <https://github.com/fogleman/pt/blob/master/pt/tree.go>
+/// [ekzhang/rpt](https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs),
+/// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go)
 impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
@@ -44,7 +47,7 @@ impl<T: Bounded> KdTree<T> {
         }
     }
 
-    /// Returns self instanced with largest dimension
+    /// Returns self uniformly scaled as an instance with largest dimension
     /// of bounding box scaled to 1.0
     pub fn to_unit_size(self) -> Instance<Self> {
         let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
@@ -223,7 +226,7 @@ impl KdNode {
 
         // score each axis by how well objects are split between the medians
         let scores: Vec<usize> = (0..3).map(|ax| score(ax, med[ax])).collect();
-        let threshold = (indices.len() as f64 * 0.85) as usize;
+        let threshold = (indices.len() as f64 * THRESHOLD_MULTIPLIER) as usize;
 
         // no good splits, make it a leaf
         if scores[0].min(scores[1].min(scores[2])) >= threshold {
