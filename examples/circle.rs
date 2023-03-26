@@ -32,7 +32,7 @@ fn main() -> Result<(), std::io::Error> {
         Plane::new(
             DVec3::new(0.0, ground, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
-            Material::metal(Texture::Solid(srgb_to_lin(192, 192, 192)), 0.05)
+            Material::metal(Texture::Solid(srgb_to_lin(166, 44, 43)), 0.01)
         )
     );
 
@@ -54,11 +54,11 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     let circle_s = 8;
-
+    let offset = PI / circle_s as f64;
     let r = 0.2;
 
     for i in 0..circle_s {
-        let theta = (i as f64 / circle_s as f64) * 2.0 * PI;
+        let theta = (i as f64 / circle_s as f64) * 2.0 * PI + offset;
         let x = theta.cos();
         let y = ground + r;
         let z = theta.sin();
@@ -67,7 +67,7 @@ fn main() -> Result<(), std::io::Error> {
             Sphere::new(
                 DVec3::new(x, y, z),
                 r,
-                Material::specular(Texture::Solid(hsv_to_rgb(theta)), 0.1),
+                Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.1),
             )
         );
     }
