@@ -84,7 +84,7 @@ fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
                 let face = parse_face(&tokens, &vertices, &normals)?;
                 triangles.extend(face);
             }
-            _ => println!("Skipping {} during .OBJ parsing", tokens[0]),
+            _ => eprintln!("Skipping {} during .OBJ parsing", tokens[0]),
         }
     }
 
