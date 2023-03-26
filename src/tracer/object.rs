@@ -21,6 +21,7 @@ pub use sphere::Sphere;
 pub use triangle::Triangle;
 pub use rectangle::Rectangle;
 pub use aabb::AaBoundingBox;
+pub use cylinder::Cylinder;
 pub use cone::Cone;
 pub use disk::Disk;
 pub use kdtree::*;
@@ -40,6 +41,8 @@ pub mod sphere;
 pub mod triangle;
 /// Defines rectangles. Built from two triangles.
 pub mod rectangle;
+/// Defines y axis aligned cylinders
+pub mod cylinder;
 /// Medium, fog, smoke, etc
 pub mod medium;
 /// Axis aligned bounding boxes
