@@ -4,7 +4,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
     /* two mirrors next to each other might cause issues... */
 
     match scene.hit(ro) {
-        None => DVec3::new(0.0, 1.0, 0.0),
+        None => DVec3::new(0.0, 0.0, 0.0),
         Some(ho) => {
             let material = ho.object.material();
             match material.bsdf_pdf(&ho, ro) {
