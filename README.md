@@ -1,4 +1,4 @@
-A CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features and algorithms is straightforward.
+A CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
 
 ### Features
 * Area light sampling
@@ -21,7 +21,7 @@ A CPU based multithreaded rendering engine. Made with the goal of learning Rust 
 ### References
 * [Physically Based Rendering](https://www.pbr-book.org/)
 * [Ray Tracing in One Weekend](https://raytracing.github.io/)
-* [Eric Veach's Ph.D Thesis](http://graphics.stanford.edu/papers/veach_thesis/)
+* [Eric Veach's PhD Thesis](http://graphics.stanford.edu/papers/veach_thesis/)
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
 | ![Stanford dragon](https://i.imgur.com/zREVJF3.png) |
