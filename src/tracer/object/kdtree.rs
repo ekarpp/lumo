@@ -42,6 +42,16 @@ impl<T: Bounded> KdTree<T> {
         }
     }
 
+    /// Returns self instanced with largest dimension
+    /// of bounding box scaled to 1.0
+    pub fn to_unit_size(self) -> Instance<Self> {
+        let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
+
+        let bb_dim = ax_max - ax_min;
+
+        self.scale(DVec3::splat(bb_dim.max_element()))
+    }
+
     fn hit_subtree(
         &self,
         node: &KdNode,
