@@ -40,7 +40,7 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
                     let cos_theta = if tmp {
                         1.0
                     } else {
-                        no.dot(wi.normalize()).abs()
+                        no.dot(wi).abs()
                     };
 
                     shadow + material.bsdf_f(ro, &ri, no)

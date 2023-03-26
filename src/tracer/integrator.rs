@@ -74,7 +74,7 @@ fn shadow_ray(
             None => DVec3::ZERO,
             Some(_) => {
                 material.bsdf_f(ro, &ri, no)
-                    * no.dot(wi.normalize()).abs()
+                    * no.dot(wi).abs()
                     / pdf_light.value_for(&ri)
             }
         }

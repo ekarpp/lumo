@@ -141,7 +141,7 @@ impl Object for Triangle {
                 let ni = hi.norm;
                 let wi = ri.dir;
                 xo.distance_squared(xi)
-                    / (ni.dot(wi.normalize()).abs() * area)
+                    / (ni.dot(wi).abs() * area)
 
             }
         }

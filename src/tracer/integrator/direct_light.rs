@@ -23,7 +23,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                         let cos_theta = if tmp {
                             1.0
                         } else {
-                            no.dot(wi.normalize()).abs()
+                            no.dot(wi).abs()
                         };
 
                         material.bsdf_f(ro, &ri, no)
