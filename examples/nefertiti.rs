@@ -3,7 +3,6 @@ use std::f64::consts::PI;
 
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
 const NEFE_URL: &str = "https://cdn.thingiverse.com/assets/c7/e1/b6/f6/12/SPK_Nefertiti_Scan_FOIA_Response.zip";
-const PEDE_PATH: &str = "examples/nefe_pedestal.obj";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::default();
@@ -28,21 +27,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .to_origin()
             .scale(DVec3::splat(0.9))
             .rotate_x(-PI / 2.0)
-            .translate(DVec3::new(0.0, 0.0, -1.1))
+            .translate(DVec3::new(0.0, -0.07, -1.35))
             .make_box()
     );
 
-
     scene.add(
-        Mesh::new(
-            obj_from_path(PEDE_PATH)?,
-            Material::metal(Texture::Solid(silver), 0.06)
-        )
-            .to_unit_size()
-            .to_origin()
-            .scale(DVec3::splat(0.8))
-            .rotate_y(3.0 * PI / 4.0)
-            .translate(DVec3::new(-0.0, -0.66, -1.1))
+        Cube::new(Material::specular(Texture::Marble(Perlin::new(silver)), 0.06))
+            .translate(DVec3::splat(-0.5))
+            .scale(DVec3::new(0.4, 1.2, 0.4))
+            .translate(DVec3::new(0.0, -1.1, -1.35))
             .make_box()
     );
 
