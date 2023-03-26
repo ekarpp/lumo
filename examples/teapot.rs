@@ -12,20 +12,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Material::diffuse(Texture::Solid(def_color)),
     );
 
-    /*
-    let mut scene = Scene::default();
-    scene.add(
-        Sphere::new(
-            DVec3::new(0.0, 1.0, -1.0),
-            0.2,
-            Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255)))
-        )
-    );
-     */
     scene.add(
         Mesh::new(
             obj_from_url(TEAPOT_URL)?,
-            Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 255)))//Marble(Perlin::default()))
+            Material::diffuse(Texture::Marble(Perlin::default()))
         )
             .scale(DVec3::splat(0.1))
             .translate(DVec3::new(0.0, -0.5, -1.5))
