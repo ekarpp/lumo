@@ -51,38 +51,38 @@ impl Scene {
                 ),
                 /* floor */
                 Plane::new(
-                    DVec3::new(0.0, ground, 0.0),
-                    DVec3::new(0.0, 1.0, 0.0),
+                    DVec3::Y * ground,
+                    DVec3::Y,
                     mat_floor,
                 ),
                 /* left wall */
                 Plane::new(
-                    DVec3::new(-right, 0.0, 0.0),
-                    DVec3::new(1.0, 0.0, 0.0),
+                    DVec3::NEG_X * right,
+                    DVec3::X,
                     mat_left,
                 ),
                 /* right wall */
                 Plane::new(
-                    DVec3::new(right, 0.0, 0.0),
-                    DVec3::new(-1.0, 0.0, 0.0),
+                    DVec3::X * right,
+                    DVec3::NEG_X,
                     mat_right,
                 ),
                 /* roof */
                 Plane::new(
-                    DVec3::new(0.0, -ground, 0.0),
-                    DVec3::new(0.0, -1.0, 0.0),
+                    DVec3::NEG_Y * ground,
+                    DVec3::NEG_Y,
                     Material::diffuse(Texture::Solid(def_color)),
                 ),
                 /* front wall */
                 Plane::new(
-                    DVec3::new(0.0, 0.0, front),
-                    DVec3::new(0.0, 0.0, 1.0),
+                    DVec3::Z * front,
+                    DVec3::Z,
                     Material::diffuse(Texture::Solid(def_color)),
                 ),
                 /* background */
                 Plane::new(
-                    DVec3::new(0.0, 0.0, -front),
-                    DVec3::new(0.0, 0.0, -1.0),
+                    DVec3::NEG_Z * front,
+                    DVec3::NEG_Z,
                     Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0))),
                 ),
             ],

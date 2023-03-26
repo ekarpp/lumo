@@ -21,48 +21,48 @@ impl Cube {
             rectangles: [
                 *Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(0.0, 0.0, 1.0),
-                        DVec3::new(0.0, 0.0, 0.0),
-                        DVec3::new(1.0, 0.0, 0.0),
+                        DVec3::Z,
+                        DVec3::ZERO,
+                        DVec3::X,
                     ),/* xz-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(1.0, 1.0, 0.0),
-                        DVec3::new(0.0, 1.0, 0.0),
+                        DVec3::Y,
                         DVec3::new(0.0, 1.0, 1.0),
                     ),/* xz-plane +1 */
                     Material::Blank,
                 ),
                 *Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(0.0, 1.0, 0.0),
-                        DVec3::new(0.0, 0.0, 0.0),
-                        DVec3::new(0.0, 0.0, 1.0),
+                        DVec3::Y,
+                        DVec3::ZERO,
+                        DVec3::Z,
                     ), /* yz-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(1.0, 0.0, 1.0),
-                        DVec3::new(1.0, 0.0, 0.0),
+                        DVec3::X,
                         DVec3::new(1.0, 1.0, 0.0),
                     ), /* yz-plane + 1x*/
                     Material::Blank,
                 ),
                 *Rectangle::new(
                     DMat3::from_cols(
-                        DVec3::new(1.0, 0.0, 0.0),
-                        DVec3::new(0.0, 0.0, 0.0),
-                        DVec3::new(0.0, 1.0, 0.0),
+                        DVec3::X,
+                        DVec3::ZERO,
+                        DVec3::Y,
                     ), /* xy-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
                     DMat3::from_cols(
                         DVec3::new(0.0, 1.0, 1.0),
-                        DVec3::new(0.0, 0.0, 1.0),
+                        DVec3::Z,
                         DVec3::new(1.0, 0.0, 1.0),
                     ), /* xy-plane + 1z */
                     Material::Blank,
