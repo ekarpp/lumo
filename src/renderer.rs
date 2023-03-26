@@ -47,9 +47,9 @@ impl Renderer {
         }
     }
 
-    /// Sets the integration algorithm used
-    pub fn set_integrator(&mut self, integrator: Integrator) {
-        self.integrator = integrator;
+    /// Sets the tone mapping algorithm used
+    pub fn set_integrator(&mut self, tone_map: ToneMap) {
+        self.tone_map = tone_map;
     }
 
     /// Starts the rendering process and returns the rendered image
