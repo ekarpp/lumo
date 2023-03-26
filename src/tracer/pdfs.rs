@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 use glam::{DVec3, DVec2};
 use std::f64::consts::PI;
+use crate::EPSILON;
 use crate::tracer::onb::Onb;
 use crate::rand_utils;
 use crate::tracer::bxdfs;
-use crate::consts::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::object::Object;
 use crate::tracer::microfacet::MfDistribution;

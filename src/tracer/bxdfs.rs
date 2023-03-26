@@ -1,10 +1,12 @@
 use glam::DVec3;
 use std::f64::consts::PI;
 use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
-use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::microfacet::MfDistribution;
+
+/// Refraction constant of glass
+pub const ETA: f64 = 1.5;
 
 /// Shading for microfacet. Computed as diffuse + specular, where
 /// (`D`, `F`, `G` values from the microfacet distribution):

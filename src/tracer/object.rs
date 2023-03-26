@@ -2,7 +2,7 @@ use glam::{DVec3, DMat3, DVec2, DAffine3};
 use std::f64::{INFINITY, consts::PI};
 use crate::tracer::onb::Onb;
 use crate::rand_utils;
-use crate::consts::EPSILON;
+use crate::EPSILON;
 use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;

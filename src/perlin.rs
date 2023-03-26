@@ -1,8 +1,25 @@
 use glam::{DVec3, UVec3};
 use crate::rand_utils;
-use crate::consts::{PERLIN_POINTS, PERLIN_AMP, PERLIN_FREQ};
-use crate::consts::{PERLIN_OCTAVES, PERLIN_SCALE, PERLIN_GAIN};
 use itertools::Itertools;
+
+/// Number of points in the perlin noise lattice
+const PERLIN_POINTS: usize = 256;
+
+/// Scale of points in perlin. bigger = more noticeable effect
+const PERLIN_SCALE: f64 = 4.0;
+
+/// Frequency of noise in perlin noise. bigger = more frequent
+const PERLIN_FREQ: f64 = 60.0;
+
+/// Amplitude of the noise pattern in perlin noise
+const PERLIN_AMP: f64 = 20.0;
+
+/// Recursion depth in perlin turbulence
+const PERLIN_OCTAVES: i32 = 6;
+
+/// Scale of each term in turbulence. should be less than 1.0
+const PERLIN_GAIN: f64 = 0.5;
+
 
 /// Helper struct to store permutation vectors for each dimension.
 struct PermutationXyz {
@@ -22,13 +39,14 @@ pub struct Perlin {
 }
 
 impl Default for Perlin {
+    /// Perlin generator with underlying color as rgb(1,1,1)
     fn default() -> Self {
         Self::new(DVec3::ONE)
     }
 }
 
 impl Perlin {
-    /// Constructs new perlin generator with the given underlying colour.
+    /// Constructs new Perlin generator with the given underlying colour.
     /// Pass texture instead?
     pub fn new(albedo: DVec3) -> Self {
         Self {

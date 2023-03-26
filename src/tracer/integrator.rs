@@ -4,16 +4,23 @@ use std::fmt;
 use crate::rand_utils;
 use crate::samplers::JitteredSampler;
 use crate::tracer::pdfs::{Pdf, ObjectPdf};
-use crate::consts::{PATH_TRACE_RR, SHADOW_SPLITS};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 
-
 mod path_trace;
 mod direct_light;
 mod bd_path_trace;
+
+/// How many shadow rays per vertex in path tracer? Preferably square for
+/// jittered sampler.
+const SHADOW_SPLITS: u32 = 1;
+
+/// Russian roulette probability for the path tracer.
+/// Terminates a path at each step with this probability.
+/// Computed values are multiplied by the reciprocal of the inverse probability.
+const PATH_TRACE_RR: f64 = 0.2;
 
 /// Enum to choose which integrator to use
 pub enum Integrator {

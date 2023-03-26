@@ -3,6 +3,9 @@
 
 use glam::DVec3;
 
+/// Epsilon to avoid self intersection of objects
+const EPSILON: f64 = 1e-10;
+
 pub use consts::*;
 pub use image::Image;
 pub use perlin::Perlin;

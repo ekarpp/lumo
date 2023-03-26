@@ -1,6 +1,8 @@
 use glam::DVec3;
 use crate::perlin::Perlin;
-use crate::consts::CHECKER_SCALE;
+
+/// Base scale for the size of checker boxes. bigger = smaller boxes
+const CHECKER_SCALE: f64 = 13.0;
 
 /// Defines a texture to choose a colour of material at each point.
 pub enum Texture {

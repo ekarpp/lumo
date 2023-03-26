@@ -2,7 +2,7 @@ use glam::{DVec3, DMat3};
 use std::f64::INFINITY;
 use crate::rand_utils;
 use crate::srgb_to_lin;
-use crate::consts::EPSILON;
+use crate::EPSILON;
 use crate::tracer::{ray::Ray, hit::Hit, Texture, Material};
 use crate::tracer::{Object, Plane, Rectangle};
 
