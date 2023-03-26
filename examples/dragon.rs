@@ -21,9 +21,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 0.2
             ),
         )
-            .scale(DVec3::splat(1.2))
+            .scale(1.2, 1.2, 1.2)
             .rotate_y(5.0 * PI / 8.0)
-            .translate(DVec3::new(0.0, -0.68, -1.4))
+            .translate(0.0, -0.68, -1.4)
             .make_box()
     );
 

@@ -17,8 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             obj_from_url(HOMER_URL)?,
             Material::diffuse(Texture::Solid(srgb_to_lin(255, 255, 0))),
         )
-            .scale(DVec3::splat(1.5))
-            .translate(DVec3::new(-0.73, -1.23, -2.0))
+            .scale(1.5, 1.5, 1.5)
+            .translate(-0.73, -1.23, -2.0)
             .make_box()
     );
 

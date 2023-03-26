@@ -54,8 +54,8 @@ fn main() -> Result<(), std::io::Error> {
                 0.1,
             ))
             .rotate_y(PI / 10.0)
-            .scale(DVec3::new(0.2, 0.4, 0.2))
-            .translate(DVec3::new(0.2, -1.0, -1.7))
+            .scale(0.2, 0.4, 0.2)
+            .translate(0.2, -1.0, -1.7)
             .make_box()
     );
 

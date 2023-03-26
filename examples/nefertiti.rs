@@ -25,17 +25,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
             .to_unit_size()
             .to_origin()
-            .scale(DVec3::splat(0.9))
+            .scale(0.9, 0.9, 0.9)
             .rotate_x(-PI / 2.0)
-            .translate(DVec3::new(0.0, -0.07, -1.35))
+            .translate(0.0, -0.07, -1.35)
             .make_box()
     );
 
     scene.add(
         Cube::new(Material::specular(Texture::Marble(Perlin::new(silver)), 0.06))
-            .translate(DVec3::splat(-0.5))
-            .scale(DVec3::new(0.4, 1.2, 0.4))
-            .translate(DVec3::new(0.0, -1.1, -1.35))
+            .translate(-0.5, -0.5, -0.5)
+            .scale(0.4, 1.2, 0.4)
+            .translate(0.0, -1.1, -1.35)
             .make_box()
     );
 

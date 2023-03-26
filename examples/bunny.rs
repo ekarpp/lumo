@@ -17,8 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             obj_from_url(BUNNY_URL)?,
             Material::specular(Texture::Solid(srgb_to_lin(0, 255, 0)), 0.2)
         )
-            .scale(DVec3::splat(0.3))
-            .translate(DVec3::new(0.0, -0.9, -1.5))
+            .scale(0.3, 0.3, 0.3)
+            .translate(0.0, -0.9, -1.5)
             .make_box()
     );
 

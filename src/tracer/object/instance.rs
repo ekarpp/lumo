@@ -40,9 +40,9 @@ impl<T: Bounded> Instance<T> {
     /// Translate `self`, such that bounding box center is at the origin
     pub fn to_origin(self) -> Instance<T> {
         let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
-        let ax_mid = (ax_min + ax_max) / 2.0;
+        let ax_mid = -(ax_min + ax_max) / 2.0;
 
-        self.translate(-ax_mid)
+        self.translate(ax_mid.x, ax_mid.y, ax_mid.z)
     }
 }
 
@@ -95,11 +95,11 @@ impl<T: Object> Object for Instance<T> {
 
 /// Object that can be instanced
 pub trait Instanceable<T> {
-    /// Translate object by `t`
-    fn translate(self, t: DVec3) -> Instance<T>;
+    /// Translate object by `xyz`
+    fn translate(self, x: f64, y: f64, z: f64) -> Instance<T>;
 
-    /// Apply scale `s`
-    fn scale(self, s: DVec3) -> Instance<T>;
+    /// Apply scale `xyz`
+    fn scale(self, x: f64, y: f64, z:f64) -> Instance<T>;
 
     /// Rotate around x-axis by `r` radians
     fn rotate_x(self, r: f64) -> Instance<T>;
@@ -113,11 +113,13 @@ pub trait Instanceable<T> {
 
 /// To make applying transformations to objects easy
 impl<T: Object> Instanceable<T> for T {
-    fn translate(self, t: DVec3) -> Instance<T> {
+    fn translate(self, x: f64, y: f64, z: f64) -> Instance<T> {
+        let t = DVec3::new(x, y, z);
         Instance::new(self, DAffine3::from_translation(t))
     }
 
-    fn scale(self, s: DVec3) -> Instance<T> {
+    fn scale(self, x: f64, y: f64, z: f64) -> Instance<T> {
+        let s = DVec3::new(x, y, z);
         Instance::new(self, DAffine3::from_scale(s))
     }
 
@@ -137,7 +139,8 @@ impl<T: Object> Instanceable<T> for T {
 /// Prevent nested Instance structs
 impl<T: Object> Instance<T> {
     /// Apply translation AFTER curret transformations
-    pub fn translate(self, t: DVec3) -> Self {
+    pub fn translate(self, x: f64, y: f64, z: f64) -> Self {
+        let t = DVec3::new(x, y, z);
         Self::new(
             self.object,
             DAffine3::from_translation(t) * self.transform,
@@ -145,7 +148,8 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply scale AFTER current transformations
-    pub fn scale(self, s: DVec3) -> Self {
+    pub fn scale(self, x: f64, y: f64, z: f64) -> Self {
+        let s = DVec3::new(x, y, z);
         Self::new(
             self.object,
             DAffine3::from_scale(s) * self.transform,

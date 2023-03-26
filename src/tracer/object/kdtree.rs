@@ -48,8 +48,8 @@ impl<T: Bounded> KdTree<T> {
         let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
 
         let bb_dim = ax_max - ax_min;
-
-        self.scale(DVec3::splat(1.0 / bb_dim.max_element()))
+        let s = 1.0 / bb_dim.max_element();
+        self.scale(s, s, s)
     }
 
     fn hit_subtree(

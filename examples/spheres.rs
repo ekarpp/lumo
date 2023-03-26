@@ -46,10 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let cube_dim = 10.0;
+    let s = 2.0 * cube_dim;
     scene.add(
         Cube::new(Material::diffuse(Texture::Solid(srgb_to_lin(192, 192, 192))))
-            .translate(DVec3::splat(-0.5))
-            .scale(DVec3::splat(2.0 * cube_dim))
+            .translate(-0.5, -0.5, -0.5)
+            .scale(s, s, s)
             .make_box()
     );
 
