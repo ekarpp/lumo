@@ -49,7 +49,7 @@ impl<T: Bounded> KdTree<T> {
 
         let bb_dim = ax_max - ax_min;
 
-        self.scale(DVec3::splat(bb_dim.max_element()))
+        self.scale(DVec3::splat(1.0 / bb_dim.max_element()))
     }
 
     fn hit_subtree(
