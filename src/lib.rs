@@ -1,19 +1,23 @@
 //! Just a path tracer :)
 #![warn(missing_docs)]
 
-pub use glam::{UVec3, f64::{DVec3, DMat3, DVec2, DAffine3}};
+use glam::DVec3;
 
-pub use obj::*;
-pub use image::*;
-pub use scene::*;
-pub use camera::*;
+pub use image::Image;
+pub use scene::Scene;
+pub use camera::Camera;
 pub use consts::*;
-pub use perlin::*;
-pub use tracer::*;
-pub use renderer::*;
-pub use samplers::*;
-pub use rand_utils::*;
-pub use tone_mapping::*;
+pub use perlin::Perlin;
+pub use renderer::Renderer;
+pub use samplers::{UniformSampler, JitteredSampler};
+pub use tone_mapping::ToneMap;
+
+/// Wrapper around rand. Provides functions to sample from various geometrics.
+pub mod rand_utils;
+/// The heart.
+pub mod tracer;
+/// .OBJ file loader
+pub mod obj;
 
 /// Command line interface
 mod cli;
@@ -23,20 +27,15 @@ mod camera;
 mod consts;
 /// Wrapper for writing image buffer to file.
 mod image;
-/// .OBJ file loader
-mod obj;
 /// Perlin noise generator.
 mod perlin;
-/// Wrapper around rand. Provides functions to sample from various geometrics.
-mod rand_utils;
 /// Configures and computes the image.
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
 /// Scene that describes the 3D world to render.
 mod scene;
-/// The heart.
-mod tracer;
+
 /// Tone mapping functions
 mod tone_mapping;
 

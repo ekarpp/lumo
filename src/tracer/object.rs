@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3, DVec2, DAffine3};
+use glam::{DVec3, DMat3, DVec2, DAffine3};
 use std::f64::{INFINITY, consts::PI};
 use crate::tracer::onb::Onb;
 use crate::rand_utils;
@@ -24,8 +24,8 @@ pub use aabb::AaBoundingBox;
 pub use cylinder::Cylinder;
 pub use cone::Cone;
 pub use disk::Disk;
-pub use kdtree::*;
-pub use instance::*;
+pub use kdtree::{Mesh, KdTree};
+pub use instance::{Instance, Instanceable};
 
 /// Defines disks
 pub mod disk;

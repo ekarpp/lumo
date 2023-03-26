@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 use crate::perlin::Perlin;
 use crate::consts::CHECKER_SCALE;
 

@@ -1,4 +1,4 @@
-use crate::{DVec3, DAffine3};
+use glam::{DVec3, DAffine3};
 
 /// Ray abstraction
 pub struct Ray {

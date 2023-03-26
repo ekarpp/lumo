@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 
 /// Small utility struct for orthonormal basis
 pub struct Onb {

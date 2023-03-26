@@ -1,6 +1,6 @@
-use crate::DVec3;
-use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
+use glam::DVec3;
 use std::f64::consts::PI;
+use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
 use crate::consts::ETA;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;

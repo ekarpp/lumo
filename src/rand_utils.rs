@@ -1,4 +1,4 @@
-use crate::{DVec3, DVec2};
+use glam::{DVec3, DVec2};
 use std::f64::consts::PI;
 use rand::Rng;
 use rand::rngs::ThreadRng;

@@ -1,6 +1,6 @@
 use super::*;
 use crate::consts::EPSILON;
-use crate::Sphere;
+use crate::tracer::Sphere;
 
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {

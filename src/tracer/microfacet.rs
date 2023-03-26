@@ -1,4 +1,4 @@
-use crate::{DVec2, DVec3};
+use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 
 /// Configurable parameters for a microsurface

@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 use crate::tracer::pdfs::Pdf;
 use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;

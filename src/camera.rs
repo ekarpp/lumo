@@ -1,7 +1,7 @@
-use crate::DVec3;
+use glam::DVec3;
 use crate::tracer::Ray;
 
-/// Abstraction for a camera, with the image plane modeled as a \[-1,1\]^2 square
+/// Abstraction for a camera with the image plane modeled as a \[-1,1\]^2 square
 pub struct Camera {
     /// Origin of the camera
     origin: DVec3,
@@ -14,6 +14,8 @@ pub struct Camera {
 }
 
 impl Default for Camera {
+    /// Camera at origin pointing towards `-z` with `y` axis as up
+    /// and focal length 1.0.
     fn default() -> Self {
         Self::new(
             DVec3::ZERO,
@@ -29,8 +31,8 @@ impl Camera {
     /// Returns a ray pointing towards a point on the image plane.
     ///
     /// # Arguments
-    /// * `x` - x coordinate in a normalized \[-1,1\]^2 square
-    /// * `y` - y coordinate in a normalized \[-1,1\]^2 square
+    /// * `x` - x coordinate in a \[-1,1\]^2 square
+    /// * `y` - y coordinate in a \[-1,1\]^2 square
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
         Ray::new(
             self.origin,

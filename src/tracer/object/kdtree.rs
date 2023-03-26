@@ -14,8 +14,10 @@ pub struct KdTree<T> {
     material: Material,
 }
 
-/// https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs
-/// https://github.com/fogleman/pt/blob/master/pt/tree.go
+/// Implementation of a kd-tree. Median split / widest axis split
+/// References:
+/// <https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs>
+/// <https://github.com/fogleman/pt/blob/master/pt/tree.go>
 impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?

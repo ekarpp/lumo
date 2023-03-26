@@ -1,4 +1,4 @@
-use crate::{DVec3, DMat3};
+use glam::{DVec3, DMat3};
 use std::f64::INFINITY;
 use crate::rand_utils;
 use crate::srgb_to_lin;
@@ -9,8 +9,8 @@ use crate::tracer::{Object, Plane, Rectangle};
 #[cfg(test)]
 mod scene_tests;
 
-/// Empty cornell box, custome left right bot material
-pub mod empty_box;
+/// Empty cornell box, custom material for floor, and left and right walls.
+mod empty_box;
 
 /// Defines a scene in 3D space
 #[derive(Default)]
@@ -23,17 +23,6 @@ pub struct Scene {
 }
 
 impl Scene {
-    /// Constructs a scene of the given objects
-    pub fn new(objects: Vec<Box<dyn Object>>) -> Self {
-        let mut scene = Scene::default();
-
-        for obj in objects {
-            scene.add(obj);
-        }
-
-        scene
-    }
-
     /// Add an object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
         // add index to light vector if object is light

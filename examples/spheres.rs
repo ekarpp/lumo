@@ -1,4 +1,6 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
+use glam::DVec3;
 use std::f64::consts::PI;
 
 // consider xyz in cylinder as HSV and map to RGB

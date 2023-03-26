@@ -1,6 +1,7 @@
 pub use material::Material;
 pub use texture::Texture;
-pub use object::*;
+pub use object::{Plane, Cube, Sphere, Triangle, Rectangle, AaBoundingBox, Cone};
+pub use object::{Disk, Instance, Instanceable, Mesh, KdTree, Object, Bounded};
 pub use hit::Hit;
 pub use ray::Ray;
 pub use integrator::Integrator;

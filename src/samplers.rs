@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::DVec2;
+use glam::DVec2;
 use crate::rand_utils;
 
 /// Choose each sample point uniformly at random

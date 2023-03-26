@@ -1,4 +1,5 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
 
 const TEAPOT_URL: &str = "https://graphics.stanford.edu/courses/cs148-10-summer/as3/code/as3/teapot.obj";
 
@@ -14,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            obj_from_url(TEAPOT_URL)?,
+            obj::obj_from_url(TEAPOT_URL)?,
             Material::diffuse(Texture::Marble(Perlin::default()))
         )
             .scale(0.1, 0.1, 0.1)

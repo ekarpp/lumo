@@ -1,4 +1,5 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
 
 const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 
@@ -14,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            obj_from_url(BUNNY_URL)?,
+            obj::obj_from_url(BUNNY_URL)?,
             Material::specular(Texture::Solid(srgb_to_lin(0, 255, 0)), 0.2)
         )
             .scale(0.3, 0.3, 0.3)

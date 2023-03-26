@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 use crate::tracer::object::Object;
 
 /// Stores information about a hit between a ray and an object.

@@ -1,4 +1,6 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
+use glam::DVec3;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {

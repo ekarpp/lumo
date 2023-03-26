@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::{DVec3, DVec2};
+use glam::{DVec3, DVec2};
 use std::f64::consts::PI;
 use crate::tracer::onb::Onb;
 use crate::rand_utils;

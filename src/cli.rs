@@ -1,4 +1,4 @@
-use crate::Integrator;
+use crate::tracer::Integrator;
 
 #[derive(argh::FromArgs)]
 /// Just a ray tracer :)

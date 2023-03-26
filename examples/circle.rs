@@ -1,4 +1,6 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
+use glam::DVec3;
 use std::f64::consts::PI;
 
 // s = v = 1.0. h in radians

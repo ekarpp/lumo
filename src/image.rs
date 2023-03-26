@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufWriter;

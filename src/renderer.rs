@@ -1,4 +1,4 @@
-use crate::{DVec3, DVec2};
+use glam::{DVec3, DVec2};
 use std::time::Instant;
 use rayon::iter::{ParallelIterator, IntoParallelIterator};
 use crate::image::Image;
@@ -27,7 +27,7 @@ pub struct Renderer {
 impl Renderer {
 
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
-    /// per pixel and path tracing as the integrator.
+    /// per pixel and path tracing as the integrator. Configured through the CLI.
     pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
@@ -48,7 +48,7 @@ impl Renderer {
     }
 
     /// Sets the tone mapping algorithm used
-    pub fn set_integrator(&mut self, tone_map: ToneMap) {
+    pub fn set_tone_map(&mut self, tone_map: ToneMap) {
         self.tone_map = tone_map;
     }
 

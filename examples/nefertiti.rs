@@ -1,4 +1,5 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
 use std::f64::consts::PI;
 
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
@@ -20,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            obj_from_url(NEFE_URL)?,
+            obj::obj_from_url(NEFE_URL)?,
             Material::metal(Texture::Solid(gold), 0.06)
         )
             .to_unit_size()

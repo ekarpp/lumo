@@ -1,4 +1,5 @@
 use rust_tracer::*;
+use rust_tracer::tracer::*;
 use std::f64::consts::PI;
 
 const DRAGON_URL: &str = "https://casual-effects.com/g3d/data10/research/model/dragon/dragon.zip";
@@ -15,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            obj_from_url(DRAGON_URL)?,
+            obj::obj_from_url(DRAGON_URL)?,
             Material::metal(
                 Texture::Solid(srgb_to_lin(242, 104, 74)),
                 0.2

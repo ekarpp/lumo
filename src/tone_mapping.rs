@@ -1,4 +1,4 @@
-use crate::DVec3;
+use glam::DVec3;
 use crate::rgb_to_luminance;
 
 /// Enum for different tone mappers
@@ -16,7 +16,7 @@ pub enum ToneMap {
 }
 
 impl ToneMap {
-    /// Tone maps the samples in `samples`
+    /// Tone maps the `rgb` sample with channels in `\[0,∞\]`
     pub fn map(&self, rgb: DVec3) -> DVec3 {
         match self {
             Self::NoMap => rgb,

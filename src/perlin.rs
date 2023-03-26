@@ -1,4 +1,4 @@
-use crate::{DVec3, UVec3};
+use glam::{DVec3, UVec3};
 use crate::rand_utils;
 use crate::consts::{PERLIN_POINTS, PERLIN_AMP, PERLIN_FREQ};
 use crate::consts::{PERLIN_OCTAVES, PERLIN_SCALE, PERLIN_GAIN};
@@ -11,7 +11,7 @@ struct PermutationXyz {
     z: Vec<usize>,
 }
 
-/// Instance of Perlin noise generator.
+/// Perlin noise generator.
 pub struct Perlin {
     /// a.k.a the underlying colour. use texture instead?
     albedo: DVec3,
