@@ -3,7 +3,7 @@ use std::f64::INFINITY;
 use crate::rand_utils;
 use crate::srgb_to_lin;
 use crate::consts::EPSILON;
-use crate::tracer::{Ray, Hit, Texture, Material};
+use crate::tracer::{ray::Ray, hit::Hit, Texture, Material};
 use crate::tracer::{Object, Plane, Rectangle};
 
 #[cfg(test)]

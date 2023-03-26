@@ -1,5 +1,9 @@
 use glam::DVec3;
-use crate::rgb_to_luminance;
+
+/// Maps linear RGB value to luminance
+fn rgb_to_luminance(rgb: DVec3) -> f64 {
+    rgb.dot(DVec3::new(0.2126, 0.7152, 0.0722))
+}
 
 /// Enum for different tone mappers
 pub enum ToneMap {

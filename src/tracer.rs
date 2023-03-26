@@ -1,10 +1,10 @@
-pub use material::Material;
+pub use scene::Scene;
+pub use camera::Camera;
 pub use texture::Texture;
-pub use object::{Plane, Cube, Sphere, Triangle, Rectangle, AaBoundingBox, Cone};
-pub use object::{Disk, Instance, Instanceable, Mesh, KdTree, Object, Bounded};
-pub use hit::Hit;
-pub use ray::Ray;
+pub use material::Material;
 pub use integrator::Integrator;
+pub use object::{Plane, Cube, Sphere, Triangle, Rectangle, Cone};
+pub use object::{Disk, Instance, Instanceable, Mesh, KdTree, Object, Bounded};
 
 /// Utility struct for orthonormal basis.
 mod onb;
@@ -16,6 +16,10 @@ mod ray;
 mod pdfs;
 /// Different BSDFs.
 mod bxdfs;
+/// Scene that describes the 3D world to render.
+mod scene;
+/// Abstraction for a camera
+mod camera;
 /// Abstractions for objects in the 3D world
 mod object;
 /// Textures that can be given to some materials

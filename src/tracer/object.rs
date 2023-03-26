@@ -7,14 +7,6 @@ use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 
-/* given a triangle, mirror the middle point around to get a rectangle.
- * this is a dumb way... the triangle order matters now.*/
-/// Given a triangle, with points read from the columns of the matrix `abc`,
-/// returns `b` mirrored to define a rectangle.
-fn _triangle_to_rect(abc: DMat3) -> DVec3 {
-    abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
-}
-
 pub use plane::Plane;
 pub use cube::Cube;
 pub use sphere::Sphere;
@@ -28,30 +20,30 @@ pub use kdtree::{Mesh, KdTree};
 pub use instance::{Instance, Instanceable};
 
 /// Defines disks
-pub mod disk;
+mod disk;
 /// Defines cones
-pub mod cone;
+mod cone;
 /// Defines infinite planes
-pub mod plane;
+mod plane;
 /// Defines a unit cube. Transform to desired shape with instances.
-pub mod cube;
+mod cube;
 /// Defines spheres.
-pub mod sphere;
+mod sphere;
 /// Defines triangles.
-pub mod triangle;
+mod triangle;
 /// Defines rectangles. Built from two triangles.
-pub mod rectangle;
+mod rectangle;
 /// Defines y axis aligned cylinders
-pub mod cylinder;
+mod cylinder;
 /// Medium, fog, smoke, etc
-pub mod medium;
+mod medium;
 /// Axis aligned bounding boxes
-pub mod aabb;
+mod aabb;
 /// kD-trees, used for complex meshes
-pub mod kdtree;
+mod kdtree;
 /// Instance of an object i.e. an object to wich Euclidean (+ scaling)
 /// transformations have been applied to.
-pub mod instance;
+mod instance;
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {

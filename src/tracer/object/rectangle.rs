@@ -1,5 +1,11 @@
 use super::*;
 
+/// Given a triangle, with points read from the columns of the matrix `abc`,
+/// returns `b` mirrored to define a rectangle.
+fn _triangle_to_rect(abc: DMat3) -> DVec3 {
+    abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
+}
+
 /// Rectangle defined by two triangles
 pub struct Rectangle {
     triangles: (Triangle, Triangle),

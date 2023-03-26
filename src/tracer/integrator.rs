@@ -8,7 +8,7 @@ use crate::consts::{PATH_TRACE_RR, SHADOW_SPLITS};
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
-use crate::scene::Scene;
+use crate::tracer::scene::Scene;
 
 
 mod path_trace;
