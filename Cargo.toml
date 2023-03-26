@@ -1,16 +1,20 @@
 [package]
 name = "rust_tracer"
-version = "0.1.0"
-description = "Path tracer written in rust"
+version = "0.1.0-alpha"
+description = "CPU based rendering engine"
+license = "MIT"
 repository = "https://github.com/ekarpp/rust_tracer"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
-keywords = ["rendering", "path-tracing", "graphics"]
-categories = ["graphics", "rendering::engine", ]
-edition = "2018"
+keywords = ["rendering", "path-tracing", "graphics", "3d"]
+categories = ["graphics", "rendering::engine", "multimedia:images"]
+edition = "2021"
 
 [profile.release]
 codegen-units = 1
-lto = "y"
+lto = true
+panic = "abort"
+opt-level = 3
+#rustflags = ["-C", "target-cpu=native"]
 
 [profile.dev]
 opt-level = 2
