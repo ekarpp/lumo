@@ -12,7 +12,6 @@ pub use perlin::Perlin;
 pub use renderer::Renderer;
 pub use tone_mapping::ToneMap;
 
-
 /// The heart.
 pub mod tracer;
 /// .OBJ file loader
