@@ -22,9 +22,12 @@ pub use triangle::Triangle;
 pub use rectangle::Rectangle;
 pub use aabb::AaBoundingBox;
 pub use cone::Cone;
+pub use disk::Disk;
 pub use kdtree::*;
 pub use instance::*;
 
+/// Defines disks
+pub mod disk;
 /// Defines cones
 pub mod cone;
 /// Defines infinite planes

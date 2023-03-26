@@ -53,7 +53,7 @@ impl Pdf for CosPdf {
 
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir;
-        let cos_theta = self.uvw.w.dot(wi.normalize());
+        let cos_theta = self.uvw.w.dot(wi);
         if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
     }
 }
@@ -132,7 +132,7 @@ impl Pdf for DeltaPdf {
 
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir;
-        if wi.normalize().dot(self.r.dir.normalize()).abs() >= 1.0 - EPSILON {
+        if wi.dot(self.r.dir).abs() >= 1.0 - EPSILON {
             1.0
         } else {
             0.0
@@ -166,7 +166,7 @@ impl MfdPdf {
     ) -> Self {
         Self {
             xo,
-            v: v.normalize(),
+            v,
             uvw: Onb::new(no),
             albedo,
             no,
@@ -216,7 +216,7 @@ impl Pdf for MfdPdf {
     /// Read it directly from the NFD and do change of variables
     /// from `wh` to `wi`.
     fn value_for(&self, ri: &Ray) -> f64 {
-        let wi = ri.dir.normalize();
+        let wi = ri.dir;
         let wh = (self.v + wi).normalize();
         let wh_dot_no = wh.dot(self.no);
         let wh_dot_v = self.v.dot(wh);

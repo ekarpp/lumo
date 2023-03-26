@@ -18,8 +18,8 @@ pub fn bsdf_microfacet(
     color: DVec3,
     mfd: &MfDistribution,
 ) -> DVec3 {
-    let v = -ro.dir.normalize();
-    let wi = ri.dir.normalize();
+    let v = -ro.dir;
+    let wi = ri.dir;
     let no_dot_wi = no.dot(wi);
     let no_dot_v = no.dot(v);
 
@@ -88,7 +88,7 @@ pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
 /// Scattering function for mirror material. Perfect reflection.
 pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
-    let wo = ro.dir.normalize();
+    let wo = ro.dir;
     let no = ho.norm;
     let wi = reflect(-wo, no);
     Some( Box::new(DeltaPdf::new(xo, wi)) )
@@ -128,7 +128,7 @@ pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
 /// Scattering function for glass material.
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
-    let v = -ro.dir.normalize();
+    let v = -ro.dir;
     let inside = no.dot(v) < 0.0;
     let eta_ratio = if inside { ETA } else { ETA.recip() };
     let no = if inside { -ho.norm } else { ho.norm };
