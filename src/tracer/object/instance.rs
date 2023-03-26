@@ -4,9 +4,14 @@ use super::*;
 /// Instance of an object i.e. an object to which affine transformations have
 /// been applied
 pub struct Instance<T> {
+    /// Object to be instanced
     object: T,
+    /// Transformation applied to the object
     transform: DAffine3,
+    /// Inverse transformation
     inv_transform: DAffine3,
+    /// Transformation for normals.
+    /// Transpose of `inv_transform` without translation.
     normal_transform: DMat3,
 }
 
@@ -60,10 +65,7 @@ impl<T: Bounded> Bounded for Instance<T> {
 
 impl<T: Object> Object for Instance<T> {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        let ray_local = Ray::new(
-            self.inv_transform.transform_point3(r.origin),
-            self.inv_transform.transform_vector3(r.dir),
-        );
+        let ray_local = r.transform(self.inv_transform);
 
         self.object.hit(&ray_local, t_min, t_max)
             .map(|mut h| {

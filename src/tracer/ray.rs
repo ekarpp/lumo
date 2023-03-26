@@ -1,4 +1,4 @@
-use crate::DVec3;
+use crate::{DVec3, DAffine3};
 
 /// Ray abstraction
 pub struct Ray {
@@ -14,6 +14,15 @@ impl Ray {
         Self {
             origin,
             dir: dir.normalize(),
+        }
+    }
+
+    /// Applies `transformation` to `self`. Direction unnormalized to guarantee
+    /// correct computations in Instance.
+    pub fn transform(&self, transformation: DAffine3) -> Self {
+        Self {
+            origin: transformation.transform_point3(self.origin),
+            dir: transformation.transform_vector3(self.dir),
         }
     }
 
