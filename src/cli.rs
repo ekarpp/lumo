@@ -4,20 +4,20 @@ use crate::Integrator;
 /// Just a ray tracer :)
 pub struct TracerCli {
     /// number of samples per pixel (defaults to 1)
-    #[argh(option, short='s')]
-    samples: Option<u32>,
+    #[argh(option, short='s', default="1")]
+    samples: u32,
 
     /// number of threads used (defaults to all)
     #[argh(option, short='t')]
     threads: Option<usize>,
 
     /// width of the rendered image (defaults to 1000)
-    #[argh(option, short='w')]
-    width: Option<i32>,
+    #[argh(option, short='w', default="1000")]
+    width: i32,
 
     /// height of the rendered image (defaults to 1000)
-    #[argh(option, short='h')]
-    height: Option<i32>,
+    #[argh(option, short='h', default="1000")]
+    height: i32,
 
     /* how to handle multiple integrators in the future? */
     /// use direct light integrator instead of path tracing.
@@ -57,14 +57,14 @@ impl TracerCli {
     }
 
     pub fn get_width(&self) -> i32 {
-        self.width.unwrap_or(1000)
+        self.width
     }
 
     pub fn get_samples(&self) -> u32 {
-        self.samples.unwrap_or(1)
+        self.samples
     }
 
     pub fn get_height(&self) -> i32 {
-        self.height.unwrap_or(1000)
+        self.height
     }
 }
