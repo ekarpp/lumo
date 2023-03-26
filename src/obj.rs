@@ -12,6 +12,7 @@ fn obj_error(message: &str) -> io::Error {
 
 /// Loads a .OBJ file at the given path
 pub fn obj_from_path(path: &str) -> Result<Vec<Triangle>> {
+    println!("Loading .OBJ file \"{}\"", path);
     load_obj_file(File::open(path)?)
 }
 
@@ -84,7 +85,7 @@ fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
                 let face = parse_face(&tokens, &vertices, &normals)?;
                 triangles.extend(face);
             }
-            _ => eprintln!("Skipping {} during .OBJ parsing", tokens[0]),
+            _ => (),
         }
     }
 
