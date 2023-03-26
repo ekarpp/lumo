@@ -12,6 +12,8 @@ pub struct Disk {
     d: f64,
     /// Material of the disk
     material: Material,
+    /// ONB for normal, used for sampling points on the disk
+    uvw: Onb,
 }
 
 impl Disk {
@@ -31,6 +33,7 @@ impl Disk {
             radius,
             normal,
             d: origin.dot(-normal),
+            uvw: Onb::new(normal),
         })
     }
 }
@@ -63,7 +66,38 @@ impl Object for Disk {
         }
     }
 
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { todo!() }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray { todo!() }
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        let rand_disk = rand_utils::square_to_disk(rand_sq);
+
+        self.origin + self.uvw.to_uvw_basis(
+            DVec3::new(
+                rand_disk.x * self.radius,
+                rand_disk.y * self.radius,
+                0.0,
+            )
+        )
+    }
+
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+        let xi = self.sample_on(rand_sq);
+        let wi = xi - xo;
+        Ray::new(xo, wi)
+    }
+    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+        match self.hit(ri, 0.0, INFINITY) {
+            None => 0.0,
+            Some(hi) => {
+                let area = PI * self.radius * self.radius;
+
+                let xo = ri.origin;
+                let xi = hi.p;
+                let ni = hi.norm;
+                let wi = ri.dir;
+
+                xo.distance_squared(xi)
+                    / (ni.dot(wi).abs() * area)
+            }
+        }
+    }
+
 }
