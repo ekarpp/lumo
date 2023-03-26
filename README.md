@@ -14,6 +14,7 @@ A CPU based multithreaded rendering engine. Made with the goal of learning Rust 
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
 * Sampling from distribution of visible normals in microfacets
+* (Texture mapping)
 * (Bidirectional path tracing)
 * (Subsurface scattering)
 
@@ -23,6 +24,12 @@ A CPU based multithreaded rendering engine. Made with the goal of learning Rust 
 * [Eric Veach's Ph.D Thesis](http://graphics.stanford.edu/papers/veach_thesis/)
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
-![Stanford dragon with 871K triangles. Rendered in 45 minutes using 30 Intel Xeon Gold 6248 threads. 1024 samples per pixel.](https://i.imgur.com/zREVJF3.png)
+| ![Stanford dragon](https://i.imgur.com/zREVJF3.png) |
+|:--:|
+| *Stanford dragon with 871K triangles. Rendered in 45 minutes using 30 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+
+| ![Golden Nefertiti](https://i.imgur.com/MNgV9xa.png) |
+|:--:|
+| *Statue of Nefertiti with 6.4M triangles. Rendered in 196 minutes using 40 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+
 ![Circle of spheres](https://i.imgur.com/3FnSev8.png)
-![Statue of Nefertiti with 6.4M triangles. Rendered in 196 minutes using 40 Intel Xeon Gold 6248 threads. 1024 samples per pixel.](https://i.imgur.com/MNgV9xa.png)
