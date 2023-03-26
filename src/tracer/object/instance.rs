@@ -36,6 +36,16 @@ impl<T> Instance<T> {
     }
 }
 
+impl<T: Bounded> Instance<T> {
+    /// Translate `self`, such that bounding box center is at the origin
+    pub fn to_origin(self) -> Instance<T> {
+        let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
+        let ax_mid = (ax_min + ax_max) / 2.0;
+
+        self.translate(-ax_mid)
+    }
+}
+
 impl<T: Bounded> Bounded for Instance<T> {
     fn bounding_box(&self) -> AaBoundingBox {
         let AaBoundingBox { ax_min, ax_max } = self.object.bounding_box();
@@ -142,7 +152,8 @@ impl<T: Object> Instance<T> {
         )
     }
 
-    /// Apply x-rotation AFTER current transformations
+    /// Apply x-rotation AFTER current transformations.
+    /// Looking at positive x, rotation in clockwise direction.
     pub fn rotate_x(self, r: f64) -> Self {
         Self::new(
             self.object,
