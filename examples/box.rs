@@ -51,16 +51,6 @@ fn main() -> Result<(), std::io::Error> {
             .make_box()
     );
 
-    scene.add(Sphere::new(
-        DVec3::new(0.3, -0.47, -1.58),
-        0.1,
-        Material::transparent(
-            Texture::Solid(srgb_to_lin(255, 255, 255)),
-            1.5,
-            0.2,
-        ),
-    ));
-
     let mut renderer = Renderer::new(scene, camera);
     renderer.set_tone_map(ToneMap::HableFilmic);
     renderer.render()
