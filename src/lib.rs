@@ -22,8 +22,6 @@ pub mod tracer;
 mod cli;
 /// Wrapper around rand. Provides functions to sample from various geometrics.
 mod rand_utils;
-/// Various constants used around the crate.
-mod consts;
 /// Wrapper for writing image buffer to file.
 mod image;
 /// Perlin noise generator.
