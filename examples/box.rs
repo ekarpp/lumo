@@ -48,7 +48,6 @@ fn main() -> Result<(), std::io::Error> {
             .rotate_y(PI / 10.0)
             .scale(0.2, 0.4, 0.2)
             .translate(0.2, -1.0, -1.7)
-            .make_box()
     );
 
     let mut renderer = Renderer::new(scene, camera);

@@ -49,7 +49,7 @@ impl<T: Bounded> KdTree<T> {
 
     /// Returns self uniformly scaled as an instance with largest dimension
     /// of bounding box scaled to 1.0
-    pub fn to_unit_size(self) -> Instance<Self> {
+    pub fn to_unit_size(self) -> Box<Instance<Self>> {
         let AaBoundingBox { ax_min, ax_max } = self.bounding_box();
 
         let bb_dim = ax_max - ax_min;

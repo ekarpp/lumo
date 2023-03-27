@@ -30,7 +30,6 @@ fn main() -> Result<(), png::EncodingError> {
         )
             .scale(0.3, 0.3, 0.3)
             .translate(0.0, -0.7, -1.5)
-            .make_box()
     );
 
     let mut renderer = Renderer::new(scene, camera);

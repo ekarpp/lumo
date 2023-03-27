@@ -29,7 +29,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .scale(0.9, 0.9, 0.9)
             .rotate_x(-PI / 2.0)
             .translate(0.0, -0.07, -1.35)
-            .make_box()
     );
 
     scene.add(
@@ -37,7 +36,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .translate(-0.5, -0.5, -0.5)
             .scale(0.4, 1.2, 0.4)
             .translate(0.0, -1.1, -1.35)
-            .make_box()
     );
 
     let renderer = Renderer::new(scene, camera);

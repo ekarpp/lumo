@@ -20,7 +20,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
             .scale(1.5, 1.5, 1.5)
             .translate(-0.73, -1.23, -2.0)
-            .make_box()
     );
 
 

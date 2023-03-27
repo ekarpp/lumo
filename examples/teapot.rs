@@ -20,7 +20,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
             .scale(0.1, 0.1, 0.1)
             .translate(0.0, -0.5, -1.5)
-            .make_box()
     );
 
     let renderer = Renderer::new(scene, camera);
