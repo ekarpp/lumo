@@ -1,6 +1,6 @@
 use glam::DVec3;
-use rust_tracer::tracer::*;
-use rust_tracer::*;
+use spuristo::tracer::*;
+use spuristo::*;
 
 fn main() -> Result<(), png::EncodingError> {
     let camera = Camera::default();

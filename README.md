@@ -38,8 +38,8 @@ Options:
 The `hello_sphere.rs` example is written as follows:
 
 ```rust
-use rust_tracer::*;
-use rust_tracer::tracer::*;
+use spuristo::*;
+use spuristo::tracer::*;
 use glam::DVec3;
 
 fn main() -> Result<(), png::EncodingError> {

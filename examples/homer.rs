@@ -1,5 +1,5 @@
-use rust_tracer::tracer::*;
-use rust_tracer::*;
+use spuristo::tracer::*;
+use spuristo::*;
 
 const HOMER_URL: &str =
     "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/homer.obj";

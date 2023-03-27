@@ -1,5 +1,5 @@
-use rust_tracer::tracer::*;
-use rust_tracer::*;
+use spuristo::tracer::*;
+use spuristo::*;
 
 const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 

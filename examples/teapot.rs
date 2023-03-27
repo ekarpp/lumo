@@ -1,5 +1,5 @@
-use rust_tracer::tracer::*;
-use rust_tracer::*;
+use spuristo::tracer::*;
+use spuristo::*;
 
 const TEAPOT_URL: &str =
     "https://graphics.stanford.edu/courses/cs148-10-summer/as3/code/as3/teapot.obj";
