@@ -1,7 +1,7 @@
 use crate::tracer::Integrator;
 
 #[derive(argh::FromArgs)]
-/// Just a ray tracer :)
+/// Optional CLI configuration of renderer. Renderer setter methods have priority.
 pub struct TracerCli {
     /// number of samples per pixel (defaults to 1)
     #[argh(option, short='s', default="1")]
