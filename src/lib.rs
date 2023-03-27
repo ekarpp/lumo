@@ -37,7 +37,7 @@ mod samplers;
 mod tone_mapping;
 
 /// Decodes 8-bit sRGB encoded `r`, `g`, and `b` channels to linear RGB.
-pub fn srgb_to_lin(r: u8, g: u8, b: u8) -> DVec3 {
+pub fn srgb_to_linear(r: u8, g: u8, b: u8) -> DVec3 {
     DVec3::new(
         (r as f64 / 255.0).powf(2.2),
         (g as f64 / 255.0).powf(2.2),

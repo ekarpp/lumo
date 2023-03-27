@@ -1,4 +1,5 @@
 use super::*;
+use crate::srgb_to_linear;
 
 impl Scene {
     /// Constructs an empty "Cornell box". Middle of the box is at
@@ -47,7 +48,7 @@ impl Scene {
                         0.5 * front - light_dim,
                     ),
                 ),
-                Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255))),
+                Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
             ),
         );
 
@@ -101,7 +102,7 @@ impl Scene {
             Plane::new(
                 DVec3::NEG_Z * front,
                 DVec3::NEG_Z,
-                Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0))),
+                Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
             ),
         );
 

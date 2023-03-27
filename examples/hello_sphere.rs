@@ -10,15 +10,15 @@ fn main() -> Result<(), png::EncodingError> {
         Plane::new(
             DVec3::NEG_Y,
             DVec3::Y,
-            Material::diffuse(Texture::Solid(srgb_to_lin(190, 200, 210)))
+            Material::diffuse(Texture::Solid(srgb_to_linear(190, 200, 210)))
         )
     );
 
     scene.add(
         Sphere::new(
-            2.5*DVec3::Y + 1.5 * DVec3::NEG_Z,
-            0.5,
-            Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255)))
+            8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
+            4.0,
+            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255)))
         )
     );
 
@@ -26,7 +26,7 @@ fn main() -> Result<(), png::EncodingError> {
         Sphere::new(
             DVec3::ZERO,
             1.0,
-            Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 255)))
+            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 255)))
         )
             .scale(0.3, 0.3, 0.3)
             .translate(0.0, -0.7, -1.5)

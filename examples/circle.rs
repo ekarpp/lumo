@@ -12,7 +12,7 @@ fn hsv_to_rgb(h: f64) -> DVec3 {
 
     let rgb = DVec3::new(f(5.0), f(3.0), f(1.0)) * 255.0;
 
-    srgb_to_lin(
+    srgb_to_linear(
         rgb.x as u8,
         rgb.y as u8,
         rgb.z as u8,
@@ -34,7 +34,7 @@ fn main() -> Result<(), std::io::Error> {
         Plane::new(
             DVec3::new(0.0, ground, 0.0),
             DVec3::new(0.0, 1.0, 0.0),
-            Material::metal(Texture::Solid(srgb_to_lin(166, 44, 43)), 0.01)
+            Material::metal(Texture::Solid(srgb_to_linear(166, 44, 43)), 0.01)
         )
     );
 
@@ -43,7 +43,7 @@ fn main() -> Result<(), std::io::Error> {
         Sphere::new(
             DVec3::new(0.0, ground + r + 0.1, 0.0),
             r,
-            Material::Light(Texture::Solid(srgb_to_lin(255, 255, 255))),
+            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
         )
     );
 
@@ -51,7 +51,7 @@ fn main() -> Result<(), std::io::Error> {
         Sphere::new(
             DVec3::ZERO,
             3.0,
-            Material::diffuse(Texture::Solid(srgb_to_lin(0, 0, 0))),
+            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
         )
     );
 
