@@ -9,6 +9,30 @@ A CPU based multithreaded rendering engine. Made with the goal of learning Rust 
 * Tone mapping
 * Perlin noise generator
 
+### Usage
+Once the repository is cloned, the `examples/` folder contains scenes. To run the `hello_sphere.rs` example execute the command:
+
+```
+cargo run --example hello_sphere
+```
+
+The renderer can be configured either through its setter methods or partially through the CLI:
+
+```
+Usage: hello_sphere [-s <samples>] [-t <threads>] [-w <width>] [-h <height>] [-d]
+
+Optional CLI configuration of renderer. Renderer setter methods have priority.
+
+Options:
+  -s, --samples     number of samples per pixel (defaults to 1)
+  -t, --threads     number of threads used (defaults to all)
+  -w, --width       width of the rendered image (defaults to 1000)
+  -h, --height      height of the rendered image (defaults to 1000)
+  -d, --direct      use direct light integrator instead of path tracing.
+  --help            display usage information
+```
+
+
 ### TODO/WIP
 * Refraction of transparent microfacet materials
 * Isotropic mediums (fog, smoke, clouds, ...)
