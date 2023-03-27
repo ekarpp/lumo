@@ -30,16 +30,6 @@ fn main() -> Result<(), std::io::Error> {
     ));
 
     scene.add(Sphere::new(
-        DVec3::new(-0.1, -0.8, -1.5),
-        0.1,
-        Material::transparent(
-            Texture::Solid(srgb_to_lin(255, 255, 255)),
-            1.5,
-            0.1,
-        ),
-    ));
-
-    scene.add(Sphere::new(
         DVec3::new(0.3, -0.8, -1.2),
         0.1,
         Material::transparent(
@@ -53,7 +43,7 @@ fn main() -> Result<(), std::io::Error> {
         Cube::new(
             Material::specular(
                 Texture::Solid(srgb_to_lin(0, 230, 0)),
-                0.1,
+                0.07,
             ))
             .rotate_y(PI / 10.0)
             .scale(0.2, 0.4, 0.2)
@@ -61,8 +51,18 @@ fn main() -> Result<(), std::io::Error> {
             .make_box()
     );
 
+    scene.add(Sphere::new(
+        DVec3::new(0.3, -0.47, -1.58),
+        0.1,
+        Material::transparent(
+            Texture::Solid(srgb_to_lin(255, 255, 255)),
+            1.5,
+            0.2,
+        ),
+    ));
 
-    let renderer = Renderer::new(scene, camera);
+    let mut renderer = Renderer::new(scene, camera);
+    renderer.set_tone_map(ToneMap::HableFilmic);
     renderer.render()
         .save("box.png")?;
     Ok(())
