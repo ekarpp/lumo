@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use png::{Encoder, ColorType, BitDepth, EncodingError};
 
-/// Contains the necessary data to write buffer to file.
+/// Contains the necessary data to write image buffer to a .png file.
 pub struct Image {
     /// Image buffer storing RGB-channels in range \[0,1\].
     pub buffer: Vec<DVec3>,
