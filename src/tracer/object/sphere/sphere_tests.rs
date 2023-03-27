@@ -4,7 +4,7 @@ fn unit_sphere() -> Box<Sphere> {
     Sphere::new(
         DVec3::ZERO,
         1.0,
-        Material::Glass
+        Material::Blank
     )
 }
 

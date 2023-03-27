@@ -53,7 +53,7 @@ fn hits_closest() {
         Plane::new(
             DVec3::new(0.0, 1.0, 0.0),
             DVec3::new(0.0, -1.0, 0.0),
-            Material::Glass
+            Material::Blank
         ),
     );
 
@@ -70,7 +70,7 @@ fn hits_closest() {
         DVec3::new(0.0, 1.0, 0.0),
     );
     let is_glass = |h: &Hit| -> bool {
-        matches!(h.object.material(), Material::Glass)
+        matches!(h.object.material(), Material::Blank)
     };
     assert!(s.hit(&r).filter(is_glass).is_some());
 }

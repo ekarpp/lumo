@@ -4,7 +4,7 @@ fn plane() -> Box<Plane> {
     Plane::new(
         DVec3::ZERO,
         DVec3::ONE,
-        Material::Glass
+        Material::Blank
     )
 }
 
