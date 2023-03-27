@@ -5,9 +5,6 @@ use crate::tracer::hit::Hit;
 use crate::tracer::ray::Ray;
 use crate::tracer::microfacet::MfDistribution;
 
-/// Refraction constant of glass
-pub const ETA: f64 = 1.5;
-
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 pub fn bsdf_microfacet(
     ro: &Ray,
@@ -134,17 +131,4 @@ pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
     let cos_ti = (1.0 - sin2_ti).sqrt();
 
     -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
-}
-
-/// Scattering function for glass material.
-pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
-    let no = ho.norm;
-    let v = -ro.dir;
-    let inside = no.dot(v) < 0.0;
-    let eta_ratio = if inside { ETA } else { ETA.recip() };
-    let no = if inside { -ho.norm } else { ho.norm };
-    let xo = ho.p;
-
-    let wi = refract(eta_ratio, v, no);
-    Some( Box::new(DeltaPdf::new(xo, wi)) )
 }

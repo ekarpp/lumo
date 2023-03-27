@@ -16,8 +16,6 @@ pub enum Material {
     Mirror,
     /// Isotropic medium
     Isotropic(Texture),
-    /// Refracts light
-    Glass,
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -50,9 +48,18 @@ impl Material {
     /// How specular is the material? 1.0 fully, 0.0 none
     pub fn specularity(&self) -> f64 {
         match self {
-            Self::Glass | Self::Mirror => 1.0,
+            Self::Mirror => 1.0,
             Self::Microfacet(_, mfd) => mfd.specularity(),
             _ => 0.0,
+        }
+    }
+
+    /// duno if this is correct. need to check, hack for now
+    pub fn is_transparent(&self) -> bool {
+        match self {
+            Self::Mirror => true,
+            Self::Microfacet(_, mfd) => mfd.is_transparent(),
+            _ => false,
         }
     }
 
@@ -75,7 +82,7 @@ impl Material {
         let xo = ri.origin;
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
-            Self::Mirror | Self::Glass => DVec3::ONE,
+            Self::Mirror => DVec3::ONE,
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
             }
@@ -86,7 +93,6 @@ impl Material {
     /// How does `r` get scattered at `h`?
     pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
-            Self::Glass => bxdfs::btdf_glass_pdf(ho, ro),
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Microfacet(t, mfd) => {
                 let xo = ho.p;

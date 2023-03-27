@@ -4,7 +4,6 @@ use crate::rand_utils;
 use crate::samplers::JitteredSampler;
 use crate::tracer::pdfs::{Pdf, ObjectPdf};
 use crate::tracer::hit::Hit;
-use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 

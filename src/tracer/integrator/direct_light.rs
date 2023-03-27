@@ -17,11 +17,8 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                             .sample_ray(rand_utils::unit_square());
                         let wi = ri.dir;
 
-                        // tmp, find better way to do this.
-                        let tmp = matches!(material,
-                                           Material::Glass | Material::Mirror);
-
-                        let cos_theta = if tmp {
+                        // correct?
+                        let cos_theta = if material.is_transparent() {
                             1.0
                         } else {
                             no.dot(wi).abs()
