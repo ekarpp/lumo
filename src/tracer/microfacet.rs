@@ -124,7 +124,9 @@ impl MfDistribution {
         let f0 = f0 * f0;
         let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
 
-        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean
+        let f = (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean;
+
+        f * 0.75 + 0.25
     }
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy

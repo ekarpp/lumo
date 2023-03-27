@@ -51,7 +51,6 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_tone_map(ToneMap::HableFilmic);
     renderer.render()
         .save("box.png")?;
     Ok(())
