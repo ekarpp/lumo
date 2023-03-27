@@ -175,24 +175,22 @@ impl Pdf for MfdPdf {
         } else if !self.mfd.is_transparent() {
             self.uvw
                 .to_uvw_basis(rand_utils::square_to_cos_hemisphere(rand_sq))
+        } else if self.mfd.get_roughness() <= DELTA_THRESHOLD {
+            self.delta_pdf.sample_ray(rand_sq).dir
         } else {
-            if self.mfd.get_roughness() <= DELTA_THRESHOLD {
-                self.delta_pdf.sample_ray(rand_sq).dir
+            let inside = self.no.dot(self.v) < 0.0;
+            let eta_ratio = if inside {
+                self.mfd.get_rfrct_idx()
             } else {
-                let inside = self.no.dot(self.v) < 0.0;
-                let eta_ratio = if inside {
-                    self.mfd.get_rfrct_idx()
-                } else {
-                    1.0 / self.mfd.get_rfrct_idx()
-                };
-                let wh = self
-                    .uvw
-                    .to_uvw_basis(self.mfd.sample_normal(rand_sq))
-                    .normalize();
-                let wh = if inside { -wh } else { wh };
+                1.0 / self.mfd.get_rfrct_idx()
+            };
+            let wh = self
+                .uvw
+                .to_uvw_basis(self.mfd.sample_normal(rand_sq))
+                .normalize();
+            let wh = if inside { -wh } else { wh };
 
-                bxdfs::refract(eta_ratio, self.v, wh)
-            }
+            bxdfs::refract(eta_ratio, self.v, wh)
         };
 
         Ray::new(self.xo, wi)
@@ -219,25 +217,21 @@ impl Pdf for MfdPdf {
         } else if self.v.dot(wi) > 0.0 {
             // in the same hemisphere, zero probability for transmission
             0.0
+        } else if self.mfd.get_roughness() < DELTA_THRESHOLD {
+            self.delta_pdf.value_for(ri)
         } else {
-            if self.mfd.get_roughness() < DELTA_THRESHOLD {
-                self.delta_pdf.value_for(ri)
+            let inside = self.no.dot(self.v) < 0.0;
+            let eta_ratio = if inside {
+                1.0 / self.mfd.get_rfrct_idx()
             } else {
-                let inside = self.no.dot(self.v) < 0.0;
-                let eta_ratio = if inside {
-                    1.0 / self.mfd.get_rfrct_idx()
-                } else {
-                    self.mfd.get_rfrct_idx()
-                };
-                let wh = (self.v + wi * eta_ratio).normalize();
-                let wh_dot_wi = wi.dot(wh);
-                let wh_dot_v = wh.dot(self.v);
+                self.mfd.get_rfrct_idx()
+            };
+            let wh = (self.v + wi * eta_ratio).normalize();
+            let wh_dot_wi = wi.dot(wh);
+            let wh_dot_v = wh.dot(self.v);
 
-                self.mfd.d(wh, self.no)
-                    * wh_dot_no.abs()
-                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
-                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
-            }
+            self.mfd.d(wh, self.no) * wh_dot_no.abs() * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 
         let prob_ndf = ndf * ndf / (ndf * ndf + st * st);
