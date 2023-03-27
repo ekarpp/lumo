@@ -100,6 +100,10 @@ impl MfDistribution {
         self.get_config().refraction_idx
     }
 
+    pub fn get_roughness(&self) -> f64 {
+        self.get_config().roughness
+    }
+
     /// Getter, better way to do this?
     fn get_config(&self) -> &MicrofacetConfig {
         match self {

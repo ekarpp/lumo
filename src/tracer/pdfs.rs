@@ -22,42 +22,6 @@ pub trait Pdf {
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
-/// Cosine weighed samples on hemisphere pointing towards `z` of the ONB
-pub struct CosPdf {
-    xo: DVec3,
-    uvw: Onb,
-}
-
-impl CosPdf {
-    /// # Arguments
-    ///
-    /// * `xo` - Point where sampling is done.
-    /// * `no` - Normal at the point of sampling directions.
-    #[allow(dead_code)]
-    pub fn new(xo: DVec3, no: DVec3) -> Self {
-        Self {
-            xo,
-            uvw: Onb::new(no),
-        }
-    }
-}
-
-impl Pdf for CosPdf {
-    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        let wi = self.uvw.to_uvw_basis(
-            rand_utils::square_to_cos_hemisphere(rand_sq)
-        );
-
-        Ray::new(self.xo, wi)
-    }
-
-    fn value_for(&self, ri: &Ray) -> f64 {
-        let wi = ri.dir;
-        let cos_theta = self.uvw.w.dot(wi);
-        if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
-    }
-}
-
 /// TODO
 pub struct IsotropicPdf {
     xo: DVec3,
@@ -113,26 +77,27 @@ impl Pdf for ObjectPdf<'_> {
 
 /// Delta distribution PDF. Always samples the same ray. For glass/mirror.
 pub struct DeltaPdf {
-    r: Ray,
+    xo: DVec3,
+    wi: DVec3,
 }
 
 impl DeltaPdf {
     pub fn new(xo: DVec3, wi: DVec3) -> Self {
         Self {
-            r: Ray::new(xo, wi),
+            xo,
+            wi,
         }
     }
 }
 
 impl Pdf for DeltaPdf {
     fn sample_ray(&self, _rand_sq: DVec2) -> Ray {
-        // lazy
-        Ray::new(self.r.origin, self.r.dir)
+        Ray::new(self.xo, self.wi)
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir;
-        if wi.dot(self.r.dir).abs() >= 1.0 - EPSILON {
+        if wi.dot(self.wi) >= 1.0 - EPSILON {
             1.0
         } else {
             0.0
@@ -146,7 +111,7 @@ pub struct MfdPdf {
     xo: DVec3,
     /// Direction from point of impact to viewer
     v: DVec3,
-    /// Macrosurface normal
+    /// Macrosurface normal. Same hemisphere as `v`.
     no: DVec3,
     /// Material albedo at point of impact
     albedo: DVec3,
@@ -154,8 +119,10 @@ pub struct MfdPdf {
     uvw: Onb,
     /// The microfacet distribution of the surface
     mfd: MfDistribution,
+    /// Perfect reflection and refraction of roughness below threshold
+    delta_pdf: DeltaPdf,
 }
-
+// add cos pdf. add reflection pdf. reflection pdf has delta pdf?
 impl MfdPdf {
     pub fn new(
         xo: DVec3,
@@ -164,16 +131,39 @@ impl MfdPdf {
         albedo: DVec3,
         mfd: MfDistribution,
     ) -> Self {
+        let uvw = Onb::new(no);
+
+        let wi = if !mfd.is_transparent() {
+            bxdfs::reflect(v, no)
+        } else {
+            let inside = no.dot(v) < 0.0;
+            let eta_ratio = if inside {
+                mfd.get_rfrct_idx()
+            } else {
+                1.0 / mfd.get_rfrct_idx()
+            };
+
+            if inside {
+                bxdfs::refract(eta_ratio, v, -no)
+            } else {
+                bxdfs::refract(eta_ratio, v, no)
+            }
+        };
+
         Self {
+            delta_pdf: DeltaPdf::new(xo, wi),
             xo,
             v,
-            uvw: Onb::new(no),
+            uvw,
             albedo,
             no,
             mfd,
         }
     }
 }
+
+/// Threshold for roughness of microfacet at which we switch to delta pdf
+const DELTA_THRESHOLD: f64 = 0.001;
 
 impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
@@ -183,31 +173,35 @@ impl Pdf for MfdPdf {
         let prob_ndf = self.mfd.probability_ndf_sample(self.albedo);
 
         let wi = if rand_utils::rand_f64() < prob_ndf {
+            // mirror??
             let wm = self.uvw.to_uvw_basis(
                 self.mfd.sample_normal(rand_sq)
             ).normalize();
-            let wi = 2.0 * self.v.dot(wm) * wm - self.v;
+            let wi = bxdfs::reflect(self.v, wm);
             // if angle between wm and wo > 90 deg, its bad.
             // VNDF fixes this?
             if wi.dot(self.no) < 0.0 { -wi } else { wi }
         } else if !self.mfd.is_transparent() {
-            // use cosPdf?
             self.uvw.to_uvw_basis(
                 rand_utils::square_to_cos_hemisphere(rand_sq)
             )
         } else {
-            let inside = self.no.dot(self.v) < 0.0;
-            let eta_ratio = if inside {
-                self.mfd.get_rfrct_idx()
+            if self.mfd.get_roughness() < DELTA_THRESHOLD {
+                self.delta_pdf.sample_ray(rand_sq).dir
             } else {
-                1.0 / self.mfd.get_rfrct_idx()
-            };
-            let wh = self.uvw.to_uvw_basis(
-                self.mfd.sample_normal(rand_sq)
-            ).normalize();
-            let wh = if inside { -wh } else { wh };
+                let inside = self.no.dot(self.v) < 0.0;
+                let eta_ratio = if inside {
+                    self.mfd.get_rfrct_idx()
+                } else {
+                    1.0 / self.mfd.get_rfrct_idx()
+                };
+                let wh = self.uvw.to_uvw_basis(
+                    self.mfd.sample_normal(rand_sq)
+                ).normalize();
+                let wh = if inside { -wh } else { wh };
 
-            bxdfs::refract(eta_ratio, self.v, wh)
+                bxdfs::refract(eta_ratio, self.v, wh)
+            }
         };
 
         Ray::new(self.xo, wi)
@@ -220,31 +214,35 @@ impl Pdf for MfdPdf {
         let wh = (self.v + wi).normalize();
         let wh_dot_no = wh.dot(self.no);
         let wh_dot_v = self.v.dot(wh);
-        // probability to sample wh w.r.t. to wo
+        // probability to sample wh w.r.t. to wo. mirror??
         let ndf = self.mfd.d(wh, self.no) * wh_dot_no.abs()
             / (4.0 * wh_dot_v);
 
         // transmission / scatter probability
         let st = if !self.mfd.is_transparent() {
-            // cos pdf?
-            wi.dot(self.no).max(0.0) / PI
+            let cos_theta = self.uvw.w.dot(wi);
+            if cos_theta > 0.0 { cos_theta * PI.recip() } else { 0.0 }
         } else if self.v.dot(wi) > 0.0 {
             // in the same hemisphere, zero probability for transmission
             0.0
         } else {
-            let inside = self.no.dot(self.v) < 0.0;
-            let eta_ratio = if inside {
-                1.0 / self.mfd.get_rfrct_idx()
+            if self.mfd.get_roughness() < DELTA_THRESHOLD {
+                self.delta_pdf.value_for(ri)
             } else {
-                self.mfd.get_rfrct_idx()
-            };
-            let wh = (self.v + wi * eta_ratio).normalize();
-            let wh_dot_wi = wi.dot(wh);
-            let wh_dot_v = wh.dot(self.v);
+                let inside = self.no.dot(self.v) < 0.0;
+                let eta_ratio = if inside {
+                    1.0 / self.mfd.get_rfrct_idx()
+                } else {
+                    self.mfd.get_rfrct_idx()
+                };
+                let wh = (self.v + wi * eta_ratio).normalize();
+                let wh_dot_wi = wi.dot(wh);
+                let wh_dot_v = wh.dot(self.v);
 
-            self.mfd.d(wh, self.no) * wh_dot_no.abs()
-                * (eta_ratio * eta_ratio * wh_dot_wi).abs()
-                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+                self.mfd.d(wh, self.no) * wh_dot_no.abs()
+                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            }
         };
 
         let prob_ndf = ndf * ndf / (ndf * ndf + st * st);
