@@ -86,8 +86,12 @@ impl MfDistribution {
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
-    pub fn is_specular(&self) -> bool {
-        self.is_transparent() || self.get_config().roughness <= 0.05
+    pub fn specularity(&self) -> f64 {
+        if self.is_transparent() {
+            1.0
+        } else {
+            1.0 - self.get_config().roughness.powi(2)
+        }
     }
 
     /// Is the material transparent?

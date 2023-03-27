@@ -10,7 +10,8 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
             match material.bsdf_pdf(&ho, ro) {
                 None => material.emit(&ho),
                 Some(scatter_pdf) => {
-                    if material.is_specular() {
+                    //  ¯\_(ツ)_/¯
+                    if material.specularity() > 0.92 {
                         let no = ho.norm;
                         let ri = scatter_pdf
                             .sample_ray(rand_utils::unit_square());

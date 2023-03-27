@@ -48,7 +48,7 @@ impl Integrator {
     /// Calls the corresponding integration function
     pub fn integrate(&self, s: &Scene, r: &Ray) -> DVec3 {
         match self {
-            Self::PathTrace => path_trace::integrate(s, r, true),
+            Self::PathTrace => path_trace::integrate(s, r, 1.0),
             Self::DirectLight => direct_light::integrate(s, r),
             Self::BDPathTrace => bd_path_trace::integrate(s, r),
         }
