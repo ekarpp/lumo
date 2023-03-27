@@ -3,7 +3,7 @@ pub use camera::Camera;
 pub use texture::Texture;
 pub use material::Material;
 pub use integrator::Integrator;
-pub use object::{Plane, Cube, Sphere, Triangle, Rectangle, Cone};
+pub use object::{Plane, Cube, Sphere, Triangle, Rectangle, Cone, Cylinder};
 pub use object::{Disk, Instance, Instanceable, Mesh, KdTree, Object, Bounded};
 
 /// Utility struct for orthonormal basis.

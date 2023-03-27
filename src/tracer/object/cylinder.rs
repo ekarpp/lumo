@@ -15,7 +15,6 @@ pub struct Cylinder {
 
 impl Cylinder {
     /// Cylinder constructor
-    #[allow(dead_code)]
     pub fn new(
         y_min: f64,
         y_max: f64,
