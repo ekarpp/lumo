@@ -42,8 +42,8 @@ pub fn bsdf_microfacet(
         if mfd.is_transparent() {
             specular
         } else {
-            let diffuse = mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi)
-                * color / PI;
+            let diffuse = (DVec3::ONE - f) * color
+                * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi) / PI;
             diffuse + specular
         }
     } else {
