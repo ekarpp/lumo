@@ -1,9 +1,9 @@
 [package]
-name = "rust_tracer"
+name = "spuristo"
 version = "0.1.0"
 description = "CPU based rendering engine"
 license = "MIT"
-repository = "https://github.com/ekarpp/rust_tracer"
+repository = "https://github.com/ekarpp/spuristo"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
 keywords = ["rendering", "path-tracing", "graphics", "3d"]
 categories = ["graphics", "rendering::engine", "multimedia:images"]
