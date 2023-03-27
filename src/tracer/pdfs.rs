@@ -186,7 +186,7 @@ impl Pdf for MfdPdf {
                 rand_utils::square_to_cos_hemisphere(rand_sq)
             )
         } else {
-            if self.mfd.get_roughness() < DELTA_THRESHOLD {
+            if self.mfd.get_roughness() <= DELTA_THRESHOLD {
                 self.delta_pdf.sample_ray(rand_sq).dir
             } else {
                 let inside = self.no.dot(self.v) < 0.0;

@@ -8,11 +8,7 @@ use crate::tracer::microfacet::MfDistribution;
 /// Refraction constant of glass
 pub const ETA: f64 = 1.5;
 
-/// Shading for microfacet. Computed as diffuse + specular, where
-/// (`D`, `F`, `G` values from the microfacet distribution):
-///
-/// `specular = D(wh) * F(wo, wh) * G(wo, wi) / (4.0 * (n • wo) * (n • wi))`
-/// `diffuse = disney_term * albedo / π`
+/// BSDF for microfacet. Works for transparent and non-transparent materials.
 pub fn bsdf_microfacet(
     ro: &Ray,
     ri: &Ray,
@@ -37,6 +33,15 @@ pub fn bsdf_microfacet(
 
         let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
 
+        // BRDF: specular + diffuse, where
+        // specular = D(wh) * F(v, wh) * G(v, wi) / (4.0 * (no • v) * (no • wi))
+        // diffuse = normalized_disney_term * albedo / π
+        // normalized_disney_term = (1.0 + α^2 * (1.0 / 1.51 - 1.0))
+        // * (1.0 + (F_90 - 1.0) * (1.0 - (no • v))^5)
+        // * (1.0 + (F_90 - 1.0) * (1.0 - (no • wi))^5)
+        // F_90 = 0.5 * α^2 + 2.0 * (no • wh)^2 * α^2
+
+        // transparent materials don't have a diffuse term
         if mfd.is_transparent() {
             specular
         } else {
@@ -61,7 +66,11 @@ pub fn bsdf_microfacet(
         let f = mfd.f(v, wh, color);
         let g = mfd.g(v, wi, no);
 
-        (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
+        // BTDF:
+        // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
+        // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
+
+        color * (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
             * d * (DVec3::ONE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
