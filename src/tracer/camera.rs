@@ -1,5 +1,5 @@
-use glam::DVec3;
 use crate::tracer::ray::Ray;
+use glam::DVec3;
 
 /// Abstraction for a camera with the image plane modeled as a \[-1,1\]^2 square
 pub struct Camera {
@@ -26,7 +26,6 @@ impl Default for Camera {
     }
 }
 
-
 impl Camera {
     /// Returns a ray pointing towards a point on the image plane.
     ///
@@ -34,10 +33,7 @@ impl Camera {
     /// * `x` - x coordinate in a \[-1,1\]^2 square
     /// * `y` - y coordinate in a \[-1,1\]^2 square
     pub fn ray_at(&self, x: f64, y: f64) -> Ray {
-        Ray::new(
-            self.origin,
-            self.forward + x * self.right + y * self.up
-        )
+        Ray::new(self.origin, self.forward + x * self.right + y * self.up)
     }
 
     /// Returns a camera
@@ -48,12 +44,7 @@ impl Camera {
     /// * `towards` - Camera is looking at this point
     /// * `up_dir` - Defines up direction for the camera
     /// * `focal_length` - Focal length of the camera
-    pub fn new(
-        origin: DVec3,
-        towards: DVec3,
-        up_dir: DVec3,
-        focal_length: f64
-    ) -> Self {
+    pub fn new(origin: DVec3, towards: DVec3, up_dir: DVec3, focal_length: f64) -> Self {
         assert!(origin != towards);
 
         let forward = (towards - origin).normalize() * focal_length;

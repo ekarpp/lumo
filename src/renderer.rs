@@ -1,14 +1,13 @@
-use glam::{DVec3, DVec2};
-use std::time::Instant;
-use rayon::iter::{ParallelIterator, IntoParallelIterator};
-use crate::image::Image;
 use crate::cli::TracerCli;
-use crate::tone_mapping::ToneMap;
+use crate::image::Image;
 use crate::samplers::JitteredSampler;
+use crate::tone_mapping::ToneMap;
+use crate::tracer::Camera;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
-use crate::tracer::Camera;
-
+use glam::{DVec2, DVec3};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use std::time::Instant;
 
 type PxSampler = JitteredSampler;
 
@@ -24,7 +23,6 @@ pub struct Renderer {
 }
 
 impl Renderer {
-
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
     /// per pixel and path tracing as the integrator. Configured through the CLI
     /// or the setter functions of the struct.
@@ -72,18 +70,20 @@ impl Renderer {
 
     /// Starts the rendering process and returns the rendered image
     pub fn render(&self) -> Image {
-        println!("Rendering scene as a {} x {} image \
+        println!(
+            "Rendering scene as a {} x {} image \
                   with {} thread(s) and {} sample(s) per pixel using {}.",
-                 self.img_width,
-                 self.img_height,
-                 rayon::current_num_threads(),
-                 self.num_samples,
-                 self.integrator,
+            self.img_width,
+            self.img_height,
+            rayon::current_num_threads(),
+            self.num_samples,
+            self.integrator,
         );
 
         let start = Instant::now();
 
-        let buffer: Vec<DVec3> = (0..self.img_height).into_par_iter()
+        let buffer: Vec<DVec3> = (0..self.img_height)
+            .into_par_iter()
             .flat_map(|y: i32| {
                 (0..self.img_width)
                     .map(|x: i32| self.get_color(x, y))
@@ -93,33 +93,24 @@ impl Renderer {
 
         println!("Finished rendering in {:#?}", start.elapsed());
 
-        Image::new(
-            buffer,
-            self.img_width,
-            self.img_height,
-        )
+        Image::new(buffer, self.img_width, self.img_height)
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_color(&self, x: i32, y: i32) -> DVec3 {
         let max_dim = self.img_height.max(self.img_width) as f64;
         /* (u,v) in [-1, 1]^2 */
-        let u = (2*x + 1 - self.img_width) as f64 / max_dim;
-        let v = (2 * (self.img_height - y) - 1 - self.img_height) as f64
-            / max_dim;
+        let u = (2 * x + 1 - self.img_width) as f64 / max_dim;
+        let v = (2 * (self.img_height - y) - 1 - self.img_height) as f64 / max_dim;
 
         PxSampler::new(self.num_samples)
             .map(|rand_sq: DVec2| {
                 // random offsets
                 let ou = rand_sq.x / max_dim;
                 let ov = rand_sq.y / max_dim;
-                let rgb = self.integrator.integrate(
-                    &self.scene,
-                    &self.camera.ray_at(
-                        u + ou,
-                        v + ov
-                    ),
-                );
+                let rgb = self
+                    .integrator
+                    .integrate(&self.scene, &self.camera.ray_at(u + ou, v + ov));
 
                 self.tone_map.map(rgb)
             })

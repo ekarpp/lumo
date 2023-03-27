@@ -1,18 +1,12 @@
+use crate::tracer::hit::Hit;
+use crate::tracer::microfacet::MfDistribution;
+use crate::tracer::pdfs::{DeltaPdf, IsotropicPdf, MfdPdf, Pdf};
+use crate::tracer::ray::Ray;
 use glam::DVec3;
 use std::f64::consts::PI;
-use crate::tracer::pdfs::{Pdf, DeltaPdf, IsotropicPdf, MfdPdf};
-use crate::tracer::hit::Hit;
-use crate::tracer::ray::Ray;
-use crate::tracer::microfacet::MfDistribution;
 
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
-pub fn bsdf_microfacet(
-    ro: &Ray,
-    ri: &Ray,
-    no: DVec3,
-    color: DVec3,
-    mfd: &MfDistribution,
-) -> DVec3 {
+pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDistribution) -> DVec3 {
     let v = -ro.dir;
     let wi = ri.dir;
     let no_dot_wi = no.dot(wi);
@@ -42,8 +36,8 @@ pub fn bsdf_microfacet(
         if mfd.is_transparent() {
             specular
         } else {
-            let diffuse = (DVec3::ONE - f) * color
-                * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi) / PI;
+            let diffuse =
+                (DVec3::ONE - f) * color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi) / PI;
             diffuse + specular
         }
     } else {
@@ -67,8 +61,7 @@ pub fn bsdf_microfacet(
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
-        color * (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
-            * d * (DVec3::ONE - f) * g
+        color * (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs() * d * (DVec3::ONE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
 }
@@ -79,18 +72,22 @@ pub fn bsdf_microfacet(
 /// * `ho` - Hit to scatter from
 /// * `ro` - Ray from viewer.
 /// * `mfd` - The microfacet distribution of the surface
-pub fn bsdf_microfacet_pdf(ho: &Hit, ro: &Ray, albedo: DVec3, mfd: &MfDistribution)
-                           -> Option<Box<dyn Pdf>> {
+pub fn bsdf_microfacet_pdf(
+    ho: &Hit,
+    ro: &Ray,
+    albedo: DVec3,
+    mfd: &MfDistribution,
+) -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
     let xo = ho.p;
     let wo = -ro.dir;
-    Some( Box::new(MfdPdf::new(xo, wo, no, albedo, *mfd)) )
+    Some(Box::new(MfdPdf::new(xo, wo, no, albedo, *mfd)))
 }
 
 /// TODO
 pub fn bsdf_isotropic_pdf(ho: &Hit, _ro: &Ray) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
-    Some( Box::new(IsotropicPdf::new(xo)) )
+    Some(Box::new(IsotropicPdf::new(xo)))
 }
 
 /// Scattering function for mirror material. Perfect reflection.
@@ -99,7 +96,7 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let wo = ro.dir;
     let no = ho.norm;
     let wi = reflect(-wo, no);
-    Some( Box::new(DeltaPdf::new(xo, wi)) )
+    Some(Box::new(DeltaPdf::new(xo, wi)))
 }
 
 /// Reflect around normal

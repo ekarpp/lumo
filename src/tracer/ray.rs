@@ -1,4 +1,4 @@
-use glam::{DVec3, DAffine3};
+use glam::{DAffine3, DVec3};
 
 /// Ray abstraction
 pub struct Ray {
@@ -28,7 +28,7 @@ impl Ray {
 
     /// Position of the ray at time `t`
     pub fn at(&self, t: f64) -> DVec3 {
-        self.origin + t*self.dir
+        self.origin + t * self.dir
     }
 
     /// Coordinate of origin along axis

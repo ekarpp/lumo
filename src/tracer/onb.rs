@@ -17,12 +17,8 @@ impl Onb {
     /// * `dir` - Direction of `z` axis. Not necessarily normalized.
     pub fn new(dir: DVec3) -> Self {
         let w = dir.normalize();
-        let (u,v) = w.any_orthonormal_pair();
-        Self {
-            u,
-            v,
-            w,
-        }
+        let (u, v) = w.any_orthonormal_pair();
+        Self { u, v, w }
     }
 
     /// Translate from canonical basis to our ONB.

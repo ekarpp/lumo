@@ -37,7 +37,9 @@ impl Bounded for Sphere {
 }
 
 impl Object for Sphere {
-    fn material(&self) -> &Material { &self.material }
+    fn material(&self) -> &Material {
+        &self.material
+    }
 
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
@@ -46,8 +48,8 @@ impl Object for Sphere {
         // .dot faster than .length_squared, recheck
         let a = r.dir.dot(r.dir);
         let half_b = tmp.dot(r.dir);
-        let c = tmp.dot(tmp) - self.radius*self.radius;
-        let disc = half_b*half_b - a*c;
+        let c = tmp.dot(tmp) - self.radius * self.radius;
+        let disc = half_b * half_b - a * c;
 
         if disc < 0.0 {
             return None;
@@ -64,12 +66,7 @@ impl Object for Sphere {
         let xi = r.at(t);
         let ni = (xi - self.origin) / self.radius;
 
-        Hit::new(
-            t,
-            self,
-            xi,
-            ni,
-        )
+        Hit::new(t, self, xi, ni)
     }
 
     /// Sample on unit sphere and scale
@@ -89,12 +86,11 @@ impl Object for Sphere {
 
         let dist_light = xo.distance_squared(self.origin);
 
-        let z = 1.0 + rand_sq.y *
-            ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
+        let z = 1.0 + rand_sq.y * ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
 
         let phi = 2.0 * PI * rand_sq.x;
-        let x = phi.cos() * (1.0 - z*z).sqrt();
-        let y = phi.sin() * (1.0 - z*z).sqrt();
+        let x = phi.cos() * (1.0 - z * z).sqrt();
+        let y = phi.sin() * (1.0 - z * z).sqrt();
 
         let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
 
@@ -109,8 +105,7 @@ impl Object for Sphere {
             Some(_) => {
                 let xo = ri.origin;
 
-                let sin2_theta_max = self.radius * self.radius
-                    / self.origin.distance_squared(xo);
+                let sin2_theta_max = self.radius * self.radius / self.origin.distance_squared(xo);
                 let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
 
                 1.0 / (2.0 * PI * (1.0 - cos_theta_max))

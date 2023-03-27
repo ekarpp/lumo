@@ -1,5 +1,5 @@
-use glam::{DVec3, UVec3};
 use crate::rand_utils;
+use glam::{DVec3, UVec3};
 use itertools::Itertools;
 
 /// Number of points in the perlin noise lattice
@@ -19,7 +19,6 @@ const PERLIN_OCTAVES: i32 = 6;
 
 /// Scale of each term in turbulence. should be less than 1.0
 const PERLIN_GAIN: f64 = 0.5;
-
 
 /// Helper struct to store permutation vectors for each dimension.
 struct PermutationXyz {
@@ -63,14 +62,11 @@ impl Perlin {
     /// Computes color of the noise at point `p`. Perlin noise
     /// with turbulence.
     pub fn albedo_at(&self, p: DVec3) -> DVec3 {
-        self.albedo * self._scale_turb(
-            p.x,
-            self.turbulence(0.0, PERLIN_SCALE*p.abs(), 0)
-        )
+        self.albedo * self._scale_turb(p.x, self.turbulence(0.0, PERLIN_SCALE * p.abs(), 0))
     }
 
     fn _scale_turb(&self, px: f64, t: f64) -> f64 {
-        1.0 - (0.5 + 0.5*(PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(6)
+        1.0 - (0.5 + 0.5 * (PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(6)
     }
 
     /// Computes the turbulence for the noise. I.e. absolute values of the
@@ -81,7 +77,7 @@ impl Perlin {
         }
         let w = PERLIN_GAIN.powi(depth);
 
-        self.turbulence(acc + w*self.noise_at(p).abs(), 2.0 * p, depth + 1)
+        self.turbulence(acc + w * self.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
 
     /// Computes traditional perlin noise at point `p`
@@ -89,15 +85,15 @@ impl Perlin {
         let weight = p.fract();
         let floor = p.floor();
 
-        let normals = (0..2).cartesian_product(0..2).cartesian_product(0..2)
-            .map(|((i,j),k)| {
-                self.lattice[
-                    self._hash(
-                        floor.x as usize + i,
-                        floor.y as usize + j,
-                        floor.z as usize + k
-                    )
-                ]
+        let normals = (0..2)
+            .cartesian_product(0..2)
+            .cartesian_product(0..2)
+            .map(|((i, j), k)| {
+                self.lattice[self._hash(
+                    floor.x as usize + i,
+                    floor.y as usize + j,
+                    floor.z as usize + k,
+                )]
             })
             .collect();
 
@@ -113,12 +109,12 @@ impl Perlin {
 
     /// Smoothing for weights
     fn _hermite_cubic(&self, x: DVec3) -> DVec3 {
-        (3.0 - 2.0*x)*x*x
+        (3.0 - 2.0 * x) * x * x
     }
 
     /// Smoothing for weights
     fn _smootherstep(&self, x: DVec3) -> DVec3 {
-        ((6.0*x - 15.0)*x + 10.0)*x*x*x
+        ((6.0 * x - 15.0) * x + 10.0) * x * x * x
     }
 
     /// Trilinear interpolation
@@ -127,11 +123,13 @@ impl Perlin {
     /// * `normals` - Normals to perform interpolation with
     /// * `w` - Fractional part of the point. Gives distances to each normal.
     fn interp(&self, normals: Vec<DVec3>, w: DVec3) -> f64 {
-        (0..2).cartesian_product(0..2).cartesian_product(0..2)
+        (0..2)
+            .cartesian_product(0..2)
+            .cartesian_product(0..2)
             .zip(normals)
-            .map(|(((x,y),z), norm)| {
+            .map(|(((x, y), z), norm)| {
                 let idx = UVec3::new(x, y, z).as_dvec3();
-                let widx = 2.0*w*idx + DVec3::ONE - w - idx;
+                let widx = 2.0 * w * idx + DVec3::ONE - w - idx;
 
                 widx.x * widx.y * widx.z * norm.dot(w - idx)
             })

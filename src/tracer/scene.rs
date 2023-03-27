@@ -1,9 +1,9 @@
-use glam::{DVec3, DMat3};
-use std::f64::INFINITY;
 use crate::rand_utils;
-use crate::EPSILON;
-use crate::tracer::{ray::Ray, hit::Hit, Texture, Material};
+use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
 use crate::tracer::{Object, Plane, Rectangle};
+use crate::EPSILON;
+use glam::{DMat3, DVec3};
+use std::f64::INFINITY;
 
 #[cfg(test)]
 mod scene_tests;
@@ -18,7 +18,6 @@ pub struct Scene {
     pub objects: Vec<Box<dyn Object>>,
     /// Contains indices to all of the lights in `objects`
     pub lights: Vec<usize>,
-
 }
 
 impl Scene {
@@ -50,8 +49,7 @@ impl Scene {
 
         for object in &self.objects {
             // if we hit an object, it must be closer than what we have
-            h = object.hit(r, 0.0, t_max)
-                .or(h);
+            h = object.hit(r, 0.0, t_max).or(h);
             // update distance to closest found so far
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }
@@ -60,8 +58,7 @@ impl Scene {
     }
 
     /// Does ray `r` reach the light object `light`? TODO: rewrite
-    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object)
-                     -> Option<Hit> {
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object) -> Option<Hit> {
         let light_hit = light.hit(r, 0.0, INFINITY);
         let t_max = light_hit.as_ref().map_or(INFINITY, |hit| hit.t - EPSILON);
 

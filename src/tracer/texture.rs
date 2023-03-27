@@ -1,5 +1,5 @@
-use glam::DVec3;
 use crate::perlin::Perlin;
+use glam::DVec3;
 
 /// Base scale for the size of checker boxes. bigger = smaller boxes
 const CHECKER_SCALE: f64 = 13.0;
@@ -34,7 +34,7 @@ impl Texture {
     }
 
     fn checkers_phase(&self, p: DVec3) -> f64 {
-        let ps = CHECKER_SCALE*p;
+        let ps = CHECKER_SCALE * p;
         (ps.x).sin() * (ps.y).sin() * (ps.z).sin()
     }
 }

@@ -17,7 +17,6 @@ impl Scene {
         mat_right: Material,
         mat_floor: Material,
     ) -> Self {
-
         // aka Y of ground, negate for roof
         let ground = -1.0;
         // aka X of right wall, negate for left wall
@@ -28,83 +27,47 @@ impl Scene {
         let light_dim = 0.4;
 
         let mut scene = Self::default();
-        scene.add(
-            /* rectangular area light */
-            Rectangle::new(
-                DMat3::from_cols(
-                    DVec3::new(
-                        -light_dim,
-                        -ground - EPSILON,
-                        0.5 * front + light_dim,
-                    ),
-                    DVec3::new(
-                        -light_dim,
-                        -ground - EPSILON,
-                        0.5 * front - light_dim,
-                    ),
-                    DVec3::new(
-                        light_dim,
-                        -ground - EPSILON,
-                        0.5 * front - light_dim,
-                    ),
-                ),
-                Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+        scene.add(/* rectangular area light */ Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front + light_dim),
+                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front - light_dim),
+                DVec3::new(light_dim, -ground - EPSILON, 0.5 * front - light_dim),
             ),
-        );
+            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+        ));
 
         scene.add(
             /* floor */
-            Plane::new(
-                DVec3::Y * ground,
-                DVec3::Y,
-                mat_floor,
-            ),
+            Plane::new(DVec3::Y * ground, DVec3::Y, mat_floor),
         );
 
         scene.add(
             /* left wall */
-            Plane::new(
-                DVec3::NEG_X * right,
-                DVec3::X,
-                mat_left,
-            ),
+            Plane::new(DVec3::NEG_X * right, DVec3::X, mat_left),
         );
 
         scene.add(
             /* right wall */
-            Plane::new(
-                DVec3::X * right,
-                DVec3::NEG_X,
-                mat_right,
-            ),
+            Plane::new(DVec3::X * right, DVec3::NEG_X, mat_right),
         );
 
-        scene.add(
-            /* roof */
-            Plane::new(
-                DVec3::NEG_Y * ground,
-                DVec3::NEG_Y,
-                Material::diffuse(Texture::Solid(def_color)),
-            ),
-        );
+        scene.add(/* roof */ Plane::new(
+            DVec3::NEG_Y * ground,
+            DVec3::NEG_Y,
+            Material::diffuse(Texture::Solid(def_color)),
+        ));
 
-        scene.add(
-            /* front wall */
-            Plane::new(
-                DVec3::Z * front,
-                DVec3::Z,
-                Material::diffuse(Texture::Solid(def_color)),
-            ),
-        );
+        scene.add(/* front wall */ Plane::new(
+            DVec3::Z * front,
+            DVec3::Z,
+            Material::diffuse(Texture::Solid(def_color)),
+        ));
 
-        scene.add(
-            /* background */
-            Plane::new(
-                DVec3::NEG_Z * front,
-                DVec3::NEG_Z,
-                Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
-            ),
-        );
+        scene.add(/* background */ Plane::new(
+            DVec3::NEG_Z * front,
+            DVec3::NEG_Z,
+            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
+        ));
 
         scene
     }

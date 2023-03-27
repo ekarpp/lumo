@@ -11,10 +11,9 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specularity: f64) -> DVec3 {
                 Some(scatter_pdf) => {
                     // jittered sampler
                     let shadow = JitteredSampler::new(SHADOW_SPLITS)
-                        .map(|rand_sq| {
-                            shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(), rand_sq)
-                        })
-                        .sum::<DVec3>() / SHADOW_SPLITS as f64;
+                        .map(|rand_sq| shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(), rand_sq))
+                        .sum::<DVec3>()
+                        / SHADOW_SPLITS as f64;
 
                     if rand_utils::rand_f64() < PATH_TRACE_RR {
                         return shadow;
@@ -37,11 +36,11 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specularity: f64) -> DVec3 {
                         no.dot(wi).abs()
                     };
 
-                    shadow + material.bsdf_f(ro, &ri, no)
-                        * cos_theta
-                        * integrate(scene, &ri, material.specularity())
-                        / (p_scatter * (1.0 - PATH_TRACE_RR))
-
+                    shadow
+                        + material.bsdf_f(ro, &ri, no)
+                            * cos_theta
+                            * integrate(scene, &ri, material.specularity())
+                            / (p_scatter * (1.0 - PATH_TRACE_RR))
                 }
             }
         }

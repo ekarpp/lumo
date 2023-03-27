@@ -1,8 +1,8 @@
 use glam::DVec3;
-use std::path::Path;
+use png::{BitDepth, ColorType, Encoder, EncodingError};
 use std::fs::File;
 use std::io::BufWriter;
-use png::{Encoder, ColorType, BitDepth, EncodingError};
+use std::path::Path;
 
 /// Contains the necessary data to write image buffer to a .png file.
 pub struct Image {
@@ -12,7 +12,6 @@ pub struct Image {
     pub width: i32,
     /// Height of rendered image.
     pub height: i32,
-
 }
 
 impl Image {
@@ -28,7 +27,8 @@ impl Image {
     /// Translates the image buffer of RGB values in range \[0,1\]
     /// to discrete range \[0,255\]. Applies gamma correction.
     fn rgb(&self) -> Vec<u8> {
-        self.buffer.iter()
+        self.buffer
+            .iter()
             .flat_map(|px: &DVec3| {
                 [
                     self.lin_to_srgb(px.x),
@@ -50,10 +50,7 @@ impl Image {
         let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);
-        let mut encoder = Encoder::new(
-            &mut binding,
-            self.width as u32,
-            self.height as u32);
+        let mut encoder = Encoder::new(&mut binding, self.width as u32, self.height as u32);
         encoder.set_color(ColorType::Rgb);
         encoder.set_depth(BitDepth::Eight);
 

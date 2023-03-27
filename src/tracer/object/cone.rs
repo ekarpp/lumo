@@ -16,13 +16,7 @@ pub struct Cone {
 
 impl Cone {
     /// Constructs a cone from the given parameters
-    pub fn new(
-        tip: DVec3,
-        axis: DVec3,
-        height: f64,
-        radius: f64,
-        material: Material
-    ) -> Box<Self> {
+    pub fn new(tip: DVec3, axis: DVec3, height: f64, radius: f64, material: Material) -> Box<Self> {
         Box::new(Self {
             tip,
             axis: axis.normalize(),
@@ -34,11 +28,19 @@ impl Cone {
 }
 
 impl Object for Cone {
-    fn material(&self) -> &Material { &self.material }
+    fn material(&self) -> &Material {
+        &self.material
+    }
 
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { todo!() }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray { todo!() }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { todo!() }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
+        todo!()
+    }
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
+        todo!()
+    }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
+        todo!()
+    }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
@@ -84,17 +86,12 @@ impl Object for Cone {
             // disk?
         }
 
-        let cos_theta = self.height
-            / (self.height * self.height + self.radius * self.radius).sqrt();
+        let cos_theta =
+            self.height / (self.height * self.height + self.radius * self.radius).sqrt();
 
         let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
         let ni = (xi - a).normalize();
 
-        Hit::new(
-            t,
-            self,
-            xi,
-            ni,
-        )
+        Hit::new(t, self, xi, ni)
     }
 }

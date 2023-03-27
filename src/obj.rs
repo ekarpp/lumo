@@ -1,9 +1,9 @@
+use crate::tracer::{Material, Triangle};
 use glam::DVec3;
 use std::fs::File;
-use std::io::{Seek, Write, Cursor, Read};
+use std::io::{self, BufRead, BufReader, Result};
+use std::io::{Cursor, Read, Seek, Write};
 use zip::ZipArchive;
-use std::io::{self, Result, BufReader, BufRead};
-use crate::tracer::{Material, Triangle};
 
 /// Function to create io::Error
 fn obj_error(message: &str) -> io::Error {
@@ -23,9 +23,7 @@ pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
     let mut bytes = Vec::new();
     ureq::get(url)
         .call()
-        .map_err(|_| {
-            obj_error("Error during HTTP, error parsing not implemented")
-        })?
+        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
         .into_reader()
         .read_to_end(&mut bytes)?;
 
@@ -47,7 +45,7 @@ pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
         }
     } else if !url.ends_with(".obj") {
         return Err(obj_error(
-            "Bad URL, or at least does not end with .zip or .obj"
+            "Bad URL, or at least does not end with .zip or .obj",
         ));
     }
 
@@ -94,7 +92,8 @@ fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
 }
 
 fn parse_double(token: &str) -> Result<f64> {
-    token.parse()
+    token
+        .parse()
         .map_err(|_| obj_error("Could not parse double in .OBJ"))
 }
 
@@ -107,20 +106,19 @@ fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
 }
 
 fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
-    token.parse::<i32>().map(|idx| {
-        if idx > 0 {
-            (idx - 1) as usize
-        } else {
-            (vec_len as i32 + idx) as usize
-        }
-    }).map_err(|_| obj_error("Could not parse index in .OBJ"))
+    token
+        .parse::<i32>()
+        .map(|idx| {
+            if idx > 0 {
+                (idx - 1) as usize
+            } else {
+                (vec_len as i32 + idx) as usize
+            }
+        })
+        .map_err(|_| obj_error("Could not parse index in .OBJ"))
 }
 
-fn parse_face(
-    tokens: &[&str],
-    vertices: &[DVec3],
-    normals: &[DVec3]
-) -> Result<Vec<Triangle>> {
+fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<Vec<Triangle>> {
     let mut vidxs: Vec<usize> = Vec::new();
     let mut nidxs: Vec<usize> = Vec::new();
 
@@ -137,8 +135,8 @@ fn parse_face(
 
     let mut triangles: Vec<Triangle> = Vec::new();
 
-    for i in 1..vidxs.len()-1 {
-        let (a, b, c) = (0, i, i+1);
+    for i in 1..vidxs.len() - 1 {
+        let (a, b, c) = (0, i, i + 1);
         let (va, vb, vc) = (vidxs[a], vidxs[b], vidxs[c]);
         let abc = (vertices[va], vertices[vb], vertices[vc]);
 

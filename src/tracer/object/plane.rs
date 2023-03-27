@@ -26,7 +26,9 @@ impl Plane {
 }
 
 impl Object for Plane {
-    fn material(&self) -> &Material { &self.material }
+    fn material(&self) -> &Material {
+        &self.material
+    }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
@@ -39,18 +41,17 @@ impl Object for Plane {
         if t < t_min + EPSILON || t > t_max - EPSILON {
             None
         } else {
-            Hit::new(
-                t,
-                self,
-                r.at(t),
-                self.norm,
-            )
+            Hit::new(t, self, r.at(t), self.norm)
         }
     }
 
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         unimplemented!()
     }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { unimplemented!() }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
+        unimplemented!()
+    }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
+        unimplemented!()
+    }
 }

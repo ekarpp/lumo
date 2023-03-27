@@ -1,10 +1,10 @@
-use glam::DVec3;
-use crate::tracer::pdfs::Pdf;
-use crate::tracer::hit::Hit;
-use crate::tracer::ray::Ray;
 use crate::tracer::bxdfs;
-use crate::tracer::texture::Texture;
+use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
+use crate::tracer::pdfs::Pdf;
+use crate::tracer::ray::Ray;
+use crate::tracer::texture::Texture;
+use glam::DVec3;
 
 /// Describes which material an object is made out of
 pub enum Material {
@@ -21,7 +21,6 @@ pub enum Material {
 }
 
 impl Material {
-
     /// Metallic microfacet material
     pub fn metal(texture: Texture, roughness: f64) -> Self {
         Self::Microfacet(texture, MfDistribution::metallic(roughness))
@@ -39,10 +38,7 @@ impl Material {
 
     /// Transparent material
     pub fn transparent(texture: Texture, rfrct_idx: f64, roughness: f64) -> Self {
-        Self::Microfacet(
-            texture,
-            MfDistribution::transparent(rfrct_idx, roughness)
-        )
+        Self::Microfacet(texture, MfDistribution::transparent(rfrct_idx, roughness))
     }
 
     /// How specular is the material? 1.0 fully, 0.0 none
@@ -83,9 +79,7 @@ impl Material {
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
             Self::Mirror => DVec3::ONE,
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd)
-            }
+            Self::Microfacet(t, mfd) => bxdfs::bsdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd),
             _ => DVec3::ZERO,
         }
     }

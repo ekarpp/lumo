@@ -22,8 +22,7 @@ impl Triangle {
     /// # Arguments
     /// * `a,b,c` - Three vertices of the triangle
     /// * `material` - Material of the triangle
-    pub fn new(abc: (DVec3, DVec3, DVec3), material: Material)
-               -> Box<Self> {
+    pub fn new(abc: (DVec3, DVec3, DVec3), material: Material) -> Box<Self> {
         /* check degeneracy */
         let norm = (abc.1 - abc.0).cross(abc.2 - abc.0);
         assert!(norm.length() != 0.0);
@@ -45,8 +44,7 @@ impl Triangle {
     /// # Arguments
     /// * `abc` - Triple of the triangle vertices
     /// * `nabc` - Triple of the normals at the vertices
-    pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3))
-                    -> Self {
+    pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3)) -> Self {
         Self {
             a: abc.0,
             b: abc.1,
@@ -69,7 +67,9 @@ impl Bounded for Triangle {
 }
 
 impl Object for Triangle {
-    fn material(&self) -> &Material { &self.material }
+    fn material(&self) -> &Material {
+        &self.material
+    }
 
     /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
@@ -98,19 +98,14 @@ impl Object for Triangle {
         }
         let t = e2.dot(pbe1) / det_a;
 
-        if t < t_min + EPSILON  || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max - EPSILON {
             None
         } else {
             let alpha = 1.0 - beta - gamma;
             // correct order?
             let norm = alpha * self.na + beta * self.nb + gamma * self.nc;
 
-            Hit::new(
-                t,
-                self,
-                r.at(t),
-                norm,
-            )
+            Hit::new(t, self, r.at(t), norm)
         }
     }
 
@@ -133,18 +128,14 @@ impl Object for Triangle {
         match self.hit(ri, 0.0, INFINITY) {
             None => 0.0,
             Some(hi) => {
-                let area = (self.b - self.a).cross(self.c - self.a).length()
-                    / 2.0;
+                let area = (self.b - self.a).cross(self.c - self.a).length() / 2.0;
 
                 let xo = ri.origin;
                 let xi = hi.p;
                 let ni = hi.norm;
                 let wi = ri.dir;
-                xo.distance_squared(xi)
-                    / (ni.dot(wi).abs() * area)
-
+                xo.distance_squared(xi) / (ni.dot(wi).abs() * area)
             }
         }
     }
-
 }

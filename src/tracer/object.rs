@@ -1,49 +1,49 @@
-use glam::{DVec3, DMat3, DVec2, DAffine3};
-use std::f64::{INFINITY, consts::PI};
-use crate::tracer::onb::Onb;
 use crate::rand_utils;
-use crate::EPSILON;
-use crate::tracer::ray::Ray;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
+use crate::tracer::onb::Onb;
+use crate::tracer::ray::Ray;
+use crate::EPSILON;
+use glam::{DAffine3, DMat3, DVec2, DVec3};
+use std::f64::{consts::PI, INFINITY};
 
-pub use plane::Plane;
+pub use aabb::AaBoundingBox;
+pub use cone::Cone;
 pub use cube::Cube;
+pub use cylinder::Cylinder;
+pub use disk::Disk;
+pub use instance::{Instance, Instanceable};
+pub use kdtree::{KdTree, Mesh};
+pub use plane::Plane;
+pub use rectangle::Rectangle;
 pub use sphere::Sphere;
 pub use triangle::Triangle;
-pub use rectangle::Rectangle;
-pub use aabb::AaBoundingBox;
-pub use cylinder::Cylinder;
-pub use cone::Cone;
-pub use disk::Disk;
-pub use kdtree::{Mesh, KdTree};
-pub use instance::{Instance, Instanceable};
 
-/// Defines disks
-mod disk;
+/// Axis aligned bounding boxes
+mod aabb;
 /// Defines cones
 mod cone;
-/// Defines infinite planes
-mod plane;
 /// Defines a unit cube. Transform to desired shape with instances.
 mod cube;
+/// Defines y axis aligned cylinders
+mod cylinder;
+/// Defines disks
+mod disk;
+/// Instance of an object i.e. an object to wich Euclidean (+ scaling)
+/// transformations have been applied to.
+mod instance;
+/// kD-trees, used for complex meshes
+mod kdtree;
+/// Medium, fog, smoke, etc
+mod medium;
+/// Defines infinite planes
+mod plane;
+/// Defines rectangles. Built from two triangles.
+mod rectangle;
 /// Defines spheres.
 mod sphere;
 /// Defines triangles.
 mod triangle;
-/// Defines rectangles. Built from two triangles.
-mod rectangle;
-/// Defines y axis aligned cylinders
-mod cylinder;
-/// Medium, fog, smoke, etc
-mod medium;
-/// Axis aligned bounding boxes
-mod aabb;
-/// kD-trees, used for complex meshes
-mod kdtree;
-/// Instance of an object i.e. an object to wich Euclidean (+ scaling)
-/// transformations have been applied to.
-mod instance;
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {

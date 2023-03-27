@@ -20,51 +20,27 @@ impl Cube {
             material,
             rectangles: [
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::Z,
-                        DVec3::ZERO,
-                        DVec3::X,
-                    ),/* xz-plane */
+                    DMat3::from_cols(DVec3::Z, DVec3::ZERO, DVec3::X), /* xz-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::X + DVec3::Y,
-                        DVec3::Y,
-                        DVec3::Y + DVec3::Z,
-                    ),/* xz-plane +1 */
+                    DMat3::from_cols(DVec3::X + DVec3::Y, DVec3::Y, DVec3::Y + DVec3::Z), /* xz-plane +1 */
                     Material::Blank,
                 ),
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::Y,
-                        DVec3::ZERO,
-                        DVec3::Z,
-                    ), /* yz-plane */
+                    DMat3::from_cols(DVec3::Y, DVec3::ZERO, DVec3::Z), /* yz-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::X + DVec3::Z,
-                        DVec3::X,
-                        DVec3::X + DVec3::Y,
-                    ), /* yz-plane + 1x*/
+                    DMat3::from_cols(DVec3::X + DVec3::Z, DVec3::X, DVec3::X + DVec3::Y), /* yz-plane + 1x*/
                     Material::Blank,
                 ),
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::X,
-                        DVec3::ZERO,
-                        DVec3::Y,
-                    ), /* xy-plane */
+                    DMat3::from_cols(DVec3::X, DVec3::ZERO, DVec3::Y), /* xy-plane */
                     Material::Blank,
                 ),
                 *Rectangle::new(
-                    DMat3::from_cols(
-                        DVec3::Y + DVec3::Z,
-                        DVec3::Z,
-                        DVec3::X + DVec3::Z,
-                    ), /* xy-plane + 1z */
+                    DMat3::from_cols(DVec3::Y + DVec3::Z, DVec3::Z, DVec3::X + DVec3::Z), /* xy-plane + 1z */
                     Material::Blank,
                 ),
             ],
@@ -90,10 +66,13 @@ impl Bounded for Cube {
 }
 
 impl Object for Cube {
-    fn material(&self) -> &Material { &self.material }
+    fn material(&self) -> &Material {
+        &self.material
+    }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.rectangles.iter()
+        self.rectangles
+            .iter()
             .map(|rect| rect.hit(r, t_min, t_max))
             .fold(None, |closest, hit| {
                 if closest.is_none() || (hit.is_some() && hit < closest) {
@@ -123,5 +102,4 @@ impl Object for Cube {
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         self.choose_rectangle().sample_on(rand_sq)
     }
-
 }

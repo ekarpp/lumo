@@ -1,15 +1,15 @@
-use glam::{DVec3, DVec2};
-use std::fmt;
 use crate::rand_utils;
 use crate::samplers::JitteredSampler;
-use crate::tracer::pdfs::{Pdf, ObjectPdf};
 use crate::tracer::hit::Hit;
+use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
+use glam::{DVec2, DVec3};
+use std::fmt;
 
-mod path_trace;
-mod direct_light;
 mod bd_path_trace;
+mod direct_light;
+mod path_trace;
 
 /// How many shadow rays per vertex in path tracer? Preferably square for
 /// jittered sampler.
@@ -55,13 +55,7 @@ impl Integrator {
 }
 
 /// Shoots a shadow ray towards random light from `ho`.
-fn shadow_ray(
-    scene: &Scene,
-    ro: &Ray,
-    ho: &Hit,
-    _scatter_pdf: &dyn Pdf,
-    rand_sq: DVec2
-) -> DVec3 {
+fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, _scatter_pdf: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
     let material = ho.object.material();
 
     if !material.is_diffuse() {
@@ -77,11 +71,7 @@ fn shadow_ray(
 
         match scene.hit_light(&ri, light) {
             None => DVec3::ZERO,
-            Some(_) => {
-                material.bsdf_f(ro, &ri, no)
-                    * no.dot(wi).abs()
-                    / pdf_light.value_for(&ri)
-            }
+            Some(_) => material.bsdf_f(ro, &ri, no) * no.dot(wi).abs() / pdf_light.value_for(&ri),
         }
     }
 }

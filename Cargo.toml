@@ -1,6 +1,6 @@
 [package]
 name = "rust_tracer"
-version = "0.1.0-alpha"
+version = "0.1.0"
 description = "CPU based rendering engine"
 license = "MIT"
 repository = "https://github.com/ekarpp/rust_tracer"

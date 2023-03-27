@@ -25,10 +25,7 @@ impl AaBoundingBox {
     /// * `ax_min` - The minimum values in each dimension
     /// * `ax_max` - The maxiumum values in each dimension
     pub fn new(ax_min: DVec3, ax_max: DVec3) -> Self {
-        Self {
-            ax_min,
-            ax_max,
-        }
+        Self { ax_min, ax_max }
     }
 
     /// Find `t_start` and `t_end` for ray intersection
@@ -39,18 +36,12 @@ impl AaBoundingBox {
         let t_start = ro_min.min(ro_max);
         let t_end = ro_max.max(ro_min);
 
-        (
-            t_start.max_element(),
-            t_end.min_element(),
-        )
+        (t_start.max_element(), t_end.min_element())
     }
 
     /// Combine self and other to a new bigger AABB
     pub fn merge(&self, other: &Self) -> Self {
-        Self::new(
-            self.ax_min.min(other.ax_min),
-            self.ax_max.max(other.ax_max),
-        )
+        Self::new(self.ax_min.min(other.ax_min), self.ax_max.max(other.ax_max))
     }
 
     /// Split `self` along `axis` (x=0, y=1, z=2) at `value`

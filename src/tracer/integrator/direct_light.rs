@@ -13,8 +13,7 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                     //  ¯\_(ツ)_/¯
                     if material.specularity() > 0.92 {
                         let no = ho.norm;
-                        let ri = scatter_pdf
-                            .sample_ray(rand_utils::unit_square());
+                        let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
                         let wi = ri.dir;
 
                         // correct?
@@ -24,20 +23,12 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                             no.dot(wi).abs()
                         };
 
-                        material.bsdf_f(ro, &ri, no)
-                            * cos_theta
-                            * integrate(scene, &ri)
+                        material.bsdf_f(ro, &ri, no) * cos_theta * integrate(scene, &ri)
                             / scatter_pdf.value_for(&ri)
                     } else {
-                        JitteredSampler::new(SHADOW_SPLITS)
-                            .fold(DVec3::ZERO, |acc, rand_sq| {
-                                acc + shadow_ray(scene,
-                                                 ro,
-                                                 &ho,
-                                                 scatter_pdf.as_ref(),
-                                                 rand_sq)
-                            }) / SHADOW_SPLITS as f64
-
+                        JitteredSampler::new(SHADOW_SPLITS).fold(DVec3::ZERO, |acc, rand_sq| {
+                            acc + shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(), rand_sq)
+                        }) / SHADOW_SPLITS as f64
                     }
                 }
             }

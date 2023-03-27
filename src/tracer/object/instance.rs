@@ -43,21 +43,29 @@ impl<T: Bounded> Instance<T> {
 impl<T: Bounded> Bounded for Instance<T> {
     fn bounding_box(&self) -> AaBoundingBox {
         let AaBoundingBox { ax_min, ax_max } = self.object.bounding_box();
-        let v0 = self.transform
+        let v0 = self
+            .transform
             .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_min.z));
-        let v1 = self.transform
+        let v1 = self
+            .transform
             .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_max.z));
-        let v2 = self.transform
+        let v2 = self
+            .transform
             .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_min.z));
-        let v3 = self.transform
+        let v3 = self
+            .transform
             .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_max.z));
-        let v4 = self.transform
+        let v4 = self
+            .transform
             .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_min.z));
-        let v5 = self.transform
+        let v5 = self
+            .transform
             .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_max.z));
-        let v6 = self.transform
+        let v6 = self
+            .transform
             .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_min.z));
-        let v7 = self.transform
+        let v7 = self
+            .transform
             .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_max.z));
 
         AaBoundingBox::new(
@@ -71,20 +79,26 @@ impl<T: Object> Object for Instance<T> {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let ray_local = r.transform(self.inv_transform);
 
-        self.object.hit(&ray_local, t_min, t_max)
-            .map(|mut h| {
-                h.norm = (self.normal_transform * h.norm).normalize();
-                // something smarter should be done here...
-                h.p = self.transform.transform_point3(h.p);
-                h
-            })
+        self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
+            h.norm = (self.normal_transform * h.norm).normalize();
+            // something smarter should be done here...
+            h.p = self.transform.transform_point3(h.p);
+            h
+        })
     }
 
-    fn material(&self) -> &Material { self.object.material() }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { panic!() }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray { panic!() }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { panic!() }
-
+    fn material(&self) -> &Material {
+        self.object.material()
+    }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
+        panic!()
+    }
+    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
+        panic!()
+    }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
+        panic!()
+    }
 }
 
 /// Object that can be instanced
@@ -93,7 +107,7 @@ pub trait Instanceable<T> {
     fn translate(self, x: f64, y: f64, z: f64) -> Box<Instance<T>>;
 
     /// Apply scale `xyz`
-    fn scale(self, x: f64, y: f64, z:f64) -> Box<Instance<T>>;
+    fn scale(self, x: f64, y: f64, z: f64) -> Box<Instance<T>>;
 
     /// Rotate around x-axis by `r` radians
     fn rotate_x(self, r: f64) -> Box<Instance<T>>;
@@ -135,43 +149,28 @@ impl<T: Object> Instance<T> {
     /// Apply translation AFTER curret transformations
     pub fn translate(self, x: f64, y: f64, z: f64) -> Box<Self> {
         let t = DVec3::new(x, y, z);
-        Self::new(
-            self.object,
-            DAffine3::from_translation(t) * self.transform,
-        )
+        Self::new(self.object, DAffine3::from_translation(t) * self.transform)
     }
 
     /// Apply scale AFTER current transformations
     pub fn scale(self, x: f64, y: f64, z: f64) -> Box<Self> {
         let s = DVec3::new(x, y, z);
-        Self::new(
-            self.object,
-            DAffine3::from_scale(s) * self.transform,
-        )
+        Self::new(self.object, DAffine3::from_scale(s) * self.transform)
     }
 
     /// Apply x-rotation AFTER current transformations.
     /// Looking at positive x, rotation in clockwise direction.
     pub fn rotate_x(self, r: f64) -> Box<Self> {
-        Self::new(
-            self.object,
-            DAffine3::from_rotation_x(r) * self.transform,
-        )
+        Self::new(self.object, DAffine3::from_rotation_x(r) * self.transform)
     }
 
     /// Apply y-rotation AFTER current transformations
     pub fn rotate_y(self, r: f64) -> Box<Self> {
-        Self::new(
-            self.object,
-            DAffine3::from_rotation_y(r) * self.transform,
-        )
+        Self::new(self.object, DAffine3::from_rotation_y(r) * self.transform)
     }
 
     /// Apply z-rotation AFTER current transformations
     pub fn rotate_z(self, r: f64) -> Box<Self> {
-        Self::new(
-            self.object,
-            DAffine3::from_rotation_z(r) * self.transform,
-        )
+        Self::new(self.object, DAffine3::from_rotation_z(r) * self.transform)
     }
 }

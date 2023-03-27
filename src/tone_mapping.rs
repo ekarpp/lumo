@@ -43,8 +43,7 @@ impl ToneMap {
                 let c = 2.43;
                 let d = 0.59;
                 let e = 0.14;
-                ((rgb * (a * rgb + b)) / (rgb * (c * rgb + d) + e))
-                    .clamp(DVec3::ZERO, DVec3::ONE)
+                ((rgb * (a * rgb + b)) / (rgb * (c * rgb + d) + e)).clamp(DVec3::ZERO, DVec3::ONE)
             }
         }
     }
@@ -57,8 +56,6 @@ impl ToneMap {
         let e = 0.02;
         let f = 0.30;
 
-        (rgb * (a * rgb + c * b) + d * e)
-            / (rgb * (a * rgb + b) + d * f)
-            - e / f
+        (rgb * (a * rgb + c * b) + d * e) / (rgb * (a * rgb + b) + d * f) - e / f
     }
 }

@@ -1,8 +1,8 @@
-use glam::{DVec3, DVec2};
-use std::f64::consts::PI;
-use rand::Rng;
-use rand::rngs::ThreadRng;
+use glam::{DVec2, DVec3};
 use rand::prelude::SliceRandom;
+use rand::rngs::ThreadRng;
+use rand::Rng;
+use std::f64::consts::PI;
 
 type MyRng = ThreadRng;
 fn _get_rng() -> MyRng {
@@ -37,7 +37,7 @@ pub fn unit_square() -> DVec2 {
 /// Concentric map of unit square to unit disk. Shirley & Chiu 97
 pub fn square_to_disk(rand_sq: DVec2) -> DVec2 {
     /* map [0,1]^2 to [-1,1]^2 */
-    let offset = 2.0*rand_sq - DVec2::ONE;
+    let offset = 2.0 * rand_sq - DVec2::ONE;
 
     if offset.x == 0.0 && offset.y == 0.0 {
         DVec2::ZERO
@@ -48,9 +48,9 @@ pub fn square_to_disk(rand_sq: DVec2) -> DVec2 {
             offset.y
         };
         let theta = if offset.x.abs() > offset.y.abs() {
-            PI * (offset.y / offset.x ) / 4.0
+            PI * (offset.y / offset.x) / 4.0
         } else {
-            2.0 * PI  - PI * (offset.x / offset.y) / 4.0
+            2.0 * PI - PI * (offset.x / offset.y) / 4.0
         };
 
         r * DVec2::new(theta.cos(), theta.sin())
@@ -61,9 +61,9 @@ pub fn square_to_disk(rand_sq: DVec2) -> DVec2 {
 /// Malley's method i.e. lift unit disk to 3D
 pub fn square_to_cos_hemisphere(rand_sq: DVec2) -> DVec3 {
     let rand_disk = square_to_disk(rand_sq);
-    let z = (1.0
-             - rand_disk.x * rand_disk.x
-             - rand_disk.y * rand_disk.y).max(0.0).sqrt();
+    let z = (1.0 - rand_disk.x * rand_disk.x - rand_disk.y * rand_disk.y)
+        .max(0.0)
+        .sqrt();
 
     rand_disk.extend(z)
 }
@@ -74,9 +74,5 @@ pub fn square_to_sphere(rand_sq: DVec2) -> DVec3 {
     let r = (1.0 - z * z).sqrt();
     let phi = 2.0 * PI * rand_sq.x;
 
-    DVec3::new(
-        r * phi.cos(),
-        r * phi.sin(),
-        z,
-    )
+    DVec3::new(r * phi.cos(), r * phi.sin(), z)
 }

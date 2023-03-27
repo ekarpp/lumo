@@ -15,12 +15,7 @@ pub struct MicrofacetConfig {
 }
 
 impl MicrofacetConfig {
-    pub fn new(
-        roughness: f64,
-        refraction_idx: f64,
-        metallicity: f64,
-        transparent: bool,
-    ) -> Self {
+    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64, transparent: bool) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
         assert!((0.0..=1.0).contains(&metallicity));
         assert!(refraction_idx >= 1.0);
@@ -81,7 +76,7 @@ impl MfDistribution {
             roughness,
             refraction_idx,
             metallicity: 0.0,
-            transparent: true
+            transparent: true,
         })
     }
 
@@ -131,12 +126,7 @@ impl MfDistribution {
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
     /// as done in Frostbite (Lagarde et al. 2014)
-    pub fn disney_diffuse(
-        &self,
-        no_dot_v: f64,
-        no_dot_wh: f64,
-        no_dot_wi: f64,
-    ) -> f64 {
+    pub fn disney_diffuse(&self, no_dot_v: f64, no_dot_wh: f64, no_dot_wi: f64) -> f64 {
         let roughness2 = self.get_config().roughness.powi(2);
         let energy_bias = 0.5 * roughness2;
         let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
@@ -164,16 +154,14 @@ impl MfDistribution {
                 let cos_theta2 = wh.dot(no).powi(2);
                 let roughness2 = cfg.roughness * cfg.roughness;
 
-                roughness2
-                    / (PI * (cos_theta2 * (roughness2 - 1.0) + 1.0).powi(2))
+                roughness2 / (PI * (cos_theta2 * (roughness2 - 1.0) + 1.0).powi(2))
             }
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
                 let cos_theta2 = wh.dot(no).powi(2);
                 let tan_theta2 = (1.0 - cos_theta2) / cos_theta2;
 
-                (-tan_theta2 / roughness2).exp()
-                    / (PI * roughness2 * cos_theta2.powi(2))
+                (-tan_theta2 / roughness2).exp() / (PI * roughness2 * cos_theta2.powi(2))
             }
         }
     }
@@ -225,8 +213,7 @@ impl MfDistribution {
                 if a >= 1.6 {
                     0.0
                 } else {
-                    (1.0 - 1.259 * a + 0.396 * a * a)
-                        / (3.535 * a + 2.181 * a * a)
+                    (1.0 - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a)
                 }
             }
         }
@@ -236,9 +223,7 @@ impl MfDistribution {
     pub fn sample_normal(&self, rand_sq: DVec2) -> DVec3 {
         let phi = 2.0 * PI * rand_sq.x;
         let theta = match self {
-            Self::Ggx(cfg) => {
-                (cfg.roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan()
-            }
+            Self::Ggx(cfg) => (cfg.roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan(),
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
                 (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan()
@@ -248,7 +233,7 @@ impl MfDistribution {
         DVec3::new(
             theta.sin() * phi.cos(),
             theta.sin() * phi.sin(),
-            theta.cos()
+            theta.cos(),
         )
     }
 }

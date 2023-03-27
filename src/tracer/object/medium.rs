@@ -24,8 +24,7 @@ impl Medium {
     /// * `origin` - Origin of the sphere containing the medium
     /// * `radius` - Radius of the sphere containing the medium
     /// * `color` - Color of the medium
-    pub fn new(density: f64, origin: DVec3, radius: f64, color: DVec3)
-               -> Box<Self> {
+    pub fn new(density: f64, origin: DVec3, radius: f64, color: DVec3) -> Box<Self> {
         Box::new(Self {
             density,
             boundary: *Sphere::new(origin, radius, Material::Blank),
@@ -35,12 +34,18 @@ impl Medium {
 }
 
 impl Object for Medium {
-    fn material(&self) -> &Material { &self.isotropic }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 { unimplemented!() }
+    fn material(&self) -> &Material {
+        &self.isotropic
+    }
+    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
+        unimplemented!()
+    }
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         unimplemented!()
     }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 { unimplemented!() }
+    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
+        unimplemented!()
+    }
 
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         None

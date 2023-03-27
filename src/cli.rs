@@ -4,28 +4,26 @@ use crate::tracer::Integrator;
 /// Optional CLI configuration of renderer. Renderer setter methods have priority.
 pub struct TracerCli {
     /// number of samples per pixel (defaults to 1)
-    #[argh(option, short='s', default="1")]
+    #[argh(option, short = 's', default = "1")]
     pub samples: u32,
 
     /// number of threads used (defaults to all)
-    #[argh(option, short='t')]
+    #[argh(option, short = 't')]
     pub threads: Option<usize>,
 
     /// width of the rendered image (defaults to 1000)
-    #[argh(option, short='w', default="1000")]
+    #[argh(option, short = 'w', default = "1000")]
     pub width: i32,
 
     /// height of the rendered image (defaults to 1000)
-    #[argh(option, short='h', default="1000")]
+    #[argh(option, short = 'h', default = "1000")]
     pub height: i32,
 
     /* how to handle multiple integrators in the future? */
     /// use direct light integrator instead of path tracing.
-    #[argh(switch, short='d', long="direct")]
+    #[argh(switch, short = 'd', long = "direct")]
     pub direct_light: bool,
 }
-
-
 
 impl TracerCli {
     /// Sets the configured number of threads. Called by renderer on creation.

@@ -1,6 +1,6 @@
-use rust_tracer::*;
-use rust_tracer::tracer::*;
 use glam::DVec3;
+use rust_tracer::tracer::*;
+use rust_tracer::*;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {
@@ -32,26 +32,20 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         DVec3::new(0.3, -0.8, -1.2),
         0.1,
-        Material::transparent(
-            Texture::Solid(srgb_to_linear(255, 255, 255)),
-            1.5,
-            0.001,
-        ),
+        Material::transparent(Texture::Solid(srgb_to_linear(255, 255, 255)), 1.5, 0.001),
     ));
 
     scene.add(
-        Cube::new(
-            Material::specular(
-                Texture::Solid(srgb_to_linear(0, 230, 0)),
-                0.07,
-            ))
-            .rotate_y(PI / 10.0)
-            .scale(0.2, 0.4, 0.2)
-            .translate(0.2, -1.0, -1.7)
+        Cube::new(Material::specular(
+            Texture::Solid(srgb_to_linear(0, 230, 0)),
+            0.07,
+        ))
+        .rotate_y(PI / 10.0)
+        .scale(0.2, 0.4, 0.2)
+        .translate(0.2, -1.0, -1.7),
     );
 
     let renderer = Renderer::new(scene, camera);
-    renderer.render()
-        .save("box.png")?;
+    renderer.render().save("box.png")?;
     Ok(())
 }

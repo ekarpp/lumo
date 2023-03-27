@@ -1,5 +1,5 @@
-use glam::DVec2;
 use crate::rand_utils;
+use glam::DVec2;
 
 /// Choose each sample point uniformly at random
 pub struct UniformSampler {
@@ -13,10 +13,7 @@ impl UniformSampler {
     /// Constructs an uniform sampler with `samples` samples
     #[allow(dead_code)]
     pub fn new(samples: u32) -> Self {
-        Self {
-            samples,
-            state: 0,
-        }
+        Self { samples, state: 0 }
     }
 }
 
@@ -28,7 +25,7 @@ impl Iterator for UniformSampler {
             None
         } else {
             self.state += 1;
-            Some( rand_utils::unit_square() )
+            Some(rand_utils::unit_square())
         }
     }
 }
@@ -52,7 +49,7 @@ impl JitteredSampler {
         let dim = (samples as f64).sqrt() as u32;
         Self {
             scale: (dim as f64).recip(),
-            samples: dim*dim,
+            samples: dim * dim,
             strata_dim: dim,
             state: 0,
         }
@@ -66,10 +63,11 @@ impl Iterator for JitteredSampler {
         if self.state == self.samples {
             None
         } else {
-            let offset = self.scale * DVec2::new(
-                (self.state % self.strata_dim) as f64,
-                (self.state / self.strata_dim) as f64,
-            );
+            let offset = self.scale
+                * DVec2::new(
+                    (self.state % self.strata_dim) as f64,
+                    (self.state / self.strata_dim) as f64,
+                );
             self.state += 1;
             Some(self.scale * rand_utils::unit_square() + offset)
         }
