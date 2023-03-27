@@ -19,7 +19,7 @@ fn main() -> Result<(), std::io::Error> {
                 Box::new(Texture::Solid(srgb_to_lin(0, 0, 230))),
                 2.42,
             ),
-            0.01,
+            0.001,
         ),
     );
 
@@ -52,7 +52,7 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_tone_map(ToneMap::HableFilmic);
+    //renderer.set_tone_map(ToneMap::HableFilmic);
     renderer.render()
         .save("box.png")?;
     Ok(())
