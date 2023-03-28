@@ -1,3 +1,8 @@
+## Spuristo
+
+[![crates.io](https://img.shields.io/crates/v/spuristo)](https://crates.io/crates/spuristo)
+
+
 Spuristo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
 
 ### Features
