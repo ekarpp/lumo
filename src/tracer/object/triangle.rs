@@ -102,8 +102,9 @@ impl Object for Triangle {
             None
         } else {
             let alpha = 1.0 - beta - gamma;
-            // correct order?
+
             let norm = alpha * self.na + beta * self.nb + gamma * self.nc;
+            let norm = norm.normalize();
 
             Hit::new(t, self, r.at(t), norm)
         }
