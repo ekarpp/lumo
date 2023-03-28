@@ -6,6 +6,9 @@ pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
 pub use scene::Scene;
 pub use texture::Texture;
 
+// dont want to do this, but bench needs it. any other way?
+pub use ray::Ray;
+
 /// Different BSDFs.
 mod bxdfs;
 /// Abstraction for a camera

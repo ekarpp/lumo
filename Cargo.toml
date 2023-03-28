@@ -9,6 +9,10 @@ keywords = ["rendering", "path-tracing", "graphics", "3d"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
 
+[[bench]]
+name = "triangle_intersect"
+harness = false
+
 [profile.release]
 codegen-units = 1
 lto = true
@@ -18,6 +22,9 @@ opt-level = 3
 
 [profile.dev]
 opt-level = 2
+
+[dev-dependencies]
+criterion = "0.4.0"
 
 [dependencies]
 argh = "0.1.10"
