@@ -44,6 +44,13 @@ impl AaBoundingBox {
         Self::new(self.ax_min.min(other.ax_min), self.ax_max.max(other.ax_max))
     }
 
+    /// Returns the surface area of the AABB
+    pub fn area(&self) -> f64 {
+        let bb_dim = self.ax_max - self.ax_min;
+
+        2.0 * (bb_dim.x * bb_dim.y + bb_dim.x * bb_dim.z + bb_dim.y * bb_dim.z)
+    }
+
     /// Split `self` along `axis` (x=0, y=1, z=2) at `value`
     pub fn split(&self, axis: usize, value: f64) -> (Self, Self) {
         let mut ax_mid_max = self.ax_max;
@@ -61,7 +68,7 @@ impl AaBoundingBox {
                 ax_mid_max.z = value;
                 ax_mid_min.z = value;
             }
-            _ => panic!(),
+            _ => unreachable!(),
         }
 
         (
