@@ -32,7 +32,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         DVec3::new(0.3, -0.8, -1.2),
         0.1,
-        Material::transparent(Texture::Solid(srgb_to_linear(255, 255, 255)), 1.5, 0.001),
+        Material::transparent(Texture::Solid(srgb_to_linear(255, 255, 255)), 1.5, 0.1),
     ));
 
     scene.add(

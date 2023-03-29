@@ -28,6 +28,7 @@ impl ToneMap {
         }
         if rgb.is_negative_bitmask() > 0 {
             println!("Found negative value during tone mapping.");
+            return DVec3::ZERO;
         }
         match self {
             Self::NoMap => rgb,

@@ -22,8 +22,6 @@ pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDist
         let f = mfd.f(v, wh, color);
         let g = mfd.g(v, wi, no);
 
-        let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
-
         // BRDF: specular + diffuse, where
         // specular = D(wh) * F(v, wh) * G(v, wi) / (4.0 * (no • v) * (no • wi))
         // diffuse = normalized_disney_term * albedo / π
@@ -32,12 +30,15 @@ pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDist
         // * (1.0 + (F_90 - 1.0) * (1.0 - (no • wi))^5)
         // F_90 = 0.5 * α^2 + 2.0 * (no • wh)^2 * α^2
 
+        let specular = d * f * g / (4.0 * no_dot_v * no_dot_wi);
+
         // transparent materials don't have a diffuse term
         if mfd.is_transparent() {
             specular
         } else {
             let diffuse =
                 (DVec3::ONE - f) * color * mfd.disney_diffuse(no_dot_v, no_dot_wh, no_dot_wi) / PI;
+
             diffuse + specular
         }
     } else {
@@ -80,8 +81,8 @@ pub fn bsdf_microfacet_pdf(
 ) -> Option<Box<dyn Pdf>> {
     let no = ho.norm;
     let xo = ho.p;
-    let wo = -ro.dir;
-    Some(Box::new(MfdPdf::new(xo, wo, no, albedo, *mfd)))
+    let v = -ro.dir;
+    Some( Box::new(MfdPdf::new(xo, v, no, albedo, *mfd)) )
 }
 
 /// TODO

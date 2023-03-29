@@ -209,7 +209,6 @@ impl MfDistribution {
         match self {
             Self::Beckmann(..) => {
                 let wh_dot_no = wh.dot(no);
-
                 self.d(wh, no) * wh_dot_no
             }
             Self::Ggx(..) => {

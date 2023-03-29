@@ -111,33 +111,14 @@ pub struct MfdPdf {
     uvw: Onb,
     /// The microfacet distribution of the surface
     mfd: MfDistribution,
-    /// Perfect reflection and refraction of roughness below threshold
-    delta_pdf: DeltaPdf,
 }
+
 // add cos pdf. add reflection pdf. reflection pdf has delta pdf?
 impl MfdPdf {
     pub fn new(xo: DVec3, v: DVec3, no: DVec3, albedo: DVec3, mfd: MfDistribution) -> Self {
         let uvw = Onb::new(no);
 
-        let wi = if !mfd.is_transparent() {
-            bxdfs::reflect(v, no)
-        } else {
-            let inside = no.dot(v) < 0.0;
-            let eta_ratio = if inside {
-                mfd.get_rfrct_idx()
-            } else {
-                1.0 / mfd.get_rfrct_idx()
-            };
-
-            if inside {
-                bxdfs::refract(eta_ratio, v, -no)
-            } else {
-                bxdfs::refract(eta_ratio, v, no)
-            }
-        };
-
         Self {
-            delta_pdf: DeltaPdf::new(xo, wi),
             xo,
             v,
             uvw,
@@ -147,9 +128,6 @@ impl MfdPdf {
         }
     }
 }
-
-/// Threshold for roughness of microfacet at which we switch to delta pdf
-const DELTA_THRESHOLD: f64 = 0.001;
 
 impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
@@ -170,8 +148,6 @@ impl Pdf for MfdPdf {
         } else if !self.mfd.is_transparent() {
             self.uvw
                 .to_world(rand_utils::square_to_cos_hemisphere(rand_sq))
-        } else if self.mfd.get_roughness() <= DELTA_THRESHOLD {
-            self.delta_pdf.sample_ray(rand_sq).dir
         } else {
             let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
@@ -202,7 +178,8 @@ impl Pdf for MfdPdf {
         let wh_dot_v = self.v.dot(wh);
 
         // probability to sample wh w.r.t. to v
-        let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.no) / (4.0 * wh_dot_v);
+        let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.no)
+            / (4.0 * wh_dot_v);
 
         // transmission / scatter probability
         let st = if !self.mfd.is_transparent() {
@@ -215,8 +192,6 @@ impl Pdf for MfdPdf {
         } else if self.v.dot(wi) > 0.0 {
             // in the same hemisphere, zero probability for transmission
             0.0
-        } else if self.mfd.get_roughness() < DELTA_THRESHOLD {
-            self.delta_pdf.value_for(ri)
         } else {
             let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
