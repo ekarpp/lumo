@@ -225,7 +225,8 @@ impl MfDistribution {
     pub fn sample_normal(&self, v: DVec3, rand_sq: DVec2) -> DVec3 {
         match self {
             Self::Ggx(cfg) => {
-                // Heitz 2018
+                // Heitz 2018 or
+                // https://schuttejoe.github.io/post/ggximportancesamplingpart2/
 
                 let roughness = cfg.roughness;
                 // Map the GGX ellipsoid to a hemisphere

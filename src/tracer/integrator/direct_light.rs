@@ -16,6 +16,13 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                         let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
                         let wi = ri.dir;
 
+                        let p_scatter = scatter_pdf.value_for(&ri);
+
+                        if p_scatter <= 0.0 {
+                            // return something better?
+                            return DVec3::ZERO;
+                        }
+
                         // correct?
                         let cos_theta = if material.is_transparent() {
                             1.0
