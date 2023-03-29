@@ -12,14 +12,21 @@ pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDist
     let no_dot_wi = no.dot(wi);
     let no_dot_v = no.dot(v);
 
+    let rfrct_idx = mfd.get_rfrct_idx();
+
     let ro_inside = no_dot_v < 0.0;
     let ri_inside = no_dot_wi < 0.0;
     if ro_inside == ri_inside {
         let wh = (wi + v).normalize();
+        let wh_dot_v = wh.dot(v);
         let no_dot_wh = no.dot(wh);
 
         let d = mfd.d(wh, no);
-        let f = mfd.f(v, wh, color);
+        let f = if ro_inside && (1.0 - wh_dot_v.powi(2)) * rfrct_idx.powi(2) > 1.0 {
+            DVec3::ONE
+        } else {
+            mfd.f(v, wh, color)
+        };
         let g = mfd.g(v, wi, no);
 
         // BRDF: specular + diffuse, where
@@ -43,9 +50,9 @@ pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDist
         }
     } else {
         let eta_ratio = if ro_inside {
-            1.0 / mfd.get_rfrct_idx()
+            1.0 / rfrct_idx
         } else {
-            mfd.get_rfrct_idx()
+            rfrct_idx
         };
 
         let wh = (wi * eta_ratio + v).normalize();
@@ -62,7 +69,8 @@ pub fn bsdf_microfacet(ro: &Ray, ri: &Ray, no: DVec3, color: DVec3, mfd: &MfDist
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
-        color * (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs() * d * (DVec3::ONE - f) * g
+        (wh_dot_wi * wh_dot_v / (no_dot_wi * no_dot_v)).abs()
+            * color * d * (DVec3::ONE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
 }
@@ -122,7 +130,7 @@ pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
     let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
     /* total internal reflection */
-    if sin2_ti >= 1.0 {
+    if sin2_ti > 1.0 {
         return reflect(v, no);
     }
 
