@@ -225,18 +225,24 @@ impl MfDistribution {
     }
 
     /// Sampling microfacet normals per distribution for importance sampling.
+    /// `v` in shading space.
     pub fn sample_normal(&self, v: DVec3, rand_sq: DVec2) -> DVec3 {
         match self {
             Self::Ggx(cfg) => {
+                // Heitz 2018
+
                 let roughness = cfg.roughness;
+                // Map the GGX ellipsoid to a hemisphere
                 let v_stretch = DVec3::new(
                     v.x * roughness,
                     v.y * roughness,
                     v.z
                 ).normalize();
 
-                let uvw = Onb::new(v_stretch);
+                // ONB basis of the hemisphere configuration
+                let hemi_basis = Onb::new(v_stretch);
 
+                // compute a point on the disk
                 let a = 1.0 / (1.0 + v_stretch.z);
                 let r = rand_sq.x.sqrt();
                 let phi = if rand_sq.y < a {
@@ -252,12 +258,15 @@ impl MfDistribution {
                     r * phi.sin() * v_stretch.z
                 };
 
-                let wm = uvw.to_world(DVec3::new(
+                // compute normal in hemisphere configuration
+                let wm = DVec3::new(
                     x,
                     y,
                     (1.0 - x*x - y*y).max(0.0).sqrt(),
-                ));
+                );
+                let wm = hemi_basis.to_world(wm);
 
+                // move back to ellipsoid
                 DVec3::new(
                     roughness * wm.x,
                     roughness * wm.y,
