@@ -22,7 +22,7 @@ impl MicrofacetConfig {
         assert!(refraction_idx >= 1.0);
 
         Self {
-            roughness,
+            roughness: roughness.max(1e-5),
             refraction_idx,
             metallicity,
             transparent,
