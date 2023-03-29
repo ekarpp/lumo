@@ -151,9 +151,9 @@ impl Pdf for MfdPdf {
         } else {
             let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
-                self.mfd.get_rfrct_idx()
-            } else {
                 1.0 / self.mfd.get_rfrct_idx()
+            } else {
+                self.mfd.get_rfrct_idx()
             };
             let wh = self
                 .uvw
@@ -174,7 +174,7 @@ impl Pdf for MfdPdf {
     fn value_for(&self, ri: &Ray) -> f64 {
         let wi = ri.dir;
         let wh = (self.v + wi).normalize();
-        let wh_dot_no = wh.dot(self.no);
+
         let wh_dot_v = self.v.dot(wh);
 
         // probability to sample wh w.r.t. to v
@@ -200,10 +200,12 @@ impl Pdf for MfdPdf {
                 self.mfd.get_rfrct_idx()
             };
             let wh = (self.v + wi * eta_ratio).normalize();
-            let wh_dot_wi = wi.dot(wh);
-            let wh_dot_v = wh.dot(self.v);
 
-            self.mfd.d(wh, self.no) * wh_dot_no.abs() * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+            let wh_dot_no = wh.dot(self.no).abs();
+            let wh_dot_wi = wi.dot(wh).abs();
+            let wh_dot_v = wh.dot(self.v).abs();
+
+            self.mfd.d(wh, self.no) * wh_dot_no * (eta_ratio * eta_ratio * wh_dot_wi)
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 
