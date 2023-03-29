@@ -21,11 +21,23 @@ impl Onb {
         Self { u, v, w }
     }
 
-    /// Translate from canonical basis to our ONB.
+    /// Translate from the ONB to world basis
     ///
     /// # Arguments
-    /// * `v` - Vector in canonical basis.
-    pub fn to_uvw_basis(&self, v: DVec3) -> DVec3 {
+    /// * `v` - The vector in ONB basis.
+    pub fn to_world(&self, v: DVec3) -> DVec3 {
         v.x * self.u + v.y * self.v + v.z * self.w
+    }
+
+    /// Translate from world basis to the ONB
+    ///
+    /// # Arguments
+    /// * `v` - The vector in canonical basis
+    pub fn to_local(&self, v: DVec3) -> DVec3 {
+        DVec3::new(
+            v.dot(self.u),
+            v.dot(self.v),
+            v.dot(self.w),
+        )
     }
 }

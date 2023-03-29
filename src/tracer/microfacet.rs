@@ -1,5 +1,6 @@
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
+use crate::tracer::onb::Onb;
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
@@ -178,6 +179,10 @@ impl MfDistribution {
         1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
     }
 
+    pub fn g1(&self, v: DVec3, no: DVec3) -> f64 {
+        1.0 / (1.0 + self.lambda(v, no))
+    }
+
     /// Fresnel term with Schlick's approximation
     pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3) -> DVec3 {
         let eta = self.get_config().refraction_idx;
@@ -220,20 +225,56 @@ impl MfDistribution {
     }
 
     /// Sampling microfacet normals per distribution for importance sampling.
-    pub fn sample_normal(&self, rand_sq: DVec2) -> DVec3 {
-        let phi = 2.0 * PI * rand_sq.x;
-        let theta = match self {
-            Self::Ggx(cfg) => (cfg.roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan(),
+    pub fn sample_normal(&self, v: DVec3, rand_sq: DVec2) -> DVec3 {
+        match self {
+            Self::Ggx(cfg) => {
+                let roughness = cfg.roughness;
+                let v_stretch = DVec3::new(
+                    v.x * roughness,
+                    v.y * roughness,
+                    v.z
+                ).normalize();
+
+                let uvw = Onb::new(v_stretch);
+
+                let a = 1.0 / (1.0 + v_stretch.z);
+                let r = rand_sq.x.sqrt();
+                let phi = if rand_sq.y < a {
+                    PI * rand_sq.y / a
+                } else {
+                    PI + PI * (rand_sq.y - a) / (1.0 - a)
+                };
+
+                let x = r * phi.cos();
+                let y = if rand_sq.y < a {
+                    r * phi.sin()
+                } else {
+                    r * phi.sin() * v_stretch.z
+                };
+
+                let wm = uvw.to_world(DVec3::new(
+                    x,
+                    y,
+                    (1.0 - x*x - y*y).max(0.0).sqrt(),
+                ));
+
+                DVec3::new(
+                    roughness * wm.x,
+                    roughness * wm.y,
+                    wm.z.max(0.0)
+                ).normalize()
+            }
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
-                (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan()
-            }
-        };
+                let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
+                let phi = 2.0 * PI * rand_sq.x;
 
-        DVec3::new(
-            theta.sin() * phi.cos(),
-            theta.sin() * phi.sin(),
-            theta.cos(),
-        )
+                DVec3::new(
+                    theta.sin() * phi.cos(),
+                    theta.sin() * phi.sin(),
+                    theta.cos(),
+                )
+            }
+        }
     }
 }

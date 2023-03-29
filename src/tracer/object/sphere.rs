@@ -92,7 +92,7 @@ impl Object for Sphere {
         let x = phi.cos() * (1.0 - z * z).sqrt();
         let y = phi.sin() * (1.0 - z * z).sqrt();
 
-        let wi = uvw.to_uvw_basis(DVec3::new(x, y, z));
+        let wi = uvw.to_world(DVec3::new(x, y, z));
 
         Ray::new(xo, wi)
     }

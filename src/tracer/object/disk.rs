@@ -62,7 +62,7 @@ impl Object for Disk {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
         self.origin
-            + self.uvw.to_uvw_basis(DVec3::new(
+            + self.uvw.to_world(DVec3::new(
                 rand_disk.x * self.radius,
                 rand_disk.y * self.radius,
                 0.0,

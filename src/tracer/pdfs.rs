@@ -162,19 +162,14 @@ impl Pdf for MfdPdf {
             // mirror??
             let wm = self
                 .uvw
-                .to_uvw_basis(self.mfd.sample_normal(rand_sq))
+                .to_world(self.mfd.sample_normal(
+                    self.uvw.to_local(self.v), rand_sq
+                ))
                 .normalize();
-            let wi = bxdfs::reflect(self.v, wm);
-            // if angle between wm and wo > 90 deg, its bad.
-            // VNDF fixes this?
-            if wi.dot(self.no) < 0.0 {
-                -wi
-            } else {
-                wi
-            }
+            bxdfs::reflect(self.v, wm)
         } else if !self.mfd.is_transparent() {
             self.uvw
-                .to_uvw_basis(rand_utils::square_to_cos_hemisphere(rand_sq))
+                .to_world(rand_utils::square_to_cos_hemisphere(rand_sq))
         } else if self.mfd.get_roughness() <= DELTA_THRESHOLD {
             self.delta_pdf.sample_ray(rand_sq).dir
         } else {
@@ -186,7 +181,9 @@ impl Pdf for MfdPdf {
             };
             let wh = self
                 .uvw
-                .to_uvw_basis(self.mfd.sample_normal(rand_sq))
+                .to_world(self.mfd.sample_normal(
+                    self.uvw.to_local(self.v), rand_sq
+                ))
                 .normalize();
             let wh = if inside { -wh } else { wh };
 
@@ -203,8 +200,11 @@ impl Pdf for MfdPdf {
         let wh = (self.v + wi).normalize();
         let wh_dot_no = wh.dot(self.no);
         let wh_dot_v = self.v.dot(wh);
+        let v_dot_no = self.v.dot(self.no);
         // probability to sample wh w.r.t. to wo. mirror??
-        let ndf = self.mfd.d(wh, self.no) * wh_dot_no.abs() / (4.0 * wh_dot_v);
+        //let ndf = self.mfd.d(wh, self.no) * wh_dot_no.abs() / (4.0 * wh_dot_v);
+        let ndf = self.mfd.g1(self.v, self.no) * wh_dot_v.max(0.0)
+            * self.mfd.d(wh, self.no) / (4.0 * wh_dot_v * v_dot_no);
 
         // transmission / scatter probability
         let st = if !self.mfd.is_transparent() {
