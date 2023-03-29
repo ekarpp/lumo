@@ -43,42 +43,22 @@ pub enum MfDistribution {
 impl MfDistribution {
     /// Metallic material
     pub fn metallic(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx: 1.5,
-            metallicity: 1.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 1.0, false))
     }
 
     /// Specular material
     pub fn specular(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx: 1.5,
-            metallicity: 0.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0, false))
     }
 
     /// Diffuse material
     pub fn diffuse() -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness: 1.0,
-            refraction_idx: 1.5,
-            metallicity: 0.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0, false))
     }
 
     /// Transparent material f.ex. glass
     pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx,
-            metallicity: 0.0,
-            transparent: true,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, 0.0, true))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
