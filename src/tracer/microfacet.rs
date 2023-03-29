@@ -91,20 +91,6 @@ impl MfDistribution {
         }
     }
 
-    /// Probability to do importance sampling from NDF. Estimate based on
-    /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
-        let cfg = self.get_config();
-
-        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
-        let f0 = f0 * f0;
-        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
-
-        let f = (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean;
-
-        f * 0.75 + 0.25
-    }
-
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
     /// as done in Frostbite (Lagarde et al. 2014)
     pub fn disney_diffuse(&self, no_dot_v: f64, no_dot_wh: f64, no_dot_wi: f64) -> f64 {
@@ -200,6 +186,37 @@ impl MfDistribution {
                 } else {
                     (1.0 - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a)
                 }
+            }
+        }
+    }
+
+    /// Probability to do importance sampling from NDF. Estimate based on
+    /// the Fresnel term.
+    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
+        let cfg = self.get_config();
+
+        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
+        let f0 = f0 * f0;
+        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
+
+        let f = (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean;
+
+        f * 0.75 + 0.25
+    }
+
+    /// Probability that `wh` got sampled
+    pub fn sample_normal_pdf(&self, wh: DVec3, v: DVec3, no: DVec3) -> f64 {
+        match self {
+            Self::Beckmann(..) => {
+                let wh_dot_no = wh.dot(no);
+
+                self.d(wh, no) * wh_dot_no
+            }
+            Self::Ggx(..) => {
+                let wh_dot_v = wh.dot(v);
+                let no_dot_v = no.dot(v);
+
+                self.g1(v, no) * self.d(wh, no) * wh_dot_v / no_dot_v
             }
         }
     }

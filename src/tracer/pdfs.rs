@@ -200,11 +200,9 @@ impl Pdf for MfdPdf {
         let wh = (self.v + wi).normalize();
         let wh_dot_no = wh.dot(self.no);
         let wh_dot_v = self.v.dot(wh);
-        let v_dot_no = self.v.dot(self.no);
-        // probability to sample wh w.r.t. to wo. mirror??
-        //let ndf = self.mfd.d(wh, self.no) * wh_dot_no.abs() / (4.0 * wh_dot_v);
-        let ndf = self.mfd.g1(self.v, self.no) * wh_dot_v.max(0.0)
-            * self.mfd.d(wh, self.no) / (4.0 * wh_dot_v * v_dot_no);
+
+        // probability to sample wh w.r.t. to v
+        let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.no) / (4.0 * wh_dot_v);
 
         // transmission / scatter probability
         let st = if !self.mfd.is_transparent() {
