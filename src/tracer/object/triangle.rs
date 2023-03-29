@@ -73,8 +73,7 @@ impl Object for Triangle {
 
     /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        /* can cache some results on triangle.
-         * this faster? https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates */
+        /* can cache some results on triangle. */
         let e1 = self.b - self.a;
         let e2 = self.c - self.a;
         let pde2 = r.dir.cross(e2);
