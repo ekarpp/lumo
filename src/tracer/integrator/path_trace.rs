@@ -24,11 +24,6 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specularity: f64) -> DVec3 {
                     let wi = ri.dir;
                     let p_scatter = scatter_pdf.value_for(&ri);
 
-                    // scatter with 0 probability
-                    if p_scatter.is_nan() || p_scatter < 0.0001 {
-                        return shadow;
-                    }
-
                     // correct?
                     let cos_theta = if material.is_transparent() {
                         1.0
