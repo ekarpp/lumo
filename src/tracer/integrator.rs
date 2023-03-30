@@ -73,14 +73,9 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq:
             None => DVec3::ZERO,
             Some(_) => {
                 let p_light = pdf_light.value_for(&ri);
-                let p_scatter = pdf_scatter.value_for(&ri).max(0.0);
-
-                let weight = p_light * p_light
-                    / (p_light * p_light + p_scatter * p_scatter);
 
                 material.bsdf_f(ro, &ri, no)
                     * no.dot(wi).abs()
-                    * weight
                     / p_light
             }
         }
