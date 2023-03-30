@@ -14,7 +14,7 @@ pub trait Pdf {
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
-    fn sample_ray(&self, rand_sq: DVec2) -> Ray;
+    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray>;
     /// Computes the probability of the given direction.
     ///
     /// # Arguments
@@ -34,9 +34,9 @@ impl IsotropicPdf {
 }
 
 impl Pdf for IsotropicPdf {
-    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
         let wi = rand_utils::square_to_sphere(rand_sq);
-        Ray::new(self.xo, wi)
+        Some( Ray::new(self.xo, wi) )
     }
 
     fn value_for(&self, _ri: &Ray) -> f64 {
@@ -61,8 +61,8 @@ impl<'a> ObjectPdf<'a> {
 }
 
 impl Pdf for ObjectPdf<'_> {
-    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
-        self.object.sample_towards(self.xo, rand_sq)
+    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
+        Some( self.object.sample_towards(self.xo, rand_sq) )
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
@@ -83,8 +83,8 @@ impl DeltaPdf {
 }
 
 impl Pdf for DeltaPdf {
-    fn sample_ray(&self, _rand_sq: DVec2) -> Ray {
-        Ray::new(self.xo, self.wi)
+    fn sample_ray(&self, _rand_sq: DVec2) -> Option<Ray> {
+        Some( Ray::new(self.xo, self.wi) )
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
@@ -133,18 +133,20 @@ impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
     /// camera around the normal. Better and more complex method of sampling
     /// only visible normals due to Heitz 2014.
-    fn sample_ray(&self, rand_sq: DVec2) -> Ray {
+    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
         let prob_ndf = self.mfd.probability_ndf_sample(self.albedo);
 
         let wi = if rand_utils::rand_f64() < prob_ndf {
-            // mirror??
-            let wm = self
-                .uvw
-                .to_world(self.mfd.sample_normal(
-                    self.uvw.to_local(self.v), rand_sq
-                ))
-                .normalize();
-            bxdfs::reflect(self.v, wm)
+            let local_v = self.uvw.to_local(self.v);
+            let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
+            let local_wi = bxdfs::reflect(local_v, local_wh);
+
+            if local_wi.z < 0.0 {
+                // bad sample, do something else?
+                return None;
+            }
+
+            self.uvw.to_world(local_wi)
         } else if !self.mfd.is_transparent() {
             self.uvw
                 .to_world(rand_utils::square_to_cos_hemisphere(rand_sq))
@@ -166,7 +168,7 @@ impl Pdf for MfdPdf {
             bxdfs::refract(eta_ratio, self.v, wh)
         };
 
-        Ray::new(self.xo, wi)
+        Some( Ray::new(self.xo, wi) )
     }
 
     /// Read it directly from the NFD and do change of variables

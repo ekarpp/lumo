@@ -199,9 +199,7 @@ impl MfDistribution {
         let f0 = f0 * f0;
         let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
 
-        let f = (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean;
-
-        f * 0.75 + 0.25
+        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean
     }
 
     /// Probability that `wh` got sampled
