@@ -32,13 +32,24 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         DVec3::new(0.3, -0.8, -1.2),
         0.1,
-        Material::transparent(Texture::Solid(srgb_to_linear(255, 255, 255)), 1.5, 0.0),
+        Material::transparent(
+            Texture::Solid(srgb_to_linear(255, 255, 255)),
+            1.5,
+            0.0),
+    ));
+
+    scene.add(Sphere::new(
+        DVec3::new(0.0, -0.5, -1.5),
+        0.1,
+        Material::transparent(
+            Texture::Solid(srgb_to_linear(255, 255, 255)),
+            1.5,
+            0.5),
     ));
 
     scene.add(
-        Cube::new(Material::transparent(
+        Cube::new(Material::specular(
             Texture::Solid(srgb_to_linear(0, 230, 0)),
-            1.5,
             0.2,
         ))
         .rotate_y(PI / 10.0)
