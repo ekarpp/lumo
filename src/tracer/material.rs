@@ -12,8 +12,10 @@ pub enum Material {
     Microfacet(Texture, MfDistribution),
     /// Emits light
     Light(Texture),
-    /// Perfect mirror
+    /// Perfect reflection
     Mirror,
+    /// Perfect refraction with refraction index as argument
+    Glass(f64),
     /// Isotropic medium
     Isotropic(Texture),
     /// Not specified. Used with objects that are built on top of other objects.
@@ -41,10 +43,21 @@ impl Material {
         Self::Microfacet(texture, MfDistribution::transparent(rfrct_idx, roughness))
     }
 
+    /// Perfect reflection
+    pub fn mirror() -> Self {
+        Self::Mirror
+    }
+
+    /// Perfect refraction
+    pub fn glass(refraction_index: f64) -> Self {
+        assert!(refraction_index >= 1.0);
+        Self::Glass(refraction_index)
+    }
+
     /// How specular is the material? 1.0 fully, 0.0 none
     pub fn specularity(&self) -> f64 {
         match self {
-            Self::Mirror => 1.0,
+            Self::Mirror | Self::Glass(..) => 1.0,
             Self::Microfacet(_, mfd) => mfd.specularity(),
             _ => 0.0,
         }
@@ -78,7 +91,7 @@ impl Material {
         let xo = ri.origin;
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
-            Self::Mirror => DVec3::ONE,
+            Self::Mirror | Self::Glass(..) => DVec3::ONE,
             Self::Microfacet(t, mfd) => bxdfs::bsdf_microfacet(ro, ri, no, t.albedo_at(xo), mfd),
             _ => DVec3::ZERO,
         }
@@ -88,11 +101,12 @@ impl Material {
     pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
+            Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
+            Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             Self::Microfacet(t, mfd) => {
                 let xo = ho.p;
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(xo), mfd)
             }
-            Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             _ => None,
         }
     }

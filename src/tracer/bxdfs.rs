@@ -108,6 +108,18 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     Some(Box::new(DeltaPdf::new(xo, wi)))
 }
 
+pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
+    let no = ho.norm;
+    let v = -ro.dir;
+    let inside = no.dot(v) < 0.0;
+    let eta_ratio = if inside { rfrct_idx } else { 1.0 / rfrct_idx };
+    let no = if inside { -ho.norm } else { ho.norm };
+    let xo = ho.p;
+
+    let wi = refract(eta_ratio, v, no);
+    Some( Box::new(DeltaPdf::new(xo, wi)) )
+}
+
 /// Reflect around normal
 ///
 /// # Arguments
