@@ -86,7 +86,7 @@ fn main() -> Result<(), png::EncodingError> {
 }
 ```
 
-### TODO/WIP
+### TODO/WiP
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
 * (Texture mapping)
@@ -102,16 +102,16 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/zREVJF3.png) |
+| ![Stanford dragon](https://i.imgur.com/HiRojvC.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 45 minutes using 30 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+| *Stanford dragon with 871K triangles. Rendered in 13 minutes using 40 threads of Intel Xeon Gold 6248. 2025 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/E9U3r3J.png) |
+| ![Cornell box](https://i.imgur.com/TG4IjYo.png) |
 |:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 50 minutes using 30 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
+| *Cornell box displaying reflection and refraction. Rendered in 12 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Golden Nefertiti](https://i.imgur.com/MNgV9xa.png) |
+| ![Golden Nefertiti](https://i.imgur.com/ze7OwaF.png) |
 |:--:|
-| *Statue of Nefertiti with 6.4M triangles. Rendered in 196 minutes using 40 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+| *Statue of Nefertiti with 6.4M triangles. Rendered in 7 minutes using 40 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
 
 ![Circle of spheres](https://i.imgur.com/3FnSev8.png)
