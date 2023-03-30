@@ -1,5 +1,5 @@
 [package]
-name = "spuristo"
+name = "lumo"
 version = "0.1.1"
 description = "CPU based rendering engine"
 license = "MIT"

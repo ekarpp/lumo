@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 
 const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 

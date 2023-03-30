@@ -1,6 +1,6 @@
 use glam::DVec3;
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 
 fn main() -> Result<(), png::EncodingError> {
     let camera = Camera::default();

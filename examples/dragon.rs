@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 const DRAGON_URL: &str = "https://casual-effects.com/g3d/data10/research/model/dragon/dragon.zip";

@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0

@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 
 const HOMER_URL: &str =
     "https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/homer.obj";

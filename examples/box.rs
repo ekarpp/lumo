@@ -1,6 +1,6 @@
 use glam::DVec3;
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {

@@ -1,9 +1,9 @@
-## Spuristo
+## Lumo
 
-[![crates.io](https://img.shields.io/crates/v/spuristo)](https://crates.io/crates/spuristo)
+[![crates.io](https://img.shields.io/crates/v/lumo)](https://crates.io/crates/lumo)
 
 
-Spuristo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
+Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
 
 ### Features
 * Area light sampling
@@ -43,8 +43,8 @@ Options:
 The `hello_sphere.rs` example is written as follows:
 
 ```rust
-use spuristo::*;
-use spuristo::tracer::*;
+use lumo::*;
+use lumo::tracer::*;
 use glam::DVec3;
 
 fn main() -> Result<(), png::EncodingError> {
