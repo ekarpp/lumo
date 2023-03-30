@@ -15,10 +15,11 @@ pub struct KdTree<T> {
     material: Material,
 }
 
-/// Implementation of a kd-tree. Median split / widest axis split.
+/// Implementation of a SAH based kd-tree
 /// References:
 /// [ekzhang/rpt](https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs),
-/// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go)
+/// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go),
+/// [Article by Amsallem](https://www.flomonster.fr/articles/kdtree.html)
 impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
@@ -176,6 +177,7 @@ pub enum KdNode {
 }
 
 impl KdNode {
+    /// Computes the cost for split along `axis` at `point`.
     fn cost(
         boundary: &AaBoundingBox,
         axis: usize,
@@ -200,7 +202,7 @@ impl KdNode {
         }
     }
 
-    /// Returns: axis, point, cost, best_idx
+    /// Finds the best split according to SAH.
     fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (usize, f64, f64) {
         let mut best_cost = INFINITY;
         let mut best_point = INFINITY;
@@ -257,7 +259,7 @@ impl KdNode {
         (best_axis, best_point, best_cost)
     }
 
-    /// Returns (left, right)
+    /// Partitions indices to left and right parts along `axis` at `point`
     fn partition(
         aabbs: &Vec<&AaBoundingBox>,
         indices: Vec<usize>,
@@ -271,6 +273,7 @@ impl KdNode {
             if aabb.ax_min.to_array()[axis] < point {
                 left.push(idx);
             }
+            // are we missing one, since both check strict?
             if aabb.ax_max.to_array()[axis] > point {
                 right.push(idx);
             }
@@ -289,6 +292,7 @@ impl KdNode {
         let aabbs: Vec<&AaBoundingBox> = indices.iter()
             .map(|idx| &bounds[*idx]).collect();
         let (axis, point, cost) = Self::find_best_split(&aabbs, boundary);
+        // cut not worth it, make a leaf
         if cost > COST_INTERSECT * indices.len() as f64 {
             Box::new(Self::Leaf(indices))
         } else {
