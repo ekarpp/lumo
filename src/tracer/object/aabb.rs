@@ -51,6 +51,15 @@ impl AaBoundingBox {
         2.0 * (bb_dim.x * bb_dim.y + bb_dim.x * bb_dim.z + bb_dim.y * bb_dim.z)
     }
 
+    pub fn cuts(&self, axis: usize, point: f64) -> bool {
+        match axis {
+            0 => self.ax_min.x < point && point < self.ax_max.x,
+            1 => self.ax_min.y < point && point < self.ax_max.y,
+            2 => self.ax_min.z < point && point < self.ax_max.z,
+            _ => unreachable!(),
+        }
+    }
+
     /// Split `self` along `axis` (x=0, y=1, z=2) at `value`
     pub fn split(&self, axis: usize, value: f64) -> (Self, Self) {
         let mut ax_mid_max = self.ax_max;

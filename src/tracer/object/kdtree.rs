@@ -1,11 +1,9 @@
 use super::*;
 use std::time::Instant;
+use std::f64::INFINITY;
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
-
-// multiplier to determine score threshold during tree construction
-const THRESHOLD_MULTIPLIER: f64 = 0.85;
 
 /// A k dimensional tree used to accelerate ray intersection calculations.
 /// Implements a binary tree that splits a large mesh of objects to smaller
@@ -17,10 +15,11 @@ pub struct KdTree<T> {
     material: Material,
 }
 
-/// Implementation of a kd-tree. Median split / widest axis split.
+/// Implementation of a SAH based kd-tree
 /// References:
 /// [ekzhang/rpt](https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs),
-/// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go)
+/// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go),
+/// [Article by Amsallem](https://www.flomonster.fr/articles/kdtree.html)
 impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
@@ -28,11 +27,13 @@ impl<T: Bounded> KdTree<T> {
         let start = Instant::now();
 
         let indices = (0..objects.len()).collect();
-        let bounds: Vec<AaBoundingBox> = objects.iter().map(|obj| obj.bounding_box()).collect();
+        let bounds: Vec<AaBoundingBox> = objects
+            .iter()
+            .map(|obj| obj.bounding_box()).collect();
         let boundary = bounds
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
-        let root = KdNode::construct(&objects, &bounds, indices);
+        let root = KdNode::construct(&objects, &bounds, &boundary, indices);
 
         println!(
             "Constructed kd-tree of {} triangles in {:#?}",
@@ -67,8 +68,8 @@ impl<T: Bounded> KdTree<T> {
         aabb: &AaBoundingBox,
     ) -> Option<Hit> {
         // extract split info or check for hit at leaf node
-        let (axis, median, mut node_first, mut node_second) = match node {
-            KdNode::Split(axis, median, left, right) => (*axis, *median, left, right),
+        let (axis, point, mut node_first, mut node_second) = match node {
+            KdNode::Split(axis, point, left, right) => (*axis, *point, left, right),
             KdNode::Leaf(indices) => {
                 let mut tt = t_max;
                 let mut h = None;
@@ -83,11 +84,11 @@ impl<T: Bounded> KdTree<T> {
             }
         };
 
-        let t_split = (median - r.o(axis)) / r.d(axis);
+        let t_split = (point - r.o(axis)) / r.d(axis);
 
-        let (mut aabb_first, mut aabb_second) = aabb.split(axis, median);
+        let (mut aabb_first, mut aabb_second) = aabb.split(axis, point);
 
-        let left_first = r.o(axis) < median || (r.o(axis) == median && r.d(axis) <= 0.0);
+        let left_first = r.o(axis) < point || (r.o(axis) == point && r.d(axis) <= 0.0);
         // intersect first the AABB that we reach first
         if !left_first {
             std::mem::swap(&mut aabb_first, &mut aabb_second);
@@ -163,6 +164,10 @@ impl<T: Bounded> Object for KdTree<T> {
     }
 }
 
+const COST_TRAVERSE: f64 = 15.0;
+const COST_INTERSECT: f64 = 20.0;
+const EMPTY_BONUS: f64 = 0.2;
+
 /// A node in the kD-tree. Can be either a plane split or a leaf node.
 pub enum KdNode {
     /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
@@ -172,125 +177,133 @@ pub enum KdNode {
 }
 
 impl KdNode {
-    /// Constructs nodes of the kD-tree recursively. Median splits among the
-    /// axes.
+    /// Computes the cost for split along `axis` at `point`.
+    fn cost(
+        boundary: &AaBoundingBox,
+        axis: usize,
+        point: f64,
+        num_left: usize,
+        num_right: usize,
+    ) -> f64 {
+        if !boundary.cuts(axis, point) {
+            INFINITY
+        } else {
+            let (left, right) = boundary.split(axis, point);
+
+            let cost = COST_TRAVERSE + COST_INTERSECT *
+                (num_left as f64 * left.area() / boundary.area()
+                 + num_right as f64 * right.area() / boundary.area());
+
+            if num_left == 0 || num_right == 0 {
+                (1.0 - EMPTY_BONUS) * cost
+            } else {
+                cost
+            }
+        }
+    }
+
+    /// Finds the best split according to SAH.
+    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (usize, f64, f64) {
+        let mut best_cost = INFINITY;
+        let mut best_point = INFINITY;
+        let mut best_axis = 0;
+
+        for axis in 0..3 {
+            let mut mins: Vec<f64> = Vec::new();
+            let mut maxs: Vec<f64> = Vec::new();
+
+            aabbs.iter().for_each(|aabb| {
+                // add indexing to aabb min/max
+                let mx = aabb.ax_max.to_array();
+                let mn = aabb.ax_min.to_array();
+                mins.push(mn[axis]);
+                maxs.push(mx[axis]);
+            });
+
+            mins.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
+            maxs.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
+
+            let mut num_left = 0;
+            let mut num_right = aabbs.len();
+
+            // iterator for mins
+            let mut min_idx = 0;
+            // iterator for maxs
+            let mut max_idx = 0;
+
+            // add infinity to end as "null"
+            mins.push(INFINITY);
+            maxs.push(INFINITY);
+
+            // do quasi merge
+            while mins[min_idx] < INFINITY || maxs[max_idx] < INFINITY {
+                let is_min = mins[min_idx] <= maxs[max_idx];
+                let point = mins[min_idx].min(maxs[max_idx]);
+
+                // update objects on right before cost..
+                if !is_min { max_idx += 1; num_right -= 1; }
+
+                let cost = Self::cost(&boundary, axis, point, num_left, num_right);
+
+                if cost < best_cost {
+                    best_cost = cost;
+                    best_axis = axis;
+                    best_point = point;
+                }
+
+                // ..and objects on left after cost
+                if is_min { min_idx += 1; num_left += 1; }
+            }
+        }
+
+        (best_axis, best_point, best_cost)
+    }
+
+    /// Partitions indices to left and right parts along `axis` at `point`
+    fn partition(
+        aabbs: &Vec<&AaBoundingBox>,
+        indices: Vec<usize>,
+        axis: usize,
+        point: f64,
+    ) -> (Vec<usize>, Vec<usize>) {
+        // fix size
+        let mut left: Vec<usize> = Vec::new();
+        let mut right: Vec<usize> = Vec::new();
+        aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
+            if aabb.ax_min.to_array()[axis] < point {
+                left.push(idx);
+            }
+            // are we missing one, since both check strict?
+            if aabb.ax_max.to_array()[axis] > point {
+                right.push(idx);
+            }
+        });
+        (left, right)
+    }
+
+    /// Constructs nodes of the kD-tree recursively with SAH.
     pub fn construct<T: Bounded>(
         objects: &[T],
         bounds: &[AaBoundingBox],
+        boundary: &AaBoundingBox,
         indices: Vec<usize>,
     ) -> Box<Self> {
-        if indices.len() < 16 {
-            return Box::new(Self::Leaf(indices));
-        }
-
         // filter relevant AABBs
-        let aabbs: Vec<&AaBoundingBox> = indices.iter().map(|idx| &bounds[*idx]).collect();
-
-        // get AABB min/max values for each axis
-        let mut bb_vals: [Vec<f64>; 3] = Default::default();
-        aabbs.iter().for_each(|aabb| {
-            let mx = aabb.ax_max.to_array();
-            let mn = aabb.ax_min.to_array();
-            for ax in 0..3 {
-                bb_vals[ax].push(mn[ax]);
-                bb_vals[ax].push(mx[ax]);
-            }
-        });
-
-        // sort AABB min/max values
-        (0..3).for_each(|ax| {
-            bb_vals[ax].sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
-        });
-
-        let median = |svec: &[f64]| -> f64 {
-            if svec.len() % 2 == 1 {
-                svec[svec.len() / 2]
-            } else {
-                let mid = svec.len() / 2;
-                (svec[mid] + svec[mid - 1]) / 2.0
-            }
-        };
-
-        // find median among each axis
-        let med: Vec<f64> = (0..3).map(|ax| median(&bb_vals[ax])).collect();
-
-        let score = |axis: usize, median: f64| -> usize {
-            let mut left = 0;
-            let mut right = 0;
-            aabbs.iter().for_each(|aabb| {
-                if aabb.ax_min.to_array()[axis] <= median {
-                    left += 1;
-                }
-                if aabb.ax_max.to_array()[axis] >= median {
-                    right += 1;
-                }
-            });
-            left.max(right)
-        };
-
-        // score each axis by how well objects are split between the medians
-        let scores: Vec<usize> = (0..3).map(|ax| score(ax, med[ax])).collect();
-        let threshold = (indices.len() as f64 * THRESHOLD_MULTIPLIER) as usize;
-
-        // no good splits, make it a leaf
-        if scores[0].min(scores[1].min(scores[2])) >= threshold {
-            return Box::new(Self::Leaf(indices));
+        let aabbs: Vec<&AaBoundingBox> = indices.iter()
+            .map(|idx| &bounds[*idx]).collect();
+        let (axis, point, cost) = Self::find_best_split(&aabbs, boundary);
+        // cut not worth it, make a leaf
+        if cost > COST_INTERSECT * indices.len() as f64 {
+            Box::new(Self::Leaf(indices))
+        } else {
+            let (left_idx, right_idx) = Self::partition(&aabbs, indices, axis, point);
+            let (left_bound, right_bound) = boundary.split(axis, point);
+            Box::new(Self::Split(
+                axis,
+                point,
+                Self::construct(objects, bounds, &left_bound, left_idx),
+                Self::construct(objects, bounds, &right_bound, right_idx),
+            ))
         }
-
-        let mut split_axis = 3;
-        let curr_bounds = aabbs
-            .iter()
-            .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
-
-        let max_width = curr_bounds.ax_max - curr_bounds.ax_min;
-
-        // check if axis with maximum width has better score than threshold
-        if max_width.x > max_width.y && max_width.x > max_width.z {
-            if scores[0] < threshold {
-                split_axis = 0;
-            }
-        } else if max_width.y > max_width.z {
-            if scores[1] < threshold {
-                split_axis = 1;
-            }
-        } else if scores[2] < threshold {
-            split_axis = 2;
-        }
-
-        // otherwise take the axis with the best score
-        if split_axis == 3 {
-            if scores[0] < scores[1] && scores[0] < scores[2] {
-                split_axis = 0;
-            } else if scores[1] < scores[2] {
-                split_axis = 1;
-            } else {
-                split_axis = 2;
-            }
-        }
-
-        let median = med[split_axis];
-        let partition = |axis: usize, median: f64| {
-            let mut left = Vec::new();
-            let mut right = Vec::new();
-            aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
-                if aabb.ax_min.to_array()[axis] <= median {
-                    left.push(idx);
-                }
-                if aabb.ax_max.to_array()[axis] >= median {
-                    right.push(idx);
-                }
-            });
-            (left, right)
-        };
-
-        // split among the chosen axis
-        let (left, right) = partition(split_axis, median);
-
-        Box::new(Self::Split(
-            split_axis,
-            median,
-            Self::construct(objects, bounds, left),
-            Self::construct(objects, bounds, right),
-        ))
     }
 }
