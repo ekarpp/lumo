@@ -158,12 +158,10 @@ impl Pdf for MfdPdf {
             } else {
                 1.0 / self.mfd.get_rfrct_idx()
             };
-            let wh = self
-                .uvw
-                .to_world(self.mfd.sample_normal(
-                    self.uvw.to_local(self.v), rand_sq
-                ))
-                .normalize();
+            let local_v = self.uvw.to_local(self.v);
+            let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
+
+            let wh = self.uvw.to_world(local_wh).normalize();
 
             bxdfs::refract(eta_ratio, self.v, wh)
         };
@@ -202,7 +200,6 @@ impl Pdf for MfdPdf {
                 self.mfd.get_rfrct_idx()
             };
             let wh = -(self.v + wi * eta_ratio).normalize();
-            let wh_dot_no = wh.dot(self.no);
             let wh_dot_wi = wi.dot(wh);
             let wh_dot_v = wh.dot(self.v);
 

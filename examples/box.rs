@@ -36,9 +36,10 @@ fn main() -> Result<(), std::io::Error> {
     ));
 
     scene.add(
-        Cube::new(Material::specular(
+        Cube::new(Material::transparent(
             Texture::Solid(srgb_to_linear(0, 230, 0)),
-            0.07,
+            1.5,
+            0.2,
         ))
         .rotate_y(PI / 10.0)
         .scale(0.2, 0.4, 0.2)
