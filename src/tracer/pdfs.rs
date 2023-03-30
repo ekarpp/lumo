@@ -163,7 +163,10 @@ impl Pdf for MfdPdf {
 
             let wh = self.uvw.to_world(local_wh).normalize();
 
-            bxdfs::refract(eta_ratio, self.v, wh)
+            match bxdfs::refract(eta_ratio, self.v, wh) {
+                None => return None,
+                Some(wi) => wi,
+            }
         };
 
         Some( Ray::new(self.xo, wi) )
