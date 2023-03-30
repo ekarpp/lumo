@@ -151,9 +151,9 @@ impl Pdf for MfdPdf {
         } else {
             let inside = self.no.dot(self.v) < 0.0;
             let eta_ratio = if inside {
-                1.0 / self.mfd.get_rfrct_idx()
-            } else {
                 self.mfd.get_rfrct_idx()
+            } else {
+                1.0 / self.mfd.get_rfrct_idx()
             };
             let wh = self
                 .uvw
