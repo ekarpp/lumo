@@ -4,7 +4,7 @@
 use glam::DVec3;
 
 /// Epsilon to avoid self intersection of objects
-const EPSILON: f64 = 1e-10;
+const EPSILON: f64 = 1e-14;
 
 pub use cli::TracerCli;
 pub use image::Image;
