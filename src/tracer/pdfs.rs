@@ -105,8 +105,8 @@ pub struct MfdPdf {
     v: DVec3,
     /// Macrosurface normal. Same hemisphere as `v`.
     no: DVec3,
-    /// Material albedo at point of impact
-    albedo: DVec3,
+    /// Probability to sample ray from NDF
+    ndf_sample_prob: f64,
     /// ONB for macrosurface normal
     uvw: Onb,
     /// The microfacet distribution of the surface
@@ -123,7 +123,7 @@ impl MfdPdf {
             xo,
             v,
             uvw,
-            albedo,
+            ndf_sample_prob: mfd.probability_ndf_sample(albedo),
             no,
             mfd,
         }
@@ -132,12 +132,9 @@ impl MfdPdf {
 
 impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
-    /// camera around the normal. Better and more complex method of sampling
-    /// only visible normals due to Heitz 2014.
+    /// camera around the normal. GGX uses VNDF sampling, Beckmann NDF sampling
     fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
-        let prob_ndf = self.mfd.probability_ndf_sample(self.albedo);
-
-        let wi = if rand_utils::rand_f64() < prob_ndf {
+        let wi = if rand_utils::rand_f64() < self.ndf_sample_prob {
             let local_v = self.uvw.to_local(self.v);
             let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
             let local_wi = bxdfs::reflect(local_v, local_wh);
@@ -210,8 +207,6 @@ impl Pdf for MfdPdf {
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 
-        let prob_ndf = ndf * ndf / (ndf * ndf + st * st);
-
-        prob_ndf * ndf + (1.0 - prob_ndf) * st
+        self.ndf_sample_prob * ndf + (1.0 - self.ndf_sample_prob) * st
     }
 }
