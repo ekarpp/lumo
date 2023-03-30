@@ -38,15 +38,6 @@ fn main() -> Result<(), std::io::Error> {
             0.0),
     ));
 
-    scene.add(Sphere::new(
-        DVec3::new(0.0, -0.5, -1.5),
-        0.1,
-        Material::transparent(
-            Texture::Solid(srgb_to_linear(255, 255, 255)),
-            1.5,
-            0.5),
-    ));
-
     scene.add(
         Cube::new(Material::specular(
             Texture::Solid(srgb_to_linear(0, 230, 0)),
