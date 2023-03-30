@@ -116,7 +116,8 @@ pub struct MfdPdf {
 // add cos pdf. add reflection pdf. reflection pdf has delta pdf?
 impl MfdPdf {
     pub fn new(xo: DVec3, v: DVec3, no: DVec3, albedo: DVec3, mfd: MfDistribution) -> Self {
-        let uvw = Onb::new(no);
+        let norm = if v.dot(no) < 0.0 { -no } else { no };
+        let uvw = Onb::new(norm);
 
         Self {
             xo,
@@ -163,7 +164,6 @@ impl Pdf for MfdPdf {
                     self.uvw.to_local(self.v), rand_sq
                 ))
                 .normalize();
-            let wh = if inside { -wh } else { wh };
 
             bxdfs::refract(eta_ratio, self.v, wh)
         };
@@ -201,13 +201,12 @@ impl Pdf for MfdPdf {
             } else {
                 self.mfd.get_rfrct_idx()
             };
-            let wh = (self.v + wi * eta_ratio).normalize();
+            let wh = -(self.v + wi * eta_ratio).normalize();
+            let wh_dot_no = wh.dot(self.no);
+            let wh_dot_wi = wi.dot(wh);
+            let wh_dot_v = wh.dot(self.v);
 
-            let wh_dot_no = wh.dot(self.no).abs();
-            let wh_dot_wi = wi.dot(wh).abs();
-            let wh_dot_v = wh.dot(self.v).abs();
-
-            self.mfd.d(wh, self.no) * wh_dot_no * (eta_ratio * eta_ratio * wh_dot_wi)
+            self.mfd.sample_normal_pdf(wh, self.v, self.no) * wh_dot_v.abs()
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 
