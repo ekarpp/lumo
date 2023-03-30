@@ -1,6 +1,7 @@
 ## Lumo
 
 [![crates.io](https://img.shields.io/crates/v/lumo)](https://crates.io/crates/lumo)
+[![docs.rs](https://img.shields.io/docsrs/lumo)](https://docs.rs/lumo)
 
 
 Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
@@ -8,7 +9,8 @@ Lumo is a CPU based multithreaded rendering engine. Made with the goal of learni
 ### Features
 * Area light sampling
 * Path tracing with next event estimation
-* Microfacet BSDF with multiple importance sampling and GGX distribution
+* Microfacet BSDF with Beckmann and GGX normal distribution functions
+* Multiple importance sampling from VNDF for GGX
 * Disney diffuse BRDF with energy normalization used in Frostbite
 * Vertex and normal parsing from .OBJ files
 * kd-tree that handles meshes containing up to 5 million triangles with reasonable render times
@@ -84,14 +86,9 @@ fn main() -> Result<(), png::EncodingError> {
 }
 ```
 
-And it renders an image of a blue sphere:
-![Hello Sphere](https://i.imgur.com/QVFQ4Mk.png)
-
 ### TODO/WIP
-* Finalize refraction of transparent microfacet materials
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
-* Sampling from distribution of visible normals in microfacets
 * (Texture mapping)
 * (Bidirectional path tracing)
 * (Subsurface scattering)
