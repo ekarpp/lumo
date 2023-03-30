@@ -243,7 +243,7 @@ impl KdNode {
                 // update objects on right before cost..
                 if !is_min { max_idx += 1; num_right -= 1; }
 
-                let cost = Self::cost(&boundary, axis, point, num_left, num_right);
+                let cost = Self::cost(boundary, axis, point, num_left, num_right);
 
                 if cost < best_cost {
                     best_cost = cost;
@@ -261,7 +261,7 @@ impl KdNode {
 
     /// Partitions indices to left and right parts along `axis` at `point`
     fn partition(
-        aabbs: &Vec<&AaBoundingBox>,
+        aabbs: &[&AaBoundingBox],
         indices: Vec<usize>,
         axis: usize,
         point: f64,
