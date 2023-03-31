@@ -22,10 +22,12 @@ pub enum ToneMap {
 impl ToneMap {
     /// Tone maps the `rgb` sample with channels in `\[0,∞\]`
     pub fn map(&self, rgb: DVec3) -> DVec3 {
+        #[cfg(debug_assertions)]
         if rgb.is_nan() {
             println!("Found NaN during tone mapping.");
             return DVec3::ZERO;
         }
+        #[cfg(debug_assertions)]
         if rgb.is_negative_bitmask() > 0 {
             println!("Found negative value during tone mapping.");
             return DVec3::ZERO;
