@@ -9,16 +9,19 @@ const NUM_RAYS: usize = 10000;
 fn shoot_rays(mesh: Box<dyn Object>) {
     for _ in 0..NUM_RAYS {
         let rand_sq = crate::rand_utils::unit_square();
-        let ray_origin = crate::rand_utils::square_to_sphere(rand_sq)
-            // move points IN sphere to ON sphere
-            .normalize();
-        let ray = Ray::new(ray_origin, -ray_origin);
+        let ray_dir = crate::rand_utils::square_to_sphere(rand_sq);
+        let ray_origin = -ray_dir
+            // move points IN sphere to ON sphere..
+            .normalize()
+            // ..that is bigger than the unit cube. (exact value sqrt(3))
+            * 2.0;
+        let ray = Ray::new(ray_origin, ray_dir);
         let hit = mesh.hit(&ray, 0.0, INFINITY);
         // make sure we hit the object
         assert!(hit.is_some());
         let hit = hit.unwrap();
         // make sure we didn't hit the inside
-        assert!(hit.norm.dot(ray_origin) > 0.0);
+        assert!(hit.norm.dot(-ray.dir) > 0.0);
     }
 }
 
