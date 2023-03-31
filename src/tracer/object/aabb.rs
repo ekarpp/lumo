@@ -79,7 +79,7 @@ impl AaBoundingBox {
         }
     }
 
-    /// Split `self` along `axis` at `value`
+    /// Split `self` along `axis` at `value`. Returns (left, right)
     pub fn split(&self, axis: Axis, value: f64) -> (Self, Self) {
         let mut ax_mid_max = self.ax_max;
         let mut ax_mid_min = self.ax_min;

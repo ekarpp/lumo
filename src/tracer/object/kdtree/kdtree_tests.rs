@@ -52,6 +52,38 @@ fn intersect_sphere() {
     shoot_rays(mesh);
 }
 
+fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
+    let triangle_aabb = triangle.bounding_box();
+
+    aabb.ax_min.cmple(triangle_aabb.ax_min).all()
+        && aabb.ax_max.cmpge(triangle_aabb.ax_max).all()
+}
+
+#[test]
+fn all_objects_correctly_split() {
+    let mesh = Mesh::new(
+        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+        Material::Blank,
+    );
+
+    let mut stack = VecDeque::from([(mesh.root, mesh.boundary)]);
+
+    while let Some((node, aabb)) = stack.pop_front() {
+        match *node {
+            KdNode::Leaf(indices) => {
+                indices.iter().for_each(|idx| {
+                    assert!(_aabb_contains_triangle(aabb, &mesh.objects[*idx]));
+                })
+            }
+            KdNode::Split(axis, split, left, right) => {
+                let (aabb_left, aabb_right) = aabb.split(axis, split);
+                stack.push_front((left, aabb_left));
+                stack.push_front((right, aabb_right));
+            }
+        }
+    }
+}
+
 #[test]
 fn all_objects_in_tree() {
     let mesh = Mesh::new(
