@@ -3,6 +3,9 @@ use std::time::Instant;
 use std::f64::INFINITY;
 use crate::Axis;
 
+#[cfg(test)]
+mod kdtree_tests;
+
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
 
