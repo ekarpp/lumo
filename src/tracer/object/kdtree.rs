@@ -1,6 +1,7 @@
 use super::*;
 use std::time::Instant;
 use std::f64::INFINITY;
+use crate::Axis;
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
@@ -171,7 +172,7 @@ const EMPTY_BONUS: f64 = 0.2;
 /// A node in the kD-tree. Can be either a plane split or a leaf node.
 pub enum KdNode {
     /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
-    Split(usize, f64, Box<KdNode>, Box<KdNode>),
+    Split(Axis, f64, Box<KdNode>, Box<KdNode>),
     /// Stores indices to the object vector in the kD-tree
     Leaf(Vec<usize>),
 }
@@ -180,7 +181,7 @@ impl KdNode {
     /// Computes the cost for split along `axis` at `point`.
     fn cost(
         boundary: &AaBoundingBox,
-        axis: usize,
+        axis: Axis,
         point: f64,
         num_left: usize,
         num_right: usize,
@@ -203,21 +204,18 @@ impl KdNode {
     }
 
     /// Finds the best split according to SAH.
-    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (usize, f64, f64) {
+    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (Axis, f64, f64) {
         let mut best_cost = INFINITY;
         let mut best_point = INFINITY;
-        let mut best_axis = 0;
+        let mut best_axis = Axis::X;
 
-        for axis in 0..3 {
+        for axis in [Axis::X, Axis::Y, Axis::Z] {
             let mut mins: Vec<f64> = Vec::new();
             let mut maxs: Vec<f64> = Vec::new();
 
             aabbs.iter().for_each(|aabb| {
-                // add indexing to aabb min/max
-                let mx = aabb.ax_max.to_array();
-                let mn = aabb.ax_min.to_array();
-                mins.push(mn[axis]);
-                maxs.push(mx[axis]);
+                mins.push(aabb.min(axis));
+                maxs.push(aabb.max(axis));
             });
 
             mins.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
@@ -263,18 +261,18 @@ impl KdNode {
     fn partition(
         aabbs: &[&AaBoundingBox],
         indices: Vec<usize>,
-        axis: usize,
+        axis: Axis,
         point: f64,
     ) -> (Vec<usize>, Vec<usize>) {
         // fix size
         let mut left: Vec<usize> = Vec::new();
         let mut right: Vec<usize> = Vec::new();
         aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
-            if aabb.ax_min.to_array()[axis] < point {
+            if aabb.min(axis) < point {
                 left.push(idx);
             }
             // are we missing one, since both check strict?
-            if aabb.ax_max.to_array()[axis] > point {
+            if aabb.max(axis) > point {
                 right.push(idx);
             }
         });
