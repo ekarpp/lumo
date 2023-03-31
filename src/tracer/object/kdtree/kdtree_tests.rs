@@ -75,7 +75,14 @@ fn all_objects_correctly_split() {
             KdNode::Leaf(indices) => {
                 indices.iter().for_each(|idx| {
                     assert!(_aabb_contains_triangle(aabb, &mesh.objects[*idx]));
-                })
+                });
+
+                mesh.objects.iter().enumerate()
+                    .for_each(|(idx, triangle)| {
+                        if _aabb_contains_triangle(aabb, triangle) {
+                            assert!(indices.contains(&idx));
+                        }
+                    });
             }
             KdNode::Split(axis, split, left, right) => {
                 let (aabb_left, aabb_right) = aabb.split(axis, split);
