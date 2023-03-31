@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::{VecDeque, HashSet};
 
 const TEAPOT_URL: &str = "https://graphics.stanford.edu/courses/cs148-10-summer/as3/code/as3/teapot.obj";
 
@@ -49,4 +50,29 @@ fn intersect_sphere() {
         .scale(0.5, 0.5, 0.5);
 
     shoot_rays(mesh);
+}
+
+#[test]
+fn all_objects_in_tree() {
+    let mesh = Mesh::new(
+        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+        Material::Blank,
+    );
+
+    let mut found = HashSet::new();
+    let mut stack = VecDeque::from([mesh.root]);
+
+    while let Some(node) = stack.pop_front() {
+        match *node {
+            KdNode::Leaf(indices) => {
+                indices.iter().for_each(|idx| { found.insert(*idx); })
+            }
+            KdNode::Split(_, _, left, right) => {
+                stack.push_back(left);
+                stack.push_back(right);
+            }
+        }
+    }
+
+    assert!(found.len() == mesh.objects.len());
 }
