@@ -13,8 +13,8 @@ Lumo is a CPU based multithreaded rendering engine. Made with the goal of learni
 * Multiple importance sampling from VNDF for GGX
 * Disney diffuse BRDF with energy normalization used in Frostbite
 * Vertex and normal parsing from .OBJ files
-* kd-tree that handles meshes containing up to 5 million triangles with reasonable render times
-* Tone mapping
+* Stratified sampling
+* kd-tree with SAH
 * Perlin noise generator
 
 ### Usage
@@ -87,6 +87,7 @@ fn main() -> Result<(), png::EncodingError> {
 ```
 
 ### TODO/WiP
+* Firefly reduction (better sampling? tone mapping?)
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
 * (Texture mapping)
@@ -102,7 +103,7 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/HiRojvC.png) |
+| ![Stanford dragon](https://i.imgur.com/o6vYZ1j.png) |
 |:--:|
 | *Stanford dragon with 871K triangles. Rendered in 13 minutes using 40 threads of Intel Xeon Gold 6248. 2025 samples per pixel.* |
 
