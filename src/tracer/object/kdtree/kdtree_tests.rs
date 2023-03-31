@@ -9,7 +9,9 @@ const NUM_RAYS: usize = 10000;
 fn shoot_rays(mesh: Box<dyn Object>) {
     for _ in 0..NUM_RAYS {
         let rand_sq = crate::rand_utils::unit_square();
-        let ray_origin = crate::rand_utils::square_to_sphere(rand_sq);
+        let ray_origin = crate::rand_utils::square_to_sphere(rand_sq)
+            // move points IN sphere to ON sphere
+            .normalize();
         let ray = Ray::new(ray_origin, -ray_origin);
         let hit = mesh.hit(&ray, 0.0, INFINITY);
         // make sure we hit the object
