@@ -103,9 +103,9 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/o6vYZ1j.png) |
+| ![Stanford dragon](https://i.imgur.com/Bx0HvsA.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 13 minutes using 40 threads of Intel Xeon Gold 6248. 2025 samples per pixel.* |
+| *Stanford dragon with 871K triangles. Rendered in 13 minutes using 40 threads of Intel Xeon Gold 6248. Hable tone mapping and 2025 samples per pixel.* |
 
 | ![Cornell box](https://i.imgur.com/TG4IjYo.png) |
 |:--:|
