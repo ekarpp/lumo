@@ -53,10 +53,12 @@ fn intersect_sphere() {
 }
 
 fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
-    let triangle_aabb = triangle.bounding_box();
+    let aabb_triangle = triangle.bounding_box();
 
-    aabb.ax_min.cmple(triangle_aabb.ax_min).all()
-        && aabb.ax_max.cmpge(triangle_aabb.ax_max).all()
+    [Axis::X, Axis::Y, Axis::Z].iter().all(|axis| {
+        aabb_triangle.min(*axis) < aabb.max(*axis)
+            && aabb.min(*axis) < aabb_triangle.max(*axis)
+    })
 }
 
 #[test]
