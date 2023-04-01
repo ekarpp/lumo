@@ -19,6 +19,9 @@ opt-level = 3
 [profile.dev]
 opt-level = 2
 
+[profile.test]
+opt-level = 2
+
 [dependencies]
 argh = "0.1.10"
 glam = "0.23.0"

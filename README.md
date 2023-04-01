@@ -87,6 +87,7 @@ fn main() -> Result<(), png::EncodingError> {
 ```
 
 ### TODO/WiP
+* Handling exposed backfaces in .OBJ models
 * Firefly reduction (better sampling? tone mapping?)
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer

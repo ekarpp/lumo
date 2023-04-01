@@ -1,8 +1,7 @@
 use lumo::tracer::*;
 use lumo::*;
 
-const TEAPOT_URL: &str =
-    "https://graphics.stanford.edu/courses/cs148-10-summer/as3/code/as3/teapot.obj";
+const TEAPOT_URL: &str = "https://casual-effects.com/g3d/data10/common/model/teapot/teapot.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::default();
