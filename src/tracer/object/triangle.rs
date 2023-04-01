@@ -103,7 +103,7 @@ impl Object for Triangle {
         }
         let t = self.c_m_a.dot(pbe1) / det_a;
 
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             None
         } else {
             let alpha = 1.0 - beta - gamma;

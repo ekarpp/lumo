@@ -45,7 +45,7 @@ impl Object for Disk {
         }
 
         let t = -(self.d + self.normal.dot(r.origin)) / self.normal.dot(wo);
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             return None;
         }
 
