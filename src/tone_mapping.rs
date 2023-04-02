@@ -1,4 +1,5 @@
 use glam::DVec3;
+#[cfg(debug_assertions)]
 use crate::srgb_to_linear;
 
 /// Maps linear RGB value to luminance
