@@ -22,7 +22,7 @@ fn shoot_rays(mesh: Box<dyn Object>) {
         assert!(hit.is_some());
         let hit = hit.unwrap();
         // make sure we didn't hit the inside
-        assert!(hit.norm.dot(-ray.dir) > 0.0);
+        assert!(hit.ng.dot(-ray.dir) > 0.0);
     }
 }
 
