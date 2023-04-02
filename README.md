@@ -91,6 +91,8 @@ fn main() -> Result<(), png::EncodingError> {
 * Firefly reduction (better sampling? tone mapping?)
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
+* Parallelize kd-tree construction
+* kd-tree construction in $n \log n$
 * (Texture mapping)
 * (Bidirectional path tracing)
 * (Subsurface scattering)
