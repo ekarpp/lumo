@@ -92,6 +92,6 @@ impl Object for Cone {
         let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
         let ni = (xi - a).normalize();
 
-        Hit::new(t, self, xi, ni)
+        Hit::new(t, self, xi, ni, ni)
     }
 }

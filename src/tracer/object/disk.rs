@@ -54,7 +54,7 @@ impl Object for Disk {
         if xi.distance_squared(self.origin) > self.radius * self.radius {
             None
         } else {
-            Hit::new(t, self, xi, self.normal)
+            Hit::new(t, self, xi, self.normal, self.normal)
         }
     }
 
@@ -82,7 +82,7 @@ impl Object for Disk {
 
                 let xo = ri.origin;
                 let xi = hi.p;
-                let ni = hi.norm;
+                let ni = hi.ng;
                 let wi = ri.dir;
 
                 xo.distance_squared(xi) / (ni.dot(wi).abs() * area)

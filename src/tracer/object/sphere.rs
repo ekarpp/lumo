@@ -66,7 +66,7 @@ impl Object for Sphere {
         let xi = r.at(t);
         let ni = (xi - self.origin) / self.radius;
 
-        Hit::new(t, self, xi, ni)
+        Hit::new(t, self, xi, ni, ni)
     }
 
     /// Sample on unit sphere and scale

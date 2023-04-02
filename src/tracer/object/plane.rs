@@ -41,7 +41,7 @@ impl Object for Plane {
         if t < t_min + EPSILON || t > t_max {
             None
         } else {
-            Hit::new(t, self, r.at(t), self.norm)
+            Hit::new(t, self, r.at(t), self.norm, self.norm)
         }
     }
 

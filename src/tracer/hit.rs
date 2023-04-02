@@ -9,23 +9,33 @@ pub struct Hit<'a> {
     pub object: &'a dyn Object,
     /// 3D point where object was hit
     pub p: DVec3,
-    /// Normal of the object at the point of impact.
-    pub norm: DVec3,
+    /// Normal of the surface used for shading calculations
+    pub ns: DVec3,
+    /// Geometric normal of the surface used for scattering calculations
+    pub ng: DVec3,
 }
 
 impl<'a> Hit<'a> {
     /// # Arguments
     ///
     /// * `t` - Value of ray at which hit occurred.
-    /// * `o` - The object which got hit.
-    /// * `r` - The ray which hit the object.
-    pub fn new(t: f64, object: &'a dyn Object, xi: DVec3, ni: DVec3) -> Option<Self> {
-        /* p and n not always needed. computing for every hit slows rendering */
+    /// * `object` - The object which got hit.
+    /// * `xi` - Point in world space at which object got hit
+    /// * `ns` - Shading normal of the object at the point of impact
+    /// * `ng` - Geometric normal of the object at the point of impact
+    pub fn new(
+        t: f64,
+        object: &'a dyn Object,
+        xi: DVec3,
+        ns: DVec3,
+        ng: DVec3,
+    ) -> Option<Self> {
         Some(Self {
             t,
             object,
             p: xi,
-            norm: ni,
+            ns,
+            ng,
         })
     }
 }

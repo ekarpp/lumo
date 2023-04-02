@@ -30,16 +30,17 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specularity: f64) -> DVec3 {
                             if p_scatter <= 0.0 {
                                 return shadow;
                             }
-                            let no = ho.norm;
+                            let ng = ho.ng;
+                            let ns = ho.ns;
                             // correct?
                             let cos_theta = if material.is_transparent() {
                                 1.0
                             } else {
-                                no.dot(wi).abs()
+                                ng.dot(wi).abs()
                             };
 
                             shadow
-                                + material.bsdf_f(ro, &ri, no)
+                                + material.bsdf_f(ro, &ri, ns, ng)
                                 * cos_theta
                                 * integrate(scene, &ri, material.specularity())
                                 / (p_scatter * (1.0 - PATH_TRACE_RR))

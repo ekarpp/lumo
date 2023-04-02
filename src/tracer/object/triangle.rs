@@ -11,9 +11,13 @@ pub struct Triangle {
     b_m_a: DVec3,
     /// Point `c` minus `a`
     c_m_a: DVec3,
-    /// Unidirectional normal
+    /// Geometric normal. CCW in the order of vertices.
+    ng: DVec3,
+    /// Shading normal for the vertex `a`
     na: DVec3,
+    /// Shading normal for the vertex `a`
     nb: DVec3,
+    /// Shading normal for the vertex `a`
     nc: DVec3,
     material: Material,
 }
@@ -29,17 +33,18 @@ impl Triangle {
         /* check degeneracy */
         let b_m_a = abc.1 - abc.0;
         let c_m_a = abc.2 - abc.0;
-        let norm = (b_m_a).cross(c_m_a);
-        assert!(norm.length() != 0.0);
-        let norm = norm.normalize();
+        let ng = (b_m_a).cross(c_m_a);
+        assert!(ng.length() != 0.0);
+        let ng = ng.normalize();
         Box::new(Self {
             a: abc.0,
             b_m_a,
             c_m_a,
             material,
-            na: norm,
-            nb: norm,
-            nc: norm,
+            ng,
+            na: ng,
+            nb: ng,
+            nc: ng,
         })
     }
 
@@ -50,10 +55,21 @@ impl Triangle {
     /// * `abc` - Triple of the triangle vertices
     /// * `nabc` - Triple of the normals at the vertices
     pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3)) -> Self {
+        let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
+        let ng = if ng.length() == 0.0 {
+            #[cfg(debug_assertions)]
+            println!("Found degenerate triangle. {:?}", abc);
+            // bad .obj file..
+            DVec3::Z
+        } else {
+            ng.normalize()
+        };
+
         Self {
             a: abc.0,
             b_m_a: abc.1 - abc.0,
             c_m_a: abc.2 - abc.0,
+            ng,
             na: nabc.0,
             nb: nabc.1,
             nc: nabc.2,
@@ -108,10 +124,10 @@ impl Object for Triangle {
         } else {
             let alpha = 1.0 - beta - gamma;
 
-            let norm = alpha * self.na + beta * self.nb + gamma * self.nc;
-            let norm = norm.normalize();
+            let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
+            let ns = ns.normalize();
 
-            Hit::new(t, self, r.at(t), norm)
+            Hit::new(t, self, r.at(t), ns, self.ng)
         }
     }
 
@@ -138,7 +154,7 @@ impl Object for Triangle {
 
                 let xo = ri.origin;
                 let xi = hi.p;
-                let ni = hi.norm;
+                let ni = hi.ng;
                 let wi = ri.dir;
                 xo.distance_squared(xi) / (ni.dot(wi).abs() * area)
             }

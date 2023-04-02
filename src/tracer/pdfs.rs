@@ -103,8 +103,8 @@ pub struct MfdPdf {
     xo: DVec3,
     /// Direction from point of impact to viewer
     v: DVec3,
-    /// Macrosurface normal. Same hemisphere as `v`.
-    no: DVec3,
+    /// Macrosurface geometric normal. Same hemisphere as `v`.
+    ng: DVec3,
     /// Probability to sample ray from NDF
     ndf_sample_prob: f64,
     /// ONB for macrosurface normal
@@ -115,16 +115,16 @@ pub struct MfdPdf {
 
 // add cos pdf. add reflection pdf. reflection pdf has delta pdf?
 impl MfdPdf {
-    pub fn new(xo: DVec3, v: DVec3, no: DVec3, albedo: DVec3, mfd: MfDistribution) -> Self {
-        let norm = if v.dot(no) < 0.0 { -no } else { no };
-        let uvw = Onb::new(norm);
+    pub fn new(xo: DVec3, v: DVec3, ng: DVec3, albedo: DVec3, mfd: MfDistribution) -> Self {
+        let w = if v.dot(ng) < 0.0 { -ng } else { ng };
+        let uvw = Onb::new(w);
 
         Self {
             xo,
             v,
             uvw,
             ndf_sample_prob: mfd.probability_ndf_sample(albedo),
-            no,
+            ng,
             mfd,
         }
     }
@@ -149,7 +149,7 @@ impl Pdf for MfdPdf {
             self.uvw
                 .to_world(rand_utils::square_to_cos_hemisphere(rand_sq))
         } else {
-            let inside = self.no.dot(self.v) < 0.0;
+            let inside = self.ng.dot(self.v) < 0.0;
             let eta_ratio = if inside {
                 self.mfd.get_rfrct_idx()
             } else {
@@ -178,7 +178,7 @@ impl Pdf for MfdPdf {
         let wh_dot_v = self.v.dot(wh);
 
         // probability to sample wh w.r.t. to v
-        let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.no)
+        let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.ng)
             / (4.0 * wh_dot_v);
 
         // transmission / scatter probability
@@ -193,7 +193,7 @@ impl Pdf for MfdPdf {
             // in the same hemisphere, zero probability for transmission
             0.0
         } else {
-            let inside = self.no.dot(self.v) < 0.0;
+            let inside = self.ng.dot(self.v) < 0.0;
             let eta_ratio = if inside {
                 1.0 / self.mfd.get_rfrct_idx()
             } else {
@@ -203,7 +203,7 @@ impl Pdf for MfdPdf {
             let wh_dot_wi = wi.dot(wh);
             let wh_dot_v = wh.dot(self.v);
 
-            self.mfd.sample_normal_pdf(wh, self.v, self.no) * wh_dot_v.abs()
+            self.mfd.sample_normal_pdf(wh, self.v, self.ng) * wh_dot_v.abs()
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         };
 

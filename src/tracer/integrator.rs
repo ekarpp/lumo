@@ -62,7 +62,6 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, _pdf_scatter: &dyn Pdf, rand_sq
         DVec3::ZERO
     } else {
         let xo = ho.p;
-        let no = ho.norm;
         let light = scene.uniform_random_light();
 
         let pdf_light = ObjectPdf::new(light, xo);
@@ -73,9 +72,11 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, _pdf_scatter: &dyn Pdf, rand_sq
                 Some(_) => {
                     let p_light = pdf_light.value_for(&ri);
                     let wi = ri.dir;
+                    let ng = ho.ng;
+                    let ns = ho.ns;
 
-                    material.bsdf_f(ro, &ri, no)
-                        * no.dot(wi).abs()
+                    material.bsdf_f(ro, &ri, ns, ng)
+                        * ng.dot(wi).abs()
                         / p_light
                 }
             }

@@ -12,7 +12,6 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                 Some(scatter_pdf) => {
                     //  ¯\_(ツ)_/¯
                     if material.specularity() > 0.92 {
-                        let no = ho.norm;
                         match scatter_pdf.sample_ray(rand_utils::unit_square()) {
                             None => DVec3::ZERO,
                             Some(ri) => {
@@ -25,14 +24,16 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
                                     return DVec3::ZERO;
                                 }
 
+                                let ng = ho.ng;
+                                let ns = ho.ns;
                                 // correct?
                                 let cos_theta = if material.is_transparent() {
                                     1.0
                                 } else {
-                                    no.dot(wi).abs()
+                                    ng.dot(wi).abs()
                                 };
 
-                                material.bsdf_f(ro, &ri, no)
+                                material.bsdf_f(ro, &ri, ns, ng)
                                     * cos_theta
                                     * integrate(scene, &ri)
                                     / scatter_pdf.value_for(&ri)
