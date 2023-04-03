@@ -19,28 +19,33 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specularity: f64) -> DVec3 {
                         return shadow;
                     }
 
-                    let no = ho.norm;
-                    let ri = scatter_pdf.sample_ray(rand_utils::unit_square());
-                    let wi = ri.dir;
-                    let p_scatter = scatter_pdf.value_for(&ri);
 
-                    // scatter with 0 probability
-                    if p_scatter.is_nan() || p_scatter < 0.0001 {
-                        return shadow;
+                    match scatter_pdf.sample_ray(rand_utils::unit_square()) {
+                        None => shadow,
+                        Some(ri) => {
+                            let wi = ri.dir;
+                            let p_scatter = scatter_pdf.value_for(&ri);
+
+                            // resample bad samples?
+                            if p_scatter <= 0.0 {
+                                return shadow;
+                            }
+                            let ng = ho.ng;
+                            let ns = ho.ns;
+                            // correct?
+                            let cos_theta = if material.is_transparent() {
+                                1.0
+                            } else {
+                                ng.dot(wi).abs()
+                            };
+
+                            shadow
+                                + material.bsdf_f(ro, &ri, ns, ng)
+                                * cos_theta
+                                * integrate(scene, &ri, material.specularity())
+                                / (p_scatter * (1.0 - PATH_TRACE_RR))
+                        }
                     }
-
-                    // correct?
-                    let cos_theta = if material.is_transparent() {
-                        1.0
-                    } else {
-                        no.dot(wi).abs()
-                    };
-
-                    shadow
-                        + material.bsdf_f(ro, &ri, no)
-                            * cos_theta
-                            * integrate(scene, &ri, material.specularity())
-                            / (p_scatter * (1.0 - PATH_TRACE_RR))
                 }
             }
         }

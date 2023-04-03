@@ -1,5 +1,6 @@
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
+use crate::tracer::onb::Onb;
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
@@ -21,7 +22,7 @@ impl MicrofacetConfig {
         assert!(refraction_idx >= 1.0);
 
         Self {
-            roughness,
+            roughness: roughness.max(1e-5),
             refraction_idx,
             metallicity,
             transparent,
@@ -42,42 +43,22 @@ pub enum MfDistribution {
 impl MfDistribution {
     /// Metallic material
     pub fn metallic(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx: 1.5,
-            metallicity: 1.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 1.0, false))
     }
 
     /// Specular material
     pub fn specular(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx: 1.5,
-            metallicity: 0.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0, false))
     }
 
     /// Diffuse material
     pub fn diffuse() -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness: 1.0,
-            refraction_idx: 1.5,
-            metallicity: 0.0,
-            transparent: false,
-        })
+        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0, false))
     }
 
     /// Transparent material f.ex. glass
     pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig {
-            roughness,
-            refraction_idx,
-            metallicity: 0.0,
-            transparent: true,
-        })
+        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, 0.0, true))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
@@ -108,20 +89,6 @@ impl MfDistribution {
         match self {
             Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg,
         }
-    }
-
-    /// Probability to do importance sampling from NDF. Estimate based on
-    /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
-        let cfg = self.get_config();
-
-        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
-        let f0 = f0 * f0;
-        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
-
-        let f = (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean;
-
-        f * 0.75 + 0.25
     }
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
@@ -178,6 +145,10 @@ impl MfDistribution {
         1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
     }
 
+    pub fn g1(&self, v: DVec3, no: DVec3) -> f64 {
+        1.0 / (1.0 + self.lambda(v, no))
+    }
+
     /// Fresnel term with Schlick's approximation
     pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3) -> DVec3 {
         let eta = self.get_config().refraction_idx;
@@ -219,21 +190,95 @@ impl MfDistribution {
         }
     }
 
+    /// Probability to do importance sampling from NDF. Estimate based on
+    /// the Fresnel term.
+    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
+        let cfg = self.get_config();
+
+        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
+        let f0 = f0 * f0;
+        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
+
+        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean
+    }
+
+    /// Probability that `wh` got sampled
+    pub fn sample_normal_pdf(&self, wh: DVec3, v: DVec3, no: DVec3) -> f64 {
+        match self {
+            Self::Beckmann(..) => {
+                let wh_dot_no = wh.dot(no);
+                self.d(wh, no) * wh_dot_no
+            }
+            Self::Ggx(..) => {
+                let wh_dot_v = wh.dot(v);
+                let no_dot_v = no.dot(v);
+
+                self.g1(v, no) * self.d(wh, no) * wh_dot_v / no_dot_v
+            }
+        }
+    }
+
     /// Sampling microfacet normals per distribution for importance sampling.
-    pub fn sample_normal(&self, rand_sq: DVec2) -> DVec3 {
-        let phi = 2.0 * PI * rand_sq.x;
-        let theta = match self {
-            Self::Ggx(cfg) => (cfg.roughness * (rand_sq.y / (1.0 - rand_sq.y)).sqrt()).atan(),
+    /// `v` in shading space.
+    pub fn sample_normal(&self, v: DVec3, rand_sq: DVec2) -> DVec3 {
+        match self {
+            Self::Ggx(cfg) => {
+                // Heitz 2018 or
+                // https://schuttejoe.github.io/post/ggximportancesamplingpart2/
+
+                let roughness = cfg.roughness;
+                // Map the GGX ellipsoid to a hemisphere
+                let v_stretch = DVec3::new(
+                    v.x * roughness,
+                    v.y * roughness,
+                    v.z
+                ).normalize();
+
+                // ONB basis of the hemisphere configuration
+                let hemi_basis = Onb::new(v_stretch);
+
+                // compute a point on the disk
+                let a = 1.0 / (1.0 + v_stretch.z);
+                let r = rand_sq.x.sqrt();
+                let phi = if rand_sq.y < a {
+                    PI * rand_sq.y / a
+                } else {
+                    PI + PI * (rand_sq.y - a) / (1.0 - a)
+                };
+
+                let x = r * phi.cos();
+                let y = if rand_sq.y < a {
+                    r * phi.sin()
+                } else {
+                    r * phi.sin() * v_stretch.z
+                };
+
+                // compute normal in hemisphere configuration
+                let wm = DVec3::new(
+                    x,
+                    y,
+                    (1.0 - x*x - y*y).max(0.0).sqrt(),
+                );
+                let wm = hemi_basis.to_world(wm);
+
+                // move back to ellipsoid
+                DVec3::new(
+                    roughness * wm.x,
+                    roughness * wm.y,
+                    wm.z.max(0.0)
+                ).normalize()
+            }
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
-                (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan()
-            }
-        };
+                let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
+                let phi = 2.0 * PI * rand_sq.x;
 
-        DVec3::new(
-            theta.sin() * phi.cos(),
-            theta.sin() * phi.sin(),
-            theta.cos(),
-        )
+                DVec3::new(
+                    theta.sin() * phi.cos(),
+                    theta.sin() * phi.sin(),
+                    theta.cos(),
+                )
+            }
+        }
     }
 }

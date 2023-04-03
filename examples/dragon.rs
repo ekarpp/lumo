@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 const DRAGON_URL: &str = "https://casual-effects.com/g3d/data10/research/model/dragon/dragon.zip";
@@ -17,11 +17,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(
         Mesh::new(
             obj::obj_from_url(DRAGON_URL)?,
-            Material::metal(Texture::Solid(srgb_to_linear(242, 104, 74)), 0.2),
+            Material::transparent(
+                Texture::Solid(srgb_to_linear(255, 0, 255)),
+                1.5,
+                0.1
+            ),
         )
-        .scale(1.2, 1.2, 1.2)
+        .to_unit_size()
+        .to_origin()
         .rotate_y(5.0 * PI / 8.0)
-        .translate(0.0, -0.68, -1.4),
+        .scale(1.3, 1.3, 1.3)
+        .translate(0.0, -0.55, -1.4)
     );
 
     let renderer = Renderer::new(scene, camera);

@@ -67,9 +67,9 @@ impl Object for Cone {
 
         let disc_root = disc.sqrt();
         let mut t = (-b - disc_root) / (2.0 * a);
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             t = (-b + disc_root) / (2.0 * a);
-            if t < t_min + EPSILON || t > t_max - EPSILON {
+            if t < t_min + EPSILON || t > t_max {
                 return None;
             }
         }
@@ -92,6 +92,6 @@ impl Object for Cone {
         let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
         let ni = (xi - a).normalize();
 
-        Hit::new(t, self, xi, ni)
+        Hit::new(t, self, xi, ni, ni)
     }
 }

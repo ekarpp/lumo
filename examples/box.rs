@@ -1,6 +1,6 @@
 use glam::DVec3;
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {
@@ -32,13 +32,16 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         DVec3::new(0.3, -0.8, -1.2),
         0.1,
-        Material::transparent(Texture::Solid(srgb_to_linear(255, 255, 255)), 1.5, 0.001),
+        Material::transparent(
+            Texture::Solid(srgb_to_linear(255, 255, 255)),
+            1.5,
+            0.0),
     ));
 
     scene.add(
         Cube::new(Material::specular(
             Texture::Solid(srgb_to_linear(0, 230, 0)),
-            0.07,
+            0.2,
         ))
         .rotate_y(PI / 10.0)
         .scale(0.2, 0.4, 0.2)

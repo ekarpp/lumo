@@ -80,9 +80,10 @@ impl<T: Object> Object for Instance<T> {
         let ray_local = r.transform(self.inv_transform);
 
         self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
-            h.norm = (self.normal_transform * h.norm).normalize();
-            // something smarter should be done here...
-            h.p = self.transform.transform_point3(h.p);
+            h.ns = (self.normal_transform * h.ns).normalize();
+            h.ng = (self.normal_transform * h.ng).normalize();
+            h.p = r.at(h.t);
+            h.object = self;
             h
         })
     }

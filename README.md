@@ -1,13 +1,20 @@
-Spuristo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
+## Lumo
+
+[![crates.io](https://img.shields.io/crates/v/lumo)](https://crates.io/crates/lumo)
+[![docs.rs](https://img.shields.io/docsrs/lumo)](https://docs.rs/lumo)
+
+
+Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
 
 ### Features
 * Area light sampling
 * Path tracing with next event estimation
-* Microfacet BSDF with multiple importance sampling and GGX distribution
+* Microfacet BSDF with Beckmann and GGX normal distribution functions
+* Multiple importance sampling from VNDF for GGX
 * Disney diffuse BRDF with energy normalization used in Frostbite
 * Vertex and normal parsing from .OBJ files
-* kd-tree that handles meshes containing up to 5 million triangles with reasonable render times
-* Tone mapping
+* Stratified sampling
+* kd-tree with SAH
 * Perlin noise generator
 
 ### Usage
@@ -38,8 +45,8 @@ Options:
 The `hello_sphere.rs` example is written as follows:
 
 ```rust
-use spuristo::*;
-use spuristo::tracer::*;
+use lumo::*;
+use lumo::tracer::*;
 use glam::DVec3;
 
 fn main() -> Result<(), png::EncodingError> {
@@ -79,14 +86,12 @@ fn main() -> Result<(), png::EncodingError> {
 }
 ```
 
-And it renders an image of a blue sphere:
-![Hello Sphere](https://i.imgur.com/QVFQ4Mk.png)
-
-### TODO/WIP
-* Finalize refraction of transparent microfacet materials
+### TODO/WiP
+* Firefly reduction (better sampling? tone mapping?)
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
-* Sampling from distribution of visible normals in microfacets
+* Parallelize kd-tree construction
+* kd-tree construction in $n \log n$
 * (Texture mapping)
 * (Bidirectional path tracing)
 * (Subsurface scattering)
@@ -100,16 +105,12 @@ And it renders an image of a blue sphere:
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/zREVJF3.png) |
+| ![Stanford dragon](https://i.imgur.com/T96lZN5.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 45 minutes using 30 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+| *Stanford dragon with 871K triangles. Rendered in 23 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/E9U3r3J.png) |
+| ![Cornell box](https://i.imgur.com/e8yRq3J.png) |
 |:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 50 minutes using 30 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
-
-| ![Golden Nefertiti](https://i.imgur.com/MNgV9xa.png) |
-|:--:|
-| *Statue of Nefertiti with 6.4M triangles. Rendered in 196 minutes using 40 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+| *Cornell box displaying reflection and refraction. Rendered in 10 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
 ![Circle of spheres](https://i.imgur.com/3FnSev8.png)

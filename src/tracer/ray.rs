@@ -1,4 +1,5 @@
 use glam::{DAffine3, DVec3};
+use crate::Axis;
 
 /// Ray abstraction
 pub struct Ray {
@@ -32,22 +33,20 @@ impl Ray {
     }
 
     /// Coordinate of origin along axis
-    pub fn o(&self, axis: usize) -> f64 {
+    pub fn o(&self, axis: Axis) -> f64 {
         match axis {
-            0 => self.origin.x,
-            1 => self.origin.y,
-            2 => self.origin.z,
-            _ => unreachable!(),
+            Axis::X => self.origin.x,
+            Axis::Y => self.origin.y,
+            Axis::Z => self.origin.z,
         }
     }
 
     /// Coordinate of direction along axis
-    pub fn d(&self, axis: usize) -> f64 {
+    pub fn d(&self, axis: Axis) -> f64 {
         match axis {
-            0 => self.dir.x,
-            1 => self.dir.y,
-            2 => self.dir.z,
-            _ => unreachable!(),
+            Axis::X => self.dir.x,
+            Axis::Y => self.dir.y,
+            Axis::Z => self.dir.z,
         }
     }
 }

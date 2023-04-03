@@ -58,9 +58,9 @@ impl Object for Cylinder {
 
         let disc_root = disc.sqrt();
         let mut t = (-b - disc_root) / (2.0 * a);
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             t = (-b + disc_root) / (2.0 * a);
-            if t < t_min + EPSILON || t > t_max - EPSILON {
+            if t < t_min + EPSILON || t > t_max {
                 return None;
             }
         }
@@ -73,6 +73,6 @@ impl Object for Cylinder {
 
         let ni = DVec3::new(xi.x, 0.0, xi.z) / self.radius;
 
-        Hit::new(t, self, xi, ni)
+        Hit::new(t, self, xi, ni, ni)
     }
 }

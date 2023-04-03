@@ -1,4 +1,5 @@
 use super::*;
+use crate::Axis;
 
 /// Axis aligned bounding box
 #[derive(Copy, Clone)]
@@ -51,24 +52,50 @@ impl AaBoundingBox {
         2.0 * (bb_dim.x * bb_dim.y + bb_dim.x * bb_dim.z + bb_dim.y * bb_dim.z)
     }
 
-    /// Split `self` along `axis` (x=0, y=1, z=2) at `value`
-    pub fn split(&self, axis: usize, value: f64) -> (Self, Self) {
+    /// Does `point` along `axis` cut `self`?
+    pub fn cuts(&self, axis: Axis, point: f64) -> bool {
+        match axis {
+            Axis::X => self.ax_min.x < point && point < self.ax_max.x,
+            Axis::Y => self.ax_min.y < point && point < self.ax_max.y,
+            Axis::Z => self.ax_min.z < point && point < self.ax_max.z,
+        }
+    }
+
+    /// Maximum value along `axis`
+    pub fn max(&self, axis: Axis) -> f64 {
+        match axis {
+            Axis::X => self.ax_max.x,
+            Axis::Y => self.ax_max.y,
+            Axis::Z => self.ax_max.z,
+        }
+    }
+
+    /// Minimum value along `axis`
+    pub fn min(&self, axis: Axis) -> f64 {
+        match axis {
+            Axis::X => self.ax_min.x,
+            Axis::Y => self.ax_min.y,
+            Axis::Z => self.ax_min.z,
+        }
+    }
+
+    /// Split `self` along `axis` at `value`. Returns (left, right)
+    pub fn split(&self, axis: Axis, value: f64) -> (Self, Self) {
         let mut ax_mid_max = self.ax_max;
         let mut ax_mid_min = self.ax_min;
         match axis {
-            0 => {
+            Axis::X => {
                 ax_mid_max.x = value;
                 ax_mid_min.x = value;
             }
-            1 => {
+            Axis::Y => {
                 ax_mid_max.y = value;
                 ax_mid_min.y = value;
             }
-            2 => {
+            Axis::Z => {
                 ax_mid_max.z = value;
                 ax_mid_min.z = value;
             }
-            _ => unreachable!(),
         }
 
         (

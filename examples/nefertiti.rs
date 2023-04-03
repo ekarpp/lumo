@@ -1,5 +1,5 @@
-use spuristo::tracer::*;
-use spuristo::*;
+use lumo::tracer::*;
+use lumo::*;
 use std::f64::consts::PI;
 
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_origin()
         .scale(0.9, 0.9, 0.9)
         .rotate_x(-PI / 2.0)
-        .translate(0.0, -0.07, -1.35),
+        .translate(0.0, -0.07, -1.45),
     );
 
     scene.add(
@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .translate(-0.5, -0.5, -0.5)
         .scale(0.4, 1.2, 0.4)
-        .translate(0.0, -1.1, -1.35),
+        .translate(0.0, -1.1, -1.45),
     );
 
     let renderer = Renderer::new(scene, camera);

@@ -5,12 +5,19 @@ mod triangle_tests;
 
 /// Triangle specified by three points
 pub struct Triangle {
+    /// Point `a`
     a: DVec3,
-    b: DVec3,
-    c: DVec3,
-    /// Unidirectional normal
+    /// Point `b` minus `a`
+    b_m_a: DVec3,
+    /// Point `c` minus `a`
+    c_m_a: DVec3,
+    /// Geometric normal. CCW in the order of vertices.
+    ng: DVec3,
+    /// Shading normal for the vertex `a`
     na: DVec3,
+    /// Shading normal for the vertex `a`
     nb: DVec3,
+    /// Shading normal for the vertex `a`
     nc: DVec3,
     material: Material,
 }
@@ -24,17 +31,20 @@ impl Triangle {
     /// * `material` - Material of the triangle
     pub fn new(abc: (DVec3, DVec3, DVec3), material: Material) -> Box<Self> {
         /* check degeneracy */
-        let norm = (abc.1 - abc.0).cross(abc.2 - abc.0);
-        assert!(norm.length() != 0.0);
-        let norm = norm.normalize();
+        let b_m_a = abc.1 - abc.0;
+        let c_m_a = abc.2 - abc.0;
+        let ng = (b_m_a).cross(c_m_a);
+        assert!(ng.length() != 0.0);
+        let ng = ng.normalize();
         Box::new(Self {
             a: abc.0,
-            b: abc.1,
-            c: abc.2,
+            b_m_a,
+            c_m_a,
             material,
-            na: norm,
-            nb: norm,
-            nc: norm,
+            ng,
+            na: ng,
+            nb: ng,
+            nc: ng,
         })
     }
 
@@ -45,10 +55,21 @@ impl Triangle {
     /// * `abc` - Triple of the triangle vertices
     /// * `nabc` - Triple of the normals at the vertices
     pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3)) -> Self {
+        let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
+        let ng = if ng.length() == 0.0 {
+            #[cfg(debug_assertions)]
+            println!("Found degenerate triangle. {:?}", abc);
+            // bad .obj file..
+            DVec3::Z
+        } else {
+            ng.normalize()
+        };
+
         Self {
             a: abc.0,
-            b: abc.1,
-            c: abc.2,
+            b_m_a: abc.1 - abc.0,
+            c_m_a: abc.2 - abc.0,
+            ng,
             na: nabc.0,
             nb: nabc.1,
             nc: nabc.2,
@@ -59,9 +80,12 @@ impl Triangle {
 
 impl Bounded for Triangle {
     fn bounding_box(&self) -> AaBoundingBox {
+        // something better can be done?
+        let b = self.b_m_a + self.a;
+        let c = self.c_m_a + self.a;
         AaBoundingBox::new(
-            self.a.min(self.b.min(self.c)),
-            self.a.max(self.b.max(self.c)),
+            self.a.min(b.min(c)),
+            self.a.max(b.max(c)),
         )
     }
 }
@@ -73,12 +97,9 @@ impl Object for Triangle {
 
     /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        /* can cache some results on triangle.
-         * this faster? https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates */
-        let e1 = self.b - self.a;
-        let e2 = self.c - self.a;
-        let pde2 = r.dir.cross(e2);
-        let det_a = e1.dot(pde2);
+        /* can cache some results on triangle. */
+        let pde2 = r.dir.cross(self.c_m_a);
+        let det_a = self.b_m_a.dot(pde2);
         if det_a.abs() < EPSILON {
             return None;
         }
@@ -90,22 +111,23 @@ impl Object for Triangle {
             return None;
         }
 
-        let pbe1 = vec_b.cross(e1);
+        let pbe1 = vec_b.cross(self.b_m_a);
         let gamma = r.dir.dot(pbe1) / det_a;
 
         if gamma < 0.0 || gamma + beta > 1.0 {
             return None;
         }
-        let t = e2.dot(pbe1) / det_a;
+        let t = self.c_m_a.dot(pbe1) / det_a;
 
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             None
         } else {
             let alpha = 1.0 - beta - gamma;
-            // correct order?
-            let norm = alpha * self.na + beta * self.nb + gamma * self.nc;
 
-            Hit::new(t, self, r.at(t), norm)
+            let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
+            let ns = ns.normalize();
+
+            Hit::new(t, self, r.at(t), ns, self.ng)
         }
     }
 
@@ -114,7 +136,7 @@ impl Object for Triangle {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
-        self.a + beta * (self.b - self.a) + gamma * (self.c - self.a)
+        self.a + beta * self.b_m_a + gamma * self.c_m_a
     }
 
     /// Choose random point on surface of triangle. Shoot ray towards it.
@@ -128,11 +150,11 @@ impl Object for Triangle {
         match self.hit(ri, 0.0, INFINITY) {
             None => 0.0,
             Some(hi) => {
-                let area = (self.b - self.a).cross(self.c - self.a).length() / 2.0;
+                let area = self.b_m_a.cross(self.c_m_a).length() / 2.0;
 
                 let xo = ri.origin;
                 let xi = hi.p;
-                let ni = hi.norm;
+                let ni = hi.ng;
                 let wi = ri.dir;
                 xo.distance_squared(xi) / (ni.dot(wi).abs() * area)
             }

@@ -4,7 +4,7 @@
 use glam::DVec3;
 
 /// Epsilon to avoid self intersection of objects
-const EPSILON: f64 = 1e-10;
+const EPSILON: f64 = 1e-11;
 
 pub use cli::TracerCli;
 pub use image::Image;
@@ -40,4 +40,15 @@ pub fn srgb_to_linear(r: u8, g: u8, b: u8) -> DVec3 {
         (g as f64 / 255.0).powf(2.2),
         (b as f64 / 255.0).powf(2.2),
     )
+}
+
+/// Represents an axis in the cartesian coordinate system
+#[derive(Copy, Clone)]
+pub enum Axis {
+    /// X-axis
+    X,
+    /// Y-axis
+    Y,
+    /// Z-axis
+    Z,
 }

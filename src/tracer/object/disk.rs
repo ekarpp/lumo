@@ -45,7 +45,7 @@ impl Object for Disk {
         }
 
         let t = -(self.d + self.normal.dot(r.origin)) / self.normal.dot(wo);
-        if t < t_min + EPSILON || t > t_max - EPSILON {
+        if t < t_min + EPSILON || t > t_max {
             return None;
         }
 
@@ -54,7 +54,7 @@ impl Object for Disk {
         if xi.distance_squared(self.origin) > self.radius * self.radius {
             None
         } else {
-            Hit::new(t, self, xi, self.normal)
+            Hit::new(t, self, xi, self.normal, self.normal)
         }
     }
 
@@ -62,7 +62,7 @@ impl Object for Disk {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
         self.origin
-            + self.uvw.to_uvw_basis(DVec3::new(
+            + self.uvw.to_world(DVec3::new(
                 rand_disk.x * self.radius,
                 rand_disk.y * self.radius,
                 0.0,
@@ -82,7 +82,7 @@ impl Object for Disk {
 
                 let xo = ri.origin;
                 let xi = hi.p;
-                let ni = hi.norm;
+                let ni = hi.ng;
                 let wi = ri.dir;
 
                 xo.distance_squared(xi) / (ni.dot(wi).abs() * area)

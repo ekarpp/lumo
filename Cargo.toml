@@ -1,11 +1,11 @@
 [package]
-name = "spuristo"
-version = "0.1.1"
+name = "lumo"
+version = "0.2.0-alpha"
 description = "CPU based rendering engine"
 license = "MIT"
-repository = "https://github.com/ekarpp/spuristo"
+repository = "https://github.com/ekarpp/lumo"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
-keywords = ["rendering", "path-tracing", "graphics", "3d"]
+keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
 
@@ -17,6 +17,9 @@ opt-level = 3
 #rustflags = ["-C", "target-cpu=native"]
 
 [profile.dev]
+opt-level = 2
+
+[profile.test]
 opt-level = 2
 
 [dependencies]
