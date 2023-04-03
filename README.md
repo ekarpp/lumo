@@ -87,7 +87,6 @@ fn main() -> Result<(), png::EncodingError> {
 ```
 
 ### TODO/WiP
-* Handling exposed backfaces in .OBJ models
 * Firefly reduction (better sampling? tone mapping?)
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
@@ -106,16 +105,12 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/Bx0HvsA.png) |
+| ![Stanford dragon](https://i.imgur.com/T96lZN5.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 13 minutes using 40 threads of Intel Xeon Gold 6248. Hable tone mapping and 2025 samples per pixel.* |
+| *Stanford dragon with 871K triangles. Rendered in 23 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/TG4IjYo.png) |
+| ![Cornell box](https://i.imgur.com/e8yRq3J.png) |
 |:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 12 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
-
-| ![Golden Nefertiti](https://i.imgur.com/ze7OwaF.png) |
-|:--:|
-| *Statue of Nefertiti with 6.4M triangles. Rendered in 7 minutes using 40 threads of Intel Xeon Gold 6248. 1024 samples per pixel.* |
+| *Cornell box displaying reflection and refraction. Rendered in 10 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
 ![Circle of spheres](https://i.imgur.com/3FnSev8.png)
