@@ -87,7 +87,7 @@ fn main() -> Result<(), png::EncodingError> {
 ```
 
 ### TODO/WiP
-* Firefly reduction (better sampling? tone mapping?)
+* Figure out dark patches in transparent microfacet dragon
 * Isotropic mediums (fog, smoke, clouds, ...)
 * Multiple importance sampling in path tracer
 * Parallelize kd-tree construction
@@ -105,12 +105,12 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/T96lZN5.png) |
+| ![Stanford dragon](https://i.imgur.com/fWpA188.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 23 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
+| *Stanford dragon with 871K triangles. Rendered in 23 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/e8yRq3J.png) |
+| ![Cornell box](https://i.imgur.com/FtO5wqH.png) |
 |:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 10 minutes using Intel Xeon Gold 6248. 4096 samples per pixel.* |
+| *Cornell box displaying reflection and refraction. Rendered in 19 minutes using 30 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
 ![Circle of spheres](https://i.imgur.com/3FnSev8.png)
