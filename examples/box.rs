@@ -13,13 +13,12 @@ fn main() -> Result<(), std::io::Error> {
         // right
         Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 255))),
         // floor
-        Material::metal(
+        Material::diffuse(
             Texture::Checkerboard(
                 Box::new(Texture::Solid(def_color)),
                 Box::new(Texture::Solid(srgb_to_linear(0, 0, 230))),
                 2.42,
             ),
-            0.001,
         ),
     );
 
@@ -27,6 +26,12 @@ fn main() -> Result<(), std::io::Error> {
         DVec3::new(-0.4, -0.8, -1.4),
         0.2,
         Material::Mirror,
+    ));
+
+    scene.add(Sphere::new(
+        DVec3::new(0.0, -0.8, -1.2),
+        0.1,
+        Material::Glass(1.5),
     ));
 
     scene.add(Sphere::new(
