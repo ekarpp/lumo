@@ -66,7 +66,7 @@ impl Material {
     /// duno if this is correct. need to check, hack for now
     pub fn is_transparent(&self) -> bool {
         match self {
-            Self::Mirror => true,
+            Self::Mirror | Self::Glass(..) => true,
             Self::Microfacet(_, mfd) => mfd.is_transparent(),
             _ => false,
         }
