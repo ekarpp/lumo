@@ -134,10 +134,10 @@ impl MfDistribution {
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
-                    let tan2_theta = (1.0 - cos_theta2) / cos_theta2;
+                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
 
-                    (-tan_theta2 / roughness2).exp()
-                        / (PI * roughness2 * cos_theta2.powi(2))
+                    (-tan2_theta / roughness2).exp()
+                        / (PI * roughness2 * cos2_theta.powi(2))
                 }
             }
         }
@@ -187,7 +187,7 @@ impl MfDistribution {
                     let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
                     let roughness2 = cfg.roughness * cfg.roughness;
 
-                    ((1.0 + roughness2 * tan_w).sqrt() - 1.0) / 2.0
+                    ((1.0 + roughness2 * tan2_theta).sqrt() - 1.0) / 2.0
                 }
             }
             Self::Beckmann(cfg) => {
@@ -195,8 +195,8 @@ impl MfDistribution {
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
-                    let tan2_theta = ((1.0 - w_dot_no2) / w_dot_no2).abs();
-                    let a = 1.0 / (cfg.roughness * tan_w);
+                    let tan2_theta = ((1.0 - cos2_theta) / cos2_theta).abs();
+                    let a = 1.0 / (cfg.roughness * tan2_theta);
 
                     if a >= 1.6 {
                         0.0
