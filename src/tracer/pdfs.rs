@@ -116,6 +116,7 @@ pub struct MfdPdf {
 // add cos pdf. add reflection pdf. reflection pdf has delta pdf?
 impl MfdPdf {
     pub fn new(xo: DVec3, v: DVec3, ng: DVec3, albedo: DVec3, mfd: MfDistribution) -> Self {
+        // refraction needs v and wh to be in same hemisphere so we do this
         let w = if v.dot(ng) < 0.0 { -ng } else { ng };
         let uvw = Onb::new(w);
 
@@ -130,6 +131,7 @@ impl MfdPdf {
     }
 }
 
+// NEEDS A REFACTOR. split to 3? different pdfs? (cos, refract, ndf?)
 impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
     /// camera around the normal. GGX uses VNDF sampling, Beckmann NDF sampling
@@ -179,20 +181,22 @@ impl Pdf for MfdPdf {
 
         // probability to sample wh w.r.t. to v
         let ndf = self.mfd.sample_normal_pdf(wh, self.v, self.ng)
+            // jacobian
             / (4.0 * wh_dot_v);
 
         // transmission / scatter probability
         let st = if !self.mfd.is_transparent() {
             let cos_theta = self.uvw.w.dot(wi);
             if cos_theta > 0.0 {
-                cos_theta * PI.recip()
+                cos_theta / PI
             } else {
                 0.0
             }
-        } else if self.v.dot(wi) > 0.0 {
-            // in the same hemisphere, zero probability for transmission
-            0.0
         } else {
+            // refraction
+
+            // check if same hemisphere w.r.t. ng?
+
             let inside = self.ng.dot(self.v) < 0.0;
             let eta_ratio = if inside {
                 1.0 / self.mfd.get_rfrct_idx()
@@ -203,8 +207,17 @@ impl Pdf for MfdPdf {
             let wh_dot_wi = wi.dot(wh);
             let wh_dot_v = wh.dot(self.v);
 
-            self.mfd.sample_normal_pdf(wh, self.v, self.ng) * wh_dot_v.abs()
-                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            if wh_dot_wi * wh_dot_v > 0.0 {
+                // same hemisphere w.r.t wh, zero probability for refraction
+                0.0
+            } else {
+                // wh and ng need to be in same hemisphere, hemisphere of v makes
+                // no difference.
+                self.mfd.sample_normal_pdf(wh, self.v, self.ng)
+                    // jacobian
+                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            }
         };
 
         self.ndf_sample_prob * ndf + (1.0 - self.ndf_sample_prob) * st

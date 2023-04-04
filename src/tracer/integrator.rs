@@ -55,7 +55,7 @@ impl Integrator {
 }
 
 /// Shoots a shadow ray towards random light from `ho`.
-fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, _pdf_scatter: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
+fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
     let material = ho.object.material();
 
     if !material.is_diffuse() {
@@ -71,13 +71,18 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, _pdf_scatter: &dyn Pdf, rand_sq
                 None => DVec3::ZERO,
                 Some(_) => {
                     let p_light = pdf_light.value_for(&ri);
+                    let p_scatter = pdf_scatter.value_for(&ri);
                     let wi = ri.dir;
                     let ng = ho.ng;
                     let ns = ho.ns;
 
+                    let weight = p_light * p_light
+                        / (p_light * p_light + p_scatter * p_scatter);
+
                     material.bsdf_f(ro, &ri, ns, ng)
                         * ng.dot(wi).abs()
-                        / p_light
+                        * weight
+                        / (p_light + p_scatter)
                 }
             }
         }
