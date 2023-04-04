@@ -11,7 +11,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         def_color,
         Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))),
         Material::diffuse(Texture::Solid(srgb_to_linear(0, 255, 0))),
-        Material::diffuse(Texture::Solid(def_color)),
     );
 
     scene.add(

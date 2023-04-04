@@ -10,12 +10,10 @@ impl Scene {
     /// * `def_color` - Color of the roof, and the front wall
     /// * `mat_left` - Material of the left wall
     /// * `mat_right` - Material of the right wall
-    /// * `mat_floor` - Material of the floor
     pub fn empty_box(
         def_color: DVec3,
         mat_left: Material,
         mat_right: Material,
-        mat_floor: Material,
     ) -> Self {
         // aka Y of ground, negate for roof
         let ground = -1.0;
@@ -27,7 +25,9 @@ impl Scene {
         let light_dim = 0.4;
 
         let mut scene = Self::default();
-        scene.add(/* rectangular area light */ Rectangle::new(
+
+        /* rectangular area light */
+        scene.add(Rectangle::new(
             DMat3::from_cols(
                 DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front + light_dim),
                 DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front - light_dim),
@@ -36,36 +36,42 @@ impl Scene {
             Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
         ));
 
+        /* left wall */
         scene.add(
-            /* floor */
-            Plane::new(DVec3::Y * ground, DVec3::Y, mat_floor),
-        );
-
-        scene.add(
-            /* left wall */
             Plane::new(DVec3::NEG_X * right, DVec3::X, mat_left),
         );
 
+        /* right wall */
         scene.add(
-            /* right wall */
             Plane::new(DVec3::X * right, DVec3::NEG_X, mat_right),
         );
 
-        scene.add(/* roof */ Plane::new(
+        /* floor */
+        scene.add(Plane::new(
+            DVec3::Y * ground,
+            DVec3::Y,
+            Material::diffuse(Texture::Solid(def_color)),
+        ));
+
+        /* roof */
+        scene.add(Plane::new(
             DVec3::NEG_Y * ground,
             DVec3::NEG_Y,
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
-        scene.add(/* front wall */ Plane::new(
+        /* front wall */
+        scene.add(Plane::new(
             DVec3::Z * front,
             DVec3::Z,
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
-        scene.add(/* background */ Plane::new(
+        /* background */
+        scene.add(Plane::new(
             DVec3::NEG_Z * front,
             DVec3::NEG_Z,
+            // make blank?
             Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
         ));
 

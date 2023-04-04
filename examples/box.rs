@@ -12,14 +12,6 @@ fn main() -> Result<(), std::io::Error> {
         Material::diffuse(Texture::Solid(srgb_to_linear(0, 255, 255))),
         // right
         Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 255))),
-        // floor
-        Material::diffuse(
-            Texture::Checkerboard(
-                Box::new(Texture::Solid(def_color)),
-                Box::new(Texture::Solid(srgb_to_linear(0, 0, 230))),
-                2.42,
-            ),
-        ),
     );
 
     scene.add(Sphere::new(
