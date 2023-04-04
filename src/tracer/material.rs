@@ -91,7 +91,7 @@ impl Material {
         let xo = ri.origin;
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
-            Self::Mirror | Self::Glass(..) => DVec3::ONE,
+            Self::Mirror | Self::Glass(..) => DVec3::ONE / ng.dot(ri.dir).abs(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(ro, ri, ns, ng, t.albedo_at(xo), mfd)
             }

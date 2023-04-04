@@ -26,12 +26,8 @@ pub fn integrate(scene: &Scene, ro: &Ray) -> DVec3 {
 
                                 let ng = ho.ng;
                                 let ns = ho.ns;
-                                // correct?
-                                let cos_theta = if material.is_transparent() {
-                                    1.0
-                                } else {
-                                    ng.dot(wi).abs()
-                                };
+
+                                let cos_theta = ng.dot(wi).abs();
 
                                 material.bsdf_f(ro, &ri, ns, ng)
                                     * cos_theta
