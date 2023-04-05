@@ -39,12 +39,6 @@ fn main() -> Result<(), std::io::Error> {
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
     ));
 
-    scene.add(Sphere::new(
-        DVec3::ZERO,
-        3.0,
-        Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
-    ));
-
     let circle_s = 8;
     let offset = PI / circle_s as f64;
     let r = 0.2;
