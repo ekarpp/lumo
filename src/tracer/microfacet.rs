@@ -62,12 +62,8 @@ impl MfDistribution {
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
-    pub fn specularity(&self) -> f64 {
-        if self.is_transparent() {
-            1.0
-        } else {
-            1.0 - self.get_config().roughness.powi(2)
-        }
+    pub fn is_specular(&self) -> bool {
+        self.is_transparent() || self.get_config().roughness < 0.01
     }
 
     /// Is the material transparent?
@@ -118,17 +114,27 @@ impl MfDistribution {
     pub fn d(&self, wh: DVec3, no: DVec3) -> f64 {
         match self {
             Self::Ggx(cfg) => {
-                let cos_theta2 = wh.dot(no).powi(2);
-                let roughness2 = cfg.roughness * cfg.roughness;
+                let cos2_theta = wh.dot(no).powi(2);
+                if cos2_theta == 0.0 {
+                    0.0
+                } else {
+                    let roughness2 = cfg.roughness * cfg.roughness;
 
-                roughness2 / (PI * (cos_theta2 * (roughness2 - 1.0) + 1.0).powi(2))
+                    roughness2
+                        / (PI * (cos2_theta * (roughness2 - 1.0) + 1.0).powi(2))
+                }
             }
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
-                let cos_theta2 = wh.dot(no).powi(2);
-                let tan_theta2 = (1.0 - cos_theta2) / cos_theta2;
+                let cos2_theta = wh.dot(no).powi(2);
+                if cos2_theta == 0.0 {
+                    0.0
+                } else {
+                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
 
-                (-tan_theta2 / roughness2).exp() / (PI * roughness2 * cos_theta2.powi(2))
+                    (-tan2_theta / roughness2).exp()
+                        / (PI * roughness2 * cos2_theta.powi(2))
+                }
             }
         }
     }
@@ -157,7 +163,7 @@ impl MfDistribution {
         let f0 = (eta - 1.0) / (eta + 1.0);
         let f0 = DVec3::splat(f0 * f0).lerp(color, metallicity);
 
-        let wo_dot_wh = wo.dot(wh);
+        let wo_dot_wh = wo.dot(wh).abs();
         f0 + (DVec3::ONE - f0) * (1.0 - wo_dot_wh).powi(5)
     }
 
@@ -170,21 +176,30 @@ impl MfDistribution {
     fn lambda(&self, w: DVec3, no: DVec3) -> f64 {
         match self {
             Self::Ggx(cfg) => {
-                let w_dot_no2 = w.dot(no).powi(2);
-                let tan_w = (1.0 - w_dot_no2) / w_dot_no2;
-                let roughness2 = cfg.roughness * cfg.roughness;
-
-                ((1.0 + roughness2 * tan_w).sqrt() - 1.0) / 2.0
-            }
-            Self::Beckmann(cfg) => {
-                let w_dot_no2 = w.dot(no).powi(2);
-                let tan_w = ((1.0 - w_dot_no2) / w_dot_no2).abs();
-                let a = 1.0 / (cfg.roughness * tan_w);
-
-                if a >= 1.6 {
+                let cos2_theta = w.dot(no).powi(2);
+                if cos2_theta == 0.0 {
                     0.0
                 } else {
-                    (1.0 - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a)
+                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
+                    let roughness2 = cfg.roughness * cfg.roughness;
+
+                    ((1.0 + roughness2 * tan2_theta).sqrt() - 1.0) / 2.0
+                }
+            }
+            Self::Beckmann(cfg) => {
+                let cos2_theta = w.dot(no).powi(2);
+                if cos2_theta == 0.0 {
+                    0.0
+                } else {
+                    let tan2_theta = ((1.0 - cos2_theta) / cos2_theta).abs();
+                    let a = 1.0 / (cfg.roughness * tan2_theta);
+
+                    if a >= 1.6 {
+                        0.0
+                    } else {
+                        (1.0 - 1.259 * a + 0.396 * a * a)
+                            / (3.535 * a + 2.181 * a * a)
+                    }
                 }
             }
         }

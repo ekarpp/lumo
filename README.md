@@ -109,8 +109,8 @@ fn main() -> Result<(), png::EncodingError> {
 |:--:|
 | *Stanford dragon with 871K triangles. Rendered in 23 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/FtO5wqH.png) |
+| ![Cornell box](https://i.imgur.com/e19lI5m.png) |
 |:--:|
 | *Cornell box displaying reflection and refraction. Rendered in 19 minutes using 30 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-![Circle of spheres](https://i.imgur.com/3FnSev8.png)
+![Circle of spheres](https://i.imgur.com/JxvP1l7.png)

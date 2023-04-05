@@ -26,10 +26,48 @@ fn main() -> Result<(), std::io::Error> {
     let mut scene = Scene::default();
     let ground = -0.2;
 
+    let dim = 8.0;
+
+    // back
     scene.add(Plane::new(
-        DVec3::new(0.0, ground, 0.0),
-        DVec3::new(0.0, 1.0, 0.0),
-        Material::metal(Texture::Solid(srgb_to_linear(166, 44, 43)), 0.01),
+        dim * DVec3::Z,
+        DVec3::NEG_Z,
+        Material::diffuse(Texture::Solid(srgb_to_linear(255, 255, 255))),
+    ));
+
+    // front
+    scene.add(Plane::new(
+        dim * DVec3::NEG_Z,
+        DVec3::Z,
+        Material::diffuse(Texture::Solid(srgb_to_linear(166, 44, 43))),
+    ));
+
+    // right
+    scene.add(Plane::new(
+        dim * DVec3::X,
+        DVec3::NEG_X,
+        Material::diffuse(Texture::Solid(srgb_to_linear(255, 255, 255))),
+    ));
+
+    // left
+    scene.add(Plane::new(
+        dim * DVec3::NEG_X,
+        DVec3::X,
+        Material::diffuse(Texture::Solid(srgb_to_linear(255, 255, 255))),
+    ));
+
+    // roof
+    scene.add(Plane::new(
+        0.8 * dim * DVec3::Y,
+        DVec3::NEG_Y,
+        Material::diffuse(Texture::Solid(srgb_to_linear(255, 255, 255))),
+    ));
+
+    // ground
+    scene.add(Plane::new(
+        ground * DVec3::Y,
+        DVec3::Y,
+        Material::metal(Texture::Solid(srgb_to_linear(150, 40, 39)), 0.009999),
     ));
 
     let r = 0.2;
@@ -37,12 +75,6 @@ fn main() -> Result<(), std::io::Error> {
         DVec3::new(0.0, ground + r + 0.1, 0.0),
         r,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
-    ));
-
-    scene.add(Sphere::new(
-        DVec3::ZERO,
-        3.0,
-        Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
     ));
 
     let circle_s = 8;
@@ -58,7 +90,7 @@ fn main() -> Result<(), std::io::Error> {
         scene.add(Sphere::new(
             DVec3::new(x, y, z),
             r,
-            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.1),
+            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.5),
         ));
     }
 

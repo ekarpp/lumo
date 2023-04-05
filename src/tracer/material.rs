@@ -54,12 +54,12 @@ impl Material {
         Self::Glass(refraction_index)
     }
 
-    /// How specular is the material? 1.0 fully, 0.0 none
-    pub fn specularity(&self) -> f64 {
+    /// Is the material specular? I.e. reflects light
+    pub fn is_specular(&self) -> bool {
         match self {
-            Self::Mirror | Self::Glass(..) => 1.0,
-            Self::Microfacet(_, mfd) => mfd.specularity(),
-            _ => 0.0,
+            Self::Mirror | Self::Glass(..) => true,
+            Self::Microfacet(_, mfd) => mfd.is_specular(),
+            _ => false,
         }
     }
 
