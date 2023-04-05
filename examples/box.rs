@@ -40,7 +40,8 @@ fn main() -> Result<(), std::io::Error> {
         .translate(0.2, -1.0, -1.7),
     );
 
-    let renderer = Renderer::new(scene, camera);
+    let mut renderer = Renderer::new(scene, camera);
+    renderer.set_integrator(Integrator::BDPathTrace);
     renderer.render().save("box.png")?;
     Ok(())
 }
