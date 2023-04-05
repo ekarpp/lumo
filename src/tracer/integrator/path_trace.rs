@@ -1,12 +1,12 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
-    match scene.hit(ro) {
+pub fn integrate(scene: &Scene, ro: Ray, last_specular: bool) -> DVec3 {
+    match scene.hit(&ro) {
         None => DVec3::ZERO,
         Some(ho) => {
             let material = ho.object.material();
 
-            match material.bsdf_pdf(&ho, ro) {
+            match material.bsdf_pdf(&ho, &ro) {
                 None => {
                     if last_specular {
                         material.emit(&ho)
@@ -17,7 +17,7 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
                 Some(scatter_pdf) => {
                     // jittered sampler
                     let shadow = JitteredSampler::new(SHADOW_SPLITS)
-                        .map(|rand_sq| shadow_ray(scene, ro, &ho, scatter_pdf.as_ref(), rand_sq))
+                        .map(|rand_sq| shadow_ray(scene, &ro, &ho, scatter_pdf.as_ref(), rand_sq))
                         .sum::<DVec3>()
                         / SHADOW_SPLITS as f64;
 
@@ -42,9 +42,9 @@ pub fn integrate(scene: &Scene, ro: &Ray, last_specular: bool) -> DVec3 {
                             let cos_theta = ng.dot(wi).abs();
 
                             shadow
-                                + material.bsdf_f(ro, &ri, ns, ng)
+                                + material.bsdf_f(&ro, &ri, ns, ng)
                                 * cos_theta
-                                * integrate(scene, &ri, material.is_specular())
+                                * integrate(scene, ri, material.is_specular())
                                 / (p_scatter * (1.0 - PATH_TRACE_RR))
                         }
                     }
