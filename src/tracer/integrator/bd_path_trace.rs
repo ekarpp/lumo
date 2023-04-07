@@ -16,10 +16,22 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                 break;
             }
             Some(scatter_pdf) => {
-                let shadow = JitteredSampler::new(SHADOW_SPLITS)
-                    .map(|rand_sq| shadow_ray(scene, &ro, &ho, scatter_pdf.as_ref(), rand_sq))
-                    .sum::<DVec3>()
-                    / SHADOW_SPLITS as f64;
+                let shadow = if material.is_delta() {
+                    DVec3::ZERO
+                } else {
+                    JitteredSampler::new(SHADOW_SPLITS)
+                        .map(|rand_sq| {
+                            shadow_ray(
+                                scene,
+                                &ro,
+                                &ho,
+                                scatter_pdf.as_ref(),
+                                rand_sq
+                            )
+                        })
+                        .sum::<DVec3>()
+                        / SHADOW_SPLITS as f64
+                };
 
                 illuminance += gathered * shadow;
 

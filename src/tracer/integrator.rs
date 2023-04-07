@@ -58,32 +58,29 @@ impl Integrator {
 fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
     let material = ho.object.material();
 
-    if !material.is_diffuse() {
-        DVec3::ZERO
-    } else {
-        let xo = ho.p;
-        let light = scene.uniform_random_light();
+    let xo = ho.p;
+    let light = scene.uniform_random_light();
 
-        let pdf_light = ObjectPdf::new(light, xo);
-        match pdf_light.sample_ray(rand_sq) {
+    let pdf_light = ObjectPdf::new(light, xo);
+
+    match pdf_light.sample_ray(rand_sq) {
+        None => DVec3::ZERO,
+        Some(ri) => match scene.hit_light(&ri, light) {
             None => DVec3::ZERO,
-            Some(ri) => match scene.hit_light(&ri, light) {
-                None => DVec3::ZERO,
-                Some(_) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
-                    let wi = ri.dir;
-                    let ng = ho.ng;
-                    let ns = ho.ns;
+            Some(_) => {
+                let p_light = pdf_light.value_for(&ri);
+                let p_scatter = pdf_scatter.value_for(&ri);
+                let wi = ri.dir;
+                let ng = ho.ng;
+                let ns = ho.ns;
 
-                    let weight = p_light * p_light
-                        / (p_light * p_light + p_scatter * p_scatter);
+                let weight = p_light * p_light
+                    / (p_light * p_light + p_scatter * p_scatter);
 
-                    material.bsdf_f(ro, &ri, ns, ng)
-                        * ng.dot(wi).abs()
-                        * weight
-                        / (p_light + p_scatter)
-                }
+                material.bsdf_f(ro, &ri, ns, ng)
+                    * ng.dot(wi).abs()
+                    * weight
+                    / (p_light + p_scatter)
             }
         }
     }

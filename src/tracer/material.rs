@@ -72,10 +72,10 @@ impl Material {
         }
     }
 
-    /// Is the material diffuse? I.e. do shadow rays have effect on it.
-    /// (CORRECT TERM?)
-    pub fn is_diffuse(&self) -> bool {
-        matches!(self, Self::Microfacet(..))
+    /// Does the material scattering follow delta distribution? Dumb hack to make
+    /// direct light estimation work.
+    pub fn is_delta(&self) -> bool {
+        matches!(self, Self::Mirror | Self::Glass(_))
     }
 
     /// How much light emitted at `h`?
