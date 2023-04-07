@@ -67,7 +67,9 @@ impl Scene {
         let t_max = light_hit.t - EPSILON;
 
         for object in &self.objects {
-            if object.hit(r, 0.0, t_max).is_some() {
+            if object.hit(r, 0.0, t_max).filter(|hit| {
+                !hit.object.material().is_transparent()
+            }).is_some() {
                 return None;
             }
         }
