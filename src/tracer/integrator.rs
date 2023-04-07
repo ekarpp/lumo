@@ -77,6 +77,7 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq:
                 let weight = p_light * p_light
                     / (p_light * p_light + p_scatter * p_scatter);
 
+                // multiply by light emittance?
                 material.bsdf_f(ro, &ri, ns, ng)
                     * ns.dot(wi).abs()
                     * weight
