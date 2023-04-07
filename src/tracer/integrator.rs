@@ -78,7 +78,7 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq:
                     / (p_light * p_light + p_scatter * p_scatter);
 
                 material.bsdf_f(ro, &ri, ns, ng)
-                    * ng.dot(wi).abs()
+                    * ns.dot(wi).abs()
                     * weight
                     / (p_light + p_scatter)
             }

@@ -51,11 +51,9 @@ pub fn integrate(scene: &Scene, ro: Ray, last_specular: bool) -> DVec3 {
                             let ng = ho.ng;
                             let ns = ho.ns;
 
-                            let cos_theta = ng.dot(wi).abs();
-
                             shadow
                                 + material.bsdf_f(&ro, &ri, ns, ng)
-                                * cos_theta
+                                * ns.dot(wi).abs()
                                 * integrate(scene, ri, material.is_specular())
                                 / (p_scatter * (1.0 - PATH_TRACE_RR))
                         }

@@ -26,11 +26,8 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                                 let ng = ho.ng;
                                 let ns = ho.ns;
 
-                                let cos_theta = ng.dot(wi).abs();
-                                let p_scatter = scatter_pdf.value_for(&ri);
-
                                 material.bsdf_f(&ro, &ri, ns, ng)
-                                    * cos_theta
+                                    * ns.dot(wi).abs()
                                     * integrate(scene, ri)
                                     / p_scatter
                             }
