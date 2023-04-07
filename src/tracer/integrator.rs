@@ -15,11 +15,6 @@ mod path_trace;
 /// jittered sampler.
 const SHADOW_SPLITS: u32 = 1;
 
-/// Russian roulette probability for the path tracer.
-/// Terminates a path at each step with this probability.
-/// Computed values are multiplied by the reciprocal of the inverse probability.
-const PATH_TRACE_RR: f64 = 0.2;
-
 /// Enum to choose which integrator to use
 pub enum Integrator {
     /// Implements the path tracing algorithm with
@@ -47,7 +42,7 @@ impl Integrator {
     /// Calls the corresponding integration function
     pub fn integrate(&self, s: &Scene, r: Ray) -> DVec3 {
         match self {
-            Self::PathTrace => path_trace::integrate(s, r, true),
+            Self::PathTrace => path_trace::integrate(s, r),
             Self::DirectLight => direct_light::integrate(s, r),
             Self::BDPathTrace => bd_path_trace::integrate(s, r),
         }
