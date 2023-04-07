@@ -4,6 +4,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
     let mut last_specular = true;
     let mut illuminance = DVec3::ZERO;
     let mut gathered = DVec3::ONE;
+    let mut depth = 0;
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.object.material();
@@ -35,10 +36,6 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
                 illuminance += gathered * shadow;
 
-                if rand_utils::rand_f64() < PATH_TRACE_RR {
-                    break;
-                }
-
                 match scatter_pdf.sample_ray(rand_utils::unit_square()) {
                     None => {
                         break;
@@ -57,9 +54,20 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
                         gathered *= material.bsdf_f(&ro, &ri, ns, ng)
                             * ns.dot(wi).abs()
-                            / (p_scatter * (1.0 - PATH_TRACE_RR));
+                            / p_scatter;
+
+                        // russian roulette
+                        if depth > 3 {
+                            let luminance = crate::rgb_to_luminance(gathered);
+                            let rr_prob = (1.0 - luminance).max(0.05);
+                            if rand_utils::rand_f64() < rr_prob {
+                                break;
+                            }
+                            gathered /= 1.0 - rr_prob;
+                        }
 
                         last_specular = material.is_specular();
+                        depth += 1;
                         ro = ri;
                     }
                 }
