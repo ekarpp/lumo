@@ -17,7 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             obj::obj_from_url(TEAPOT_URL)?,
             Material::diffuse(Texture::Marble(Perlin::default())),
         )
-        .scale(0.1, 0.1, 0.1)
+        .to_unit_size()
+        .to_origin()
         .translate(0.0, -0.5, -1.5),
     );
 
