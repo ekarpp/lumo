@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/lumo)](https://crates.io/crates/lumo)
 [![docs.rs](https://img.shields.io/docsrs/lumo)](https://docs.rs/lumo)
-
+[![Coverage](https://img.shields.io/coverallsCoverage/github/ekarpp/lumo)](https://coveralls.io/github/ekarpp/lumo)
 
 Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
 

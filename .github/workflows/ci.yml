@@ -2,7 +2,7 @@ name: rust_tracer_pipe
 
 on:
   push:
-    branches: [ master, 0.3.0 ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
