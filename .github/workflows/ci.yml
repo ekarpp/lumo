@@ -2,7 +2,7 @@ name: rust_tracer_pipe
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, 0.3.0 ]
   pull_request:
     branches: [ master ]
 
@@ -17,3 +17,21 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v3
+    - name: install Rust
+      run: rustup update stable
+    - name: install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
+    - name: generate code coverage
+      run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+    - name: upload coverage to coveralls
+      uses: coverallsapp/github-action@v1
+      with:
+        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        path-to-lcov: lcov.info
