@@ -54,16 +54,27 @@ impl Integrator {
     }
 }
 
-/// Shoots a shadow ray towards random light from `ho`.
-fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
+/// Shoots a shadow ray towards random light from `ho`. MIS with `pdf_scatter`.
+fn shadow_ray(
+    scene: &Scene,
+    ro: &Ray,
+    ho: &Hit,
+    pdf_scatter: &dyn Pdf,
+    rand_sq: DVec2
+) -> DVec3 {
     let material = ho.object.material();
-
     let xo = ho.p;
+    let ng = ho.ng;
+    let ns = ho.ns;
+
     let light = scene.uniform_random_light();
 
+    let mut illuminance = DVec3::ZERO;
     let pdf_light = ObjectPdf::new(light, xo);
 
-    match pdf_light.sample_ray(rand_sq) {
+    // refactor these to separate function?
+    // sample light first
+    illuminance += match pdf_light.sample_ray(rand_sq) {
         None => DVec3::ZERO,
         Some(ri) => match scene.hit_light(&ri, light) {
             None => DVec3::ZERO,
@@ -71,8 +82,6 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq:
                 let p_light = pdf_light.value_for(&ri);
                 let p_scatter = pdf_scatter.value_for(&ri);
                 let wi = ri.dir;
-                let ng = ho.ng;
-                let ns = ho.ns;
 
                 let weight = p_light * p_light
                     / (p_light * p_light + p_scatter * p_scatter);
@@ -84,5 +93,29 @@ fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq:
                     / (p_light + p_scatter)
             }
         }
-    }
+    };
+
+    // then sample BSDF
+    illuminance += match pdf_scatter.sample_ray(rand_sq) {
+        None => DVec3::ZERO,
+        Some(ri) => match scene.hit_light(&ri, light) {
+            None => DVec3::ZERO,
+            Some(_) => {
+                let p_light = pdf_light.value_for(&ri);
+                let p_scatter = pdf_scatter.value_for(&ri);
+                let wi = ri.dir;
+
+                let weight = p_scatter * p_scatter
+                    / (p_scatter * p_scatter + p_light * p_light);
+
+                // multiply by light emittance?
+                material.bsdf_f(ro, &ri, ns, ng)
+                    * ns.dot(wi).abs()
+                    * weight
+                    / (p_scatter + p_light)
+            }
+        }
+    };
+
+    illuminance * scene.num_lights() as f64
 }
