@@ -89,11 +89,12 @@ impl Material {
     /// What is the color at `ri.origin`?
     pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, ns: DVec3, ng: DVec3) -> DVec3 {
         let xo = ri.origin;
+        let wi = ri.dir;
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(ri.dir).abs(),
+            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(ro, ri, ns, ng, t.albedo_at(xo), mfd)
+                bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(xo), mfd)
             }
             _ => DVec3::ZERO,
         }

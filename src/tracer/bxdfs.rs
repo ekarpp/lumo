@@ -10,22 +10,20 @@ use std::f64::consts::PI;
 /// # Arguments
 /// * `ro` - Ray incoming to the point of impact
 /// * `ri` - Ray towards "light" from the point of impact
-/// * `ns` - Shading normal of the surface at the point of impact
 /// * `ng` - Geometric normal of the surface at the point of impact
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
     ro: &Ray,
     ri: &Ray,
-    ns: DVec3,
     ng: DVec3,
     albedo: DVec3,
     mfd: &MfDistribution
 ) -> DVec3 {
     let v = -ro.dir;
     let wi = ri.dir;
-    let ns_dot_wi = ng.dot(wi);
-    let ns_dot_v = ng.dot(v);
+    let ng_dot_wi = ng.dot(wi);
+    let ng_dot_v = ng.dot(v);
 
     let rfrct_idx = mfd.get_rfrct_idx();
 
@@ -34,15 +32,15 @@ pub fn bsdf_microfacet(
     if ro_inside == ri_inside {
         let wh = (wi + v).normalize();
         let wh_dot_v = wh.dot(v);
-        let ns_dot_wh = ns.dot(wh);
+        let ng_dot_wh = ng.dot(wh);
 
-        let d = mfd.d(wh, ns);
+        let d = mfd.d(wh, ng);
         let f = if ro_inside && (1.0 - wh_dot_v.powi(2)) * rfrct_idx.powi(2) > 1.0 {
             DVec3::ONE
         } else {
             mfd.f(v, wh, albedo)
         };
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, ng);
 
         // BRDF: specular + diffuse, where
         // specular = D(wh) * F(v, wh) * G(v, wi) / (4.0 * (no • v) * (no • wi))
@@ -52,14 +50,14 @@ pub fn bsdf_microfacet(
         // * (1.0 + (F_90 - 1.0) * (1.0 - (no • wi))^5)
         // F_90 = 0.5 * α^2 + 2.0 * (no • wh)^2 * α^2
 
-        let specular = d * f * g / (4.0 * ns_dot_v * ns_dot_wi);
+        let specular = d * f * g / (4.0 * ng_dot_v * ng_dot_wi);
 
         // transparent materials don't have a diffuse term
         if mfd.is_transparent() {
             specular
         } else {
-            let diffuse =
-                (DVec3::ONE - f) * albedo * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / PI;
+            let diffuse = (DVec3::ONE - f) * albedo
+                * mfd.disney_diffuse(ng_dot_v, ng_dot_wh, ng_dot_wi) / PI;
 
             diffuse + specular
         }
@@ -76,15 +74,15 @@ pub fn bsdf_microfacet(
         let wh_dot_wi = wh.dot(wi);
         let wh_dot_v = wh.dot(v);
 
-        let d = mfd.d(wh, ns);
+        let d = mfd.d(wh, ng);
         let f = mfd.f(v, wh, albedo);
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, ng);
 
         // BTDF:
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
-        (wh_dot_wi * wh_dot_v / (ns_dot_wi * ns_dot_v)).abs()
+        (wh_dot_wi * wh_dot_v / (ng_dot_wi * ng_dot_v)).abs()
             * albedo * d * (DVec3::ONE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
