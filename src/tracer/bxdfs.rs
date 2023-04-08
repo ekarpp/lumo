@@ -31,7 +31,6 @@ pub fn bsdf_microfacet(
     let ri_inside = ng.dot(wi) < 0.0;
     if ro_inside == ri_inside {
         let wh = (wi + v).normalize();
-        let wh_dot_v = wh.dot(v);
         let ng_dot_wh = ng.dot(wh);
 
         let d = mfd.d(wh, ng);
