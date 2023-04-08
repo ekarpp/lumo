@@ -208,29 +208,47 @@ impl MfdPdf {
 
     /// PDF for NDF refraction
     fn sample_ndf_refract_pdf(&self, wi: DVec3) -> f64 {
-        let inside = self.ng.dot(self.v) < 0.0;
+        let ng_dot_wi = self.ng.dot(wi);
+        let ng_dot_v = self.ng.dot(self.v);
+        let v_inside = ng_dot_v < 0.0;
+        let wi_inside = ng_dot_wi < 0.0;
 
-        // check if wi and v same hemisphere w.r.t. to ng?
+        if v_inside == wi_inside {
+            let wh = (self.v + wi).normalize();
+            let wh_dot_v = wh.dot(self.v);
+            let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
+            let sin2_ti = sin2_to * self.mfd.get_rfrct_idx().powi(2);
 
-        let eta_ratio = if inside {
-            1.0 / self.mfd.get_rfrct_idx()
+            if v_inside && sin2_ti > 1.0 {
+                let wh_dot_v = wh.dot(self.v);
+                self.mfd.sample_normal_pdf(wh, self.v, -self.ng)
+                    / (4.0 * wh_dot_v)
+            } else {
+                // wi and v same hemisphere but not total internal reflection.
+                // impossible
+                0.0
+            }
         } else {
-            self.mfd.get_rfrct_idx()
-        };
-        let wh = -(self.v + wi * eta_ratio).normalize();
-        let wh_dot_wi = wi.dot(wh);
-        let wh_dot_v = wh.dot(self.v);
+            let eta_ratio = if v_inside {
+                1.0 / self.mfd.get_rfrct_idx()
+            } else {
+                self.mfd.get_rfrct_idx()
+            };
+            let wh = -(self.v + wi * eta_ratio).normalize();
+            let wh_dot_wi = wi.dot(wh);
+            let wh_dot_v = wh.dot(self.v);
 
-        if wh_dot_wi * wh_dot_v > 0.0 {
-            // same hemisphere w.r.t wh, zero probability for refraction
-            0.0
-        } else {
-            // wh and ng need to be in same hemisphere, hemisphere of v makes
-            // no difference.
-            self.mfd.sample_normal_pdf(wh, self.v, self.ng)
-            // jacobian
-                * (eta_ratio * eta_ratio * wh_dot_wi).abs()
-                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            if wh_dot_wi * wh_dot_v > 0.0 {
+                // same hemisphere w.r.t wh, zero probability for refraction
+                0.0
+            } else {
+                // wh and ng need to be in same hemisphere, hemisphere of v makes
+                // no difference.
+                self.mfd.sample_normal_pdf(wh, self.v, self.ng)
+                    // jacobian
+                    * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                    / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+            }
         }
     }
 }
