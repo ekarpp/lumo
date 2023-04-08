@@ -35,11 +35,7 @@ pub fn bsdf_microfacet(
         let ng_dot_wh = ng.dot(wh);
 
         let d = mfd.d(wh, ng);
-        let f = if ro_inside && (1.0 - wh_dot_v.powi(2)) * rfrct_idx.powi(2) > 1.0 {
-            DVec3::ONE
-        } else {
-            mfd.f(v, wh, albedo)
-        };
+        let f = mfd.f(v, wh, albedo);
         let g = mfd.g(v, wi, ng);
 
         // BRDF: specular + diffuse, where
@@ -160,7 +156,7 @@ pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> Option<DVec3> {
 
     /* total internal reflection */
     if sin2_ti > 1.0 {
-        return None;
+        return Some( reflect(v, ng) );
     }
 
     let cos_ti = (1.0 - sin2_ti).sqrt();
