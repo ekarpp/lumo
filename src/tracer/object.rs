@@ -14,6 +14,7 @@ pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
 pub use kdtree::{KdTree, Mesh};
+pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;

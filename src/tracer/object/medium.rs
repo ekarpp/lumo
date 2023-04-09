@@ -17,18 +17,18 @@ pub struct Medium {
 }
 
 impl Medium {
-    /// Constructs a medium contained in an invisible sphere.
+    /// Constructs a medium contained in an invisible solid.
     ///
     /// # Arguments
-    /// * `density` - Density of the medium. In range \[0,1\]
     /// * `boundary` - Bounding object of the medium
+    /// * `density` - Density of the medium. In range \[0,1\]
     /// * `color` - Color of the medium
-    pub fn new(density: f64, boundary: Box<dyn Solid>, color: DVec3) -> Box<Self> {
+    pub fn new(boundary: Box<dyn Solid>, density: f64, color: DVec3) -> Box<Self> {
         assert!((0.0..1.0).contains(&density));
         Box::new(Self {
             density,
             boundary,
-            isotropic: Material::Isotropic(Texture::Solid(color)),
+            isotropic: Material::Isotropic(Texture::Solid(color), density),
         })
     }
 }
@@ -39,35 +39,38 @@ impl Object for Medium {
     }
 
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        None
-        /*
-        let to = if self.boundary.inside(ro.origin) {
-            0.0
-        } else {
-            match self.boundary.hit(ro) {
-                None => return None,
-                Some(ho) => ho.t,
-            }
+        let to = match self.boundary.hit(ro, -INFINITY, INFINITY) {
+            None => return None,
+            Some(ho) => ho.t,
         };
 
-        let ri = Ray::new(ro.at(to), ro.dir);
-
-        let ti = match self.boundary.hit(&ri) {
-            None => panic!(),
+        let ti = match self.boundary.hit(ro, to + EPSILON, INFINITY) {
+            None => return None,
             Some(hi) => hi.t,
         };
+
+        let to = to.max(t_min);
+        let ti = ti.min(t_max);
+
+        // medium is behind
+        if to > ti {
+            return None;
+        }
 
         let ray_length = ro.dir.length();
         let inside_dist = (ti - to) * ray_length;
 
         let hit_dist = -(1.0 - rand_utils::rand_f64()).ln() / self.density;
 
+        // this way, the scale of the world matters. doubt there are alternative
+        // ways?
         if hit_dist > inside_dist {
             None
         } else {
             let t = to + hit_dist / ray_length;
-            Hit::new(t, self, ro.at(t), DVec3::ZERO)
+            // store the ts in geometric normal, it's not needed :-)
+            // need shading normal to cancel out the dot product in integrator.
+            Hit::new(t, self, ro.at(t), DVec3::X, DVec3::new(to, t, ti))
         }
-        */
     }
 }

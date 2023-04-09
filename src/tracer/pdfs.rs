@@ -22,14 +22,23 @@ pub trait Pdf {
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
-/// TODO
+/// Scattering for isotropic materials
 pub struct IsotropicPdf {
+    /// Point of impact in the isotropic material
     xo: DVec3,
+    /// Density of the material
+    density: f64,
+    /// Distance inside the medium
+    delta_t: f64,
 }
 
 impl IsotropicPdf {
-    pub fn new(xo: DVec3) -> Self {
-        Self { xo }
+    pub fn new(xo: DVec3, density: f64, delta_t: f64) -> Self {
+        Self {
+            xo,
+            density,
+            delta_t,
+        }
     }
 }
 
@@ -40,9 +49,7 @@ impl Pdf for IsotropicPdf {
     }
 
     fn value_for(&self, _ri: &Ray) -> f64 {
-        let d: f64 = 0.1; //hi.object.density();
-                          // hi.t = 1.5
-        d * (-d * 1.5).exp()
+        self.density * (-self.density * self.delta_t).exp()
     }
 }
 
