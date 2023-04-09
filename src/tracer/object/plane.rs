@@ -44,14 +44,4 @@ impl Object for Plane {
             Hit::new(t, self, r.at(t), self.norm, self.norm)
         }
     }
-
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        unimplemented!()
-    }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        unimplemented!()
-    }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
-        unimplemented!()
-    }
 }

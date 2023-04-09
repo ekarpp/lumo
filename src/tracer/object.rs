@@ -53,7 +53,16 @@ pub trait Object: Sync {
 
     /// dumb
     fn material(&self) -> &Material;
+}
 
+/// Objects that can be contained within an AABB
+pub trait Bounded: Object {
+    /// Axis aligned box that contains the object
+    fn bounding_box(&self) -> AaBoundingBox;
+}
+
+/// Object towards which rays can be sampled
+pub trait Sampleable: Object {
     /// Sample random point on the surface of the object
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
 
@@ -70,10 +79,4 @@ pub trait Object: Sync {
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
     fn sample_towards_pdf(&self, ri: &Ray) -> f64;
-}
-
-/// Objects that can be contained within an AABB
-pub trait Bounded: Object {
-    /// Axis aligned box that contains the object
-    fn bounding_box(&self) -> AaBoundingBox;
 }

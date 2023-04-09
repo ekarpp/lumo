@@ -130,7 +130,9 @@ impl Object for Triangle {
             Hit::new(t, self, r.at(t), ns, self.ng)
         }
     }
+}
 
+impl Sampleable for Triangle {
     /// Random point with barycentrics.
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();

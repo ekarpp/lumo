@@ -91,15 +91,6 @@ impl<T: Object> Object for Instance<T> {
     fn material(&self) -> &Material {
         self.object.material()
     }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
-        panic!()
-    }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        panic!()
-    }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        panic!()
-    }
 }
 
 /// Object that can be instanced

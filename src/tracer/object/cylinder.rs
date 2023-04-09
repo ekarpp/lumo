@@ -32,16 +32,6 @@ impl Object for Cylinder {
         &self.material
     }
 
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
-        todo!()
-    }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        todo!()
-    }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        todo!()
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let wo = r.dir;

@@ -146,7 +146,8 @@ impl<T: Bounded> Object for KdTree<T> {
             self.hit_subtree(&self.root, r, t_start, t_end, &self.boundary)
         }
     }
-
+}
+/*
     fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
         // pick at random a triangle and do it
         todo!()
@@ -161,7 +162,7 @@ impl<T: Bounded> Object for KdTree<T> {
         todo!()
     }
 }
-
+*/
 const COST_TRAVERSE: f64 = 15.0;
 const COST_INTERSECT: f64 = 20.0;
 const EMPTY_BONUS: f64 = 0.2;

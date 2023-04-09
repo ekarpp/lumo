@@ -59,6 +59,9 @@ impl Object for Rectangle {
                 h
             })
     }
+}
+
+impl Sampleable for Rectangle {
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         self.choose_triangle().sample_towards(xo, rand_sq)

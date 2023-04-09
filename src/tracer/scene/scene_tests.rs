@@ -6,7 +6,7 @@ use crate::EPSILON;
 fn scene(m: Material) -> Scene {
     let mut scene = Scene::default();
 
-    scene.add(Sphere::new(
+    scene.add_light(Sphere::new(
         DVec3::new(0.0, 2.0, 0.0),
         EPSILON,
         Material::Light(Texture::Solid(DVec3::ONE)),
@@ -25,14 +25,14 @@ fn scene(m: Material) -> Scene {
 fn light_no_pass() {
     let s = scene(Material::Mirror);
     let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 1.0, 0.0));
-    assert!(s.hit_light(&r, s.objects[0].as_ref()).is_none());
+    assert!(s.hit_light(&r, s.lights[0].as_ref()).is_none());
 }
 
 #[test]
 fn object_behind_light() {
     let s = scene(Material::Mirror);
     let r = Ray::new(DVec3::new(0.0, 3.0, 0.0), DVec3::new(0.0, -1.0, 0.0));
-    assert!(s.hit_light(&r, s.objects[0].as_ref()).is_some());
+    assert!(s.hit_light(&r, s.lights[0].as_ref()).is_some());
 }
 
 #[test]

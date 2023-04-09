@@ -82,7 +82,8 @@ impl Object for Cube {
 
         h
     }
-
+}
+/*
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
         /* add normal to rectangle, now can do visible area of cube??
          * add middle point of rectangle? 0.5a + 0.5c
@@ -99,3 +100,4 @@ impl Object for Cube {
         self.choose_rectangle().sample_on(rand_sq)
     }
 }
+*/

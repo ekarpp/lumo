@@ -1,7 +1,7 @@
 use crate::rand_utils;
 use crate::tracer::bxdfs;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::object::Object;
+use crate::tracer::object::Sampleable;
 use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
 use crate::EPSILON;
@@ -49,13 +49,13 @@ impl Pdf for IsotropicPdf {
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
-    object: &'a dyn Object,
+    object: &'a dyn Sampleable,
     /// Point from where the object should be visible
     xo: DVec3,
 }
 
 impl<'a> ObjectPdf<'a> {
-    pub fn new(object: &'a dyn Object, xo: DVec3) -> Self {
+    pub fn new(object: &'a dyn Sampleable, xo: DVec3) -> Self {
         Self { object, xo }
     }
 }

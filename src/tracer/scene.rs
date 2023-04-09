@@ -1,6 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Object, Plane, Rectangle};
+use crate::tracer::{Object, Sampleable, Plane, Rectangle};
 use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
@@ -16,18 +16,23 @@ mod empty_box;
 pub struct Scene {
     /// All of the objects in the scene.
     pub objects: Vec<Box<dyn Object>>,
-    /// Contains indices to all of the lights in `objects`
-    pub lights: Vec<usize>,
+    /// Contains all lights in the scene
+    pub lights: Vec<Box<dyn Sampleable>>,
 }
 
 impl Scene {
-    /// Add an object to the scene
+    /// Add a non-light object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
-        // add index to light vector if object is light
-        if matches!(obj.material(), Material::Light(_)) {
-            self.lights.push(self.objects.len());
-        }
+        assert!(!matches!(obj.material(), Material::Light(_)));
+
         self.objects.push(obj);
+    }
+
+    /// Adds a light to the scene
+    pub fn add_light(&mut self, light: Box<dyn Sampleable>) {
+        assert!(matches!(light.material(), Material::Light(_)));
+
+        self.lights.push(light);
     }
 
     /// Returns number of lights in the scene
@@ -36,10 +41,10 @@ impl Scene {
     }
 
     /// Choose one of the lights uniformly at random. Crash if no lights.
-    pub fn uniform_random_light(&self) -> &dyn Object {
+    pub fn uniform_random_light(&self) -> &dyn Sampleable {
         let rnd = rand_utils::rand_f64();
         let idx = (rnd * self.lights.len() as f64).floor() as usize;
-        self.objects[self.lights[idx]].as_ref()
+        self.lights[idx].as_ref()
     }
 
     /// Returns the closest object `r` hits and `None` if no hits
@@ -54,11 +59,18 @@ impl Scene {
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }
 
+        // lazy
+        for light in &self.lights {
+            h = light.hit(r, 0.0, t_max).or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
+
         h
     }
 
     /// Does ray `r` reach the light object `light`? TODO: rewrite
-    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object) -> Option<Hit> {
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit> {
         let light_hit = match light.hit(r, 0.0, INFINITY) {
             None => return None,
             Some(hi) => hi,

@@ -27,7 +27,7 @@ impl Scene {
         let mut scene = Self::default();
 
         /* rectangular area light */
-        scene.add(Rectangle::new(
+        scene.add_light(Rectangle::new(
             DMat3::from_cols(
                 DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front + light_dim),
                 DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front - light_dim),

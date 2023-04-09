@@ -37,15 +37,6 @@ impl Object for Medium {
     fn material(&self) -> &Material {
         &self.isotropic
     }
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
-        unimplemented!()
-    }
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        unimplemented!()
-    }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        unimplemented!()
-    }
 
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         None

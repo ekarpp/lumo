@@ -57,7 +57,9 @@ impl Object for Disk {
             Hit::new(t, self, xi, self.normal, self.normal)
         }
     }
+}
 
+impl Sampleable for Disk {
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
