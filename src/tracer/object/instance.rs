@@ -5,11 +5,11 @@ use super::*;
 pub struct Instance<T> {
     /// Object to be instanced
     object: T,
-    /// Transformation applied to the object
+    /// Transformation from world to local
     transform: DAffine3,
-    /// Inverse transformation
+    /// Transformation from local to world
     inv_transform: DAffine3,
-    /// Transformation for normals.
+    /// Transformation for normals from local to world.
     /// Transpose of `inv_transform` without translation.
     normal_transform: DMat3,
 }
@@ -77,6 +77,8 @@ impl<T: Bounded> Bounded for Instance<T> {
 
 impl<T: Object> Object for Instance<T> {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        // inner object is in world coordinates. hence apply inverse
+        // transformation to ray instead of transformation to object.
         let ray_local = r.transform(self.inv_transform);
 
         self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
@@ -95,9 +97,9 @@ impl<T: Object> Object for Instance<T> {
 
 impl<T: Solid> Solid for Instance<T> {
     fn inside(&self, xo: DVec3) -> bool {
-        let xo_transformed = self.transform.transform_point3(xo);
+        let xo_local = self.inv_transform.transform_point3(xo);
 
-        self.object.inside(xo_transformed)
+        self.object.inside(xo_local)
     }
 }
 
