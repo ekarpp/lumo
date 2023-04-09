@@ -84,9 +84,9 @@ impl Object for Sphere {
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
 
-        let dist_light = xo.distance_squared(self.origin);
+        let dist_light2 = xo.distance_squared(self.origin);
 
-        let z = 1.0 + rand_sq.y * ((1.0 - self.radius * self.radius / dist_light).sqrt() - 1.0);
+        let z = 1.0 + rand_sq.y * ((1.0 - self.radius * self.radius / dist_light2).sqrt() - 1.0);
 
         let phi = 2.0 * PI * rand_sq.x;
         let x = phi.cos() * (1.0 - z * z).sqrt();

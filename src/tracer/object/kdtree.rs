@@ -109,22 +109,16 @@ impl<T: Bounded> KdTree<T> {
         } else if t_split < t_start {
             self.hit_subtree(node_second, r, t_start, t_end, &aabb_second)
         } else {
-            let h1 = self.hit_subtree(node_first, r, t_start, t_end, &aabb_first);
-
-            /* if we hit something in the first AABB before the split, there
-             * is no need to process the other subtree. */
-            if h1.as_ref().filter(|h| h.t < t_split).is_some() {
-                h1
-            } else {
-                let h2 = self.hit_subtree(node_second, r, t_start, t_end, &aabb_second);
-                if h1.is_some() && h2.is_some() {
-                    if h1 < h2 {
-                        h1
+            match self.hit_subtree(node_first, r, t_start, t_end, &aabb_first) {
+                None => self.hit_subtree(node_second, r, t_start, t_end, &aabb_second),
+                Some(h1) => {
+                    /* if we hit something in the first AABB before the split,
+                     * there is no need to process the other subtree. */
+                    if h1.t < t_split {
+                        Some(h1)
                     } else {
-                        h2
+                        self.hit_subtree(node_second, r, t_start, h1.t, &aabb_second).or(Some(h1))
                     }
-                } else {
-                    h1.or(h2)
                 }
             }
         }

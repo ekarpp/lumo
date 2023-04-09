@@ -110,7 +110,7 @@ impl Renderer {
                 let ov = rand_sq.y / max_dim;
                 let rgb = self
                     .integrator
-                    .integrate(&self.scene, &self.camera.ray_at(u + ou, v + ov));
+                    .integrate(&self.scene, self.camera.ray_at(u + ou, v + ov));
 
                 self.tone_map.map(rgb)
             })

@@ -59,12 +59,12 @@ impl Scene {
 
     /// Does ray `r` reach the light object `light`? TODO: rewrite
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Object) -> Option<Hit> {
-        let light_hit = light.hit(r, 0.0, INFINITY);
-        let t_max = light_hit.as_ref().map_or(INFINITY, |hit| hit.t - EPSILON);
+        let light_hit = match light.hit(r, 0.0, INFINITY) {
+            None => return None,
+            Some(hi) => hi,
+        };
 
-        if t_max == INFINITY {
-            return None;
-        }
+        let t_max = light_hit.t - EPSILON;
 
         for object in &self.objects {
             if object.hit(r, 0.0, t_max).is_some() {
@@ -72,6 +72,6 @@ impl Scene {
             }
         }
 
-        light_hit
+        Some( light_hit )
     }
 }

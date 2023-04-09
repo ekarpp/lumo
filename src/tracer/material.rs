@@ -72,10 +72,10 @@ impl Material {
         }
     }
 
-    /// Is the material diffuse? I.e. do shadow rays have effect on it.
-    /// (CORRECT TERM?)
-    pub fn is_diffuse(&self) -> bool {
-        matches!(self, Self::Microfacet(..))
+    /// Does the material scattering follow delta distribution? Dumb hack to make
+    /// direct light estimation work.
+    pub fn is_delta(&self) -> bool {
+        matches!(self, Self::Mirror | Self::Glass(_))
     }
 
     /// How much light emitted at `h`?
@@ -89,11 +89,12 @@ impl Material {
     /// What is the color at `ri.origin`?
     pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, ns: DVec3, ng: DVec3) -> DVec3 {
         let xo = ri.origin;
+        let wi = ri.dir;
         match self {
             Self::Isotropic(t) => t.albedo_at(xo),
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ng.dot(ri.dir).abs(),
+            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(ro, ri, ns, ng, t.albedo_at(xo), mfd)
+                bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(xo), mfd)
             }
             _ => DVec3::ZERO,
         }

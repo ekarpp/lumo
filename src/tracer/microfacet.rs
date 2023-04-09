@@ -121,7 +121,7 @@ impl MfDistribution {
                     let roughness2 = cfg.roughness * cfg.roughness;
 
                     roughness2
-                        / (PI * (cos2_theta * (roughness2 - 1.0) + 1.0).powi(2))
+                        / (PI * (1.0 - cos2_theta * (1.0 - roughness2)).powi(2))
                 }
             }
             Self::Beckmann(cfg) => {

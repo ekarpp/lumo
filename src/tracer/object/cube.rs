@@ -70,21 +70,17 @@ impl Object for Cube {
         &self.material
     }
 
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.rectangles
-            .iter()
-            .map(|rect| rect.hit(r, t_min, t_max))
-            .fold(None, |closest, hit| {
-                if closest.is_none() || (hit.is_some() && hit < closest) {
-                    hit
-                } else {
-                    closest
-                }
-            })
-            .map(|mut h| {
-                h.object = self;
-                h
-            })
+    fn hit(&self, r: &Ray, t_min: f64, mut t_max: f64) -> Option<Hit> {
+        let mut h = None;
+
+        for rectangle in &self.rectangles {
+            // if we hit an object, it must be closer than what we have
+            h = rectangle.hit(r, t_min, t_max).or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
+
+        h
     }
 
     fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {

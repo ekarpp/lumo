@@ -1,11 +1,4 @@
 use glam::DVec3;
-#[cfg(debug_assertions)]
-use crate::srgb_to_linear;
-
-/// Maps linear RGB value to luminance
-fn rgb_to_luminance(rgb: DVec3) -> f64 {
-    rgb.dot(DVec3::new(0.2126, 0.7152, 0.0722))
-}
 
 /// Enum for different tone mappers
 pub enum ToneMap {
@@ -27,18 +20,18 @@ impl ToneMap {
         #[cfg(debug_assertions)]
         if rgb.is_nan() {
             println!("Found NaN during tone mapping.");
-            return srgb_to_linear(0, 255, 0);
+            return crate::srgb_to_linear(0, 255, 0);
         }
         #[cfg(debug_assertions)]
         if rgb.is_negative_bitmask() > 0 {
             println!("Found negative value during tone mapping.");
-            return srgb_to_linear(255, 0, 0);
+            return crate::srgb_to_linear(255, 0, 0);
         }
         match self {
             Self::NoMap => rgb,
             Self::Clamp => rgb.clamp(DVec3::ZERO, DVec3::ONE),
             Self::Reinhard => {
-                let l_in = rgb_to_luminance(rgb);
+                let l_in = crate::rgb_to_luminance(rgb);
                 rgb / (1.0 + l_in)
             }
             Self::HableFilmic => {

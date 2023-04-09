@@ -39,15 +39,3 @@ impl<'a> Hit<'a> {
         })
     }
 }
-
-impl PartialEq for Hit<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.t == other.t
-    }
-}
-
-impl PartialOrd for Hit<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.t.partial_cmp(&other.t)
-    }
-}

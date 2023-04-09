@@ -15,11 +15,6 @@ mod path_trace;
 /// jittered sampler.
 const SHADOW_SPLITS: u32 = 1;
 
-/// Russian roulette probability for the path tracer.
-/// Terminates a path at each step with this probability.
-/// Computed values are multiplied by the reciprocal of the inverse probability.
-const PATH_TRACE_RR: f64 = 0.2;
-
 /// Enum to choose which integrator to use
 pub enum Integrator {
     /// Implements the path tracing algorithm with
@@ -45,46 +40,77 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, r: &Ray) -> DVec3 {
+    pub fn integrate(&self, s: &Scene, r: Ray) -> DVec3 {
         match self {
-            Self::PathTrace => path_trace::integrate(s, r, true),
+            Self::PathTrace => path_trace::integrate(s, r),
             Self::DirectLight => direct_light::integrate(s, r),
             Self::BDPathTrace => bd_path_trace::integrate(s, r),
         }
     }
 }
 
-/// Shoots a shadow ray towards random light from `ho`.
-fn shadow_ray(scene: &Scene, ro: &Ray, ho: &Hit, pdf_scatter: &dyn Pdf, rand_sq: DVec2) -> DVec3 {
+/// Shoots a shadow ray towards random light from `ho`. MIS with `pdf_scatter`.
+fn shadow_ray(
+    scene: &Scene,
+    ro: &Ray,
+    ho: &Hit,
+    pdf_scatter: &dyn Pdf,
+    rand_sq: DVec2
+) -> DVec3 {
     let material = ho.object.material();
+    let xo = ho.p;
+    let ng = ho.ng;
+    let ns = ho.ns;
 
-    if !material.is_diffuse() {
-        DVec3::ZERO
-    } else {
-        let xo = ho.p;
-        let light = scene.uniform_random_light();
+    let light = scene.uniform_random_light();
 
-        let pdf_light = ObjectPdf::new(light, xo);
-        match pdf_light.sample_ray(rand_sq) {
+    let mut illuminance = DVec3::ZERO;
+    let pdf_light = ObjectPdf::new(light, xo);
+
+    // refactor these to separate function?
+    // sample light first
+    illuminance += match pdf_light.sample_ray(rand_sq) {
+        None => DVec3::ZERO,
+        Some(ri) => match scene.hit_light(&ri, light) {
             None => DVec3::ZERO,
-            Some(ri) => match scene.hit_light(&ri, light) {
-                None => DVec3::ZERO,
-                Some(_) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
-                    let wi = ri.dir;
-                    let ng = ho.ng;
-                    let ns = ho.ns;
+            Some(hi) => {
+                let p_light = pdf_light.value_for(&ri);
+                let p_scatter = pdf_scatter.value_for(&ri);
+                let wi = ri.dir;
 
-                    let weight = p_light * p_light
-                        / (p_light * p_light + p_scatter * p_scatter);
+                let weight = p_light * p_light
+                    / (p_light * p_light + p_scatter * p_scatter);
 
-                    material.bsdf_f(ro, &ri, ns, ng)
-                        * ng.dot(wi).abs()
-                        * weight
-                        / (p_light + p_scatter)
-                }
+                material.bsdf_f(ro, &ri, ns, ng)
+                    * light.material().emit(&hi)
+                    * ns.dot(wi).abs()
+                    * weight
+                    / (p_light + p_scatter)
             }
         }
-    }
+    };
+
+    // then sample BSDF
+    illuminance += match pdf_scatter.sample_ray(rand_sq) {
+        None => DVec3::ZERO,
+        Some(ri) => match scene.hit_light(&ri, light) {
+            None => DVec3::ZERO,
+            Some(hi) => {
+                let p_light = pdf_light.value_for(&ri);
+                let p_scatter = pdf_scatter.value_for(&ri);
+                let wi = ri.dir;
+
+                let weight = p_scatter * p_scatter
+                    / (p_scatter * p_scatter + p_light * p_light);
+
+                material.bsdf_f(ro, &ri, ns, ng)
+                    * light.material().emit(&hi)
+                    * ns.dot(wi).abs()
+                    * weight
+                    / (p_scatter + p_light)
+            }
+        }
+    };
+
+    illuminance * scene.num_lights() as f64
 }
