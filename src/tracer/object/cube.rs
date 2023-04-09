@@ -46,7 +46,7 @@ impl Cube {
             ],
         }
     }
-
+/*
     /// Choose a rectangle uniformly at random
     fn choose_rectangle(&self) -> &Rectangle {
         let idx = {
@@ -56,6 +56,7 @@ impl Cube {
 
         &self.rectangles[idx]
     }
+*/
 }
 
 impl Bounded for Cube {

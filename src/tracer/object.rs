@@ -61,6 +61,12 @@ pub trait Bounded: Object {
     fn bounding_box(&self) -> AaBoundingBox;
 }
 
+/// An object that has volume in three dimensions
+pub trait Solid: Object {
+    /// Is `xo` inside the solid?
+    fn inside(&self, xo: DVec3) -> bool;
+}
+
 /// Object towards which rays can be sampled
 pub trait Sampleable: Object {
     /// Sample random point on the surface of the object
