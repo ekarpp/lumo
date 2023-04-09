@@ -66,6 +66,13 @@ impl Bounded for Cube {
     }
 }
 
+impl Solid for Cube {
+    fn inside(&self, xo: DVec3) -> bool {
+        // again, only unit cubes
+        xo.min_element() >= 0.0 && xo.max_element() <= 1.0
+    }
+}
+
 impl Object for Cube {
     fn material(&self) -> &Material {
         &self.material

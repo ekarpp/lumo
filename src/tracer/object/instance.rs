@@ -93,6 +93,14 @@ impl<T: Object> Object for Instance<T> {
     }
 }
 
+impl<T: Solid> Solid for Instance<T> {
+    fn inside(&self, xo: DVec3) -> bool {
+        let xo_transformed = self.transform.transform_point3(xo);
+
+        self.object.inside(xo_transformed)
+    }
+}
+
 /// Object that can be instanced
 pub trait Instanceable<T> {
     /// Translate object by `xyz`
