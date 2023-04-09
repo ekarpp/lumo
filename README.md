@@ -86,16 +86,6 @@ fn main() -> Result<(), png::EncodingError> {
 }
 ```
 
-### TODO/WiP
-* Figure out dark patches in transparent microfacet dragon
-* Isotropic mediums (fog, smoke, clouds, ...)
-* Multiple importance sampling in path tracer
-* Parallelize kd-tree construction
-* kd-tree construction in $n \log n$
-* (Texture mapping)
-* (Bidirectional path tracing)
-* (Subsurface scattering)
-
 ### References
 * [Physically Based Rendering](https://www.pbr-book.org/)
 * [Ray Tracing in One Weekend](https://raytracing.github.io/)
@@ -105,12 +95,12 @@ fn main() -> Result<(), png::EncodingError> {
 
 ### Gallery
 
-| ![Stanford dragon](https://i.imgur.com/fWpA188.png) |
+| ![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png) |
 |:--:|
-| *Stanford dragon with 871K triangles. Rendered in 23 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
+| *Stanford dragon with 871K triangles and transparent microfacet BSDF. Rendered in 32 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
-| ![Cornell box](https://i.imgur.com/e19lI5m.png) |
+| ![Cornell box](https://i.imgur.com/3mQDQct.png) |
 |:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 19 minutes using 30 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
+| *Cornell box displaying reflection and refraction. Rendered in 20 minutes using 20 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
 
 ![Circle of spheres](https://i.imgur.com/JxvP1l7.png)
