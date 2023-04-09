@@ -1,7 +1,7 @@
 #![allow(unused_variables, dead_code)]
 use super::*;
 
-use crate::tracer::object::sphere::Sphere;
+use crate::tracer::object::Solid;
 use crate::tracer::texture::Texture;
 
 /// An object of type medium. Mediums represent space where rays can scatter
@@ -10,8 +10,8 @@ use crate::tracer::texture::Texture;
 pub struct Medium {
     /// Density of the medium
     density: f64,
-    /// Bounding sphere of the medium
-    boundary: Sphere,
+    /// Bounding object of the medium
+    boundary: Box<dyn Solid>,
     /// Material of the medium
     isotropic: Material,
 }
@@ -21,13 +21,13 @@ impl Medium {
     ///
     /// # Arguments
     /// * `density` - Density of the medium. In range \[0,1\]
-    /// * `origin` - Origin of the sphere containing the medium
-    /// * `radius` - Radius of the sphere containing the medium
+    /// * `boundary` - Bounding object of the medium
     /// * `color` - Color of the medium
-    pub fn new(density: f64, origin: DVec3, radius: f64, color: DVec3) -> Box<Self> {
+    pub fn new(density: f64, boundary: Box<dyn Solid>, color: DVec3) -> Box<Self> {
+        assert!((0.0..1.0).contains(&density));
         Box::new(Self {
             density,
-            boundary: *Sphere::new(origin, radius, Material::Blank),
+            boundary,
             isotropic: Material::Isotropic(Texture::Solid(color)),
         })
     }
