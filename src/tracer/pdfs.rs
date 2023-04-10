@@ -51,7 +51,7 @@ impl Pdf for IsotropicPdf {
     fn value_for(&self, _ri: &Ray) -> f64 {
         // pdf to scatter * pdf to sample direction
         // directions sampled uniformly on unit sphere => PDF = 1 / (4.0 * π)
-        self.density * (-self.density * self.delta_t).exp()
+        /*self.density * */ (-self.density * self.delta_t).exp()
             / (4.0 * PI)
     }
 }
