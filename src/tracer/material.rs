@@ -4,6 +4,7 @@ use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::Pdf;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
+use std::f64::consts::PI;
 use glam::DVec3;
 
 /// Describes which material an object is made out of
@@ -92,7 +93,9 @@ impl Material {
         let wi = ri.dir;
         match self {
             // cancel the applied shading cosine for isotropics, mirror and glass
-            Self::Isotropic(t, _) => t.albedo_at(xo) / ns.dot(wi).abs(),
+            Self::Isotropic(t, _) => {
+                t.albedo_at(xo) / (4.0 * PI * ns.dot(wi).abs())
+            }
             Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(xo), mfd)
