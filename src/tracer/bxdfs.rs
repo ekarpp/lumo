@@ -111,14 +111,15 @@ pub fn bsdf_microfacet_pdf(
 /// Scattering PDF for isotropic materials
 pub fn bsdf_isotropic_pdf(
     ho: &Hit,
-    _ro: &Ray,
+    ro: &Ray,
     density: f64
 ) -> Option<Box<dyn Pdf>> {
     let xo = ho.p;
+    let v = -ro.dir;
     let to = ho.ng.x;
     let t = ho.t;
     let delta_t = to - t;
-    Some( Box::new(IsotropicPdf::new(xo, density, delta_t)) )
+    Some( Box::new(IsotropicPdf::new(xo, v, density, delta_t)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.
