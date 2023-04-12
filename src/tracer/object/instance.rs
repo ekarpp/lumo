@@ -5,9 +5,9 @@ use super::*;
 pub struct Instance<T> {
     /// Object to be instanced
     object: T,
-    /// Transformation from world to local
-    transform: DAffine3,
     /// Transformation from local to world
+    transform: DAffine3,
+    /// Transformation from world to local
     inv_transform: DAffine3,
     /// Transformation for normals from local to world.
     /// Transpose of `inv_transform` without translation.
@@ -100,6 +100,38 @@ impl<T: Solid> Solid for Instance<T> {
         let xo_local = self.inv_transform.transform_point3(xo);
 
         self.object.inside(xo_local)
+    }
+}
+
+impl<T: Sampleable> Sampleable for Instance<T> {
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+        let sample_local = self.object.sample_on(rand_sq);
+
+        self.transform.transform_point3(sample_local)
+    }
+
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+        let xo_local = self.inv_transform.transform_point3(xo);
+        let sample_local = self.object.sample_towards(xo_local, rand_sq);
+
+        Ray::new(
+            xo,
+            self.transform.transform_vector3(sample_local.dir)
+        )
+    }
+
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
+        let ri_local = ri.transform(self.inv_transform);
+        let (pdf_local, ng_local) = self.object.sample_towards_pdf(&ri_local);
+        let ng = (self.normal_transform * ng_local).normalize();
+
+        let jacobian = self.transform.matrix3.determinant()
+            //
+            / ng.dot(self.transform.matrix3 * ng_local);
+
+        // this needs to be verified, temporary for now
+        // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
+        (pdf_local * jacobian, ng)
     }
 }
 

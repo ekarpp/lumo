@@ -67,11 +67,18 @@ impl Sampleable for Rectangle {
         self.choose_triangle().sample_towards(xo, rand_sq)
     }
 
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         /* ray can hit either of the triangles. sum pdf from both
          * (if miss, pdf = 0) and divide by two. (rectangle = two identical
          * triangles => area two times bigger) */
-        (self.triangles.0.sample_towards_pdf(ri) + self.triangles.1.sample_towards_pdf(ri)) / 2.0
+        let (p, ng) = self.triangles.0.sample_towards_pdf(ri);
+        let (p, ng) = if p == 0.0 {
+            self.triangles.1.sample_towards_pdf(ri)
+        } else {
+            (p, ng)
+        };
+
+        (p / 2.0, ng)
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {

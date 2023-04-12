@@ -93,7 +93,8 @@ impl Pdf for ObjectPdf<'_> {
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
-        self.object.sample_towards_pdf(ri)
+        let (p, _) = self.object.sample_towards_pdf(ri);
+        p
     }
 }
 

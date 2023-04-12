@@ -107,16 +107,20 @@ impl Sampleable for Sphere {
     /* make sphere pdf, area pdf, etc..? */
     /// PDF (w.r.t solid angle) for sampling area of the sphere
     /// that is visible from `xo` (a cone)
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => 0.0,
-            Some(_) => {
+            None => (0.0, DVec3::ZERO),
+            Some(hi) => {
                 let xo = ri.origin;
+                let ni = hi.ng;
 
-                let sin2_theta_max = self.radius * self.radius / self.origin.distance_squared(xo);
+                let sin2_theta_max = self.radius * self.radius
+                    / self.origin.distance_squared(xo);
                 let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
 
-                1.0 / (2.0 * PI * (1.0 - cos_theta_max))
+                let p = 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
+
+                (p, ni)
             }
         }
     }

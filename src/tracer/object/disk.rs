@@ -76,9 +76,10 @@ impl Sampleable for Disk {
         let wi = xi - xo;
         Ray::new(xo, wi)
     }
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => 0.0,
+            None => (0.0, DVec3::NAN),
             Some(hi) => {
                 let area = PI * self.radius * self.radius;
 
@@ -87,7 +88,9 @@ impl Sampleable for Disk {
                 let ni = hi.ng;
                 let wi = ri.dir;
 
-                xo.distance_squared(xi) / (ni.dot(wi).abs() * area)
+                let p = xo.distance_squared(xi) / (ni.dot(wi).abs() * area);
+
+                (p, ni)
             }
         }
     }
