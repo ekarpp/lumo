@@ -141,7 +141,7 @@ impl Sampleable for Sphere {
     /// that is visible from `xo` (a segment formed by a cone)
     fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => (0.0, DVec3::ZERO),
+            None => (0.0, DVec3::NAN),
             Some(hi) => {
                 let xo = ri.origin;
                 let ni = hi.ng;

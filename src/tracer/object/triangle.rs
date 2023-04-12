@@ -150,7 +150,7 @@ impl Sampleable for Triangle {
 
     fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => (0.0, DVec3::ZERO),
+            None => (0.0, DVec3::NAN),
             Some(hi) => {
                 let area = self.b_m_a.cross(self.c_m_a).length() / 2.0;
 
