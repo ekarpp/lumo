@@ -144,14 +144,18 @@ impl Sampleable for Sphere {
             None => (0.0, DVec3::NAN),
             Some(hi) => {
                 let xo = ri.origin;
+                let xi = hi.p;
                 let ni = hi.ng;
+                // if instance calls, `wi` not normalized
+                let wi = ri.dir.normalize();
 
                 let sin2_theta_max = self.radius * self.radius
                     / self.origin.distance_squared(xo);
                 let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
                 // PDF for the cone, but we sample segment?
                 // this is how PBR does it anyways
-                let p = 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
+                let p = xo.distance_squared(xi)
+                    / (2.0 * PI * (1.0 - cos_theta_max) * ni.dot(wi).abs());
 
                 (p, ni)
             }
