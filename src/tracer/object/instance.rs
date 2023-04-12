@@ -123,15 +123,19 @@ impl<T: Sampleable> Sampleable for Instance<T> {
     fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
         let ri_local = ri.transform(self.inv_transform);
         let (pdf_local, ng_local) = self.object.sample_towards_pdf(&ri_local);
-        let ng = (self.normal_transform * ng_local).normalize();
+        if pdf_local == 0.0 {
+            (0.0, DVec3::NAN)
+        } else {
+            let ng = (self.normal_transform * ng_local).normalize();
 
-        let jacobian = self.transform.matrix3.determinant()
+            let jacobian = self.transform.matrix3.determinant()
             //
-            / ng.dot(self.transform.matrix3 * ng_local);
+                / ng.dot(self.transform.matrix3 * ng_local);
 
-        // this needs to be verified, temporary for now
-        // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
-        (pdf_local * jacobian, ng)
+            // this needs to be verified, temporary for now
+            // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
+            (pdf_local * jacobian, ng)
+        }
     }
 }
 
