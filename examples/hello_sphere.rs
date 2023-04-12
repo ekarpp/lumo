@@ -12,7 +12,7 @@ fn main() -> Result<(), png::EncodingError> {
         Material::diffuse(Texture::Solid(srgb_to_linear(190, 200, 210))),
     ));
 
-    scene.add(Sphere::new(
+    scene.add_light(Sphere::new(
         8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
         4.0,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
