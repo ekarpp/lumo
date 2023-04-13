@@ -47,18 +47,18 @@ impl<T: Bounded> Bounded for Instance<T> {
         let mut ax_max = DVec3::ZERO;
         let aabb = self.object.bounding_box();
 
-        let a0 = self.transform.row(0) * aabb.min(Axis::X);
-        let b0 = self.transform.row(0) * aabb.max(Axis::X);
+        let a0 = self.transform.matrix3.row(0) * aabb.min(Axis::X);
+        let b0 = self.transform.matrix3.row(0) * aabb.max(Axis::X);
         ax_min.x += a0.min(b0).dot(DVec3::ONE);
         ax_max.x += a0.max(b0).dot(DVec3::ONE);
 
-        let a1 = self.transform.row(1) * aabb.min(Axis::Y);
-        let b1 = self.transform.row(1) * aabb.max(Axis::Y);
+        let a1 = self.transform.matrix3.row(1) * aabb.min(Axis::Y);
+        let b1 = self.transform.matrix3.row(1) * aabb.max(Axis::Y);
         ax_min.y += a1.min(b1).dot(DVec3::ONE);
         ax_max.y += a1.max(b1).dot(DVec3::ONE);
 
-        let a2 = self.transform.row(2) * aabb.min(Axis::Z);
-        let b2 = self.transform.row(2) * aabb.max(Axis::Z);
+        let a2 = self.transform.matrix3.row(2) * aabb.min(Axis::Z);
+        let b2 = self.transform.matrix3.row(2) * aabb.max(Axis::Z);
         ax_min.z += a2.min(b2).dot(DVec3::ONE);
         ax_max.z += a2.max(b2).dot(DVec3::ONE);
 
@@ -123,13 +123,12 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         } else {
             let ng = (self.normal_transform * ng_local).normalize();
 
-            let jacobian = self.transform.matrix3.determinant()
-            //
-                / ng.dot(self.transform.matrix3 * ng_local);
+            let jacobian = self.transform.matrix3.determinant().abs();
+            // ng.dot(self.transform.matrix3 * ng_local);
 
-            // this needs to be verified, temporary for now
             // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
-            (pdf_local * jacobian, ng)
+            // our T is linear, thus T = d Tx / dx = J_T(x)
+            (pdf_local / jacobian, ng)
         }
     }
 }
