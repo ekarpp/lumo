@@ -42,36 +42,31 @@ impl<T: Bounded> Instance<T> {
 
 impl<T: Bounded> Bounded for Instance<T> {
     fn bounding_box(&self) -> AaBoundingBox {
-        let AaBoundingBox { ax_min, ax_max } = self.object.bounding_box();
-        let v0 = self
-            .transform
-            .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_min.z));
-        let v1 = self
-            .transform
-            .transform_point3(DVec3::new(ax_min.x, ax_min.y, ax_max.z));
-        let v2 = self
-            .transform
-            .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_min.z));
-        let v3 = self
-            .transform
-            .transform_point3(DVec3::new(ax_min.x, ax_max.y, ax_max.z));
-        let v4 = self
-            .transform
-            .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_min.z));
-        let v5 = self
-            .transform
-            .transform_point3(DVec3::new(ax_max.x, ax_min.y, ax_max.z));
-        let v6 = self
-            .transform
-            .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_min.z));
-        let v7 = self
-            .transform
-            .transform_point3(DVec3::new(ax_max.x, ax_max.y, ax_max.z));
+        /* Graphics Gems I, TRANSFORMING AXIS-ALIGNED BOUNDING BOXES */
+        let mut ax_min = DVec3::ZERO;
+        let mut ax_max = DVec3::ZERO;
+        let aabb = self.object.bounding_box();
 
-        AaBoundingBox::new(
-            v0.min(v1).min(v2).min(v3).min(v4).min(v5).min(v6).min(v7),
-            v0.max(v1).max(v2).max(v3).max(v4).max(v5).max(v6).max(v7),
-        )
+        let a0 = self.transform.row(0) * aabb.min(Axis::X);
+        let b0 = self.transform.row(0) * aabb.max(Axis::X);
+        ax_min.x += a0.min(b0).dot(DVec3::ONE);
+        ax_max.x += a0.max(b0).dot(DVec3::ONE);
+
+        let a1 = self.transform.row(1) * aabb.min(Axis::Y);
+        let b1 = self.transform.row(1) * aabb.max(Axis::Y);
+        ax_min.y += a1.min(b1).dot(DVec3::ONE);
+        ax_max.y += a1.max(b1).dot(DVec3::ONE);
+
+        let a2 = self.transform.row(2) * aabb.min(Axis::Z);
+        let b2 = self.transform.row(2) * aabb.max(Axis::Z);
+        ax_min.z += a2.min(b2).dot(DVec3::ONE);
+        ax_max.z += a2.max(b2).dot(DVec3::ONE);
+
+        // translate
+        ax_min += self.transform.translation;
+        ax_max += self.transform.translation;
+
+        AaBoundingBox::new(ax_min, ax_max)
     }
 }
 

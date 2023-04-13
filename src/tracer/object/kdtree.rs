@@ -1,7 +1,6 @@
 use super::*;
 use std::time::Instant;
 use std::f64::INFINITY;
-use crate::Axis;
 
 #[cfg(test)]
 mod kdtree_tests;

@@ -1,9 +1,10 @@
 use crate::rand_utils;
+use crate::Axis;
+use crate::EPSILON;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
-use crate::EPSILON;
 use glam::{DAffine3, DMat3, DVec2, DVec3};
 use std::f64::{consts::PI, INFINITY};
 
