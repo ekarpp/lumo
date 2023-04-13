@@ -78,6 +78,7 @@ impl Sampleable for Rectangle {
             (p, ng)
         };
 
+        // by construction, rectangle has 2x area of triangle
         (p / 2.0, ng)
     }
 
