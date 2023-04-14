@@ -83,9 +83,9 @@ pub trait Sampleable: Object {
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray;
 
     /// PDF for sampling points on the surface uniformly at random. Returns PDF
-    /// and normal at intersection, if found.
+    /// with respect to area and hit to self, if found.
     ///
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3);
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>);
 }

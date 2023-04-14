@@ -85,7 +85,7 @@ impl Sampleable for Sphere {
     }
 
     /// Visible area from `xo` forms a cone. Sample a random point on the
-    /// segment that the visible area forms. Return a ray with direction
+    /// spherical cap that the visible area forms. Return a ray with direction
     /// towards the sampled point. TODO: `xo` inside sphere
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         /* uvw-orthonormal basis,
@@ -112,7 +112,7 @@ impl Sampleable for Sphere {
         // we compute normal at the point on the sphere where the direction
         // `xs - xo` from `xo` intersects the sphere. then add the normal
         // scaled to radius to the origin of the sphere to get the point
-        // on the segment.
+        // on the spherical cap.
 
         let dist_sampled = dist_origin * cos_theta
             - (radius2 - dist_origin2 * sin_theta * sin_theta).max(0.0).sqrt();
@@ -137,27 +137,21 @@ impl Sampleable for Sphere {
         Ray::new(xo, wi)
     }
     /* make sphere pdf, area pdf, etc..? */
-    /// PDF (w.r.t solid angle) for sampling area of the sphere
-    /// that is visible from `xo` (a segment formed by a cone)
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
+    /// PDF (w.r.t area) for sampling area of the sphere
+    /// that is visible from `xo` (a spherical cap formed by a cone)
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => (0.0, DVec3::NAN),
+            None => (0.0, None),
             Some(hi) => {
                 let xo = ri.origin;
-                let xi = hi.p;
-                let ni = hi.ng;
-                // if instance calls, `wi` not normalized
-                let wi = ri.dir.normalize();
+                let radius2 = self.radius * self.radius;
 
-                let sin2_theta_max = self.radius * self.radius
-                    / self.origin.distance_squared(xo);
+                let sin2_theta_max = radius2 / self.origin.distance_squared(xo);
                 let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
-                // PDF for the cone, but we sample segment?
-                // this is how PBR does it anyways
-                let p = xo.distance_squared(xi)
-                    / (2.0 * PI * (1.0 - cos_theta_max) * ni.dot(wi).abs());
 
-                (p, ni)
+                let p = 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
+
+                (p, Some(hi))
             }
         }
     }

@@ -148,19 +148,14 @@ impl Sampleable for Triangle {
         Ray::new(xo, wi)
     }
 
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => (0.0, DVec3::NAN),
+            None => (0.0, None),
             Some(hi) => {
                 let area = self.b_m_a.cross(self.c_m_a).length() / 2.0;
+                let p = 1.0 / area;
 
-                let xo = ri.origin;
-                let xi = hi.p;
-                let ni = hi.ng;
-                let wi = ri.dir;
-                let p = xo.distance_squared(xi) / (ni.dot(wi).abs() * area);
-
-                (p, ni)
+                (p, Some(hi))
             }
         }
     }

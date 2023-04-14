@@ -115,20 +115,27 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         )
     }
 
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, DVec3) {
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
         let ri_local = ri.transform(self.inv_transform);
-        let (pdf_local, ng_local) = self.object.sample_towards_pdf(&ri_local);
-        if pdf_local == 0.0 {
-            (0.0, DVec3::NAN)
-        } else {
+        let (pdf_local, hi_local) = self.object.sample_towards_pdf(&ri_local);
+        if let Some(mut hi) = hi_local {
+            let ng_local = hi.ng;
+
+            let xi = ri.at(hi.t);
             let ng = (self.normal_transform * ng_local).normalize();
 
-            let jacobian = self.transform.matrix3.determinant().abs();
-            // ng.dot(self.transform.matrix3 * ng_local);
+            // object pdf just needs these in world coordinates
+            hi.p = xi;
+            hi.ng = ng;
+
+            let jacobian = self.transform.matrix3.determinant()
+                / ng.dot(self.transform.matrix3 * ng_local);
 
             // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
             // our T is linear, thus T = d Tx / dx = J_T(x)
-            (pdf_local / jacobian, ng)
+            (pdf_local / jacobian, Some(hi))
+        } else {
+            (0.0, None)
         }
     }
 }

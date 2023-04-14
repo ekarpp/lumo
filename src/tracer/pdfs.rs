@@ -8,14 +8,14 @@ use crate::EPSILON;
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 
-/// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
+/// Assumes that each generation and evaluation has same starting point.
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
     fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray>;
-    /// Computes the probability of the given direction.
+    /// Computes the probability of the given direction w.r.t solid angle.
     ///
     /// # Arguments
     /// * `ri` - Ray to compute probability for
@@ -59,7 +59,6 @@ impl Pdf for IsotropicPdf {
         ));
 
         Some( Ray::new(self.xo, wi) )
-        //Some( Ray::new(self.xo, wi) )
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
@@ -93,8 +92,17 @@ impl Pdf for ObjectPdf<'_> {
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
-        let (p, _) = self.object.sample_towards_pdf(ri);
-        p
+        let (p, hi) = self.object.sample_towards_pdf(ri);
+        if let Some(hi) = hi {
+            // convert area measure to solid angle measure
+            // other fields of hit might be in local instance coordinates
+            let xi = hi.p;
+            let ni = hi.ng;
+            let wi = ri.dir;
+            p * self.xo.distance_squared(xi) / ni.dot(wi).abs()
+        } else {
+            0.0
+        }
     }
 }
 
