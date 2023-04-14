@@ -86,7 +86,7 @@ impl Scene {
         h
     }
 
-    /// Does ray `r` reach the light object `light`? TODO: rewrite
+    /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit> {
         let light_hit = match light.hit(r, 0.0, INFINITY) {
             None => return None,

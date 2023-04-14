@@ -4,7 +4,6 @@ use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::Pdf;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
-use std::f64::consts::PI;
 use glam::DVec3;
 
 /// Describes which material an object is made out of
@@ -17,8 +16,8 @@ pub enum Material {
     Mirror,
     /// Perfect refraction with refraction index as argument
     Glass(f64),
-    /// Isotropic medium. Density as the second argument.
-    Isotropic(Texture, f64),
+    /// Isotropic medium with density as the argument
+    Isotropic(f64),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -93,10 +92,9 @@ impl Material {
         let wi = ri.dir;
         match self {
             // cancel the applied shading cosine for isotropics, mirror and glass
-            Self::Isotropic(t, _) => {
-                t.albedo_at(xo) / (4.0 * PI * ns.dot(wi).abs())
+            Self::Mirror | Self::Glass(..) | Self::Isotropic(_) => {
+                DVec3::ONE / ns.dot(wi).abs()
             }
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(xo), mfd)
             }
@@ -109,8 +107,8 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Isotropic(_, density) => {
-                bxdfs::bsdf_isotropic_pdf(ho, ro, *density)
+            Self::Isotropic(_) => {
+                bxdfs::bsdf_isotropic_pdf(ho, ro)
             }
             Self::Microfacet(t, mfd) => {
                 let xo = ho.p;

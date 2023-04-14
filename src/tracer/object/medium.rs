@@ -1,9 +1,6 @@
 #![allow(unused_variables, dead_code)]
 use super::*;
 
-use crate::tracer::object::Solid;
-use crate::tracer::texture::Texture;
-
 /// An object of type medium. Mediums represent space where rays can scatter
 /// at random depending on density. Examples of real life mediums include smoke,
 /// fog, and clouds.
@@ -12,6 +9,8 @@ pub struct Medium {
     density: f64,
     /// Bounding object of the medium
     boundary: Box<dyn Solid>,
+    /// Color of the medium
+    color: DVec3,
     /// Material of the medium
     isotropic: Material,
 }
@@ -28,7 +27,8 @@ impl Medium {
         Box::new(Self {
             density,
             boundary,
-            isotropic: Material::Isotropic(Texture::Solid(color), density),
+            color,
+            isotropic: Material::Isotropic(density),
         })
     }
 }
