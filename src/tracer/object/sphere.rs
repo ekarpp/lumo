@@ -144,14 +144,26 @@ impl Sampleable for Sphere {
             None => (0.0, None),
             Some(hi) => {
                 let xo = ri.origin;
+                // if instance calls, not neccessarily normalized
+                let wi = ri.dir.normalize();
+                let ng = hi.ng;
                 let radius2 = self.radius * self.radius;
+                let dist_origin2 = self.origin.distance_squared(xo);
 
-                let sin2_theta_max = radius2 / self.origin.distance_squared(xo);
+                let sin2_theta_max = radius2 / dist_origin2;
                 let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
 
-                let p = 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
+                // probability w.r.t solid angle
+                let p_sa = 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
 
-                (p, Some(hi))
+                // probability w.r.t area
+                let p_a = p_sa * wi.dot(ng).abs() / dist_origin2;
+
+                // think this measures the area of the base disk of the cone
+                // and not the spherical cap. regardless, the area difference
+                // is small.
+
+                (p_a, Some(hi))
             }
         }
     }
