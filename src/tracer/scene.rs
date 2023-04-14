@@ -1,6 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Object, Sampleable, Plane, Rectangle};
+use crate::tracer::{Object, Sampleable, Plane, Rectangle, Medium};
 use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
@@ -16,14 +16,18 @@ mod empty_box;
 pub struct Scene {
     /// All of the objects in the scene.
     pub objects: Vec<Box<dyn Object>>,
-    /// Contains all lights in the scene
+    /// Contains all lights in the scene.
     pub lights: Vec<Box<dyn Sampleable>>,
+    /// Contains all mediums in the scene.
+    pub mediums: Vec<Box<Medium>>,
 }
 
 impl Scene {
     /// Add a non-light object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
-        assert!(!matches!(obj.material(), Material::Light(_)));
+        assert!(!matches!(
+            obj.material(), Material::Light(_) | Material::Isotropic(..)
+        ));
 
         self.objects.push(obj);
     }
@@ -33,6 +37,11 @@ impl Scene {
         assert!(matches!(light.material(), Material::Light(_)));
 
         self.lights.push(light);
+    }
+
+    /// Adds a medium to the scene
+    pub fn add_medium(&mut self, medium: Box<Medium>) {
+        self.mediums.push(medium);
     }
 
     /// Returns number of lights in the scene
@@ -66,6 +75,14 @@ impl Scene {
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }
 
+        // super lazy, something better should be done.
+        // use enum wrapper? have issues with instances..
+        for medium in &self.mediums {
+            h = medium.hit(r, 0.0, t_max).or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
+
         h
     }
 
@@ -80,6 +97,18 @@ impl Scene {
 
         for object in &self.objects {
             if object.hit(r, 0.0, t_max).is_some() {
+                return None;
+            }
+        }
+
+        for light in &self.lights {
+            if light.hit(r, 0.0, t_max).is_some() {
+                return None;
+            }
+        }
+
+        for medium in &self.mediums {
+            if medium.hit(r, 0.0, t_max).is_some() {
                 return None;
             }
         }
