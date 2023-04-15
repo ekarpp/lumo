@@ -164,6 +164,7 @@ impl<T: Object> Instanceable<T> for T {
     }
 
     fn scale(self, x: f64, y: f64, z: f64) -> Box<Instance<T>> {
+        assert!(x * y * z != 0.0);
         let s = DVec3::new(x, y, z);
         Instance::new(self, DAffine3::from_scale(s))
     }
@@ -191,6 +192,7 @@ impl<T: Object> Instance<T> {
 
     /// Apply scale AFTER current transformations
     pub fn scale(self, x: f64, y: f64, z: f64) -> Box<Self> {
+        assert!(x * y * z != 0.0);
         let s = DVec3::new(x, y, z);
         Self::new(self.object, DAffine3::from_scale(s) * self.transform)
     }
