@@ -1,7 +1,6 @@
 use super::*;
 use std::time::Instant;
 use std::f64::INFINITY;
-use crate::Axis;
 
 #[cfg(test)]
 mod kdtree_tests;
@@ -145,20 +144,6 @@ impl<T: Bounded> Object for KdTree<T> {
         } else {
             self.hit_subtree(&self.root, r, t_start, t_end, &self.boundary)
         }
-    }
-
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3 {
-        // pick at random a triangle and do it
-        todo!()
-    }
-
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        // pick at random a triangle and do it
-        todo!()
-    }
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        // pick at random a triangle and do it
-        todo!()
     }
 }
 

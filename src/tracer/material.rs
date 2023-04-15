@@ -16,8 +16,6 @@ pub enum Material {
     Mirror,
     /// Perfect refraction with refraction index as argument
     Glass(f64),
-    /// Isotropic medium
-    Isotropic(Texture),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -91,7 +89,7 @@ impl Material {
         let xo = ri.origin;
         let wi = ri.dir;
         match self {
-            Self::Isotropic(t) => t.albedo_at(xo),
+            // cancel the applied shading cosine for mirror and glass
             Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(xo), mfd)
@@ -105,7 +103,6 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Isotropic(_) => bxdfs::bsdf_isotropic_pdf(ho, ro),
             Self::Microfacet(t, mfd) => {
                 let xo = ho.p;
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(xo), mfd)

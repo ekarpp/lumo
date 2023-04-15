@@ -71,7 +71,7 @@ fn main() -> Result<(), std::io::Error> {
     ));
 
     let r = 0.2;
-    scene.add(Sphere::new(
+    scene.add_light(Sphere::new(
         DVec3::new(0.0, ground + r + 0.1, 0.0),
         r,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),

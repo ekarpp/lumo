@@ -43,12 +43,13 @@ impl Object for Sphere {
 
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        let tmp = r.origin - self.origin;
+        let xo = r.origin;
+        let from_origin = xo - self.origin;
         // coefficients of "hit quadratic"
         // .dot faster than .length_squared, recheck
         let a = r.dir.dot(r.dir);
-        let half_b = tmp.dot(r.dir);
-        let c = tmp.dot(tmp) - self.radius * self.radius;
+        let half_b = from_origin.dot(r.dir);
+        let c = from_origin.dot(from_origin) - self.radius * self.radius;
         let disc = half_b * half_b - a * c;
 
         if disc < 0.0 {
@@ -68,7 +69,9 @@ impl Object for Sphere {
 
         Hit::new(t, self, xi, ni, ni)
     }
+}
 
+impl Sampleable for Sphere {
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);
@@ -76,39 +79,89 @@ impl Object for Sphere {
         self.origin + self.radius * rand_sph
     }
 
-    /// Visible area from `xo` forms a cone.
-    /// Sample a random direction towards `xo` within the cone.
-    /// HOW SPECIFICALLY? disk transform?
+    /// Visible area from `xo` forms a cone. Sample a random point on the
+    /// spherical cap that the visible area forms. Return a ray with direction
+    /// towards the sampled point. TODO: `xo` inside sphere
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
         /* uvw-orthonormal basis,
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
 
-        let dist_light2 = xo.distance_squared(self.origin);
+        // SAMPLING INSIDE SPHERE?
 
-        let z = 1.0 + rand_sq.y * ((1.0 - self.radius * self.radius / dist_light2).sqrt() - 1.0);
+        let dist_origin = xo.distance(self.origin);
+        let dist_origin2 = dist_origin * dist_origin;
+        let radius2 = self.radius * self.radius;
 
-        let phi = 2.0 * PI * rand_sq.x;
-        let x = phi.cos() * (1.0 - z * z).sqrt();
-        let y = phi.sin() * (1.0 - z * z).sqrt();
+        // theta_max = maximum angle of the visible cone to sphere
 
-        let wi = uvw.to_world(DVec3::new(x, y, z));
+        let sin2_theta_max = radius2 / dist_origin2;
+        let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
+
+        let cos_theta = (1.0 - rand_sq.x) + rand_sq.x * cos_theta_max;
+        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+        let phi = 2.0 * PI * rand_sq.y;
+
+        // we have a point on the disk base of the cone.
+        // consider disk origin to be at the sphere origin, say `xs`.
+        // we compute normal at the point on the sphere where the direction
+        // `xs - xo` from `xo` intersects the sphere. then add the normal
+        // scaled to radius to the origin of the sphere to get the point
+        // on the spherical cap.
+
+        let dist_sampled = dist_origin * cos_theta
+            - (radius2 - dist_origin2 * sin_theta * sin_theta).max(0.0).sqrt();
+
+        // alpha = angle between `origin - xo` and normal at sampled point
+        let cos_alpha = (dist_origin2 + radius2 - dist_sampled * dist_sampled)
+            / (2.0 * dist_origin * self.radius);
+        let sin_alpha = (1.0 - cos_alpha * cos_alpha).max(0.0).sqrt();
+
+        let ng_local = DVec3::new(
+            phi.cos() * sin_alpha,
+            phi.sin() * sin_alpha,
+            cos_alpha,
+        );
+
+        let ng = uvw.to_world(ng_local);
+
+        let xi = self.origin + ng * self.radius;
+
+        let wi = xi - xo;
 
         Ray::new(xo, wi)
     }
     /* make sphere pdf, area pdf, etc..? */
-    /// PDF (w.r.t solid angle) for sampling area of the sphere
-    /// that is visible from `xo` (a cone)
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+    /// PDF (w.r.t area) for sampling area of the sphere
+    /// that is visible from `xo` (a spherical cap formed by a cone)
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => 0.0,
-            Some(_) => {
+            None => (0.0, None),
+            Some(hi) => {
                 let xo = ri.origin;
 
-                let sin2_theta_max = self.radius * self.radius / self.origin.distance_squared(xo);
-                let cos_theta_max = (1.0 - sin2_theta_max).sqrt();
+                let radius2 = self.radius * self.radius;
+                let dist_origin = self.origin.distance(xo);
+                let dist_origin2 = dist_origin * dist_origin;
 
-                1.0 / (2.0 * PI * (1.0 - cos_theta_max))
+                let sin2_theta_max = radius2 / dist_origin2;
+                let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
+
+                let dist_tangent = cos_theta_max * dist_origin;
+
+                let cos_alpha_max =
+                    (dist_origin2 + radius2 - dist_tangent * dist_tangent)
+                    / (2.0 * dist_origin * self.radius);
+
+                let cap_area = 2.0 * PI * (1.0 - cos_alpha_max) * radius2;
+
+                let p = 1.0 / cap_area;
+
+                // slightly faster way is to directly compute the solid angle
+                // of the visible cone. the area is then with respect to the
+                // disk at the base of the spherical cap though.
+
+                (p, Some(hi))
             }
         }
     }

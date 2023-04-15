@@ -57,7 +57,9 @@ impl Object for Disk {
             Hit::new(t, self, xi, self.normal, self.normal)
         }
     }
+}
 
+impl Sampleable for Disk {
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
@@ -74,18 +76,14 @@ impl Object for Disk {
         let wi = xi - xo;
         Ray::new(xo, wi)
     }
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64 {
+
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
         match self.hit(ri, 0.0, INFINITY) {
-            None => 0.0,
+            None => (0.0, None),
             Some(hi) => {
-                let area = PI * self.radius * self.radius;
+                let p = 1.0 / (PI * self.radius * self.radius);
 
-                let xo = ri.origin;
-                let xi = hi.p;
-                let ni = hi.ng;
-                let wi = ri.dir;
-
-                xo.distance_squared(xi) / (ni.dot(wi).abs() * area)
+                (p, Some(hi))
             }
         }
     }

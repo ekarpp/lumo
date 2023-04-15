@@ -1,61 +1,37 @@
 use crate::rand_utils;
 use crate::tracer::bxdfs;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::object::Object;
+use crate::tracer::object::Sampleable;
 use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
 use crate::EPSILON;
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 
-/// Assumes that each generation and evaluation has same starting point. DO AS ENUM?
+/// Assumes that each generation and evaluation has same starting point.
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
     fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray>;
-    /// Computes the probability of the given direction.
+    /// Computes the probability of the given direction w.r.t solid angle.
     ///
     /// # Arguments
     /// * `ri` - Ray to compute probability for
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
-/// TODO
-pub struct IsotropicPdf {
-    xo: DVec3,
-}
-
-impl IsotropicPdf {
-    pub fn new(xo: DVec3) -> Self {
-        Self { xo }
-    }
-}
-
-impl Pdf for IsotropicPdf {
-    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
-        let wi = rand_utils::square_to_sphere(rand_sq);
-        Some( Ray::new(self.xo, wi) )
-    }
-
-    fn value_for(&self, _ri: &Ray) -> f64 {
-        let d: f64 = 0.1; //hi.object.density();
-                          // hi.t = 1.5
-        d * (-d * 1.5).exp()
-    }
-}
-
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
-    object: &'a dyn Object,
+    object: &'a dyn Sampleable,
     /// Point from where the object should be visible
     xo: DVec3,
 }
 
 impl<'a> ObjectPdf<'a> {
-    pub fn new(object: &'a dyn Object, xo: DVec3) -> Self {
+    pub fn new(object: &'a dyn Sampleable, xo: DVec3) -> Self {
         Self { object, xo }
     }
 }
@@ -66,7 +42,17 @@ impl Pdf for ObjectPdf<'_> {
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
-        self.object.sample_towards_pdf(ri)
+        let (p, hi) = self.object.sample_towards_pdf(ri);
+        if let Some(hi) = hi {
+            // convert area measure to solid angle measure
+            // other fields of hit might be in local instance coordinates
+            let xi = hi.p;
+            let ni = hi.ng;
+            let wi = ri.dir;
+            p * self.xo.distance_squared(xi) / ni.dot(wi).abs()
+        } else {
+            0.0
+        }
     }
 }
 
@@ -148,7 +134,7 @@ impl MfdPdf {
         let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
         let local_wi = bxdfs::reflect(local_v, local_wh);
 
-        if local_wi.z < 0.0 {
+        if local_wi.z <= 0.0 {
             // bad sample, do something else?
             None
         } else {

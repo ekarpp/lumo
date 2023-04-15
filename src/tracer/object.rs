@@ -1,9 +1,10 @@
 use crate::rand_utils;
+use crate::Axis;
+use crate::EPSILON;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
 use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
-use crate::EPSILON;
 use glam::{DAffine3, DMat3, DVec2, DVec3};
 use std::f64::{consts::PI, INFINITY};
 
@@ -34,8 +35,6 @@ mod disk;
 mod instance;
 /// kD-trees, used for complex meshes
 mod kdtree;
-/// Medium, fog, smoke, etc
-mod medium;
 /// Defines infinite planes
 mod plane;
 /// Defines rectangles. Built from two triangles.
@@ -53,9 +52,18 @@ pub trait Object: Sync {
 
     /// dumb
     fn material(&self) -> &Material;
+}
 
+/// Objects that can be contained within an AABB
+pub trait Bounded: Object {
+    /// Axis aligned box that contains the object
+    fn bounding_box(&self) -> AaBoundingBox;
+}
+
+/// Object towards which rays can be sampled
+pub trait Sampleable: Object {
     /// Sample random point on the surface of the object
-    fn sample_on(&self, _rand_sq: DVec2) -> DVec3;
+    fn sample_on(&self, rand_sq: DVec2) -> DVec3;
 
     /// Sample random ray from `xo` towards area of object
     /// that is visible form `xo`
@@ -63,17 +71,12 @@ pub trait Object: Sync {
     /// # Arguments
     /// * `xo` - Point on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray;
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray;
 
-    /// PDF for sampling points on the surface uniformly at random
+    /// PDF for sampling points on the surface uniformly at random. Returns PDF
+    /// with respect to area and hit to self, if found.
     ///
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
-    fn sample_towards_pdf(&self, ri: &Ray) -> f64;
-}
-
-/// Objects that can be contained within an AABB
-pub trait Bounded: Object {
-    /// Axis aligned box that contains the object
-    fn bounding_box(&self) -> AaBoundingBox;
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>);
 }
