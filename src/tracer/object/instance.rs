@@ -90,14 +90,6 @@ impl<T: Object> Object for Instance<T> {
     }
 }
 
-impl<T: Solid> Solid for Instance<T> {
-    fn inside(&self, xo: DVec3) -> bool {
-        let xo_local = self.inv_transform.transform_point3(xo);
-
-        self.object.inside(xo_local)
-    }
-}
-
 impl<T: Sampleable> Sampleable for Instance<T> {
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
         let sample_local = self.object.sample_on(rand_sq);

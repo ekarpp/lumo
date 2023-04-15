@@ -46,30 +46,12 @@ impl Cube {
             ],
         }
     }
-/*
-    /// Choose a rectangle uniformly at random
-    fn choose_rectangle(&self) -> &Rectangle {
-        let idx = {
-            let rnd = rand_utils::rand_f64() * 6.0;
-            rnd.floor() as usize
-        };
-
-        &self.rectangles[idx]
-    }
-*/
 }
 
 impl Bounded for Cube {
     fn bounding_box(&self) -> AaBoundingBox {
         // we only support unit cubes, so... let instances do the job.
         AaBoundingBox::new(DVec3::ZERO, DVec3::ONE)
-    }
-}
-
-impl Solid for Cube {
-    fn inside(&self, xo: DVec3) -> bool {
-        // again, only unit cubes
-        xo.min_element() >= 0.0 && xo.max_element() <= 1.0
     }
 }
 
@@ -91,21 +73,3 @@ impl Object for Cube {
         h
     }
 }
-/*
-    fn sample_towards(&self, _xo: DVec3, _rand_sq: DVec2) -> Ray {
-        /* add normal to rectangle, now can do visible area of cube??
-         * add middle point of rectangle? 0.5a + 0.5c
-         * (dot prod with all normals. need direction? dot < 0.0 => visible)
-         * weight faces that have lower dot prod.. interesting.. */
-        unimplemented!()
-    }
-
-    fn sample_towards_pdf(&self, _ri: &Ray) -> f64 {
-        unimplemented!()
-    }
-
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        self.choose_rectangle().sample_on(rand_sq)
-    }
-}
-*/

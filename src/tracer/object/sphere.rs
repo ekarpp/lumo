@@ -70,12 +70,6 @@ impl Object for Sphere {
     }
 }
 
-impl Solid for Sphere {
-    fn inside(&self, xo: DVec3) -> bool {
-        xo.distance_squared(self.origin) < self.radius * self.radius
-    }
-}
-
 impl Sampleable for Sphere {
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
