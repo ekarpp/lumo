@@ -1,5 +1,4 @@
 ## Lumo
-
 [![crates.io](https://img.shields.io/crates/v/lumo)](https://crates.io/crates/lumo)
 [![docs.rs](https://img.shields.io/docsrs/lumo)](https://docs.rs/lumo)
 [![Coverage](https://img.shields.io/coverallsCoverage/github/ekarpp/lumo)](https://coveralls.io/github/ekarpp/lumo)
@@ -9,9 +8,9 @@ Lumo is a CPU based multithreaded rendering engine. Made with the goal of learni
 ### Features
 * Area light sampling
 * Path tracing with next event estimation
-* Microfacet BSDF with Beckmann and GGX normal distribution functions
-* Multiple importance sampling from VNDF for GGX
-* Disney diffuse BRDF with energy normalization used in Frostbite
+* [Cook-Torrance microfacet BSDF](https://doi.org/10.1145/357290.357293) with [Beckmann and GGX](http://dx.doi.org/10.2312/EGWR/EGSR07/195-206) normal distribution functions
+* [Multiple importance sampling from VNDF for GGX](https://jcgt.org/published/0007/04/01/)
+* [Disney diffuse BRDF](https://disneyanimation.com/publications/physically-based-shading-at-disney/) with [energy normalization used in Frostbite engine](https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf)
 * Vertex and normal parsing from .OBJ files
 * Stratified sampling
 * kd-tree with SAH
@@ -41,48 +40,42 @@ Options:
 ```
 
 #### Using the API
-
 The `hello_sphere.rs` example is written as follows:
 
 ```rust
-use lumo::*;
-use lumo::tracer::*;
 use glam::DVec3;
+use lumo::tracer::*;
+use lumo::*;
 
 fn main() -> Result<(), png::EncodingError> {
     let camera = Camera::default();
     let mut scene = Scene::default();
 
-    scene.add(
-        Plane::new(
-            DVec3::NEG_Y,
-            DVec3::Y,
-            Material::diffuse(Texture::Solid(srgb_to_linear(190, 200, 210)))
-        )
-    );
+    scene.add(Plane::new(
+        DVec3::NEG_Y,
+        DVec3::Y,
+        Material::diffuse(Texture::Solid(srgb_to_linear(190, 200, 210))),
+    ));
 
-    scene.add(
-        Sphere::new(
-            8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
-            4.0,
-            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255)))
-        )
-    );
+    scene.add_light(Sphere::new(
+        8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
+        4.0,
+        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+    ));
 
     scene.add(
         Sphere::new(
             DVec3::ZERO,
             1.0,
-            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 255)))
+            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 255))),
         )
-            .scale(0.3, 0.3, 0.3)
-            .translate(0.0, -0.7, -1.5)
+        .scale(0.3, 0.3, 0.3)
+        .translate(0.0, -0.7, -1.5),
     );
 
     let mut renderer = Renderer::new(scene, camera);
     renderer.set_samples(36);
-    renderer.render()
-        .save("hello.png")
+    renderer.render().save("hello.png")
 }
 ```
 
@@ -94,13 +87,6 @@ fn main() -> Result<(), png::EncodingError> {
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
 ### Gallery
-
-| ![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png) |
-|:--:|
-| *Stanford dragon with 871K triangles and transparent microfacet BSDF. Rendered in 32 minutes using 40 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
-
-| ![Cornell box](https://i.imgur.com/3mQDQct.png) |
-|:--:|
-| *Cornell box displaying reflection and refraction. Rendered in 20 minutes using 20 threads of Intel Xeon Gold 6248. 4096 samples per pixel.* |
-
+![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png)
+![Cornell box](https://i.imgur.com/PoEVv6b.png)
 ![Circle of spheres](https://i.imgur.com/JxvP1l7.png)
