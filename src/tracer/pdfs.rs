@@ -134,7 +134,7 @@ impl MfdPdf {
         let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
         let local_wi = bxdfs::reflect(local_v, local_wh);
 
-        if local_wi.z < 0.0 {
+        if local_wi.z <= 0.0 {
             // bad sample, do something else?
             None
         } else {
