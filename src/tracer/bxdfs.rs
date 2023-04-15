@@ -1,6 +1,6 @@
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{DeltaPdf, IsotropicPdf, MfdPdf, Pdf};
+use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf};
 use crate::tracer::ray::Ray;
 use glam::DVec3;
 use std::f64::consts::PI;
@@ -106,16 +106,6 @@ pub fn bsdf_microfacet_pdf(
     let xo = ho.p;
     let v = -ro.dir;
     Some( Box::new(MfdPdf::new(xo, v, ng, albedo, *mfd)) )
-}
-
-/// Scattering PDF for isotropic materials
-pub fn bsdf_isotropic_pdf(
-    ho: &Hit,
-    ro: &Ray,
-) -> Option<Box<dyn Pdf>> {
-    let xo = ho.p;
-    let v = -ro.dir;
-    Some( Box::new(IsotropicPdf::new(xo, v)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.

@@ -40,16 +40,6 @@ fn main() -> Result<(), std::io::Error> {
         .translate(0.2, -1.0, -1.7),
     );
 
-    scene.add(
-        Medium::new(
-            Cube::new(Material::Blank)
-                .scale(10.0, 10.0, 10.0)
-                .translate(-5.0, -5.0, -5.0),
-            0.1,
-            srgb_to_linear(255, 0, 255)
-        )
-    );
-
     let renderer = Renderer::new(scene, camera);
     renderer.render().save("box.png")?;
     Ok(())

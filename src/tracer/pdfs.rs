@@ -22,59 +22,6 @@ pub trait Pdf {
     fn value_for(&self, ri: &Ray) -> f64;
 }
 
-/// Scattering for isotropic materials
-pub struct IsotropicPdf {
-    /// Point of impact in the isotropic material
-    xo: DVec3,
-    /// ONB for view direction
-    uvw: Onb,
-}
-
-impl IsotropicPdf {
-    pub fn new(xo: DVec3, v: DVec3) -> Self {
-        Self {
-            xo,
-            uvw: Onb::new(v),
-        }
-    }
-}
-
-impl Pdf for IsotropicPdf {
-    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
-        let wi = rand_utils::square_to_sphere(rand_sq);
-
-        Some( Ray::new(self.xo, wi) )
-        /*
-        let g = -0.8;
-        let fract = (1.0 - g * g) / (1.0 - g + 2.0 * g * rand_sq.x);
-        let cos_theta = (1.0 + g * g - fract * fract) / (2.0 * g);
-        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
-        let phi = 2.0 * PI * rand_sq.y;
-
-        let wi = self.uvw.to_world(DVec3::new(
-            sin_theta * phi.cos(),
-            sin_theta * phi.sin(),
-            cos_theta
-        ));
-
-        Some( Ray::new(self.xo, wi) )
-         */
-    }
-
-    fn value_for(&self, _ri: &Ray) -> f64 {
-        /*
-        let wi = ri.dir;
-        let cos_theta = wi.dot(self.uvw.w);
-        let g = -0.8;
-        let denom = 1.0 + g * g + 2.0 * g * cos_theta;
-        // pdf to scatter * pdf to sample direction
-        // directions sampled uniformly on unit sphere => PDF = 1 / (4.0 * π)
-        (1.0 - g * g) / (4.0 * PI * denom * denom.max(0.0).sqrt())
-         */
-        1.0 / (4.0 * PI)
-    }
-}
-
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
