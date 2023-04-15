@@ -45,11 +45,10 @@ impl Object for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let from_origin = xo - self.origin;
-        // coefficients of "hit quadratic"
-        // .dot faster than .length_squared, recheck
-        let a = r.dir.dot(r.dir);
+
+        let a = r.dir.length_squared();
         let half_b = from_origin.dot(r.dir);
-        let c = from_origin.dot(from_origin) - self.radius * self.radius;
+        let c = from_origin.length_squared() - self.radius * self.radius;
         let disc = half_b * half_b - a * c;
 
         if disc < 0.0 {
