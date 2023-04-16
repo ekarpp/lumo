@@ -1,6 +1,8 @@
 use super::*;
 use crate::tracer::texture::Texture;
 
+const NUM_RAYS: usize = 10000;
+
 fn get_mat() -> Material {
     Material::diffuse(Texture::Solid(DVec3::ONE))
 }
@@ -40,4 +42,25 @@ fn no_self_intersect() {
     );
     let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 0.0, -1.0));
     assert!(t.hit(&r, 0.0, INFINITY).is_none());
+}
+
+#[test]
+fn sampled_rays_hit() {
+    let tri = Triangle::new(
+        (
+            DVec3::ZERO,
+            DVec3::X,
+            DVec3::X + DVec3::Y,
+        ),
+        get_mat(),
+    );
+    let xo = 5.0 * DVec3::Z;
+
+    for _ in 0..NUM_RAYS {
+        let wi = tri.sample_towards(xo, rand_utils::unit_square());
+        let ri = Ray::new(xo, wi);
+        let (p, _) = tri.sample_towards_pdf(&ri);
+
+        assert!(p > 0.0);
+    }
 }
