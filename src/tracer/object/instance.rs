@@ -97,14 +97,11 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         self.transform.transform_point3(sample_local)
     }
 
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         let xo_local = self.inv_transform.transform_point3(xo);
-        let sample_local = self.object.sample_towards(xo_local, rand_sq);
+        let dir_local = self.object.sample_towards(xo_local, rand_sq);
 
-        Ray::new(
-            xo,
-            self.transform.transform_vector3(sample_local.dir)
-        )
+        self.transform.transform_vector3(dir_local)
     }
 
     fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {

@@ -1,4 +1,5 @@
 use crate::tracer::object::Object;
+use crate::tracer::ray::Ray;
 use glam::DVec3;
 
 /// Stores information about a hit between a ray and an object.
@@ -37,5 +38,13 @@ impl<'a> Hit<'a> {
             ns,
             ng,
         })
+    }
+
+    /// Generates a ray at point of impact. TODO: fix origin for fp inaccuracies.
+    pub fn generate_ray(&self, wi: DVec3) -> Ray {
+        Ray::new(
+            self.p,
+            wi
+        )
     }
 }

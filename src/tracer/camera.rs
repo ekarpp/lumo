@@ -32,7 +32,7 @@ impl Camera {
     /// # Arguments
     /// * `x` - x coordinate in a \[-1,1\]^2 square
     /// * `y` - y coordinate in a \[-1,1\]^2 square
-    pub fn ray_at(&self, x: f64, y: f64) -> Ray {
+    pub fn generate_ray(&self, x: f64, y: f64) -> Ray {
         Ray::new(self.origin, self.forward + x * self.right + y * self.up)
     }
 

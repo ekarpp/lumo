@@ -69,45 +69,51 @@ fn shadow_ray(
 
     // refactor these to separate function?
     // sample light first
-    illuminance += match pdf_light.sample_ray(rand_sq) {
+    illuminance += match pdf_light.sample_direction(rand_sq) {
         None => DVec3::ZERO,
-        Some(ri) => match scene.hit_light(&ri, light) {
-            None => DVec3::ZERO,
-            Some(hi) => {
-                let p_light = pdf_light.value_for(&ri);
-                let p_scatter = pdf_scatter.value_for(&ri);
-                let wi = ri.dir;
+        Some(wi) => {
+            let ri = ho.generate_ray(wi);
+            match scene.hit_light(&ri, light) {
+                None => DVec3::ZERO,
+                Some(hi) => {
+                    let p_light = pdf_light.value_for(&ri);
+                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let wi = ri.dir;
 
-                let weight = p_light * p_light
-                    / (p_light * p_light + p_scatter * p_scatter);
+                    let weight = p_light * p_light
+                        / (p_light * p_light + p_scatter * p_scatter);
 
-                material.bsdf_f(ro, &ri, ns, ng)
-                    * light.material().emit(&hi)
-                    * ns.dot(wi).abs()
-                    * weight
-                    / (p_light + p_scatter)
+                    material.bsdf_f(ro, &ri, ns, ng)
+                        * light.material().emit(&hi)
+                        * ns.dot(wi).abs()
+                        * weight
+                        / (p_light + p_scatter)
+                }
             }
         }
     };
 
     // then sample BSDF
-    illuminance += match pdf_scatter.sample_ray(rand_sq) {
+    illuminance += match pdf_scatter.sample_direction(rand_sq) {
         None => DVec3::ZERO,
-        Some(ri) => match scene.hit_light(&ri, light) {
-            None => DVec3::ZERO,
-            Some(hi) => {
-                let p_light = pdf_light.value_for(&ri);
-                let p_scatter = pdf_scatter.value_for(&ri);
-                let wi = ri.dir;
+        Some(wi) => {
+            let ri = ho.generate_ray(wi);
+            match scene.hit_light(&ri, light) {
+                None => DVec3::ZERO,
+                Some(hi) => {
+                    let p_light = pdf_light.value_for(&ri);
+                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let wi = ri.dir;
 
-                let weight = p_scatter * p_scatter
-                    / (p_scatter * p_scatter + p_light * p_light);
+                    let weight = p_scatter * p_scatter
+                        / (p_scatter * p_scatter + p_light * p_light);
 
-                material.bsdf_f(ro, &ri, ns, ng)
-                    * light.material().emit(&hi)
-                    * ns.dot(wi).abs()
-                    * weight
-                    / (p_scatter + p_light)
+                    material.bsdf_f(ro, &ri, ns, ng)
+                        * light.material().emit(&hi)
+                        * ns.dot(wi).abs()
+                        * weight
+                        / (p_scatter + p_light)
+                }
             }
         }
     };

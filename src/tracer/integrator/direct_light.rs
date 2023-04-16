@@ -11,9 +11,10 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                 None => material.emit(&ho),
                 Some(scatter_pdf) => {
                     if material.is_specular() {
-                        match scatter_pdf.sample_ray(rand_utils::unit_square()) {
+                        match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                             None => DVec3::ZERO,
-                            Some(ri) => {
+                            Some(wi) => {
+                                let ri = ho.generate_ray(wi);
                                 let wi = ri.dir;
 
                                 let p_scatter = scatter_pdf.value_for(&ri);

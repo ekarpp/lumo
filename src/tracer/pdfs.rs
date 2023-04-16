@@ -14,7 +14,7 @@ pub trait Pdf {
     ///
     /// # Arguments
     /// * `rand_sq` - Random point on the unit square.
-    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray>;
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3>;
     /// Computes the probability of the given direction w.r.t solid angle.
     ///
     /// # Arguments
@@ -37,7 +37,7 @@ impl<'a> ObjectPdf<'a> {
 }
 
 impl Pdf for ObjectPdf<'_> {
-    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
         Some( self.object.sample_towards(self.xo, rand_sq) )
     }
 
@@ -58,19 +58,18 @@ impl Pdf for ObjectPdf<'_> {
 
 /// Delta distribution PDF. Always samples the same ray. For glass/mirror.
 pub struct DeltaPdf {
-    xo: DVec3,
     wi: DVec3,
 }
 
 impl DeltaPdf {
-    pub fn new(xo: DVec3, wi: DVec3) -> Self {
-        Self { xo, wi }
+    pub fn new(wi: DVec3) -> Self {
+        Self { wi }
     }
 }
 
 impl Pdf for DeltaPdf {
-    fn sample_ray(&self, _rand_sq: DVec2) -> Option<Ray> {
-        Some( Ray::new(self.xo, self.wi) )
+    fn sample_direction(&self, _rand_sq: DVec2) -> Option<DVec3> {
+        Some( self.wi )
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
@@ -85,8 +84,6 @@ impl Pdf for DeltaPdf {
 
 /// PDF for microfacet distribution.
 pub struct MfdPdf {
-    /// Point of impact
-    xo: DVec3,
     /// Direction from point of impact to viewer
     v: DVec3,
     /// Macrosurface geometric normal. Same hemisphere as `v`.
@@ -101,7 +98,6 @@ pub struct MfdPdf {
 
 impl MfdPdf {
     pub fn new(
-        xo: DVec3,
         v: DVec3,
         ng: DVec3,
         albedo: DVec3,
@@ -112,7 +108,6 @@ impl MfdPdf {
         let uvw = Onb::new(w);
 
         Self {
-            xo,
             v,
             uvw,
             ndf_sample_prob: mfd.probability_ndf_sample(albedo),
@@ -156,19 +151,6 @@ impl MfdPdf {
         let wh = self.uvw.to_world(local_wh).normalize();
 
         bxdfs::refract(eta_ratio, self.v, wh)
-    }
-
-    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
-        if rand_utils::rand_f64() < self.ndf_sample_prob {
-            // NDF sample
-            self.sample_ndf_scatter(rand_sq)
-        } else if !self.mfd.is_transparent() {
-            // Opaque materials sample hemisphere
-            self.sample_cos_hemisphere(rand_sq)
-        } else {
-            // Transparent materials refract
-            self.sample_ndf_refract(rand_sq)
-        }
     }
 
     /// PDF for NDF scattering
@@ -241,11 +223,18 @@ impl MfdPdf {
 
 impl Pdf for MfdPdf {
     /// Sample microsurface normal from the distribution. Mirror direction from
-    /// camera around the normal. GGX uses VNDF sampling, Beckmann NDF sampling
-    fn sample_ray(&self, rand_sq: DVec2) -> Option<Ray> {
-        match self.sample_direction(rand_sq) {
-            None => None,
-            Some(wi) => Some( Ray::new(self.xo, wi) ),
+    /// camera around the normal. GGX uses VNDF sampling, Beckmann NDF sampling.
+    /// Importance sample with hemisphere scattering / refraction.
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
+        if rand_utils::rand_f64() < self.ndf_sample_prob {
+            // NDF sample
+            self.sample_ndf_scatter(rand_sq)
+        } else if !self.mfd.is_transparent() {
+            // Opaque materials sample hemisphere
+            self.sample_cos_hemisphere(rand_sq)
+        } else {
+            // Transparent materials refract
+            self.sample_ndf_refract(rand_sq)
         }
     }
 

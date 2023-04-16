@@ -83,7 +83,7 @@ impl Sampleable for Sphere {
     /// Visible area from `xo` forms a cone. Sample a random point on the
     /// spherical cap that the visible area forms. Return a ray with direction
     /// towards the sampled point. TODO: `xo` inside sphere
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-orthonormal basis,
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
@@ -128,9 +128,7 @@ impl Sampleable for Sphere {
 
         let xi = self.origin + ng * self.radius;
 
-        let wi = xi - xo;
-
-        Ray::new(xo, wi)
+        xi - xo
     }
     /* make sphere pdf, area pdf, etc..? */
     /// PDF (w.r.t area) for sampling area of the sphere

@@ -1,5 +1,5 @@
 use glam::{DAffine3, DVec3};
-use crate::{Axis, EPSILON_RAY_OFFSET};
+use crate::Axis;
 
 /// Ray abstraction
 pub struct Ray {
@@ -29,7 +29,7 @@ impl Ray {
 
     /// Position of the ray at time `t`
     pub fn at(&self, t: f64) -> DVec3 {
-        self.origin + (t - EPSILON_RAY_OFFSET) * self.dir
+        self.origin + t * self.dir
     }
 
     /// Coordinate of origin along axis

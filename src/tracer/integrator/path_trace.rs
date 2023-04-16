@@ -36,11 +36,12 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
                 illuminance += gathered * shadow;
 
-                match scatter_pdf.sample_ray(rand_utils::unit_square()) {
+                match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => {
                         break;
                     }
-                    Some(ri) => {
+                    Some(wi) => {
+                        let ri = ho.generate_ray(wi);
                         let wi = ri.dir;
                         let p_scatter = scatter_pdf.value_for(&ri);
 

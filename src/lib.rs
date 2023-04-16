@@ -6,9 +6,6 @@ use glam::DVec3;
 /// Epsilon to avoid self intersection of objects
 const EPSILON: f64 = 1e-10;
 
-/// Epsilon of how much we move ray back when evaluating it at point `t`
-const EPSILON_RAY_OFFSET: f64 = 1e-14;
-
 pub use cli::TracerCli;
 pub use image::Image;
 pub use perlin::Perlin;
