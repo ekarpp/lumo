@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod rectangle_tests;
+
 /// Given a triangle, with points read from the columns of the matrix `abc`,
 /// returns `b` mirrored to define a rectangle.
 fn _triangle_to_rect(abc: DMat3) -> DVec3 {
