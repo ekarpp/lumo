@@ -1,3 +1,4 @@
+use crate::EPSILON;
 use crate::tracer::object::Object;
 use crate::tracer::ray::Ray;
 use glam::DVec3;
@@ -40,10 +41,14 @@ impl<'a> Hit<'a> {
         })
     }
 
-    /// Generates a ray at point of impact. TODO: fix origin for fp inaccuracies.
+    /// Generates a ray at point of impact. Would be better to use accurate
+    /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: DVec3) -> Ray {
+        let norm = if wi.dot(self.ng) >= 0.0 { self.ng } else { -self.ng };
+        let xi = self.p + norm * EPSILON;
+
         Ray::new(
-            self.p,
+            xi,
             wi
         )
     }
