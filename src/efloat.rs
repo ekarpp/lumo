@@ -49,6 +49,7 @@ impl EFloat64 {
         }
     }
 
+    #[allow(dead_code)]
     pub fn sqrt(self) -> Self {
         Self::new(
             self.value.sqrt(),
