@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod instance_tests;
+
 /// Instance of an object i.e. an object to which affine transformations have
 /// been applied
 pub struct Instance<T> {
