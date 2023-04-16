@@ -8,6 +8,9 @@ use crate::EPSILON;
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 
+#[cfg(test)]
+mod pdf_tests;
+
 /// Assumes that each generation and evaluation has same starting point.
 pub trait Pdf {
     /// Generates a random direction according to the sampling strategy
