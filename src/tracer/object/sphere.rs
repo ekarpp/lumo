@@ -45,10 +45,11 @@ impl Object for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let from_origin = xo - self.origin;
+        let radius2 = self.radius * self.radius;
 
         let a = r.dir.length_squared();
         let half_b = from_origin.dot(r.dir);
-        let c = from_origin.length_squared() - self.radius * self.radius;
+        let c = from_origin.length_squared() - radius2;
         let disc = half_b * half_b - a * c;
 
         if disc < 0.0 {
@@ -64,6 +65,7 @@ impl Object for Sphere {
         }
 
         let xi = r.at(t);
+        let xi = xi * radius2 / xi.distance_squared(self.origin);
         let ni = (xi - self.origin) / self.radius;
 
         Hit::new(t, self, xi, ni, ni)
