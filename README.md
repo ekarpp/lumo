@@ -26,7 +26,7 @@ cargo run --example hello_sphere
 The renderer can be configured either through its setter methods or partially through the CLI:
 
 ```
-Usage: hello_sphere [-s <samples>] [-t <threads>] [-w <width>] [-h <height>] [-d]
+Usage: hello_sphere [-s <samples>] [-t <threads>] [-w <width>] [-h <height>] [-d] [-b]
 
 Optional CLI configuration of renderer. Renderer setter methods have priority.
 
@@ -36,6 +36,7 @@ Options:
   -w, --width       width of the rendered image (defaults to 1000)
   -h, --height      height of the rendered image (defaults to 1000)
   -d, --direct      use direct light integrator instead of path tracing.
+  -b, --bdpt        use bidirectional path tracing instead of path tracing.
   --help            display usage information
 ```
 
