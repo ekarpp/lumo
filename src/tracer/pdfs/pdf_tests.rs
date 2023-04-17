@@ -1,4 +1,6 @@
 use super::*;
+use crate::tracer::object::Sphere;
+use crate::tracer::material::Material;
 
 fn mfd_pdf() -> MfdPdf {
     MfdPdf::new(
@@ -36,4 +38,22 @@ fn delta_value_for() {
 
     let r = Ray::new(DVec3::ZERO, DVec3::NEG_Z);
     assert!(pdf.value_for(&r) == 0.0);
+}
+
+#[test]
+fn object_pdf_returns_solid_angle() {
+    let sphere = Sphere::new(DVec3::ZERO, 1.0, Material::Blank);
+    let xo = 3.0 * DVec3::Z;
+    let wi = DVec3::NEG_Z;
+    let ri = Ray::new(xo, wi);
+    let (pa, hi) = sphere.sample_towards_pdf(&ri);
+    assert!(hi.is_some());
+
+    let hi = hi.unwrap();
+    let pa = pa * xo.distance_squared(hi.p) / hi.ng.dot(wi).abs();
+
+    let pdf = ObjectPdf::new(&*sphere, xo);
+    let psa = pdf.value_for(&ri);
+
+    assert!((pa - psa).abs() < 1e-15);
 }
