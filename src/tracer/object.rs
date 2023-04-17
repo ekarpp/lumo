@@ -65,13 +65,13 @@ pub trait Sampleable: Object {
     /// Sample random point on the surface of the object
     fn sample_on(&self, rand_sq: DVec2) -> DVec3;
 
-    /// Sample random ray from `xo` towards area of object
+    /// Sample random direction from `xo` towards area of object
     /// that is visible form `xo`
     ///
     /// # Arguments
     /// * `xo` - Point on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray;
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3;
 
     /// PDF for sampling points on the surface uniformly at random. Returns PDF
     /// with respect to area and hit to self, if found.

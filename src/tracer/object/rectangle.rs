@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod rectangle_tests;
+
 /// Given a triangle, with points read from the columns of the matrix `abc`,
 /// returns `b` mirrored to define a rectangle.
 fn _triangle_to_rect(abc: DMat3) -> DVec3 {
@@ -63,7 +66,7 @@ impl Object for Rectangle {
 
 impl Sampleable for Rectangle {
 
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         self.choose_triangle().sample_towards(xo, rand_sq)
     }
 

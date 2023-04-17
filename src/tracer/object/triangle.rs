@@ -142,10 +142,9 @@ impl Sampleable for Triangle {
     }
 
     /// Choose random point on surface of triangle. Shoot ray towards it.
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         let xi = self.sample_on(rand_sq);
-        let wi = xi - xo;
-        Ray::new(xo, wi)
+        xi - xo
     }
 
     fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {

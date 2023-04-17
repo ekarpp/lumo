@@ -89,4 +89,4 @@ fn main() -> Result<(), png::EncodingError> {
 ### Gallery
 ![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png)
 ![Cornell box](https://i.imgur.com/PoEVv6b.png)
-![Circle of spheres](https://i.imgur.com/JxvP1l7.png)
+![Circle of spheres](https://i.imgur.com/GJXdijq.png)

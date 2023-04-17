@@ -45,11 +45,11 @@ impl Object for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let from_origin = xo - self.origin;
-        // coefficients of "hit quadratic"
-        // .dot faster than .length_squared, recheck
-        let a = r.dir.dot(r.dir);
+        let radius2 = self.radius * self.radius;
+
+        let a = r.dir.length_squared();
         let half_b = from_origin.dot(r.dir);
-        let c = from_origin.dot(from_origin) - self.radius * self.radius;
+        let c = from_origin.length_squared() - radius2;
         let disc = half_b * half_b - a * c;
 
         if disc < 0.0 {
@@ -65,6 +65,7 @@ impl Object for Sphere {
         }
 
         let xi = r.at(t);
+        let xi = xi * radius2 / xi.distance_squared(self.origin);
         let ni = (xi - self.origin) / self.radius;
 
         Hit::new(t, self, xi, ni, ni)
@@ -82,7 +83,7 @@ impl Sampleable for Sphere {
     /// Visible area from `xo` forms a cone. Sample a random point on the
     /// spherical cap that the visible area forms. Return a ray with direction
     /// towards the sampled point. TODO: `xo` inside sphere
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> Ray {
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         /* uvw-orthonormal basis,
          * where w is the direction from xo to origin of this sphere. */
         let uvw = Onb::new(self.origin - xo);
@@ -127,9 +128,7 @@ impl Sampleable for Sphere {
 
         let xi = self.origin + ng * self.radius;
 
-        let wi = xi - xo;
-
-        Ray::new(xo, wi)
+        xi - xo
     }
     /* make sphere pdf, area pdf, etc..? */
     /// PDF (w.r.t area) for sampling area of the sphere

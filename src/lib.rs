@@ -19,6 +19,8 @@ pub mod tracer;
 
 /// Command line interface
 mod cli;
+/// `f64` with built in tracking of floating point error
+mod efloat;
 /// Wrapper for writing image buffer to file.
 mod image;
 /// Perlin noise generator.
@@ -29,7 +31,6 @@ mod rand_utils;
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
-
 /// Tone mapping functions
 mod tone_mapping;
 

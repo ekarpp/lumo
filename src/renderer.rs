@@ -108,9 +108,10 @@ impl Renderer {
                 // random offsets
                 let ou = rand_sq.x / max_dim;
                 let ov = rand_sq.y / max_dim;
-                let rgb = self
-                    .integrator
-                    .integrate(&self.scene, self.camera.ray_at(u + ou, v + ov));
+                let rgb = self.integrator.integrate(
+                    &self.scene,
+                    self.camera.generate_ray(u + ou, v + ov)
+                );
 
                 self.tone_map.map(rgb)
             })

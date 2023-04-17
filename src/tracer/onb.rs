@@ -41,3 +41,19 @@ impl Onb {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn both_directions() {
+        let w = DVec3::new(1.23, 4.56, 7.89);
+        let uvw = Onb::new(w);
+
+        let v = DVec3::new(9.87, 6.54, 3.21);
+        let vp = uvw.to_world(uvw.to_local(v));
+
+        assert!(v.distance(vp) < 1e-10);
+    }
+}

@@ -103,18 +103,16 @@ pub fn bsdf_microfacet_pdf(
     mfd: &MfDistribution,
 ) -> Option<Box<dyn Pdf>> {
     let ng = ho.ng;
-    let xo = ho.p;
     let v = -ro.dir;
-    Some( Box::new(MfdPdf::new(xo, v, ng, albedo, *mfd)) )
+    Some( Box::new(MfdPdf::new(v, ng, albedo, *mfd)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.
 pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
-    let xo = ho.p;
     let wo = ro.dir;
     let no = ho.ng;
     let wi = reflect(-wo, no);
-    Some(Box::new(DeltaPdf::new(xo, wi)))
+    Some( Box::new(DeltaPdf::new(wi)) )
 }
 
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
@@ -123,14 +121,13 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>
     let inside = ng.dot(v) < 0.0;
     let eta_ratio = if inside { rfrct_idx } else { 1.0 / rfrct_idx };
     let ng = if inside { -ng } else { ng };
-    let xo = ho.p;
 
     let wi = match refract(eta_ratio, v, ng) {
         None => reflect(v, ng),
         Some(wi) => wi,
     };
 
-    Some( Box::new(DeltaPdf::new(xo, wi)) )
+    Some( Box::new(DeltaPdf::new(wi)) )
 }
 
 /// Reflect around normal
