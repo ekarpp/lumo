@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod cube_tests;
+
 /// A cube consisting of 6 rectangles
 pub struct Cube {
     /// The rectangle faces of the cube

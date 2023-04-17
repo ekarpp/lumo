@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod disk_tests;
+
 /// A two dimensional disk
 pub struct Disk {
     /// Origin of the disk
