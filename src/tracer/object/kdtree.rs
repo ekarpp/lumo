@@ -36,7 +36,7 @@ impl<T: Bounded> KdTree<T> {
         let boundary = bounds
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
-        let root = KdNode::construct(&objects, &bounds, &boundary, indices);
+        let root = KdNode::construct(&bounds, &boundary, indices);
 
         println!(
             "Constructed kd-tree of {} triangles in {:#?}",
@@ -262,8 +262,7 @@ impl KdNode {
     }
 
     /// Constructs nodes of the kD-tree recursively with SAH.
-    pub fn construct<T: Bounded>(
-        objects: &[T],
+    pub fn construct(
         bounds: &[AaBoundingBox],
         boundary: &AaBoundingBox,
         indices: Vec<usize>,
@@ -281,8 +280,8 @@ impl KdNode {
             Box::new(Self::Split(
                 axis,
                 point,
-                Self::construct(objects, bounds, &left_bound, left_idx),
-                Self::construct(objects, bounds, &right_bound, right_idx),
+                Self::construct(bounds, &left_bound, left_idx),
+                Self::construct(bounds, &right_bound, right_idx),
             ))
         }
     }
