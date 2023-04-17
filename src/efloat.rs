@@ -1,5 +1,10 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+/// Used for error estimation in manually propagated floating point errors
+pub fn gamma(n: f64) -> f64 {
+    (n * f64::EPSILON) / (1.0 - n * f64::EPSILON)
+}
+
 /// Makes the smallest increment possible to `v`
 fn _next_double(v: f64) -> f64 {
     if v.is_infinite() && v > 0.0 {
