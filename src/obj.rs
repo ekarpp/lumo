@@ -172,7 +172,7 @@ fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<
             Some(fixed_normals(abc, normals[na], normals[nb], normals[nc]))
         };
 
-        triangles.push(*Triangle::new(abc, nabc, Material::Blank));
+        triangles.push(*Triangle::new(abc, nabc, None, Material::Blank));
     }
 
     Ok(triangles)

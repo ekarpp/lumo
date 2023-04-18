@@ -25,10 +25,10 @@ impl Rectangle {
     /// * `material` - Material of the rectangle
     pub fn new(abc: DMat3, material: Material) -> Box<Self> {
         /* figure out the correct order of points... */
-        let t1 = Triangle::new(abc, None, Material::Blank);
+        let t1 = Triangle::new(abc, None, None, Material::Blank);
         let d = _triangle_to_rect(abc);
         let cda = DMat3::from_cols(abc.col(2), d, abc.col(0));
-        let t2 = Triangle::new(cda, None, Material::Blank);
+        let t2 = Triangle::new(cda, None, None, Material::Blank);
 
         Box::new(Self {
             triangles: (*t1, *t2),

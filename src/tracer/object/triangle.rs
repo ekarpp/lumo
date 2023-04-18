@@ -19,6 +19,13 @@ pub struct Triangle {
     nb: DVec3,
     /// Shading normal for the vertex `c`
     nc: DVec3,
+    /// Texutre coordinate for the vertex `a`
+    ta: DVec2,
+    /// Texutre coordinate for the vertex `b`
+    tb: DVec2,
+    /// Texutre coordinate for the vertex `c`
+    tc: DVec2,
+    /// Material of the triangle
     material: Material,
 }
 
@@ -29,8 +36,14 @@ impl Triangle {
     /// # Arguments
     /// * `abc` - Three vertices of the triangle stored in the columns
     /// * `nabc` - Optional shading normals for each vertex stored in the columns
+    /// * `tabc` - Optional texture coordinates for each vertex stored in the columns
     /// * `material` - Material of the triangle
-    pub fn new(abc: DMat3, nabc: Option<DMat3>, material: Material) -> Box<Self> {
+    pub fn new(
+        abc: DMat3,
+        nabc: Option<DMat3>,
+        tabc: Option<DMat3>,
+        material: Material,
+    ) -> Box<Self> {
         let a = abc.col(0);
         let b = abc.col(1);
         let c = abc.col(2);
@@ -46,6 +59,15 @@ impl Triangle {
             Some(nabc) => (nabc.col(0), nabc.col(1), nabc.col(2)),
         };
 
+        let (ta, tb, tc) = match tabc {
+            None => (DVec2::ZERO, DVec2::X, DVec2::ONE),
+            Some(tabc) => (
+                tabc.col(0).truncate(),
+                tabc.col(1).truncate(),
+                tabc.col(2).truncate(),
+            ),
+        };
+
         Box::new(Self {
             a,
             b_m_a,
@@ -55,6 +77,9 @@ impl Triangle {
             na,
             nb,
             nc,
+            ta,
+            tb,
+            tc,
         })
     }
 }
