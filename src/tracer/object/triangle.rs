@@ -15,9 +15,9 @@ pub struct Triangle {
     ng: DVec3,
     /// Shading normal for the vertex `a`
     na: DVec3,
-    /// Shading normal for the vertex `a`
+    /// Shading normal for the vertex `b`
     nb: DVec3,
-    /// Shading normal for the vertex `a`
+    /// Shading normal for the vertex `c`
     nc: DVec3,
     material: Material,
 }
