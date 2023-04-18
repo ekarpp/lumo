@@ -1,5 +1,5 @@
 use crate::tracer::{Material, Triangle};
-use glam::{DMat3, DVec3};
+use glam::{DMat3, DVec2, DVec3};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Result};
 use std::io::{Cursor, Read, Seek, Write};
@@ -60,6 +60,7 @@ pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
 fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
+    let mut uvs: Vec<DVec2> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();
 
     let reader = BufReader::new(file);
@@ -79,8 +80,12 @@ fn load_obj_file(file: File) -> Result<Vec<Triangle>> {
                 let normal = parse_vec3(&tokens)?;
                 normals.push(normal);
             }
+            "vt" => {
+                let uv = parse_vec2(&tokens)?;
+                uvs.push(uv);
+            }
             "f" => {
-                let face = parse_face(&tokens, &vertices, &normals)?;
+                let face = parse_face(&tokens, &vertices, &normals, &uvs)?;
                 triangles.extend(face);
             }
             _ => (),
@@ -95,6 +100,13 @@ fn parse_double(token: &str) -> Result<f64> {
     token
         .parse()
         .map_err(|_| obj_error("Could not parse double in .OBJ"))
+}
+
+fn parse_vec2(tokens: &[&str]) -> Result<DVec2> {
+    Ok(DVec2::new(
+        parse_double(tokens[1])?,
+        parse_double(tokens[2])?,
+    ))
 }
 
 fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
@@ -139,16 +151,28 @@ fn fixed_normals(abc: DMat3, na: DVec3, nb: DVec3, nc: DVec3) -> DMat3 {
     )
 }
 
-fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<Vec<Triangle>> {
+fn parse_face(
+    tokens: &[&str],
+    vertices: &[DVec3],
+    normals: &[DVec3],
+    uvs: &[DVec2],
+) -> Result<Vec<Triangle>> {
     let mut vidxs: Vec<usize> = Vec::new();
     let mut nidxs: Vec<usize> = Vec::new();
+    let mut tidxs: Vec<usize> = Vec::new();
 
     for token in &tokens[1..] {
         let arguments: Vec<&str> = token.split('/').collect();
 
         let vidx = parse_idx(arguments[0], vertices.len())?;
         vidxs.push(vidx);
-        if arguments.len() >= 3 {
+
+        if arguments.len() > 1 && !arguments[1].is_empty() {
+            let tidx = parse_idx(arguments[1], uvs.len())?;
+            tidxs.push(tidx);
+        }
+
+        if arguments.len() > 2 {
             let nidx = parse_idx(arguments[2], normals.len())?;
             nidxs.push(nidx);
         }
@@ -172,7 +196,18 @@ fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<
             Some(fixed_normals(abc, normals[na], normals[nb], normals[nc]))
         };
 
-        triangles.push(*Triangle::new(abc, nabc, None, Material::Blank));
+        let tabc = if tidxs.is_empty() {
+            None
+        } else {
+            let (ta, tb, tc) = (tidxs[a], tidxs[b], tidxs[c]);
+            Some(DMat3::from_cols(
+                uvs[ta].extend(0.0),
+                uvs[tb].extend(0.0),
+                uvs[tc].extend(0.0),
+            ))
+        };
+
+        triangles.push(*Triangle::new(abc, nabc, tabc, Material::Blank));
     }
 
     Ok(triangles)
