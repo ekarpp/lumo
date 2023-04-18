@@ -57,7 +57,12 @@ impl Object for Disk {
         if xi.distance_squared(self.origin) > self.radius * self.radius {
             None
         } else {
-            Hit::new(t, self, xi, self.normal, self.normal)
+            let xi_local = (xi - self.origin) / self.radius;
+            let (u, v) = self.normal.any_orthonormal_pair();
+            let uv = (DVec2::new(u.dot(xi_local), v.dot(xi_local)) + DVec2::ONE)
+                / 2.0;
+
+            Hit::new(t, self, xi, self.normal, self.normal, uv)
         }
     }
 }

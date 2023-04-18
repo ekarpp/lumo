@@ -133,7 +133,9 @@ impl Object for Triangle {
             let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
             let ns = ns.normalize();
 
-            Hit::new(t, self, r.at(t), ns, self.ng)
+            let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
+
+            Hit::new(t, self, r.at(t), ns, self.ng, uv)
         }
     }
 }

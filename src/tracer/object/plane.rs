@@ -6,7 +6,7 @@ mod plane_tests;
 /// Plane defined by a single point and a normal
 pub struct Plane {
     /// Unidirectional normal
-    norm: DVec3,
+    normal: DVec3,
     material: Material,
     /// `p.dot(-norm)`, used for fast hit calculations
     d: f64,
@@ -16,11 +16,11 @@ impl Plane {
     /// Constructs an infinite plane given a point and a normal
     pub fn new(p: DVec3, n: DVec3, material: Material) -> Box<Self> {
         assert!(n.dot(n) != 0.0);
-        let norm = n.normalize();
+        let normal = n.normalize();
         Box::new(Self {
-            norm,
+            normal,
             material,
-            d: p.dot(-norm),
+            d: p.dot(-normal),
         })
     }
 }
@@ -33,15 +33,18 @@ impl Object for Plane {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
-        if self.norm.dot(r.dir) == 0.0 {
+        if self.normal.dot(r.dir) == 0.0 {
             return None;
         }
 
-        let t = -(self.d + self.norm.dot(r.origin)) / self.norm.dot(r.dir);
+        let t = -(self.d + self.normal.dot(r.origin)) / self.normal.dot(r.dir);
         if t < t_min + EPSILON || t > t_max {
             None
         } else {
-            Hit::new(t, self, r.at(t), self.norm, self.norm)
+            let xi = r.at(t);
+            let (u, v) = self.normal.any_orthonormal_pair();
+            let uv = DVec2::new(u.dot(xi), v.dot(xi)).fract();
+            Hit::new(t, self, xi, self.normal, self.normal, uv)
         }
     }
 }

@@ -65,10 +65,15 @@ impl Object for Sphere {
         }
 
         let xi = r.at(t);
+        // reproject to sphere to reduce floating point error
         let xi = xi * radius2 / xi.distance_squared(self.origin);
         let ni = (xi - self.origin) / self.radius;
 
-        Hit::new(t, self, xi, ni, ni)
+        let u = ((-ni.z).atan2(ni.x) + PI) / (2.0 * PI);
+        let v = (-ni.y).acos() / PI;
+        let uv = DVec2::new(u, v);
+
+        Hit::new(t, self, xi, ni, ni, uv)
     }
 }
 
