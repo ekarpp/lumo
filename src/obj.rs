@@ -1,5 +1,5 @@
 use crate::tracer::{Material, Triangle};
-use glam::DVec3;
+use glam::{DMat3, DVec3};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Result};
 use std::io::{Cursor, Read, Seek, Write};
@@ -119,27 +119,24 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
 }
 
 /// Some .objs have degenerate triangles. This filters them out.
-fn degenerate_triangle(abc: (DVec3, DVec3, DVec3)) -> bool {
-    let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
+fn degenerate_triangle(abc: DMat3) -> bool {
+    let a = abc.col(0); let b = abc.col(1); let c = abc.col(2);
+    let ng = (b - a).cross(c - a);
     ng.length() == 0.0
 }
 
 /// Some .objs have zero vector normals. This fixes them to geometric normal.
-fn fixed_normals(
-    abc: (DVec3, DVec3, DVec3),
-    na: DVec3,
-    nb: DVec3,
-    nc: DVec3
-) -> (DVec3, DVec3, DVec3) {
+fn fixed_normals(abc: DMat3, na: DVec3, nb: DVec3, nc: DVec3) -> DMat3 {
+    let a = abc.col(0); let b = abc.col(1); let c = abc.col(2);
     // cant be degenerate at this point
-    let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
+    let ng = (b - a).cross(c - a);
     let ng = ng.normalize();
 
-    let na = if na.length() == 0.0 { ng } else { na };
-    let nb = if nb.length() == 0.0 { ng } else { nb };
-    let nc = if nc.length() == 0.0 { ng } else { nc };
-
-    (na, nb, nc)
+    DMat3::from_cols(
+        if na.length() == 0.0 { ng } else { na },
+        if nb.length() == 0.0 { ng } else { nb },
+        if nc.length() == 0.0 { ng } else { nc },
+    )
 }
 
 fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<Vec<Triangle>> {
@@ -162,19 +159,20 @@ fn parse_face(tokens: &[&str], vertices: &[DVec3], normals: &[DVec3]) -> Result<
     for i in 1..vidxs.len() - 1 {
         let (a, b, c) = (0, i, i + 1);
         let (va, vb, vc) = (vidxs[a], vidxs[b], vidxs[c]);
-        let abc = (vertices[va], vertices[vb], vertices[vc]);
+        let abc = DMat3::from_cols(vertices[va], vertices[vb], vertices[vc]);
 
         if degenerate_triangle(abc) {
             continue;
         }
 
-        if nidxs.is_empty() {
-            triangles.push(*Triangle::new(abc, Material::Blank));
+        let nabc = if nidxs.is_empty() {
+            None
         } else {
             let (na, nb, nc) = (nidxs[a], nidxs[b], nidxs[c]);
-            let nabc = fixed_normals(abc, normals[na], normals[nb], normals[nc]);
-            triangles.push(Triangle::new_w_normals(abc, nabc));
-        }
+            Some(fixed_normals(abc, normals[na], normals[nb], normals[nc]))
+        };
+
+        triangles.push(*Triangle::new(abc, nabc, Material::Blank));
     }
 
     Ok(triangles)

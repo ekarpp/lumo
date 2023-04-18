@@ -27,54 +27,35 @@ impl Triangle {
     /// the points, they are in counter-clockwise order.
     ///
     /// # Arguments
-    /// * `a,b,c` - Three vertices of the triangle
+    /// * `abc` - Three vertices of the triangle stored in the columns
+    /// * `nabc` - Optional shading normals for each vertex stored in the columns
     /// * `material` - Material of the triangle
-    pub fn new(abc: (DVec3, DVec3, DVec3), material: Material) -> Box<Self> {
+    pub fn new(abc: DMat3, nabc: Option<DMat3>, material: Material) -> Box<Self> {
+        let a = abc.col(0);
+        let b = abc.col(1);
+        let c = abc.col(2);
         /* check degeneracy */
-        let b_m_a = abc.1 - abc.0;
-        let c_m_a = abc.2 - abc.0;
+        let b_m_a = b - a;
+        let c_m_a = c - a;
         let ng = (b_m_a).cross(c_m_a);
         assert!(ng.length() != 0.0);
         let ng = ng.normalize();
+
+        let (na, nb, nc) = match nabc {
+            None => (ng, ng, ng),
+            Some(nabc) => (nabc.col(0), nabc.col(1), nabc.col(2)),
+        };
+
         Box::new(Self {
-            a: abc.0,
+            a,
             b_m_a,
             c_m_a,
             material,
             ng,
-            na: ng,
-            nb: ng,
-            nc: ng,
+            na,
+            nb,
+            nc,
         })
-    }
-
-    /// Create triangle with a specified normal at each vertex. Assigns blank
-    /// material, kD-tree should store this and have the material.
-    ///
-    /// # Arguments
-    /// * `abc` - Triple of the triangle vertices
-    /// * `nabc` - Triple of the normals at the vertices
-    pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3)) -> Self {
-        let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
-        let ng = if ng.length() == 0.0 {
-            #[cfg(debug_assertions)]
-            println!("Found degenerate triangle. {:?}", abc);
-            // bad .obj file..
-            DVec3::Z
-        } else {
-            ng.normalize()
-        };
-
-        Self {
-            a: abc.0,
-            b_m_a: abc.1 - abc.0,
-            c_m_a: abc.2 - abc.0,
-            ng,
-            na: nabc.0,
-            nb: nabc.1,
-            nc: nabc.2,
-            material: Material::Blank,
-        }
     }
 }
 
