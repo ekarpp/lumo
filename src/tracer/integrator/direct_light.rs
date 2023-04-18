@@ -24,10 +24,9 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                                     return DVec3::ZERO;
                                 }
 
-                                let ng = ho.ng;
                                 let ns = ho.ns;
 
-                                material.bsdf_f(&ro, &ri, ns, ng)
+                                material.bsdf_f(&ro, &ri, &ho)
                                     * ns.dot(wi).abs()
                                     * integrate(scene, ri)
                                     / p_scatter

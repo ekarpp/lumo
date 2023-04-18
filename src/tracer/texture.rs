@@ -1,8 +1,6 @@
 use crate::perlin::Perlin;
+use crate::tracer::hit::Hit;
 use glam::DVec3;
-
-/// Base scale for the size of checker boxes. bigger = smaller boxes
-const CHECKER_SCALE: f64 = 13.0;
 
 /// Defines a texture to choose a colour of material at each point.
 pub enum Texture {
@@ -18,23 +16,19 @@ pub enum Texture {
 }
 
 impl Texture {
-    /// Colour at point `p`, should transform to texture coords of object??
-    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
+    /// Colour at hit `h`
+    pub fn albedo_at(&self, h: &Hit) -> DVec3 {
         match self {
             Texture::Solid(c) => *c,
-            Texture::Marble(pn) => pn.albedo_at(p),
+            Texture::Marble(pn) => pn.albedo_at(h.p),
             Texture::Checkerboard(t1, t2, s) => {
-                if self.checkers_phase(p * (*s)) > 0.0 {
-                    t1.albedo_at(p)
+                let uv = (*s) * h.uv;
+                if (uv.x.floor() + uv.y.floor()) as i32 % 2 == 0 {
+                    t1.albedo_at(h)
                 } else {
-                    t2.albedo_at(p)
+                    t2.albedo_at(h)
                 }
             }
         }
-    }
-
-    fn checkers_phase(&self, p: DVec3) -> f64 {
-        let ps = CHECKER_SCALE * p;
-        (ps.x).sin() * (ps.y).sin() * (ps.z).sin()
     }
 }

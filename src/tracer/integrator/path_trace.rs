@@ -50,10 +50,9 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                             break;
                         }
 
-                        let ng = ho.ng;
                         let ns = ho.ns;
 
-                        gathered *= material.bsdf_f(&ro, &ri, ns, ng)
+                        gathered *= material.bsdf_f(&ro, &ri, &ho)
                             * ns.dot(wi).abs()
                             / p_scatter;
 
