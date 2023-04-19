@@ -128,7 +128,8 @@ fn walk(
                             * ns.dot(wi).abs()
                             / pdf_next;
 
-                        pdf_prev = todo!();
+                        // THIS BREAKS FOR REFRACTION IN MICROFACET
+                        pdf_prev = pdf_next;
                         prev_vertex.pdf_prev =
                             curr_vertex.solid_angle_to_area(pdf_prev, xo, ng);
 
