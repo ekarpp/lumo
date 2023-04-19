@@ -38,8 +38,8 @@ impl Texture {
                 let x = uv.x * img.width as f64;
                 let x = x.floor() as usize;
                 let y = uv.y * img.height as f64;
-                let y = y.floor() as usize;
-                img.buffer[x + y*(img.width as usize)]
+                let y = img.height - y.floor() as u32 - 1;
+                img.buffer[x + (y*img.width) as usize]
             }
         }
     }

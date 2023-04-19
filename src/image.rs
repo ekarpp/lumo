@@ -27,6 +27,7 @@ impl Image {
 
     /// Creates an `image` struct from a path
     pub fn from_file(path: &str) -> Result<Self, DecodingError> {
+        println!("Reading \"{}\"", path);
         let file = File::open(path)?;
         let decoder = Decoder::new(file);
         let mut reader = decoder.read_info()?;
