@@ -1,3 +1,4 @@
+use crate::Image;
 use crate::perlin::Perlin;
 use crate::tracer::hit::Hit;
 use glam::DVec3;
@@ -13,9 +14,12 @@ pub enum Texture {
     Checkerboard(Box<Texture>, Box<Texture>, f64),
     /// Marble like texture generated from Perlin noise.
     Marble(Perlin),
+    /// Image texture loaded from a .png
+    Image(Image),
 }
 
 impl Texture {
+
     /// Colour at hit `h`
     pub fn albedo_at(&self, h: &Hit) -> DVec3 {
         match self {
@@ -28,6 +32,14 @@ impl Texture {
                 } else {
                     t2.albedo_at(h)
                 }
+            }
+            Texture::Image(img) => {
+                let uv = h.uv;
+                let x = uv.x * img.width as f64;
+                let x = x.floor() as usize;
+                let y = uv.y * img.height as f64;
+                let y = y.floor() as usize;
+                img.buffer[x + y*(img.width as usize)]
             }
         }
     }
