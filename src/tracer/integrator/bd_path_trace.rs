@@ -114,6 +114,7 @@ fn walk(
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.object.material();
         let xo = ho.p;
+        let wo = ro.dir;
         let ng = ho.ng;
 
         let prev_vertex = &mut vertices[depth];
@@ -137,7 +138,7 @@ fn walk(
 
                         let ns = ho.ns;
 
-                        gathered *= material.bsdf_f(&ro, &ri, &ho)
+                        gathered *= material.bsdf_f(wo, wi, &ho)
                             * ns.dot(wi).abs()
                             / pdf_next;
 

@@ -59,6 +59,7 @@ fn shadow_ray(
 ) -> DVec3 {
     let material = ho.object.material();
     let xo = ho.p;
+    let wo = ro.dir;
     let ns = ho.ns;
 
     let light = scene.uniform_random_light();
@@ -82,7 +83,7 @@ fn shadow_ray(
                     let weight = p_light * p_light
                         / (p_light * p_light + p_scatter * p_scatter);
 
-                    material.bsdf_f(ro, &ri, &ho)
+                    material.bsdf_f(wo, wi, &ho)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
@@ -107,7 +108,7 @@ fn shadow_ray(
                     let weight = p_scatter * p_scatter
                         / (p_scatter * p_scatter + p_light * p_light);
 
-                    material.bsdf_f(ro, &ri, &ho)
+                    material.bsdf_f(wo, wi, &ho)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight

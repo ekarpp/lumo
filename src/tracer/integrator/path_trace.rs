@@ -42,6 +42,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                     }
                     Some(wi) => {
                         let ri = ho.generate_ray(wi);
+                        let wo = ro.dir;
                         let wi = ri.dir;
                         let p_scatter = scatter_pdf.value_for(&ri);
 
@@ -52,7 +53,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
                         let ns = ho.ns;
 
-                        gathered *= material.bsdf_f(&ro, &ri, &ho)
+                        gathered *= material.bsdf_f(wo, wi, &ho)
                             * ns.dot(wi).abs()
                             / p_scatter;
 

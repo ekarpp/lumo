@@ -85,15 +85,14 @@ impl Material {
     }
 
     /// What is the color at `ri.origin`?
-    pub fn bsdf_f(&self, ro: &Ray, ri: &Ray, h: &Hit) -> DVec3 {
-        let wi = ri.dir;
+    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, h: &Hit) -> DVec3 {
         let ns = h.ns;
         let ng = h.ng;
         match self {
             // cancel the applied shading cosine for mirror and glass
             Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
             Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(ro, ri, ng, t.albedo_at(h), mfd)
+                bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
             }
             _ => DVec3::ZERO,
         }

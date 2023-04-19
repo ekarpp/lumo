@@ -8,20 +8,19 @@ use std::f64::consts::PI;
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 ///
 /// # Arguments
-/// * `ro` - Ray incoming to the point of impact
-/// * `ri` - Ray towards "light" from the point of impact
+/// * `wo` - Incoming direction to the point of impact
+/// * `wi` - Direction towards "light" from the point of impact
 /// * `ng` - Geometric normal of the surface at the point of impact
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
-    ro: &Ray,
-    ri: &Ray,
+    wo: DVec3,
+    wi: DVec3,
     ng: DVec3,
     albedo: DVec3,
     mfd: &MfDistribution
 ) -> DVec3 {
-    let v = -ro.dir;
-    let wi = ri.dir;
+    let v = -wo;
     let ng_dot_wi = ng.dot(wi);
     let ng_dot_v = ng.dot(v);
 
