@@ -134,6 +134,18 @@ fn walk(
                             curr_vertex.solid_angle_to_area(pdf_prev, xo, ng);
 
                         vertices.push(curr_vertex);
+
+                        // russian roulette
+                        if depth > 3 {
+                            let luminance = crate::rgb_to_luminance(gathered);
+                            let rr_prob = (1.0 - luminance).max(0.05);
+                            if rand_utils::rand_f64() < rr_prob {
+                                break;
+                            }
+                            // need to modify vertex PDFs?
+                            gathered /= 1.0 - rr_prob;
+                        }
+
                         depth += 1;
                         ro = ri;
                     }
