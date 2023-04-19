@@ -62,8 +62,9 @@ pub trait Bounded: Object {
 
 /// Object towards which rays can be sampled
 pub trait Sampleable: Object {
-    /// Sample random point on the surface of the object
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3;
+    /// Returns randomly sampled point on the surface of the object
+    /// and the normal at the point.
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3);
 
     /// Sample random direction from `xo` towards area of object
     /// that is visible form `xo`

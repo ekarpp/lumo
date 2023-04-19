@@ -58,9 +58,9 @@ impl Object for Disk {
             None
         } else {
             let xi_local = (xi - self.origin) / self.radius;
-            let (u, v) = self.normal.any_orthonormal_pair();
-            let uv = (DVec2::new(u.dot(xi_local), v.dot(xi_local)) + DVec2::ONE)
-                / 2.0;
+            let u = self.uvw.u.dot(xi_local);
+            let v = self.uvw.v.dot(xi_local);
+            let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
 
             Hit::new(t, self, xi, self.normal, self.normal, uv)
         }
@@ -68,19 +68,20 @@ impl Object for Disk {
 }
 
 impl Sampleable for Disk {
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
-        self.origin
-            + self.uvw.to_world(DVec3::new(
-                rand_disk.x * self.radius,
-                rand_disk.y * self.radius,
-                0.0,
-            ))
+        let xo = self.origin + self.uvw.to_world(DVec3::new(
+            rand_disk.x * self.radius,
+            rand_disk.y * self.radius,
+            0.0,
+        ));
+
+        (xo, self.normal)
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let xi = self.sample_on(rand_sq);
+        let (xi, _) = self.sample_on(rand_sq);
         xi - xo
     }
 

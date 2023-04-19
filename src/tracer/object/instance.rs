@@ -94,10 +94,13 @@ impl<T: Object> Object for Instance<T> {
 }
 
 impl<T: Sampleable> Sampleable for Instance<T> {
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        let sample_local = self.object.sample_on(rand_sq);
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+        let (sample_local, ng_local) = self.object.sample_on(rand_sq);
 
-        self.transform.transform_point3(sample_local)
+        let sampled = self.transform.transform_point3(sample_local);
+        let normal = self.normal_transform * ng_local;
+
+        (sampled, normal)
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {

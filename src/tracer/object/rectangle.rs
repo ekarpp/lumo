@@ -84,7 +84,7 @@ impl Sampleable for Rectangle {
         (p / 2.0, hi)
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         self.choose_triangle().sample_on(rand_sq)
     }
 }

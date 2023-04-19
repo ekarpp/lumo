@@ -142,16 +142,16 @@ impl Object for Triangle {
 
 impl Sampleable for Triangle {
     /// Random point with barycentrics.
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
-        self.a + beta * self.b_m_a + gamma * self.c_m_a
+        (self.a + beta * self.b_m_a + gamma * self.c_m_a, self.ng)
     }
 
     /// Choose random point on surface of triangle. Shoot ray towards it.
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let xi = self.sample_on(rand_sq);
+        let (xi, _) = self.sample_on(rand_sq);
         xi - xo
     }
 

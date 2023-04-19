@@ -79,10 +79,13 @@ impl Object for Sphere {
 
 impl Sampleable for Sphere {
     /// Sample on unit sphere and scale
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);
 
-        self.origin + self.radius * rand_sph
+        let xo = self.origin + self.radius * rand_sph;
+        let ng = (xo - self.origin) / self.radius;
+
+        (xo, ng)
     }
 
     /// Visible area from `xo` forms a cone. Sample a random point on the
