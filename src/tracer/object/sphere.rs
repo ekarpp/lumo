@@ -78,6 +78,10 @@ impl Object for Sphere {
 }
 
 impl Sampleable for Sphere {
+    fn area(&self) -> f64 {
+        4.0 * PI * self.radius * self.radius
+    }
+
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);

@@ -141,6 +141,10 @@ impl Object for Triangle {
 }
 
 impl Sampleable for Triangle {
+    fn area(&self) -> f64 {
+        self.b_m_a.cross(self.c_m_a).length() / 2.0
+    }
+
     /// Random point with barycentrics.
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
@@ -159,8 +163,7 @@ impl Sampleable for Triangle {
         match self.hit(ri, 0.0, INFINITY) {
             None => (0.0, None),
             Some(hi) => {
-                let area = self.b_m_a.cross(self.c_m_a).length() / 2.0;
-                let p = 1.0 / area;
+                let p = 1.0 / self.area();
 
                 (p, Some(hi))
             }

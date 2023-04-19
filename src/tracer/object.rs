@@ -62,9 +62,12 @@ pub trait Bounded: Object {
 
 /// Object towards which rays can be sampled
 pub trait Sampleable: Object {
+    /// Returns surface area of the object
+    fn area(&self) -> f64;
+
     /// Samples a ray leaving at random point on the surface of the object.
-    /// Direction cos weighed on the hemisphere.
-    fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> Ray {
+    /// Direction cos weighed on the hemisphere. Returns also normal at ray origin
+    fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> (Ray, DVec3) {
         let (xo, ng) = self.sample_on(rand_sq0);
         let uvw = Onb::new(ng);
         let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
@@ -72,7 +75,17 @@ pub trait Sampleable: Object {
         // pdf start = 1 / area
         // pdf dir = cos hemisphere
         // prob want to make sample_leaving_pdf function
-        Ray::new(xo, wi)
+        (Ray::new(xo, wi), ng)
+    }
+
+    /// Returns PDF for sampled ray (i) origin and (ii) direction
+    fn sample_leaving_pdf(&self, r: &Ray, ng: DVec3) -> (f64, f64) {
+        let pdf_origin = 1.0 / self.area();
+        let wi = r.dir;
+        let cos_theta = ng.dot(wi);
+        let pdf_dir = cos_theta / PI;
+
+        (pdf_origin, pdf_dir)
     }
 
     /// Returns randomly sampled point on the surface of the object

@@ -68,6 +68,10 @@ impl Object for Disk {
 }
 
 impl Sampleable for Disk {
+    fn area(&self) -> f64 {
+        PI * self.radius * self.radius
+    }
+
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 

@@ -94,6 +94,11 @@ impl<T: Object> Object for Instance<T> {
 }
 
 impl<T: Sampleable> Sampleable for Instance<T> {
+    fn area(&self) -> f64 {
+        self.object.area();
+        todo!()
+    }
+
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let (sample_local, ng_local) = self.object.sample_on(rand_sq);
 

@@ -64,6 +64,10 @@ impl Object for Rectangle {
 }
 
 impl Sampleable for Rectangle {
+    fn area(&self) -> f64 {
+        // they both have the same area but do this anyways
+        self.triangles.0.area() + self.triangles.1.area()
+    }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         self.choose_triangle().sample_towards(xo, rand_sq)
