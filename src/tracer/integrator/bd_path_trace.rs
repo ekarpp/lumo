@@ -63,6 +63,7 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
 
     let illuminance = light_last.gathered * camera_last.gathered;
     // need to multiply by BSDFs, but vertices dont have them
+    // also need direction to next AND previous vertex
     illuminance * geometry_term(scene, light_last, camera_last)
 }
 
