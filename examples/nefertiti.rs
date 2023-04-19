@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Cube::new(Material::specular(
-            Texture::Marble(Perlin::new(silver)),
+            Texture::Marble(Perlin::new(), silver),
             0.04,
         ))
         .translate(-0.5, -0.5, -0.5)
