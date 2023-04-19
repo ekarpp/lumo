@@ -27,6 +27,8 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
+        println!("Creating kd-tree of {} triangles", objects.len());
+
         let start = Instant::now();
 
         let indices = (0..objects.len()).collect();
@@ -38,11 +40,7 @@ impl<T: Bounded> KdTree<T> {
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
         let root = KdNode::construct(&bounds, &boundary, indices);
 
-        println!(
-            "Constructed kd-tree of {} triangles in {:#?}",
-            objects.len(),
-            start.elapsed()
-        );
+        println!("Created kd-tree in {:#?}", start.elapsed());
 
         Self {
             root,

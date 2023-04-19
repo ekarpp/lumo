@@ -52,7 +52,7 @@ impl Image {
 
         // maybe not correct for textures, but we do it anyway
         assert!(width == height);
-
+        println!("Read succesfully");
         Ok(Self {
             buffer,
             width,
@@ -82,7 +82,7 @@ impl Image {
 
     /// Creates the PNG file
     pub fn save(&self, fname: &str) -> Result<(), EncodingError> {
-        println!("Saving to \"{}\".", fname);
+        println!("Saving to \"{}\"", fname);
         let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);

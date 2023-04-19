@@ -72,7 +72,7 @@ impl Renderer {
     pub fn render(&self) -> Image {
         println!(
             "Rendering scene as a {} x {} image \
-                  with {} thread(s) and {} sample(s) per pixel using {}.",
+                  with {} thread(s) and {} sample(s) per pixel using {}",
             self.img_width,
             self.img_height,
             rayon::current_num_threads(),
