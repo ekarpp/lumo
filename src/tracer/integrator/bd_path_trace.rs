@@ -57,7 +57,20 @@ impl Vertex {
 pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
-    DVec3::ZERO
+
+    let light_last = &light_path[light_path.len() - 1];
+    let camera_last = &camera_path[camera_path.len() - 1];
+
+    let illuminance = light_last.gathered * camera_last.gathered;
+    // need to multiply by BSDFs, but vertices dont have them
+    illuminance * geometry_term(scene, light_last, camera_last)
+}
+
+fn geometry_term(scene: &Scene, v1: &Vertex, v2: &Vertex) -> f64 {
+    let wi = (v1.xo - v2.xo).normalize();
+    let wi_length_squared = v1.xo.distance_squared(v2.xo);
+    // visibility test
+    v1.ng.dot(wi).abs() * v2.ng.dot(wi).abs() / wi_length_squared
 }
 
 fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
