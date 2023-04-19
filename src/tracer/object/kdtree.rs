@@ -190,8 +190,8 @@ impl KdNode {
         let mut best_axis = Axis::X;
 
         for axis in [Axis::X, Axis::Y, Axis::Z] {
-            let mut mins: Vec<f64> = Vec::new();
-            let mut maxs: Vec<f64> = Vec::new();
+            let mut mins: Vec<f64> = Vec::with_capacity(aabbs.len());
+            let mut maxs: Vec<f64> = Vec::with_capacity(aabbs.len());
 
             aabbs.iter().for_each(|aabb| {
                 mins.push(aabb.min(axis));
@@ -244,9 +244,8 @@ impl KdNode {
         axis: Axis,
         point: f64,
     ) -> (Vec<usize>, Vec<usize>) {
-        // fix size
-        let mut left: Vec<usize> = Vec::new();
-        let mut right: Vec<usize> = Vec::new();
+        let mut left: Vec<usize> = Vec::with_capacity(aabbs.len());
+        let mut right: Vec<usize> = Vec::with_capacity(aabbs.len());
         aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
             if aabb.min(axis) < point {
                 left.push(idx);
