@@ -162,6 +162,9 @@ pub trait Instanceable<T> {
 
     /// Rotate around z-axis by `r` radians
     fn rotate_z(self, r: f64) -> Box<Instance<T>>;
+
+    /// Rotate around `axis` by `r` radisn
+    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>>;
 }
 
 /// To make applying transformations to objects easy
@@ -187,6 +190,10 @@ impl<T: Object> Instanceable<T> for T {
 
     fn rotate_z(self, r: f64) -> Box<Instance<T>> {
         Instance::new(self, DAffine3::from_rotation_z(r))
+    }
+
+    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
+        Instance::new(self, DAffine3::from_axis_angle(axis, r))
     }
 }
 
@@ -219,5 +226,10 @@ impl<T: Object> Instance<T> {
     /// Apply z-rotation AFTER current transformations
     pub fn rotate_z(self, r: f64) -> Box<Self> {
         Self::new(self.object, DAffine3::from_rotation_z(r) * self.transform)
+    }
+
+    /// Apply axis rotation AFTER current transformations
+    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
+        Self::new(self.object, DAffine3::from_axis_angle(axis, r) * self.transform)
     }
 }
