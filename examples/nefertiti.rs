@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::specular(
+        Cube::new(Material::metal(
             Texture::Solid(srgb_to_linear(61, 45, 36)),
             0.0,
         ))
@@ -70,9 +70,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .to_unit_size()
         .to_origin()
-        .scale(0.55, 0.55, 0.55)
+        .scale(0.5, 0.5, 0.5)
         .rotate_x(-PI / 2.0)
-        .translate(0.0, -0.28, -1.45),
+        .translate(0.0, -0.26, -1.45),
     );
 
 /*
@@ -132,8 +132,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let camera = PinholeCamera::new(
-        DVec3::new(0.2, -0.225, -1.0),
-        DVec3::new(0.0, -0.225, -1.45),
+        DVec3::new(0.15, -0.28, -1.05),
+        DVec3::new(0.0, -0.28, -1.45),
         DVec3::Y,
         IVec2::new(683, 1000),
     );
