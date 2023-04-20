@@ -70,19 +70,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .to_unit_size()
         .to_origin()
-        .scale(0.9, 0.9, 0.9)
+        .scale(0.45, 0.45, 0.45)
         .rotate_x(-PI / 2.0)
         .translate(0.0, -0.07, -1.45),
     );
 
-/*
+    /*
     scene.add(
         Cube::new(Material::specular(Texture::Solid(srgb_to_linear(255, 0, 0)), 0.1))
             .translate(-0.5, -0.5, -0.5)
-            .scale(0.2, 0.4, 0.2)
+            .scale(0.2, 0.8, 0.2)
             .translate(0.0, -0.4, -1.45)
     );
-*/
+    */
     let xy_rect = DMat3::from_cols(
         DVec3::ZERO,
         DVec3::X,
