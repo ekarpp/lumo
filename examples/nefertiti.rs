@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             0.0,
         ))
         .translate(-0.5, -0.5, -0.5)
-        .scale(0.4, 0.5, 0.4)
+        .scale(0.3, 0.5, 0.3)
         .translate(0.0, -0.75, -1.45),
     );
 
@@ -70,16 +70,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .to_unit_size()
         .to_origin()
-        .scale(0.5, 0.5, 0.5)
+        .scale(0.55, 0.55, 0.55)
         .rotate_x(-PI / 2.0)
-        .translate(0.0, -0.25, -1.45),
+        .translate(0.0, -0.28, -1.45),
     );
 
 /*
     scene.add(
         Cylinder::new(
             0.0,
-            0.5,
+            0.55,
             0.1,
             Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))))
             .translate(0.0, -0.5, -1.45)
@@ -94,26 +94,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let theta = PI / 4.0;
 
     /* light */
+    // left, w.r.t camera
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
-                    .scale(0.2, 0.8, 0.5)
+                    .scale(0.3, 0.8, 1.0)
                     .rotate_y(theta)
                     .rotate_axis(DVec3::new(theta.cos(), 0.0, -theta.sin()), PI / 8.0)
                     .translate(-0.95, 0.0, -1.55)
     );
 
+    // right
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
-                    .scale(0.2, 0.2, 0.2)
+                    .scale(0.3, 0.3, 1.0)
                     .rotate_y(-theta)
                     .translate(0.8, 0.0, -1.5)
     );
 
+    // behind
+    scene.add_light(Rectangle::new(
+        xy_rect,
+        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
+                    .scale(0.2, 0.2, 1.0)
+                    .rotate_x(-theta)
+                    .translate(0.0, 0.5, 0.0)
+    );
+
+    // above
+    scene.add_light(Rectangle::new(
+        xy_rect,
+        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
+                    .scale(0.3, 0.3, 1.0)
+                    .rotate_x(-PI / 2.0)
+                    .translate(-0.15, 0.99, -1.3)
+    );
+
     let camera = PinholeCamera::new(
-        DVec3::new(0.15, -0.25, -1.0),
-        DVec3::new(0.0, -0.25, -1.45),
+        DVec3::new(0.2, -0.225, -1.0),
+        DVec3::new(0.0, -0.225, -1.45),
         DVec3::Y,
         IVec2::new(683, 1000),
     );
