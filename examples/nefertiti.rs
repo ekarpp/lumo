@@ -58,8 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             0.0,
         ))
         .translate(-0.5, -0.5, -0.5)
-        .scale(0.4, 1.2, 0.4)
-        .translate(0.0, -1.1, -1.45),
+        .scale(0.4, 0.5, 0.4)
+        .translate(0.0, -0.75, -1.45),
     );
 
     /* statue */
@@ -72,17 +72,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_origin()
         .scale(0.45, 0.45, 0.45)
         .rotate_x(-PI / 2.0)
-        .translate(0.0, -0.07, -1.45),
+        .translate(0.0, -0.27, -1.45),
     );
 
     /*
     scene.add(
-        Cube::new(Material::specular(Texture::Solid(srgb_to_linear(255, 0, 0)), 0.1))
-            .translate(-0.5, -0.5, -0.5)
-            .scale(0.2, 0.8, 0.2)
-            .translate(0.0, -0.4, -1.45)
+        Cylinder::new(
+            0.0,
+            0.4,
+            0.1,
+            Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))))
+            .translate(0.0, -0.5, -1.45)
     );
-    */
+     */
     let xy_rect = DMat3::from_cols(
         DVec3::ZERO,
         DVec3::X,
@@ -110,8 +112,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let camera = PinholeCamera::new(
-        DVec3::new(0.15, -0.25, -0.99),
-        DVec3::new(0.0, -0.25, -1.45),
+        DVec3::new(0.2, -0.4, -1.05),
+        DVec3::new(0.0, -0.275, -1.45),
         DVec3::Y,
         IVec2::new(683, 1000),
     );
