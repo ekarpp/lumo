@@ -1,8 +1,8 @@
 use super::*;
 
-/// Simple pinhole camera
-pub struct PinholeCamera {
-    /// Eye position
+/// Orthographic camera that Preserves angles
+pub struct OrthographicCamera {
+    /// Camera position
     origin: DVec3,
     /// Basis of camera space
     camera_basis: Onb,
@@ -10,7 +10,7 @@ pub struct PinholeCamera {
     resolution: DVec2,
 }
 
-impl PinholeCamera {
+impl OrthographicCamera {
     /// Camera at origin pointing towards `-z` with `y` axis as up
     /// and resolution `1000 x 1000`
     pub fn default() -> Box<Self> {
@@ -38,15 +38,18 @@ impl PinholeCamera {
     }
 }
 
-impl Camera for PinholeCamera {
+impl Camera for OrthographicCamera {
     fn get_resolution(&self) -> IVec2 { self.resolution.as_ivec2() }
 
     fn generate_ray(&self, raster_xy: DVec2) -> Ray {
-        // map raster space to [-1,1]^2
         let image_xyz = DVec2::new(
             2.0 * raster_xy.x / self.resolution.x - 1.0,
             2.0 * raster_xy.y * self.resolution.x / self.resolution.y.powi(2) - 1.0
-        ).extend(1.0);
-        Ray::new(self.origin, self.camera_basis.to_world(image_xyz))
+        ).extend(0.0);
+
+        Ray::new(
+            self.origin + self.camera_basis.to_world(image_xyz),
+            self.camera_basis.to_world(DVec3::Z)
+        )
     }
 }

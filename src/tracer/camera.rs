@@ -3,9 +3,12 @@ use crate::tracer::onb::Onb;
 use glam::{DVec2, DVec3, IVec2};
 
 pub use pinhole_camera::PinholeCamera;
+pub use orthographic_camera::OrthographicCamera;
 
 /// Simple pinhole camera
 mod pinhole_camera;
+/// Orthographic camera that preserves angles
+mod orthographic_camera;
 
 fn _camera_basis(origin: DVec3, towards: DVec3, up: DVec3) -> Onb {
     assert!(origin != towards);
@@ -18,7 +21,7 @@ fn _camera_basis(origin: DVec3, towards: DVec3, up: DVec3) -> Onb {
     Onb::new_from_basis(right, down, forward)
 }
 
-
+/// Camera trait. Might want to make this an enum
 pub trait Camera: Sync {
     /// Returns a ray pointing towards a point on the image plane.
     ///
