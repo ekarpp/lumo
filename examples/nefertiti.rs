@@ -1,7 +1,7 @@
 use lumo::tracer::*;
 use lumo::*;
 use std::f64::consts::PI;
-use glam::{IVec2, DVec3, DMat3};
+use glam::{DVec3, DMat3};
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
 const IMAGE_FILE: &str = "examples/aem_aem21300_3dsl01_mo08-03_p_img.png";
 const NEFE_URL: &str = "https://cdn.thingiverse.com/assets/c7/e1/b6/f6/12/SPK_Nefertiti_Scan_FOIA_Response.zip";
@@ -63,7 +63,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     /* statue */
-    /*
     scene.add(
         Mesh::new(
             obj::obj_from_url(NEFE_URL)?,
@@ -71,21 +70,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .to_unit_size()
         .to_origin()
-        .scale(0.5, 0.5, 0.5)
+        .scale(0.6, 0.6, 0.6)
         .rotate_x(-PI / 2.0)
-        .translate(0.0, -0.26, -1.45),
+        .translate(0.0, -0.21, -1.45),
     );
-    */
 
+    /*
     scene.add(
         Cylinder::new(
             0.0,
-            0.5,
+            0.6,
             0.1,
             Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))))
             .translate(0.0, -0.5, -1.45)
     );
-
+    */
     let xy_rect = DMat3::from_cols(
         DVec3::ZERO,
         DVec3::X,
@@ -133,15 +132,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let camera = Camera::orthographic(
-        DVec3::new(0.15, -0.25, -1.05),
-        DVec3::new(0.0, -0.3, -1.45),
+        DVec3::new(0.15, -0.15, -1.05),
+        DVec3::new(0.0, -0.2, -1.45),
         DVec3::Y,
-        0.3,
+        0.25,
         683,
         1000,
     );
 
-    let mut renderer = Renderer::new(scene, camera);
+    let renderer = Renderer::new(scene, camera);
     renderer.render().save("nefe.png")?;
 
     Ok(())
