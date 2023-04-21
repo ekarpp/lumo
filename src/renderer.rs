@@ -14,7 +14,7 @@ type PxSampler = JitteredSampler;
 /// Configures the image to be rendered
 pub struct Renderer {
     scene: Scene,
-    camera: Box<dyn Camera>,
+    camera: Camera,
     resolution: IVec2,
     num_samples: u32,
     integrator: Integrator,
@@ -25,7 +25,7 @@ impl Renderer {
     /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
     /// per pixel and path tracing as the integrator. Configured through the CLI
     /// or the setter functions of the struct.
-    pub fn new(scene: Scene, camera: Box<dyn Camera>) -> Self {
+    pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
         let cli_args: TracerCli = argh::from_env();
@@ -60,8 +60,6 @@ impl Renderer {
 
     /// Starts the rendering process and returns the rendered image
     pub fn render(&self) -> Image {
-
-
         println!(
             "Rendering scene as a {} x {} image \
                   with {} thread(s) and {} sample(s) per pixel using {}",

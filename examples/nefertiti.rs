@@ -132,11 +132,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .translate(-0.15, 0.99, -1.3)
     );
 
-    let camera = OrthographicCamera::new(
+    let camera = Camera::orthographic(
         DVec3::new(0.15, -0.25, -1.05),
         DVec3::new(0.0, -0.3, -1.45),
         DVec3::Y,
-        IVec2::new(1000, 1000),
+        0.3,
+        683,
+        1000,
     );
 
     let mut renderer = Renderer::new(scene, camera);

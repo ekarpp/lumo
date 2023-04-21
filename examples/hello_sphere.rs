@@ -1,15 +1,9 @@
-use glam::{IVec2, DVec3};
+use glam::DVec3;
 use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), png::EncodingError> {
-    let camera = PerspectiveCamera::new(
-        DVec3::ZERO,
-        DVec3::NEG_Z,
-        DVec3::Y,
-        45.0,
-        IVec2::new(1280, 720)
-    );
+    let camera = Camera::default(1280, 720);
     let mut scene = Scene::default();
 
     scene.add(Plane::new(

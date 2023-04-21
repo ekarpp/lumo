@@ -4,7 +4,7 @@ use lumo::*;
 const TEAPOT_URL: &str = "https://casual-effects.com/g3d/data10/common/model/teapot/teapot.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let camera = PerspectiveCamera::default();
+    let camera = Camera::default(1000, 1000);
     let def_color = srgb_to_linear(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,

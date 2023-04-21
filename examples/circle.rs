@@ -16,11 +16,13 @@ fn hsv_to_rgb(h: f64) -> DVec3 {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = PerspectiveCamera::new(
+    let camera = Camera::perspective(
         DVec3::new(0.0, 1.5, 1.5),
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, -1.0),
-        IVec2::ONE * 1000,
+        90.0,
+        1000,
+        1000,
     );
 
     let mut scene = Scene::default();
