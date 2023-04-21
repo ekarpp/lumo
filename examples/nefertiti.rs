@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             0.0,
         ))
         .translate(-0.5, -0.5, -0.5)
-        .scale(0.4, 0.5, 0.4)
+        .scale(0.45, 0.5, 0.45)
         .translate(0.0, -0.75, -1.45),
     );
 
@@ -76,13 +76,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	scene.add(
             Mesh::new(
 		obj::obj_from_url(NEFE_URL)?,
-		Material::diffuse(Texture::Image(Image::from_file(IMAGE_FILE)?)),
+		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.5),
             )
 		.to_unit_size()
 		.to_origin()
-		.scale(0.6, 0.6, 0.6)
-		.rotate_x(-PI / 2.0)
-		.translate(0.0, -0.2, -1.45),
+		.scale(0.5, 0.5, 0.5)
+		.rotate_x(-PI / 2.0 - PI / 80.0)
+		.translate(0.0, -0.25, -1.45),
 	);
     }
 
@@ -95,21 +95,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let theta = PI / 4.0;
 
     /* light */
-    // left, w.r.t camera
+    let left_disk_origin = DVec3::new(-0.95, 0.2, -1.5);
+    let disk_towards = DVec3::new(-0.06, -0.14, -1.28);
+
+    // left, w.r.t camera    
+    scene.add_light(Disk::new(
+	left_disk_origin,
+	disk_towards - left_disk_origin,
+	0.05,
+	Material::Light(Texture::Solid(10.0 * DVec3::ONE))
+    ));
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(3.0 * DVec3::ONE)))
-                    .scale(0.3, 1.1, 1.0)
+                    .scale(0.4, 0.4, 1.0)
                     .rotate_y(theta)
                     .rotate_axis(DVec3::new(theta.cos(), 0.0, -theta.sin()), PI / 8.0)
                     .translate(-0.95, 0.0, -1.55)
-    );
+    );    
 
     // right
+    let right_disk_origin = DVec3::new(0.6, 0.15, -1.6);
+    scene.add_light(Disk::new(
+	right_disk_origin,
+	disk_towards + 0.28 * DVec3::X - right_disk_origin,
+	0.05,
+	Material::Light(Texture::Solid(10.0 * DVec3::ONE))
+    ));
+
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(2.0 * DVec3::ONE)))
-                    .scale(0.2, 1.0, 1.0)
+                    .scale(0.4, 0.4, 1.0)
                     .rotate_y(-theta)
 		    .rotate_axis(DVec3::new(theta.cos(), 0.0, theta.sin()), PI / 8.0)
                     .translate(0.6, 0.2, -1.7)
@@ -119,9 +136,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
-                    .scale(0.3, 0.3, 1.0)
+                    .scale(0.5, 0.4, 1.0)
                     .rotate_x(-theta)
-                    .translate(-0.15, 0.6, 0.5)
+                    .translate(-0.25, 0.0, -0.1)
     );
 
     // above
@@ -140,7 +157,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             DVec3::new(0.15, -0.2, -1.17),
             DVec3::new(0.0, -0.25, -1.45),
             DVec3::Y,
-            0.26,
+            0.2,
             683,
             1000,
 	)
