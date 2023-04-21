@@ -11,14 +11,6 @@ pub struct TracerCli {
     #[argh(option, short = 't')]
     pub threads: Option<usize>,
 
-    /// width of the rendered image (defaults to 1000)
-    #[argh(option, short = 'w', default = "1000")]
-    pub width: i32,
-
-    /// height of the rendered image (defaults to 1000)
-    #[argh(option, short = 'h', default = "1000")]
-    pub height: i32,
-
     /// use direct light integrator instead of path tracing.
     #[argh(switch, short = 'd', long = "direct")]
     pub direct_light: bool,

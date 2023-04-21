@@ -5,7 +5,7 @@ use std::f64::consts::PI;
 const DRAGON_URL: &str = "https://casual-effects.com/g3d/data10/research/model/dragon/dragon.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let camera = Camera::default();
+    let camera = PinholeCamera::default();
     let def_color = srgb_to_linear(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,

@@ -1,7 +1,7 @@
 use lumo::tracer::*;
 use lumo::*;
 use std::f64::consts::PI;
-use glam::{DVec3, DMat3};
+use glam::{IVec2, DVec3, DMat3};
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
 const IMAGE_FILE: &str = "examples/aem_aem21300_3dsl01_mo08-03_p_img.png";
 const NEFE_URL: &str = "https://cdn.thingiverse.com/assets/c7/e1/b6/f6/12/SPK_Nefertiti_Scan_FOIA_Response.zip";
@@ -109,15 +109,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .translate(0.8, 0.0, -1.5)
     );
 
-    let camera = Camera::new(
+    let camera = PinholeCamera::new(
         DVec3::new(0.15, -0.25, -0.99),
         DVec3::new(0.0, -0.25, -1.45),
         DVec3::Y,
-        1.0
+        IVec2::new(683, 1000),
     );
 
     let mut renderer = Renderer::new(scene, camera);
-    renderer.set_width(683);
     renderer.render().save("nefe.png")?;
 
     Ok(())

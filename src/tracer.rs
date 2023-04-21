@@ -1,4 +1,4 @@
-pub use camera::Camera;
+pub use camera::{Camera, PinholeCamera};
 pub use integrator::Integrator;
 pub use material::Material;
 pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Mesh, Object};
