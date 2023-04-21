@@ -16,7 +16,7 @@ fn hsv_to_rgb(h: f64) -> DVec3 {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = PinholeCamera::new(
+    let camera = PerspectiveCamera::new(
         DVec3::new(0.0, 1.5, 1.5),
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, -1.0),

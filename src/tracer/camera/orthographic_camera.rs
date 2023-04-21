@@ -42,9 +42,10 @@ impl Camera for OrthographicCamera {
     fn get_resolution(&self) -> IVec2 { self.resolution.as_ivec2() }
 
     fn generate_ray(&self, raster_xy: DVec2) -> Ray {
+        let min_res = self.resolution.min_element() as f64;
         let image_xyz = DVec2::new(
-            2.0 * raster_xy.x / self.resolution.x - 1.0,
-            2.0 * raster_xy.y * self.resolution.x / self.resolution.y.powi(2) - 1.0
+            (2.0 * raster_xy.x - self.resolution.x) / min_res,
+            (2.0 * raster_xy.y - self.resolution.y) / min_res,
         ).extend(0.0);
 
         Ray::new(

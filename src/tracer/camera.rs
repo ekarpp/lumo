@@ -2,11 +2,11 @@ use crate::tracer::ray::Ray;
 use crate::tracer::onb::Onb;
 use glam::{DVec2, DVec3, IVec2};
 
-pub use pinhole_camera::PinholeCamera;
+pub use perspective_camera::PerspectiveCamera;
 pub use orthographic_camera::OrthographicCamera;
 
-/// Simple pinhole camera
-mod pinhole_camera;
+/// Perspective
+mod perspective_camera;
 /// Orthographic camera that preserves angles
 mod orthographic_camera;
 
