@@ -98,7 +98,7 @@ impl Scene {
             None => return None,
             Some(hi) => hi,
         };
-
+        // consider also checking medium
         let t_max = light_hit.t - EPSILON;
 
         for object in &self.objects {

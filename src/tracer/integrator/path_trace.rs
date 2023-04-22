@@ -41,8 +41,6 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                         let wo = ro.dir;
                         let wi = ri.dir;
                         let p_scatter = scatter_pdf.value_for(&ri);
-                        // for medium, pbrt makes p_scatter = bsdf_f
-                        // it still gets weighed in direct light, though
 
                         // resample bad sample?
                         if p_scatter <= 0.0 {
