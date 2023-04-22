@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		.to_unit_size()
 		.to_origin()
 		.scale(0.5, 0.5, 0.5)
-		.rotate_x(-PI / 2.0 - PI / 80.0)
+		.rotate_x(-PI / 2.0)// - PI / 80.0)
 		.translate(0.0, -0.25, -1.45),
 	);
     }
@@ -96,8 +96,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* light */
     let left_disk_origin = DVec3::new(-0.95, 0.2, -1.5);
-    let disk_towards = DVec3::new(-0.06, -0.14, -1.28);
+    let disk_towards = DVec3::new(-0.046, -0.192, -1.314);
 
+    scene.add(Sphere::new(
+	disk_towards,
+	0.01,
+	Material::diffuse(Texture::Solid(DVec3::X))
+    ));
+    
     // left, w.r.t camera    
     scene.add_light(Disk::new(
 	left_disk_origin,
@@ -114,8 +120,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .translate(-0.95, 0.0, -1.55)
     );    
 
-    // right
+    // right, maybe do this one on the nose instead?
     let right_disk_origin = DVec3::new(0.6, 0.15, -1.6);
+    let right_towards = DVec3::new(0.048, -0.192, -1.326);
+    scene.add(Sphere::new(
+	right_towards,
+	0.01,
+	Material::diffuse(Texture::Solid(DVec3::Z))
+    ));
     scene.add_light(Disk::new(
 	right_disk_origin,
 	disk_towards + 0.28 * DVec3::X - right_disk_origin,
@@ -154,8 +166,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	Camera::default(1000, 1000)
     } else {
 	Camera::orthographic(
-            DVec3::new(0.15, -0.2, -1.17),
-            DVec3::new(0.0, -0.25, -1.45),
+            DVec3::new(0.12, -0.23, -1.205),
+            DVec3::new(0.0, -0.26, -1.45),
             DVec3::Y,
             0.2,
             683,
