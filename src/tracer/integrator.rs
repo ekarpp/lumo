@@ -88,7 +88,7 @@ fn shadow_ray(
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
-                        / (p_light + p_scatter)
+                        / p_light
                 }
             }
         }
@@ -114,7 +114,7 @@ fn shadow_ray(
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
-                        / (p_scatter + p_light)
+                        / p_scatter
                 }
             }
         }
