@@ -5,6 +5,7 @@ use crate::tracer::pdfs::Pdf;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use glam::DVec3;
+use std::f64::consts::PI;
 
 /// Describes which material an object is made out of
 pub enum Material {
@@ -17,7 +18,7 @@ pub enum Material {
     /// Perfect refraction with refraction index as argument
     Glass(f64),
     /// Volumetric material for mediums
-    Volumetric,
+    Volumetric(DVec3),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -57,26 +58,18 @@ impl Material {
     /// Is the material specular? I.e. reflects light
     pub fn is_specular(&self) -> bool {
         match self {
-            Self::Mirror | Self::Glass(..) | Self::Volumetric => true,
+            Self::Mirror | Self::Glass(..) => true,
             Self::Microfacet(_, mfd) => mfd.is_specular(),
             _ => false,
         }
     }
 
-    /// duno if this is correct. need to check, hack for now
-    pub fn is_transparent(&self) -> bool {
-        match self {
-            Self::Mirror | Self::Glass(..) | Self::Volumetric => true,
-            Self::Microfacet(_, mfd) => mfd.is_transparent(),
-            _ => false,
-        }
+    /// Does the material scattering follow delta distribution?
+    /// Dumb hack to make delta things not have shadows in path trace.
+    pub fn is_delta(&self) -> bool {
+        matches!(self, Self::Mirror | Self::Glass(_))
     }
 
-    /// Does the material scattering follow delta distribution? Dumb hack to make
-    /// direct light estimation work.
-    pub fn is_delta(&self) -> bool {
-        matches!(self, Self::Mirror | Self::Glass(_) | Self::Volumetric)
-    }
 
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
@@ -86,15 +79,14 @@ impl Material {
         }
     }
 
-    /// What is the color at `ri.origin`?
+    /// What is the color at `h`?
     pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, h: &Hit) -> DVec3 {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            // cancel the applied shading cosine for volumetrics, mirror and glass
-            Self::Mirror | Self::Glass(..) | Self::Volumetric => {
-                DVec3::ONE / ns.dot(wi).abs()
-            }
+            // cancel the applied shading cosine for mirror and glass
+            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
+            Self::Volumetric(c) => *c / (4.0 * PI * ns.dot(wi).abs()),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
             }
@@ -102,12 +94,12 @@ impl Material {
         }
     }
 
-    /// How does `r` get scattered at `h`?
+    /// How does `ro` get scattered at `ho`?
     pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric => bxdfs::brdf_volumetric_pdf(ro),
+            Self::Volumetric(_) => bxdfs::brdf_volumetric_pdf(ro),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }

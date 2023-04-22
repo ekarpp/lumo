@@ -55,10 +55,10 @@ impl Scene {
     }
 
     /// Returns the transmittance due to volumetric medium
-    pub fn transmittance(&self, t_delta: f64) -> DVec3 {
+    pub fn transmittance(&self, h: &Hit) -> DVec3 {
         match &self.medium {
             None => DVec3::ONE,
-            Some(medium) => medium.transmittance(t_delta),
+            Some(medium) => medium.transmittance(h),
         }
     }
 

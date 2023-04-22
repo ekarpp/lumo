@@ -8,6 +8,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.object.material();
+        gathered *= scene.transmittance(&ho);
 
         match material.bsdf_pdf(&ho, &ro) {
             None => {
@@ -17,11 +18,9 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                 break;
             }
             Some(scatter_pdf) => {
-                let shadow = if material.is_delta() {
-                    DVec3::ZERO
-                } else {
-                    JitteredSampler::new(SHADOW_SPLITS)
-                        .map(|rand_sq| {
+                if !material.is_delta() {
+                    illuminance += gathered * JitteredSampler::new(SHADOW_SPLITS)
+                        .fold(DVec3::ZERO, |sum, rand_sq| {
                             shadow_ray(
                                 scene,
                                 &ro,
@@ -30,11 +29,8 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                                 rand_sq
                             )
                         })
-                        .sum::<DVec3>()
-                        / SHADOW_SPLITS as f64
+                        / SHADOW_SPLITS as f64;
                 };
-
-                illuminance += gathered * shadow;
 
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => {
@@ -45,6 +41,8 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                         let wo = ro.dir;
                         let wi = ri.dir;
                         let p_scatter = scatter_pdf.value_for(&ri);
+                        // for medium, pbrt makes p_scatter = bsdf_f
+                        // it still gets weighed in direct light, though
 
                         // resample bad sample?
                         if p_scatter <= 0.0 {

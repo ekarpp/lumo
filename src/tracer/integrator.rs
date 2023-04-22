@@ -79,11 +79,12 @@ fn shadow_ray(
                     let p_light = pdf_light.value_for(&ri);
                     let p_scatter = pdf_scatter.value_for(&ri);
                     let wi = ri.dir;
-
+                    // check bad samples?
                     let weight = p_light * p_light
                         / (p_light * p_light + p_scatter * p_scatter);
 
                     material.bsdf_f(wo, wi, &ho)
+                        * scene.transmittance(&hi)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
@@ -104,11 +105,12 @@ fn shadow_ray(
                     let p_light = pdf_light.value_for(&ri);
                     let p_scatter = pdf_scatter.value_for(&ri);
                     let wi = ri.dir;
-
+                    // check bad samples?
                     let weight = p_scatter * p_scatter
                         / (p_scatter * p_scatter + p_light * p_light);
 
                     material.bsdf_f(wo, wi, &ho)
+                        * scene.transmittance(&hi)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight

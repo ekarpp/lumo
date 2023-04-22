@@ -36,7 +36,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
                                 let ns = ho.ns;
 
                                 material.bsdf_f(wo, wi, &ho)
-                                    * scene.transmittance(ho.t)
+                                    * scene.transmittance(&ho)
                                     * ns.dot(wi).abs()
                                     * _integrate(scene, ri, depth + 1)
                                     / p_scatter
@@ -45,15 +45,15 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
                     } else {
                         JitteredSampler::new(SHADOW_SPLITS)
                             .fold(DVec3::ZERO, |sum, rand_sq| {
-                                shadow_ray(
+                                sum + shadow_ray(
                                     scene,
                                     &ro,
                                     &ho,
                                     scatter_pdf.as_ref(),
                                     rand_sq
-                                ) + sum
+                                )
                             })
-                            * scene.transmittance(ho.t)
+                            * scene.transmittance(&ho)
                             / SHADOW_SPLITS as f64
                     }
                 }

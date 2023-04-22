@@ -1,4 +1,5 @@
 use crate::EPSILON;
+use crate::tracer::material::Material;
 use crate::tracer::object::Object;
 use crate::tracer::ray::Ray;
 use glam::{DVec2, DVec3};
@@ -27,6 +28,7 @@ impl<'a> Hit<'a> {
     /// * `xi` - Point in world space at which object got hit
     /// * `ns` - Shading normal of the object at the point of impact
     /// * `ng` - Geometric normal of the object at the point of impact
+    /// * `uv` - Texture coordinates in `\[0,1\]^2`
     pub fn new(
         t: f64,
         object: &'a dyn Object,
@@ -55,5 +57,10 @@ impl<'a> Hit<'a> {
             xi,
             wi
         )
+    }
+
+    /// Did we hit a medium?
+    pub fn is_medium(&self) -> bool {
+        matches!(self.object.material(), Material::Volumetric(..))
     }
 }
