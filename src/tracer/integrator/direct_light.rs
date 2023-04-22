@@ -1,8 +1,12 @@
 use super::*;
 
 pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
-    /* two mirrors next to each other might cause issues... */
+    _integrate(scene, ro, 0)
+}
 
+const MAX_RECURSION: usize = 50;
+
+fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
     match scene.hit(&ro) {
         None => DVec3::new(0.0, 0.0, 0.0),
         Some(ho) => {
@@ -11,6 +15,10 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                 None => material.emit(&ho),
                 Some(scatter_pdf) => {
                     if material.is_specular() {
+                        if depth > MAX_RECURSION {
+                            return DVec3::ZERO;
+                        }
+
                         match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                             None => DVec3::ZERO,
                             Some(wi) => {
@@ -30,7 +38,7 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                                 material.bsdf_f(wo, wi, &ho)
                                     * scene.transmittance(ho.t)
                                     * ns.dot(wi).abs()
-                                    * integrate(scene, ri)
+                                    * _integrate(scene, ri, depth + 1)
                                     / p_scatter
                             }
                         }
