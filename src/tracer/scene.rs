@@ -54,10 +54,25 @@ impl Scene {
         self.lights[idx].as_ref()
     }
 
+    /// Returns the transmittance due to volumetric medium
+    pub fn transmittance(&self, t_delta: f64) -> DVec3 {
+        match &self.medium {
+            None => DVec3::ONE,
+            Some(medium) => medium.transmittance(t_delta),
+        }
+    }
+
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let mut t_max = INFINITY;
         let mut h = None;
+
+        if let Some(medium) = &self.medium {
+            // if we hit an object, it must be closer than what we have
+            h = medium.hit(r, 0.0, t_max).or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
 
         for object in &self.objects {
             // if we hit an object, it must be closer than what we have

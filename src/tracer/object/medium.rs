@@ -30,7 +30,7 @@ impl Medium {
 
     /// TODO
     pub fn transmittance(&self, t_delta: f64) -> DVec3 {
-       DVec3::ZERO
+        self.color * (-self.density * t_delta).exp()
     }
 }
 
