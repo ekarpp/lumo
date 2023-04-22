@@ -28,15 +28,25 @@ pub fn integrate(scene: &Scene, ro: Ray) -> DVec3 {
                                 let ns = ho.ns;
 
                                 material.bsdf_f(wo, wi, &ho)
+                                    * scene.transmittance(ho.t)
                                     * ns.dot(wi).abs()
                                     * integrate(scene, ri)
                                     / p_scatter
                             }
                         }
                     } else {
-                        JitteredSampler::new(SHADOW_SPLITS).fold(DVec3::ZERO, |acc, rand_sq| {
-                            acc + shadow_ray(scene, &ro, &ho, scatter_pdf.as_ref(), rand_sq)
-                        }) / SHADOW_SPLITS as f64
+                        JitteredSampler::new(SHADOW_SPLITS)
+                            .fold(DVec3::ZERO, |sum, rand_sq| {
+                                shadow_ray(
+                                    scene,
+                                    &ro,
+                                    &ho,
+                                    scatter_pdf.as_ref(),
+                                    rand_sq
+                                ) + sum
+                            })
+                            * scene.transmittance(ho.t)
+                            / SHADOW_SPLITS as f64
                     }
                 }
             }

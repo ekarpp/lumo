@@ -19,13 +19,13 @@ impl Medium {
     /// # Arguments
     /// * `density` - Density of the medium. In range \[0,1\]
     /// * `color` - Color of the medium
-    pub fn new(density: f64, color: DVec3) -> Box<Self> {
+    pub fn new(density: f64, color: DVec3) -> Self {
         assert!((0.0..1.0).contains(&density));
-        Box::new(Self {
+        Self {
             density,
             color,
             material: Material::Volumetric,
-        })
+        }
     }
 
     /// TODO
