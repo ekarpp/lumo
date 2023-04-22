@@ -85,6 +85,32 @@ impl Pdf for DeltaPdf {
     }
 }
 
+/// PDF for volumetric mediums
+pub struct VolumetricPdf {
+    /// ONB for view direction
+    uvw: Onb,
+}
+
+impl VolumetricPdf {
+    pub fn new(v: DVec3) -> Self {
+        Self {
+            uvw: Onb::new(v),
+        }
+    }
+}
+
+impl Pdf for VolumetricPdf {
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
+        let wi = rand_utils::square_to_sphere(rand_sq);
+
+        Some( wi )
+    }
+
+    fn value_for(&self, ri: &Ray) -> f64 {
+        1.0 / (4.0 * PI)
+    }
+}
+
 /// PDF for microfacet distribution.
 pub struct MfdPdf {
     /// Direction from point of impact to viewer

@@ -1,6 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Object, Sampleable, Plane, Rectangle};
+use crate::tracer::{Medium, Object, Plane, Rectangle, Sampleable};
 use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
@@ -18,6 +18,8 @@ pub struct Scene {
     pub objects: Vec<Box<dyn Object>>,
     /// Contains all lights in the scene.
     pub lights: Vec<Box<dyn Sampleable>>,
+    /// Medium that the scene is filled with
+    pub medium: Option<Medium>,
 }
 
 impl Scene {
@@ -33,6 +35,11 @@ impl Scene {
         assert!(matches!(light.material(), Material::Light(_)));
 
         self.lights.push(light);
+    }
+
+    /// Sets the volumetric medium of the scene
+    pub fn set_medium(&mut self, medium: Medium) {
+        self.medium = Some(medium);
     }
 
     /// Returns number of lights in the scene

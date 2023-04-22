@@ -15,6 +15,7 @@ pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
 pub use kdtree::{KdTree, Mesh};
+pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;
@@ -35,6 +36,8 @@ mod disk;
 mod instance;
 /// kD-trees, used for complex meshes
 mod kdtree;
+/// Volumetric mediums
+mod medium;
 /// Defines infinite planes
 mod plane;
 /// Defines rectangles. Built from two triangles.

@@ -16,6 +16,8 @@ pub enum Material {
     Mirror,
     /// Perfect refraction with refraction index as argument
     Glass(f64),
+    /// Volumetric material for mediums
+    Volumetric,
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -55,7 +57,7 @@ impl Material {
     /// Is the material specular? I.e. reflects light
     pub fn is_specular(&self) -> bool {
         match self {
-            Self::Mirror | Self::Glass(..) => true,
+            Self::Mirror | Self::Glass(..) | Self::Volumetric => true,
             Self::Microfacet(_, mfd) => mfd.is_specular(),
             _ => false,
         }
@@ -64,7 +66,7 @@ impl Material {
     /// duno if this is correct. need to check, hack for now
     pub fn is_transparent(&self) -> bool {
         match self {
-            Self::Mirror | Self::Glass(..) => true,
+            Self::Mirror | Self::Glass(..) | Self::Volumetric => true,
             Self::Microfacet(_, mfd) => mfd.is_transparent(),
             _ => false,
         }
@@ -73,7 +75,7 @@ impl Material {
     /// Does the material scattering follow delta distribution? Dumb hack to make
     /// direct light estimation work.
     pub fn is_delta(&self) -> bool {
-        matches!(self, Self::Mirror | Self::Glass(_))
+        matches!(self, Self::Mirror | Self::Glass(_) | Self::Volumetric)
     }
 
     /// How much light emitted at `h`?
@@ -89,8 +91,10 @@ impl Material {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            // cancel the applied shading cosine for mirror and glass
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
+            // cancel the applied shading cosine for volumetrics, mirror and glass
+            Self::Mirror | Self::Glass(..) | Self::Volumetric => {
+                DVec3::ONE / ns.dot(wi).abs()
+            }
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
             }
@@ -103,6 +107,7 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
+            Self::Volumetric => bxdfs::brdf_volumetric_pdf(ro),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }

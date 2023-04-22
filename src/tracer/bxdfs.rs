@@ -1,6 +1,6 @@
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf};
+use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
 use crate::tracer::ray::Ray;
 use glam::DVec3;
 use std::f64::consts::PI;
@@ -112,6 +112,11 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     let no = ho.ng;
     let wi = reflect(-wo, no);
     Some( Box::new(DeltaPdf::new(wi)) )
+}
+
+pub fn brdf_volumetric_pdf(ro: &Ray) -> Option<Box<dyn Pdf>> {
+    let v = -ro.dir;
+    Some( Box::new(VolumetricPdf::new(v)) )
 }
 
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
