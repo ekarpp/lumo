@@ -114,9 +114,9 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     Some( Box::new(DeltaPdf::new(wi)) )
 }
 
-pub fn brdf_volumetric_pdf(ro: &Ray) -> Option<Box<dyn Pdf>> {
+pub fn brdf_volumetric_pdf(ro: &Ray, g: f64) -> Option<Box<dyn Pdf>> {
     let v = -ro.dir;
-    Some( Box::new(VolumetricPdf::new(v)) )
+    Some( Box::new(VolumetricPdf::new(v, g)) )
 }
 
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {

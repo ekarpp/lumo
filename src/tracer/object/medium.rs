@@ -18,14 +18,17 @@ impl Medium {
     /// # Arguments
     /// * `density` - Density of the medium along each RBG channel in `\[0,1\]^3`
     /// * `color` - Color of the medium
-    pub fn new(density: DVec3, color: DVec3) -> Self {
+    /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in
+    /// `(-1,1)`
+    pub fn new(density: DVec3, color: DVec3, scatter_param: f64) -> Self {
+        assert!(-1.0 < scatter_param && scatter_param < 1.0);
         assert!(density.max_element() <= 1.0
                 && density.min_element() >= 0.0);
 
         Self {
             density,
             color,
-            material: Material::Volumetric(1.0),
+            material: Material::Volumetric(scatter_param),
         }
     }
 

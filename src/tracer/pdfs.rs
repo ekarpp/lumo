@@ -89,11 +89,14 @@ impl Pdf for DeltaPdf {
 pub struct VolumetricPdf {
     /// ONB for view direction
     uvw: Onb,
+    /// Scattering parameter
+    g: f64,
 }
 
 impl VolumetricPdf {
-    pub fn new(v: DVec3) -> Self {
+    pub fn new(v: DVec3, g: f64) -> Self {
         Self {
+            g,
             uvw: Onb::new(v),
         }
     }
@@ -101,13 +104,35 @@ impl VolumetricPdf {
 
 impl Pdf for VolumetricPdf {
     fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
-        let wi = rand_utils::square_to_sphere(rand_sq);
+
+        let cos_theta = if self.g.abs() < 1e-3 {
+            1.0 - 2.0 * rand_sq.x
+        } else {
+            let g2 = self.g * self.g;
+            let fract = (1.0 - g2) / (1.0 - self.g + 2.0 * self.g * rand_sq.x);
+            (1.0 + g2 - fract * fract) / (2.0 * self.g)
+        };
+        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+
+        let phi = 2.0 * PI * rand_sq.y;
+
+        let wi = self.uvw.to_world(DVec3::new(
+            sin_theta * phi.cos(),
+            sin_theta * phi.sin(),
+            cos_theta
+        ));
 
         Some( wi )
     }
 
     fn value_for(&self, ri: &Ray) -> f64 {
-        1.0 / (4.0 * PI)
+        let wi = ri.dir;
+        let cos_theta = wi.dot(self.uvw.w);
+
+        let denom = 1.0 + self.g * self.g + 2.0 * self.g * cos_theta;
+
+        (1.0 - self.g * self.g)
+            / (4.0 * PI * denom * denom.max(0.0).sqrt())
     }
 }
 

@@ -5,7 +5,6 @@ use crate::tracer::pdfs::Pdf;
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use glam::DVec3;
-use std::f64::consts::PI;
 
 /// Describes which material an object is made out of
 pub enum Material {
@@ -86,7 +85,8 @@ impl Material {
         match self {
             // cancel the applied shading cosine for mirror and glass
             Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
-            Self::Volumetric(..) => DVec3::ONE / (4.0 * PI * ns.dot(wi).abs()),
+            // volumetric BSDF handled in integrator to cancel out PDF
+            Self::Volumetric(..) => unreachable!(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
             }
@@ -99,7 +99,7 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric(_) => bxdfs::brdf_volumetric_pdf(ro),
+            Self::Volumetric(g) => bxdfs::brdf_volumetric_pdf(ro, *g),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }

@@ -35,7 +35,13 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
 
                                 let ns = ho.ns;
 
-                                material.bsdf_f(wo, wi, &ho)
+                                let bsdf = if ho.is_medium() {
+                                    DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                                } else {
+                                    material.bsdf_f(wo, wi, &ho)
+                                };
+
+                                bsdf
                                     * scene.transmittance(&ho)
                                     * ns.dot(wi).abs()
                                     * _integrate(scene, ri, depth + 1)
