@@ -4,10 +4,8 @@ use super::*;
 /// at random depending on density. Examples of real life mediums include smoke,
 /// fog, and clouds.
 pub struct Medium {
-    /// Density of the medium
-    density: f64,
-    /// Percentage of how much each RGB channel gets absorbed by the medium
-    absorption: DVec3,
+    /// Density of the medium along each RGB channel
+    density: DVec3,
     /// Material of the medium
     material: Material,
 }
@@ -16,17 +14,14 @@ impl Medium {
     /// Constructs a medium contained in an invisible solid.
     ///
     /// # Arguments
-    /// * `density` - Density of the medium. In range \[0,1\]
-    /// * `absoprition` - Percentage of how much each RGB channel gets absorbed
+    /// * `density` - Density of the medium along each RBG channel in `\[0,1\]^3`
     /// * `color` - Color of the medium
-    pub fn new(density: f64, absorption: DVec3, color: DVec3) -> Self {
-        assert!((0.0..1.0).contains(&density));
-        assert!(absorption.max_element() <= 1.0
-                && absorption.min_element() >= 0.0);
-        // absorption = multi channel density
+    pub fn new(density: DVec3, color: DVec3) -> Self {
+        assert!(density.max_element() <= 1.0
+                && density.min_element() >= 0.0);
+
         Self {
             density,
-            absorption,
             material: Material::Volumetric(color),
         }
     }
@@ -35,12 +30,16 @@ impl Medium {
     pub fn transmittance(&self, h: &Hit) -> DVec3 {
         let t_delta = h.t;
         let transmittance = (-self.density * t_delta).exp();
-        let pdf = if h.is_medium() {
+        let density = if h.is_medium() {
+            // we hit a medium
             self.density * transmittance
         } else {
             transmittance
         };
-        DVec3::splat(transmittance) / pdf
+
+        let pdf = density.dot(DVec3::ONE) / 3.0;
+
+        transmittance / pdf
     }
 }
 
@@ -50,10 +49,17 @@ impl Object for Medium {
     }
 
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+        // choose a random color channel from density
+        let density = match 3.0 * rand_utils::rand_f64() {
+            f if f < 1.0 => self.density.x,
+            f if f < 2.0 => self.density.y,
+            _ => self.density.z,
+        };
+
         let ray_length = ro.dir.length();
         let inside_dist = (t_max - t_min) * ray_length;
 
-        let hit_dist = -(1.0 - rand_utils::rand_f64()).ln() / self.density;
+        let hit_dist = -(1.0 - rand_utils::rand_f64()).ln() / density;
         // this way, the scale of the world matters.
         // doubt there are alternative ways?
         if hit_dist > inside_dist {
