@@ -21,7 +21,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                 if !material.is_delta() {
                     illuminance += gathered * JitteredSampler::new(SHADOW_SPLITS)
                         .fold(DVec3::ZERO, |sum, rand_sq| {
-                            shadow_ray(
+                            sum + shadow_ray(
                                 scene,
                                 &ro,
                                 &ho,
