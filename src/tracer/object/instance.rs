@@ -134,8 +134,8 @@ impl<T: Sampleable> Sampleable for Instance<T> {
             // the base of the parallellepiped gives us the area scale at the
             // point of impact. think this is not exact with ansiotropic
             // scaling of solids. how to do for solid angle?
-            let height = ng.dot(self.transform.matrix3 * ng_local);
-            let volume = self.transform.matrix3.determinant();
+            let height = ng.dot(self.transform.matrix3 * ng_local).abs();
+            let volume = self.transform.matrix3.determinant().abs();
             let jacobian = volume / height;
 
             // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
