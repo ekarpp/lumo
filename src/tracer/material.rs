@@ -18,7 +18,7 @@ pub enum Material {
     /// Perfect refraction with refraction index as argument
     Glass(f64),
     /// Volumetric material for mediums
-    Volumetric(DVec3),
+    Volumetric(f64),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -86,7 +86,7 @@ impl Material {
         match self {
             // cancel the applied shading cosine for mirror and glass
             Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
-            Self::Volumetric(c) => *c / (4.0 * PI * ns.dot(wi).abs()),
+            Self::Volumetric(..) => DVec3::ONE / (4.0 * PI * ns.dot(wi).abs()),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
             }

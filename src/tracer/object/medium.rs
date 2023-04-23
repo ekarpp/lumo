@@ -6,6 +6,8 @@ use super::*;
 pub struct Medium {
     /// Density of the medium along each RGB channel
     density: DVec3,
+    /// Color of the medium
+    color: DVec3,
     /// Material of the medium
     material: Material,
 }
@@ -22,7 +24,8 @@ impl Medium {
 
         Self {
             density,
-            material: Material::Volumetric(color),
+            color,
+            material: Material::Volumetric(1.0),
         }
     }
 
@@ -39,7 +42,11 @@ impl Medium {
 
         let pdf = density.dot(DVec3::ONE) / 3.0;
 
-        transmittance / pdf
+        if h.is_medium() {
+            self.color * transmittance / pdf
+        } else {
+            transmittance / pdf
+        }
     }
 }
 
