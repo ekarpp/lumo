@@ -1,4 +1,4 @@
-use glam::{IVec2, DVec3};
+use glam::DVec3;
 use lumo::tracer::*;
 use lumo::*;
 use std::f64::consts::PI;

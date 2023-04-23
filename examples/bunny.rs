@@ -1,6 +1,5 @@
 use lumo::tracer::*;
 use lumo::*;
-use glam::IVec2;
 
 const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 
