@@ -76,12 +76,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	scene.add(
             Mesh::new(
 		obj::obj_from_url(NEFE_URL)?,
-		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.5),
+		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.4),
             )
 		.to_unit_size()
 		.to_origin()
 		.scale(0.5, 0.5, 0.5)
-		.rotate_x(-PI / 2.0)// - PI / 80.0)
+		.rotate_x(-PI / 2.0)
 		.translate(0.0, -0.25, -1.45),
 	);
     }
@@ -95,44 +95,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let theta = PI / 4.0;
 
     /* light */
-    let left_disk_origin = DVec3::new(-0.95, 0.2, -1.5);
     let disk_towards = DVec3::new(-0.046, -0.192, -1.314);
+    let disk_dir = DVec3::new(-0.9132592442858147, 0.38194206881899756, -0.05342207528313975);
 
-    scene.add(Sphere::new(
-	disk_towards,
-	0.01,
-	Material::diffuse(Texture::Solid(DVec3::X))
-    ));
-    
     // left, w.r.t camera    
     scene.add_light(Disk::new(
-	left_disk_origin,
-	disk_towards - left_disk_origin,
+	disk_towards + 0.5 * disk_dir,
+	-disk_dir,
 	0.05,
-	Material::Light(Texture::Solid(10.0 * DVec3::ONE))
+	Material::Light(Texture::Solid(30.0 * DVec3::ONE))
     ));
-    scene.add_light(Rectangle::new(
-        xy_rect,
-        Material::Light(Texture::Solid(3.0 * DVec3::ONE)))
-                    .scale(0.4, 0.4, 1.0)
-                    .rotate_y(theta)
-                    .rotate_axis(DVec3::new(theta.cos(), 0.0, -theta.sin()), PI / 8.0)
-                    .translate(-0.95, 0.0, -1.55)
-    );    
 
-    // right, maybe do this one on the nose instead?
     let right_disk_origin = DVec3::new(0.6, 0.15, -1.6);
-    let right_towards = DVec3::new(0.048, -0.192, -1.326);
-    scene.add(Sphere::new(
-	right_towards,
-	0.01,
-	Material::diffuse(Texture::Solid(DVec3::Z))
-    ));
     scene.add_light(Disk::new(
 	right_disk_origin,
 	disk_towards + 0.28 * DVec3::X - right_disk_origin,
 	0.05,
-	Material::Light(Texture::Solid(10.0 * DVec3::ONE))
+	Material::Light(Texture::Solid(20.0 * DVec3::ONE))
     ));
 
     scene.add_light(Rectangle::new(
@@ -148,22 +127,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add_light(Rectangle::new(
         xy_rect,
         Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
-                    .scale(0.5, 0.4, 1.0)
-                    .rotate_x(-theta)
-                    .translate(-0.25, 0.0, -0.1)
+                    .scale(0.3, 0.3, 1.0)
+                    .rotate_x(2.0 * PI - 2.0 * theta)
+                    .translate(-0.15, 0.5, -0.8)
     );
-
+    scene.add_light(Rectangle::new(
+	xy_rect,
+	Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
+		    .scale(0.2, 0.2, 1.0)
+		    .rotate_x(PI)
+		    .translate(-0.1, 0.0, 0.0)
+    );
+    
     // above
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
+        Material::Light(Texture::Solid(2.0 * srgb_to_linear(255, 255, 255))))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_x(PI / 2.0)
-                    .translate(-0.2, 0.99, -1.5)
+                    .translate(-0.2, 0.5, -1.5)
     );
 
     let camera = if cfg!(debug_assertions) {
-	Camera::default(1000, 1000)
+	Camera::perspective(
+	    0.5 * DVec3::Z,
+	    DVec3::NEG_Z,
+	    DVec3::Y,
+	    90.0,
+	    1000,
+	    1000
+	)
     } else {
 	Camera::orthographic(
             DVec3::new(0.12, -0.23, -1.205),
@@ -179,7 +172,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
 	renderer.set_samples(9)
     } else {
-	renderer.set_samples(25)
+	renderer.set_samples(2025)
     }
     renderer.render().save("nefe.png")?;
 
