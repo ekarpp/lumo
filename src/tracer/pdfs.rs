@@ -179,7 +179,7 @@ impl MfdPdf {
 
         let wh = self.uvw.to_world(local_wh).normalize();
 
-        bxdfs::refract(eta_ratio, self.v, wh)
+        Some( bxdfs::refract(eta_ratio, self.v, wh) )
     }
 
     /// PDF for NDF scattering

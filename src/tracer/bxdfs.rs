@@ -126,10 +126,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>
     let eta_ratio = if inside { rfrct_idx } else { 1.0 / rfrct_idx };
     let ng = if inside { -ng } else { ng };
 
-    let wi = match refract(eta_ratio, v, ng) {
-        None => reflect(v, ng),
-        Some(wi) => wi,
-    };
+    let wi = refract(eta_ratio, v, ng);
 
     Some( Box::new(DeltaPdf::new(wi)) )
 }
@@ -149,7 +146,7 @@ pub fn reflect(v: DVec3, ng: DVec3) -> DVec3 {
 /// * `eta_ratio` - Ratio of refraction indices. `from / to`
 /// * `v` - Normalized direction from refraction point to viewer
 /// * `ng` - Surface geometric normal, pointing to same hemisphere as `v`
-pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> Option<DVec3> {
+pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> DVec3 {
     /* Snell-Descartes law */
     let cos_to = ng.dot(v);
     let sin2_to = 1.0 - cos_to * cos_to;
@@ -157,10 +154,10 @@ pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> Option<DVec3> {
 
     /* total internal reflection */
     if sin2_ti > 1.0 {
-        return Some( reflect(v, ng) );
+        reflect(v, ng)
+    } else {
+        let cos_ti = (1.0 - sin2_ti).sqrt();
+
+        -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * ng
     }
-
-    let cos_ti = (1.0 - sin2_ti).sqrt();
-
-    Some( -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * ng )
 }
