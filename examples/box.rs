@@ -40,14 +40,6 @@ fn main() -> Result<(), std::io::Error> {
         .translate(0.2, -1.0, -1.7),
     );
 
-    scene.set_medium(
-        Medium::new(
-            DVec3::new(0.001764, 0.0032095, 0.0019617),
-            DVec3::new(0.31845, 0.31324, 0.30147),
-            -0.9
-        )
-    );
-
     let renderer = Renderer::new(scene, camera);
     renderer.render().save("box.png")?;
     Ok(())

@@ -92,9 +92,17 @@ fn main() -> Result<(), std::io::Error> {
         scene.add(Sphere::new(
             DVec3::new(x, y, z),
             r,
-            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.5),
+            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.2),
         ));
     }
+
+    scene.set_medium(
+        Medium::new(
+            DVec3::new(0.002, 0.003, 0.0001),
+            DVec3::new(0.175, 0.125, 0.11),
+            0.9,
+        )
+    );
 
     let renderer = Renderer::new(scene, camera);
     renderer.render().save("circle.png")?;
