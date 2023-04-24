@@ -87,4 +87,4 @@ fn main() -> Result<(), png::EncodingError> {
 ![Bust of Nefertiti](https://i.imgur.com/eQ0iaE1.png)
 ![Cornell box](https://i.imgur.com/JfGOyIT.png)
 ![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png)
-![Circle of spheres](https://i.imgur.com/vaALzZM.png)
+![Circle of spheres](https://i.imgur.com/zraIbaH.png)

@@ -100,7 +100,7 @@ fn main() -> Result<(), std::io::Error> {
         Medium::new(
             DVec3::new(0.002, 0.003, 0.0001),
             DVec3::new(0.175, 0.125, 0.11),
-            0.9,
+            0.0,
         )
     );
 
