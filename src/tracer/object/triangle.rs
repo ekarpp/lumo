@@ -15,10 +15,17 @@ pub struct Triangle {
     ng: DVec3,
     /// Shading normal for the vertex `a`
     na: DVec3,
-    /// Shading normal for the vertex `a`
+    /// Shading normal for the vertex `b`
     nb: DVec3,
-    /// Shading normal for the vertex `a`
+    /// Shading normal for the vertex `c`
     nc: DVec3,
+    /// Texutre coordinate for the vertex `a`
+    ta: DVec2,
+    /// Texutre coordinate for the vertex `b`
+    tb: DVec2,
+    /// Texutre coordinate for the vertex `c`
+    tc: DVec2,
+    /// Material of the triangle
     material: Material,
 }
 
@@ -27,54 +34,53 @@ impl Triangle {
     /// the points, they are in counter-clockwise order.
     ///
     /// # Arguments
-    /// * `a,b,c` - Three vertices of the triangle
+    /// * `abc` - Three vertices of the triangle stored in the columns
+    /// * `nabc` - Optional shading normals for each vertex stored in the columns
+    /// * `tabc` - Optional texture coordinates for each vertex stored in the columns
     /// * `material` - Material of the triangle
-    pub fn new(abc: (DVec3, DVec3, DVec3), material: Material) -> Box<Self> {
+    pub fn new(
+        abc: DMat3,
+        nabc: Option<DMat3>,
+        tabc: Option<DMat3>,
+        material: Material,
+    ) -> Box<Self> {
+        let a = abc.col(0);
+        let b = abc.col(1);
+        let c = abc.col(2);
         /* check degeneracy */
-        let b_m_a = abc.1 - abc.0;
-        let c_m_a = abc.2 - abc.0;
+        let b_m_a = b - a;
+        let c_m_a = c - a;
         let ng = (b_m_a).cross(c_m_a);
         assert!(ng.length() != 0.0);
         let ng = ng.normalize();
+
+        let (na, nb, nc) = match nabc {
+            None => (ng, ng, ng),
+            Some(nabc) => (nabc.col(0), nabc.col(1), nabc.col(2)),
+        };
+
+        let (ta, tb, tc) = match tabc {
+            None => (DVec2::ZERO, DVec2::X, DVec2::ONE),
+            Some(tabc) => (
+                tabc.col(0).truncate(),
+                tabc.col(1).truncate(),
+                tabc.col(2).truncate(),
+            ),
+        };
+
         Box::new(Self {
-            a: abc.0,
+            a,
             b_m_a,
             c_m_a,
             material,
             ng,
-            na: ng,
-            nb: ng,
-            nc: ng,
+            na,
+            nb,
+            nc,
+            ta,
+            tb,
+            tc,
         })
-    }
-
-    /// Create triangle with a specified normal at each vertex. Assigns blank
-    /// material, kD-tree should store this and have the material.
-    ///
-    /// # Arguments
-    /// * `abc` - Triple of the triangle vertices
-    /// * `nabc` - Triple of the normals at the vertices
-    pub fn new_w_normals(abc: (DVec3, DVec3, DVec3), nabc: (DVec3, DVec3, DVec3)) -> Self {
-        let ng = (abc.1 - abc.0).cross(abc.2 - abc.0);
-        let ng = if ng.length() == 0.0 {
-            #[cfg(debug_assertions)]
-            println!("Found degenerate triangle. {:?}", abc);
-            // bad .obj file..
-            DVec3::Z
-        } else {
-            ng.normalize()
-        };
-
-        Self {
-            a: abc.0,
-            b_m_a: abc.1 - abc.0,
-            c_m_a: abc.2 - abc.0,
-            ng,
-            na: nabc.0,
-            nb: nabc.1,
-            nc: nabc.2,
-            material: Material::Blank,
-        }
     }
 }
 
@@ -127,23 +133,29 @@ impl Object for Triangle {
             let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
             let ns = ns.normalize();
 
-            Hit::new(t, self, r.at(t), ns, self.ng)
+            let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
+
+            Hit::new(t, self, r.at(t), ns, self.ng, uv)
         }
     }
 }
 
 impl Sampleable for Triangle {
+    fn area(&self) -> f64 {
+        self.b_m_a.cross(self.c_m_a).length() / 2.0
+    }
+
     /// Random point with barycentrics.
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
 
-        self.a + beta * self.b_m_a + gamma * self.c_m_a
+        (self.a + beta * self.b_m_a + gamma * self.c_m_a, self.ng)
     }
 
     /// Choose random point on surface of triangle. Shoot ray towards it.
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let xi = self.sample_on(rand_sq);
+        let (xi, _) = self.sample_on(rand_sq);
         xi - xo
     }
 
@@ -151,8 +163,7 @@ impl Sampleable for Triangle {
         match self.hit(ri, 0.0, INFINITY) {
             None => (0.0, None),
             Some(hi) => {
-                let area = self.b_m_a.cross(self.c_m_a).length() / 2.0;
-                let p = 1.0 / area;
+                let p = 1.0 / self.area();
 
                 (p, Some(hi))
             }

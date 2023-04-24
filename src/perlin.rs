@@ -5,21 +5,6 @@ use itertools::Itertools;
 /// Number of points in the perlin noise lattice
 const PERLIN_POINTS: usize = 256;
 
-/// Scale of points in perlin. bigger = more noticeable effect
-const PERLIN_SCALE: f64 = 4.0;
-
-/// Frequency of noise in perlin noise. bigger = more frequent
-const PERLIN_FREQ: f64 = 60.0;
-
-/// Amplitude of the noise pattern in perlin noise
-const PERLIN_AMP: f64 = 20.0;
-
-/// Recursion depth in perlin turbulence
-const PERLIN_OCTAVES: i32 = 6;
-
-/// Scale of each term in turbulence. should be less than 1.0
-const PERLIN_GAIN: f64 = 0.5;
-
 /// Helper struct to store permutation vectors for each dimension.
 struct PermutationXyz {
     x: Vec<usize>,
@@ -29,8 +14,6 @@ struct PermutationXyz {
 
 /// Perlin noise generator.
 pub struct Perlin {
-    /// a.k.a the underlying colour. use texture instead?
-    albedo: DVec3,
     /// Random normals of the Perlin lattice
     lattice: Vec<DVec3>,
     /// Permutation directions
@@ -38,18 +21,8 @@ pub struct Perlin {
 }
 
 impl Default for Perlin {
-    /// Perlin generator with underlying color as rgb(1,1,1)
     fn default() -> Self {
-        Self::new(DVec3::ONE)
-    }
-}
-
-impl Perlin {
-    /// Constructs new Perlin generator with the given underlying colour.
-    /// Pass texture instead?
-    pub fn new(albedo: DVec3) -> Self {
         Self {
-            albedo,
             lattice: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
             perm: PermutationXyz {
                 x: rand_utils::perm_n(PERLIN_POINTS),
@@ -58,30 +31,11 @@ impl Perlin {
             },
         }
     }
+}
 
-    /// Computes color of the noise at point `p`. Perlin noise
-    /// with turbulence.
-    pub fn albedo_at(&self, p: DVec3) -> DVec3 {
-        self.albedo * self._scale_turb(p.x, self.turbulence(0.0, PERLIN_SCALE * p.abs(), 0))
-    }
-
-    fn _scale_turb(&self, px: f64, t: f64) -> f64 {
-        1.0 - (0.5 + 0.5 * (PERLIN_FREQ * px + PERLIN_AMP * t).sin()).powi(6)
-    }
-
-    /// Computes the turbulence for the noise. I.e. absolute values of the
-    /// noise at different octaves are summed together.
-    fn turbulence(&self, acc: f64, p: DVec3, depth: i32) -> f64 {
-        if depth >= PERLIN_OCTAVES {
-            return acc;
-        }
-        let w = PERLIN_GAIN.powi(depth);
-
-        self.turbulence(acc + w * self.noise_at(p).abs(), 2.0 * p, depth + 1)
-    }
-
-    /// Computes traditional perlin noise at point `p`
-    fn noise_at(&self, p: DVec3) -> f64 {
+impl Perlin {
+    /// Computes Perlin noise at point `p`
+    pub fn noise_at(&self, p: DVec3) -> f64 {
         let weight = p.fract();
         let floor = p.floor();
 

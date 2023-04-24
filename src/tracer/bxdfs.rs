@@ -1,6 +1,6 @@
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf};
+use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
 use crate::tracer::ray::Ray;
 use glam::DVec3;
 use std::f64::consts::PI;
@@ -8,20 +8,19 @@ use std::f64::consts::PI;
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 ///
 /// # Arguments
-/// * `ro` - Ray incoming to the point of impact
-/// * `ri` - Ray towards "light" from the point of impact
+/// * `wo` - Incoming direction to the point of impact
+/// * `wi` - Direction towards "light" from the point of impact
 /// * `ng` - Geometric normal of the surface at the point of impact
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
-    ro: &Ray,
-    ri: &Ray,
+    wo: DVec3,
+    wi: DVec3,
     ng: DVec3,
     albedo: DVec3,
     mfd: &MfDistribution
 ) -> DVec3 {
-    let v = -ro.dir;
-    let wi = ri.dir;
+    let v = -wo;
     let ng_dot_wi = ng.dot(wi);
     let ng_dot_v = ng.dot(v);
 
@@ -115,6 +114,11 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     Some( Box::new(DeltaPdf::new(wi)) )
 }
 
+pub fn brdf_volumetric_pdf(ro: &Ray, g: f64) -> Option<Box<dyn Pdf>> {
+    let v = -ro.dir;
+    Some( Box::new(VolumetricPdf::new(v, g)) )
+}
+
 pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
     let ng = ho.ng;
     let v = -ro.dir;
@@ -122,10 +126,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>
     let eta_ratio = if inside { rfrct_idx } else { 1.0 / rfrct_idx };
     let ng = if inside { -ng } else { ng };
 
-    let wi = match refract(eta_ratio, v, ng) {
-        None => reflect(v, ng),
-        Some(wi) => wi,
-    };
+    let wi = refract(eta_ratio, v, ng);
 
     Some( Box::new(DeltaPdf::new(wi)) )
 }
@@ -145,7 +146,7 @@ pub fn reflect(v: DVec3, ng: DVec3) -> DVec3 {
 /// * `eta_ratio` - Ratio of refraction indices. `from / to`
 /// * `v` - Normalized direction from refraction point to viewer
 /// * `ng` - Surface geometric normal, pointing to same hemisphere as `v`
-pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> Option<DVec3> {
+pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> DVec3 {
     /* Snell-Descartes law */
     let cos_to = ng.dot(v);
     let sin2_to = 1.0 - cos_to * cos_to;
@@ -153,10 +154,10 @@ pub fn refract(eta_ratio: f64, v: DVec3, ng: DVec3) -> Option<DVec3> {
 
     /* total internal reflection */
     if sin2_ti > 1.0 {
-        return Some( reflect(v, ng) );
+        reflect(v, ng)
+    } else {
+        let cos_ti = (1.0 - sin2_ti).sqrt();
+
+        -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * ng
     }
-
-    let cos_ti = (1.0 - sin2_ti).sqrt();
-
-    Some( -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * ng )
 }

@@ -3,7 +3,7 @@ use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), png::EncodingError> {
-    let camera = Camera::default();
+    let camera = Camera::default(1280, 720);
     let mut scene = Scene::default();
 
     scene.add(Plane::new(

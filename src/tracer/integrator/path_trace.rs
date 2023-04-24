@@ -8,6 +8,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.object.material();
+        gathered *= scene.transmittance(&ho);
 
         match material.bsdf_pdf(&ho, &ro) {
             None => {
@@ -17,12 +18,10 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                 break;
             }
             Some(scatter_pdf) => {
-                let shadow = if material.is_delta() {
-                    DVec3::ZERO
-                } else {
-                    JitteredSampler::new(SHADOW_SPLITS)
-                        .map(|rand_sq| {
-                            shadow_ray(
+                if !material.is_delta() {
+                    illuminance += gathered * JitteredSampler::new(SHADOW_SPLITS)
+                        .fold(DVec3::ZERO, |sum, rand_sq| {
+                            sum + shadow_ray(
                                 scene,
                                 &ro,
                                 &ho,
@@ -30,11 +29,8 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                                 rand_sq
                             )
                         })
-                        .sum::<DVec3>()
-                        / SHADOW_SPLITS as f64
+                        / SHADOW_SPLITS as f64;
                 };
-
-                illuminance += gathered * shadow;
 
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => {
@@ -42,6 +38,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                     }
                     Some(wi) => {
                         let ri = ho.generate_ray(wi);
+                        let wo = ro.dir;
                         let wi = ri.dir;
                         let p_scatter = scatter_pdf.value_for(&ri);
 
@@ -50,12 +47,17 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                             break;
                         }
 
-                        let ng = ho.ng;
                         let ns = ho.ns;
 
-                        gathered *= material.bsdf_f(&ro, &ri, ns, ng)
-                            * ns.dot(wi).abs()
-                            / p_scatter;
+                        // assume that mediums get sampled perfectly
+                        // according to the BSDF and thus cancel out PDF
+                        let bsdf = if ho.is_medium() {
+                            DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                        } else {
+                            material.bsdf_f(wo, wi, &ho)
+                        };
+
+                        gathered *= bsdf * ns.dot(wi).abs() / p_scatter;
 
                         // russian roulette
                         if depth > 3 {

@@ -25,12 +25,11 @@ impl Rectangle {
     /// * `material` - Material of the rectangle
     pub fn new(abc: DMat3, material: Material) -> Box<Self> {
         /* figure out the correct order of points... */
-        let t1 = Triangle::new((abc.col(0), abc.col(1), abc.col(2)), Material::Blank);
-        let t2 = {
-            /* d is b "mirrored" */
-            let d = _triangle_to_rect(abc);
-            Triangle::new((abc.col(2), d, abc.col(0)), Material::Blank)
-        };
+        let t1 = Triangle::new(abc, None, None, Material::Blank);
+        let d = _triangle_to_rect(abc);
+        let cda = DMat3::from_cols(abc.col(2), d, abc.col(0));
+        let t2 = Triangle::new(cda, None, None, Material::Blank);
+
         Box::new(Self {
             triangles: (*t1, *t2),
             material,
@@ -65,6 +64,10 @@ impl Object for Rectangle {
 }
 
 impl Sampleable for Rectangle {
+    fn area(&self) -> f64 {
+        // they both have the same area but do this anyways
+        self.triangles.0.area() + self.triangles.1.area()
+    }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
         self.choose_triangle().sample_towards(xo, rand_sq)
@@ -85,7 +88,7 @@ impl Sampleable for Rectangle {
         (p / 2.0, hi)
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         self.choose_triangle().sample_on(rand_sq)
     }
 }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::cli::TracerCli;
 use std::time::Instant;
 use std::f64::INFINITY;
 
@@ -27,6 +28,7 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
+        println!("Creating kd-tree of {} triangles", objects.len());
         let start = Instant::now();
 
         let indices = (0..objects.len()).collect();
@@ -36,13 +38,15 @@ impl<T: Bounded> KdTree<T> {
         let boundary = bounds
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
-        let root = KdNode::construct(&objects, &bounds, &boundary, indices);
 
-        println!(
-            "Constructed kd-tree of {} triangles in {:#?}",
-            objects.len(),
-            start.elapsed()
-        );
+        let threads = argh::from_env::<TracerCli>().threads.unwrap_or(0);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap();
+        let root = pool.install(|| KdNode::construct(&bounds, &boundary, indices));
+
+        println!("Created kd-tree in {:#?}", start.elapsed());
 
         Self {
             root,
@@ -192,8 +196,8 @@ impl KdNode {
         let mut best_axis = Axis::X;
 
         for axis in [Axis::X, Axis::Y, Axis::Z] {
-            let mut mins: Vec<f64> = Vec::new();
-            let mut maxs: Vec<f64> = Vec::new();
+            let mut mins: Vec<f64> = Vec::with_capacity(aabbs.len());
+            let mut maxs: Vec<f64> = Vec::with_capacity(aabbs.len());
 
             aabbs.iter().for_each(|aabb| {
                 mins.push(aabb.min(axis));
@@ -246,9 +250,8 @@ impl KdNode {
         axis: Axis,
         point: f64,
     ) -> (Vec<usize>, Vec<usize>) {
-        // fix size
-        let mut left: Vec<usize> = Vec::new();
-        let mut right: Vec<usize> = Vec::new();
+        let mut left: Vec<usize> = Vec::with_capacity(aabbs.len());
+        let mut right: Vec<usize> = Vec::with_capacity(aabbs.len());
         aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
             if aabb.min(axis) < point {
                 left.push(idx);
@@ -262,8 +265,7 @@ impl KdNode {
     }
 
     /// Constructs nodes of the kD-tree recursively with SAH.
-    pub fn construct<T: Bounded>(
-        objects: &[T],
+    pub fn construct(
         bounds: &[AaBoundingBox],
         boundary: &AaBoundingBox,
         indices: Vec<usize>,
@@ -278,11 +280,15 @@ impl KdNode {
         } else {
             let (left_idx, right_idx) = Self::partition(&aabbs, indices, axis, point);
             let (left_bound, right_bound) = boundary.split(axis, point);
+            let (left, right) = rayon::join(
+                || Self::construct(bounds, &left_bound, left_idx),
+                || Self::construct(bounds, &right_bound, right_idx)
+            );
             Box::new(Self::Split(
                 axis,
                 point,
-                Self::construct(objects, bounds, &left_bound, left_idx),
-                Self::construct(objects, bounds, &right_bound, right_idx),
+                left,
+                right,
             ))
         }
     }

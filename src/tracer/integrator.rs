@@ -59,7 +59,7 @@ fn shadow_ray(
 ) -> DVec3 {
     let material = ho.object.material();
     let xo = ho.p;
-    let ng = ho.ng;
+    let wo = ro.dir;
     let ns = ho.ns;
 
     let light = scene.uniform_random_light();
@@ -79,15 +79,24 @@ fn shadow_ray(
                     let p_light = pdf_light.value_for(&ri);
                     let p_scatter = pdf_scatter.value_for(&ri);
                     let wi = ri.dir;
-
+                    // check bad samples?
                     let weight = p_light * p_light
                         / (p_light * p_light + p_scatter * p_scatter);
 
-                    material.bsdf_f(ro, &ri, ns, ng)
+                    // assume that mediums get sampled perfectly
+                    // according to the BSDF and thus cancel out PDF
+                    let bsdf = if ho.is_medium() {
+                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                    } else {
+                        material.bsdf_f(wo, wi, ho)
+                    };
+
+                    bsdf
+                        * scene.transmittance(&hi)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
-                        / (p_light + p_scatter)
+                        / p_light
                 }
             }
         }
@@ -104,15 +113,24 @@ fn shadow_ray(
                     let p_light = pdf_light.value_for(&ri);
                     let p_scatter = pdf_scatter.value_for(&ri);
                     let wi = ri.dir;
-
+                    // check bad samples?
                     let weight = p_scatter * p_scatter
                         / (p_scatter * p_scatter + p_light * p_light);
 
-                    material.bsdf_f(ro, &ri, ns, ng)
+                    // assume that mediums get sampled perfectly
+                    // according to the BSDF and thus cancel out PDF
+                    let bsdf = if ho.is_medium() {
+                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                    } else {
+                        material.bsdf_f(wo, wi, ho)
+                    };
+
+                    bsdf
+                        * scene.transmittance(&hi)
                         * light.material().emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
-                        / (p_scatter + p_light)
+                        / p_scatter
                 }
             }
         }

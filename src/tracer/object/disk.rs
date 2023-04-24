@@ -57,25 +57,35 @@ impl Object for Disk {
         if xi.distance_squared(self.origin) > self.radius * self.radius {
             None
         } else {
-            Hit::new(t, self, xi, self.normal, self.normal)
+            let xi_local = (xi - self.origin) / self.radius;
+            let u = self.uvw.u.dot(xi_local);
+            let v = self.uvw.v.dot(xi_local);
+            let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
+
+            Hit::new(t, self, xi, self.normal, self.normal, uv)
         }
     }
 }
 
 impl Sampleable for Disk {
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
+    fn area(&self) -> f64 {
+        PI * self.radius * self.radius
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
-        self.origin
-            + self.uvw.to_world(DVec3::new(
-                rand_disk.x * self.radius,
-                rand_disk.y * self.radius,
-                0.0,
-            ))
+        let xo = self.origin + self.uvw.to_world(DVec3::new(
+            rand_disk.x * self.radius,
+            rand_disk.y * self.radius,
+            0.0,
+        ));
+
+        (xo, self.normal)
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let xi = self.sample_on(rand_sq);
+        let (xi, _) = self.sample_on(rand_sq);
         xi - xo
     }
 

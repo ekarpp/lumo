@@ -68,20 +68,19 @@ impl Object for Cone {
         let tip_to_xi = xi - self.tip;
         let txi_dot_axis = tip_to_xi.dot(self.axis);
 
-        if txi_dot_axis < 0.0 {
+        if txi_dot_axis < 0.0 || txi_dot_axis > self.height {
             return None;
         }
 
-        if txi_dot_axis > self.height {
-            // disk?
-        }
-
-        let cos_theta =
-            self.height / (self.height * self.height + self.radius * self.radius).sqrt();
+        let cos_theta = self.height
+            / (self.height * self.height + self.radius * self.radius).sqrt();
 
         let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
         let ni = (xi - a).normalize();
 
-        Hit::new(t, self, xi, ni, ni)
+        let (u, _) = self.axis.any_orthonormal_pair();
+        let uv = DVec2::new(u.dot(xi), txi_dot_axis / self.height);
+
+        Hit::new(t, self, xi, ni, ni, uv)
     }
 }

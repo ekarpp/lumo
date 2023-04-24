@@ -94,10 +94,18 @@ impl<T: Object> Object for Instance<T> {
 }
 
 impl<T: Sampleable> Sampleable for Instance<T> {
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3 {
-        let sample_local = self.object.sample_on(rand_sq);
+    fn area(&self) -> f64 {
+        self.object.area();
+        todo!()
+    }
 
-        self.transform.transform_point3(sample_local)
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+        let (sample_local, ng_local) = self.object.sample_on(rand_sq);
+
+        let sampled = self.transform.transform_point3(sample_local);
+        let normal = self.normal_transform * ng_local;
+
+        (sampled, normal)
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
@@ -126,8 +134,8 @@ impl<T: Sampleable> Sampleable for Instance<T> {
             // the base of the parallellepiped gives us the area scale at the
             // point of impact. think this is not exact with ansiotropic
             // scaling of solids. how to do for solid angle?
-            let height = ng.dot(self.transform.matrix3 * ng_local);
-            let volume = self.transform.matrix3.determinant();
+            let height = ng.dot(self.transform.matrix3 * ng_local).abs();
+            let volume = self.transform.matrix3.determinant().abs();
             let jacobian = volume / height;
 
             // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
@@ -154,6 +162,9 @@ pub trait Instanceable<T> {
 
     /// Rotate around z-axis by `r` radians
     fn rotate_z(self, r: f64) -> Box<Instance<T>>;
+
+    /// Rotate around `axis` by `r` radisn
+    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>>;
 }
 
 /// To make applying transformations to objects easy
@@ -179,6 +190,10 @@ impl<T: Object> Instanceable<T> for T {
 
     fn rotate_z(self, r: f64) -> Box<Instance<T>> {
         Instance::new(self, DAffine3::from_rotation_z(r))
+    }
+
+    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
+        Instance::new(self, DAffine3::from_axis_angle(axis, r))
     }
 }
 
@@ -211,5 +226,10 @@ impl<T: Object> Instance<T> {
     /// Apply z-rotation AFTER current transformations
     pub fn rotate_z(self, r: f64) -> Box<Self> {
         Self::new(self.object, DAffine3::from_rotation_z(r) * self.transform)
+    }
+
+    /// Apply axis rotation AFTER current transformations
+    pub fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
+        Self::new(self.object, DAffine3::from_axis_angle(axis, r) * self.transform)
     }
 }

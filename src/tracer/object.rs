@@ -15,6 +15,7 @@ pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
 pub use kdtree::{KdTree, Mesh};
+pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;
@@ -35,6 +36,8 @@ mod disk;
 mod instance;
 /// kD-trees, used for complex meshes
 mod kdtree;
+/// Volumetric mediums
+mod medium;
 /// Defines infinite planes
 mod plane;
 /// Defines rectangles. Built from two triangles.
@@ -62,8 +65,35 @@ pub trait Bounded: Object {
 
 /// Object towards which rays can be sampled
 pub trait Sampleable: Object {
-    /// Sample random point on the surface of the object
-    fn sample_on(&self, rand_sq: DVec2) -> DVec3;
+    /// Returns surface area of the object
+    fn area(&self) -> f64;
+
+    /// Samples a ray leaving at random point on the surface of the object.
+    /// Direction cos weighed on the hemisphere. Returns also normal at ray origin
+    fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> (Ray, DVec3) {
+        let (xo, ng) = self.sample_on(rand_sq0);
+        let uvw = Onb::new(ng);
+        let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
+        let wi = uvw.to_world(wi_local);
+        // pdf start = 1 / area
+        // pdf dir = cos hemisphere
+        // prob want to make sample_leaving_pdf function
+        (Ray::new(xo, wi), ng)
+    }
+
+    /// Returns PDF for sampled ray (i) origin and (ii) direction
+    fn sample_leaving_pdf(&self, r: &Ray, ng: DVec3) -> (f64, f64) {
+        let pdf_origin = 1.0 / self.area();
+        let wi = r.dir;
+        let cos_theta = ng.dot(wi);
+        let pdf_dir = cos_theta / PI;
+
+        (pdf_origin, pdf_dir)
+    }
+
+    /// Returns randomly sampled point on the surface of the object
+    /// and the normal at the point.
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3);
 
     /// Sample random direction from `xo` towards area of object
     /// that is visible form `xo`

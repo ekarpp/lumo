@@ -63,6 +63,10 @@ impl Object for Cylinder {
 
         let ni = DVec3::new(xi.x, 0.0, xi.z) / self.radius;
 
-        Hit::new(t, self, xi, ni, ni)
+        let u = ((-xi.z).atan2(xi.x) + PI) / (2.0 * PI);
+        let v = (xi.y - self.y_min) / (self.y_max - self.y_min);
+        let uv = DVec2::new(u, v);
+
+        Hit::new(t, self, xi, ni, ni, uv)
     }
 }

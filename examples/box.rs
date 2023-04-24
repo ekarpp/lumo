@@ -4,7 +4,7 @@ use lumo::*;
 use std::f64::consts::PI;
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = Camera::default();
+    let camera = Camera::default(1000, 1000);
     let def_color = srgb_to_linear(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,

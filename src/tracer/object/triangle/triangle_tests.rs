@@ -23,7 +23,9 @@ fn point_order_irrelevant() {
 
         let t = Triangle::new(
             /* permutations */
-            (pts[a], pts[(a + b + 1) % 3], pts[2 - (i % 3)]),
+            DMat3::from_cols(pts[a], pts[(a + b + 1) % 3], pts[2 - (i % 3)]),
+            None,
+            None,
             get_mat(),
         );
         assert!(t.hit(&r, 0.0, INFINITY).is_some());
@@ -32,28 +34,27 @@ fn point_order_irrelevant() {
 
 #[test]
 fn no_self_intersect() {
-    let t = Triangle::new(
-        (
-            DVec3::new(-5.0, 0.0, -3.0),
-            DVec3::new(5.0, 0.0, -3.0),
-            DVec3::new(5.0, 0.0, 3.0),
-        ),
-        get_mat(),
+    let abc = DMat3::from_cols(
+        DVec3::new(-5.0, 0.0, -3.0),
+        DVec3::new(5.0, 0.0, -3.0),
+        DVec3::new(5.0, 0.0, 3.0),
     );
+
+    let t = Triangle::new(abc, None, None, get_mat());
+
     let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 0.0, -1.0));
     assert!(t.hit(&r, 0.0, INFINITY).is_none());
 }
 
 #[test]
 fn sampled_rays_hit() {
-    let tri = Triangle::new(
-        (
-            DVec3::ZERO,
-            DVec3::X,
-            DVec3::X + DVec3::Y,
-        ),
-        get_mat(),
+    let abc = DMat3::from_cols(
+        DVec3::ZERO,
+        DVec3::X,
+        DVec3::X + DVec3::Y,
     );
+    let tri = Triangle::new(abc, None, None, get_mat());
+
     let xo = 5.0 * DVec3::Z;
 
     for _ in 0..NUM_RAYS {

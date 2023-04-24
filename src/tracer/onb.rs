@@ -21,6 +21,14 @@ impl Onb {
         Self { u, v, w }
     }
 
+    pub fn new_from_basis(u: DVec3, v: DVec3, w: DVec3) -> Self {
+        let eps = 1e-5;
+        // assert orthornomality
+        assert!(u.is_normalized() && v.is_normalized() && w.is_normalized());
+        assert!(u.dot(v).abs() < eps && u.dot(w).abs() < eps && v.dot(w).abs() < eps);
+        Self { u, v, w }
+    }
+
     /// Translate from the ONB to world basis
     ///
     /// # Arguments

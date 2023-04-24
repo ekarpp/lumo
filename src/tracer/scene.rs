@@ -1,6 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Object, Sampleable, Plane, Rectangle};
+use crate::tracer::{Medium, Object, Plane, Rectangle, Sampleable};
 use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
@@ -18,6 +18,8 @@ pub struct Scene {
     pub objects: Vec<Box<dyn Object>>,
     /// Contains all lights in the scene.
     pub lights: Vec<Box<dyn Sampleable>>,
+    /// Medium that the scene is filled with
+    pub medium: Option<Medium>,
 }
 
 impl Scene {
@@ -35,6 +37,11 @@ impl Scene {
         self.lights.push(light);
     }
 
+    /// Sets the volumetric medium of the scene
+    pub fn set_medium(&mut self, medium: Medium) {
+        self.medium = Some(medium);
+    }
+
     /// Returns number of lights in the scene
     pub fn num_lights(&self) -> usize {
         self.lights.len()
@@ -47,10 +54,25 @@ impl Scene {
         self.lights[idx].as_ref()
     }
 
+    /// Returns the transmittance due to volumetric medium
+    pub fn transmittance(&self, h: &Hit) -> DVec3 {
+        match &self.medium {
+            None => DVec3::ONE,
+            Some(medium) => medium.transmittance(h),
+        }
+    }
+
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
         let mut t_max = INFINITY;
         let mut h = None;
+
+        if let Some(medium) = &self.medium {
+            // if we hit an object, it must be closer than what we have
+            h = medium.hit(r, 0.0, t_max).or(h);
+            // update distance to closest found so far
+            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+        }
 
         for object in &self.objects {
             // if we hit an object, it must be closer than what we have
@@ -76,7 +98,7 @@ impl Scene {
             None => return None,
             Some(hi) => hi,
         };
-
+        // consider also checking medium
         let t_max = light_hit.t - EPSILON;
 
         for object in &self.objects {

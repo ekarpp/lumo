@@ -11,18 +11,13 @@ pub struct TracerCli {
     #[argh(option, short = 't')]
     pub threads: Option<usize>,
 
-    /// width of the rendered image (defaults to 1000)
-    #[argh(option, short = 'w', default = "1000")]
-    pub width: i32,
-
-    /// height of the rendered image (defaults to 1000)
-    #[argh(option, short = 'h', default = "1000")]
-    pub height: i32,
-
-    /* how to handle multiple integrators in the future? */
     /// use direct light integrator instead of path tracing.
     #[argh(switch, short = 'd', long = "direct")]
     pub direct_light: bool,
+
+    /// use bidirectional path tracing instead of path tracing.
+    #[argh(switch, short = 'b', long = "bdpt")]
+    pub bd_path_trace: bool,
 }
 
 impl TracerCli {
@@ -40,6 +35,8 @@ impl TracerCli {
     pub fn get_integrator(&self) -> Integrator {
         if self.direct_light {
             Integrator::DirectLight
+        } else if self.bd_path_trace {
+            Integrator::BDPathTrace
         } else {
             Integrator::PathTrace
         }

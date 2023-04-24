@@ -1,5 +1,6 @@
 Cargo.lock
 target/
 *.png
+!examples/aem_aem21300_3dsl01_mo08-03_p_img.png
 *.svg
 perf.*

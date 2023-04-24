@@ -1,7 +1,8 @@
 use crate::EPSILON;
+use crate::tracer::material::Material;
 use crate::tracer::object::Object;
 use crate::tracer::ray::Ray;
-use glam::DVec3;
+use glam::{DVec2, DVec3};
 
 /// Stores information about a hit between a ray and an object.
 pub struct Hit<'a> {
@@ -15,6 +16,8 @@ pub struct Hit<'a> {
     pub ns: DVec3,
     /// Geometric normal of the surface used for scattering calculations
     pub ng: DVec3,
+    /// Texture coordinates in `\[0,1\]^2`
+    pub uv: DVec2,
 }
 
 impl<'a> Hit<'a> {
@@ -25,12 +28,14 @@ impl<'a> Hit<'a> {
     /// * `xi` - Point in world space at which object got hit
     /// * `ns` - Shading normal of the object at the point of impact
     /// * `ng` - Geometric normal of the object at the point of impact
+    /// * `uv` - Texture coordinates in `\[0,1\]^2`
     pub fn new(
         t: f64,
         object: &'a dyn Object,
         xi: DVec3,
         ns: DVec3,
         ng: DVec3,
+        uv: DVec2,
     ) -> Option<Self> {
         Some(Self {
             t,
@@ -38,6 +43,7 @@ impl<'a> Hit<'a> {
             p: xi,
             ns,
             ng,
+            uv,
         })
     }
 
@@ -51,5 +57,10 @@ impl<'a> Hit<'a> {
             xi,
             wi
         )
+    }
+
+    /// Did we hit a medium?
+    pub fn is_medium(&self) -> bool {
+        matches!(self.object.material(), Material::Volumetric(..))
     }
 }
