@@ -49,7 +49,10 @@ impl Medium {
 
         let pdf = density.dot(DVec3::ONE) / 3.0;
 
-        if h.is_medium() {
+        if pdf == 0.0 {
+            // this medium does not do much...
+            DVec3::ONE
+        } else if h.is_medium() {
             self.sigma_s * transmittance / pdf
         } else {
             transmittance / pdf
@@ -69,6 +72,11 @@ impl Object for Medium {
             f if f < 2.0 => self.sigma_t.y,
             _ => self.sigma_t.z,
         };
+
+        // this channel never gets hit
+        if density == 0.0 {
+            return None;
+        }
 
         let ray_length = ro.dir.length();
         let inside_dist = (t_max - t_min) * ray_length;
