@@ -10,7 +10,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
     match scene.hit(&ro) {
         None => DVec3::new(0.0, 0.0, 0.0),
         Some(ho) => {
-            let material = ho.object.material();
+            let material = ho.material;
             match material.bsdf_pdf(&ho, &ro) {
                 None => material.emit(&ho),
                 Some(scatter_pdf) => {

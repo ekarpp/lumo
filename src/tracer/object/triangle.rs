@@ -97,10 +97,6 @@ impl Bounded for Triangle {
 }
 
 impl Object for Triangle {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* can cache some results on triangle. */
@@ -135,7 +131,7 @@ impl Object for Triangle {
 
             let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
 
-            Hit::new(t, self, r.at(t), ns, self.ng, uv)
+            Hit::new(t, &self.material, r.at(t), ns, self.ng, uv)
         }
     }
 }

@@ -52,9 +52,6 @@ pub trait Object: Sync {
     /// Does the ray hit the object? NOTE: ray direction can be unnormalized
     /// for instanced objects. Is this an issue?
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit>;
-
-    /// dumb
-    fn material(&self) -> &Material;
 }
 
 /// Objects that can be contained within an AABB

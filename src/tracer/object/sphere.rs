@@ -37,10 +37,6 @@ impl Bounded for Sphere {
 }
 
 impl Object for Sphere {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
@@ -73,7 +69,7 @@ impl Object for Sphere {
         let v = (-ni.y).acos() / PI;
         let uv = DVec2::new(u, v);
 
-        Hit::new(t, self, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, ni, ni, uv)
     }
 }
 

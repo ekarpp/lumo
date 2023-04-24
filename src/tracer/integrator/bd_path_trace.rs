@@ -113,7 +113,7 @@ fn walk(
     let mut pdf_prev = 0.0;
 
     while let Some(ho) = scene.hit(&ro) {
-        let material = ho.object.material();
+        let material = ho.material;
         let xo = ho.p;
         let wo = ro.dir;
         let ng = ho.ng;

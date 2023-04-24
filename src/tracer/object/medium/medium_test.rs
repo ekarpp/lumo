@@ -7,7 +7,14 @@ fn zero_medium_has_no_effect() {
     let r = Ray::new(DVec3::ZERO, DVec3::Z);
     assert!(m.hit(&r, 0.0, INFINITY).is_none());
 
-    let h = Hit::new(100.0, &m, DVec3::X, DVec3::X, DVec3::X, DVec2::X).unwrap();
+    let h = Hit::new(
+        100.0,
+        &m.material,
+        DVec3::X,
+        DVec3::X,
+        DVec3::X,
+        DVec2::X
+    ).unwrap();
     assert!(m.transmittance(&h) == DVec3::ONE);
 }
 

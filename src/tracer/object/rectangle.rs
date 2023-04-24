@@ -47,19 +47,11 @@ impl Rectangle {
 }
 
 impl Object for Rectangle {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.triangles
-            .0
+        self.triangles.0
             .hit(r, t_min, t_max)
             .or_else(|| self.triangles.1.hit(r, t_min, t_max))
-            .map(|mut h| {
-                h.object = self;
-                h
-            })
+            .map(|mut h| { h.material = &self.material; h })
     }
 }
 

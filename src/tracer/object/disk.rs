@@ -37,10 +37,6 @@ impl Disk {
 }
 
 impl Object for Disk {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let wo = r.dir;
         if self.normal.dot(wo).abs() < EPSILON {
@@ -62,7 +58,7 @@ impl Object for Disk {
             let v = self.uvw.v.dot(xi_local);
             let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
 
-            Hit::new(t, self, xi, self.normal, self.normal, uv)
+            Hit::new(t, &self.material, xi, self.normal, self.normal, uv)
         }
     }
 }

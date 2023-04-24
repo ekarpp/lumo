@@ -57,7 +57,7 @@ fn shadow_ray(
     pdf_scatter: &dyn Pdf,
     rand_sq: DVec2
 ) -> DVec3 {
-    let material = ho.object.material();
+    let material = ho.material;
     let xo = ho.p;
     let wo = ro.dir;
     let ns = ho.ns;
@@ -93,7 +93,7 @@ fn shadow_ray(
 
                     bsdf
                         * scene.transmittance(&hi)
-                        * light.material().emit(&hi)
+                        * hi.material.emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
                         / p_light
@@ -127,7 +127,7 @@ fn shadow_ray(
 
                     bsdf
                         * scene.transmittance(&hi)
-                        * light.material().emit(&hi)
+                        * hi.material.emit(&hi)
                         * ns.dot(wi).abs()
                         * weight
                         / p_scatter

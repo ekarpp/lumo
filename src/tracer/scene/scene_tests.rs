@@ -52,6 +52,6 @@ fn hits_closest() {
     ));
 
     let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 1.0, 0.0));
-    let is_glass = |h: &Hit| -> bool { matches!(h.object.material(), Material::Blank) };
-    assert!(s.hit(&r).filter(is_glass).is_some());
+    let is_blank = |h: &Hit| -> bool { matches!(h.material, Material::Blank) };
+    assert!(s.hit(&r).filter(is_blank).is_some());
 }

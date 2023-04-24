@@ -28,10 +28,6 @@ impl Cone {
 }
 
 impl Object for Cone {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let tip_to_xo = xo - self.tip;
@@ -81,6 +77,6 @@ impl Object for Cone {
         let (u, _) = self.axis.any_orthonormal_pair();
         let uv = DVec2::new(u.dot(xi), txi_dot_axis / self.height);
 
-        Hit::new(t, self, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, ni, ni, uv)
     }
 }

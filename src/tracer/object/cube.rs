@@ -59,10 +59,6 @@ impl Bounded for Cube {
 }
 
 impl Object for Cube {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, mut t_max: f64) -> Option<Hit> {
         let mut h = None;
 
@@ -73,6 +69,6 @@ impl Object for Cube {
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }
 
-        h
+        h.map(|mut h| { h.material = &self.material; h })
     }
 }

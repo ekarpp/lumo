@@ -25,15 +25,13 @@ pub struct Scene {
 impl Scene {
     /// Add a non-light object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
-        assert!(!matches!(obj.material(), Material::Light(_)));
-
+        // how to check material is not light?
         self.objects.push(obj);
     }
 
     /// Adds a light to the scene
     pub fn add_light(&mut self, light: Box<dyn Sampleable>) {
-        assert!(matches!(light.material(), Material::Light(_)));
-
+        // how to check material is light?
         self.lights.push(light);
     }
 

@@ -83,13 +83,8 @@ impl<T: Object> Object for Instance<T> {
             h.ns = (self.normal_transform * h.ns).normalize();
             h.ng = (self.normal_transform * h.ng).normalize();
             h.p = r.at(h.t);
-            h.object = self;
             h
         })
-    }
-
-    fn material(&self) -> &Material {
-        self.object.material()
     }
 }
 

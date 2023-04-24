@@ -65,10 +65,6 @@ impl Medium {
 }
 
 impl Object for Medium {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         // choose a random color channel from density
         let density = match 3.0 * rand_utils::rand_f64() {
@@ -92,9 +88,10 @@ impl Object for Medium {
             None
         } else {
             let t = t_min + hit_dist / ray_length;
+            let xo = ro.at(t);
             // need shading normal to cancel out the dot product in integrator.
             // set geometric normal to zero, so hit does not do ray origin offset
-            Hit::new(t, self, ro.at(t), DVec3::X, DVec3::ZERO, DVec2::ZERO)
+            Hit::new(t, &self.material, xo, DVec3::X, DVec3::ZERO, DVec2::ZERO)
         }
     }
 }

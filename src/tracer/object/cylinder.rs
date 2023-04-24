@@ -1,13 +1,13 @@
 use super::*;
 
-/// Cylinder aligned with the y axis defined by its radius + maximum
-/// and minimum y coordinates.
+/// Cylinder aligned with the `y` axis defined by its radius + maximum
+/// and minimum `y` coordinates.
 pub struct Cylinder {
     /// Radius of the cylinder
     radius: f64,
-    /// Minimum y-point of the cylinder
+    /// Minimum `y` coordinate of the cylinder
     y_min: f64,
-    /// Maximum y-point of the cylinder
+    /// Maximum `y` coordinate of the cylinder
     y_max: f64,
     /// Material of the cylinder
     material: Material,
@@ -28,10 +28,6 @@ impl Cylinder {
 }
 
 impl Object for Cylinder {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let wo = r.dir;
@@ -67,6 +63,6 @@ impl Object for Cylinder {
         let v = (xi.y - self.y_min) / (self.y_max - self.y_min);
         let uv = DVec2::new(u, v);
 
-        Hit::new(t, self, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, ni, ni, uv)
     }
 }

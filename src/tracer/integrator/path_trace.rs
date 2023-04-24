@@ -7,7 +7,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
     let mut depth = 0;
 
     while let Some(ho) = scene.hit(&ro) {
-        let material = ho.object.material();
+        let material = ho.material;
         gathered *= scene.transmittance(&ho);
 
         match material.bsdf_pdf(&ho, &ro) {

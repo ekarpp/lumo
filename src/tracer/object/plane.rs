@@ -3,10 +3,11 @@ use super::*;
 #[cfg(test)]
 mod plane_tests;
 
-/// Plane defined by a single point and a normal
+/// Infinite plane defined by a single point and a normal
 pub struct Plane {
     /// Unidirectional normal
     normal: DVec3,
+    /// Material of the plane
     material: Material,
     /// `p.dot(-norm)`, used for fast hit calculations
     d: f64,
@@ -26,10 +27,6 @@ impl Plane {
 }
 
 impl Object for Plane {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         /* check if plane and ray are parallel. use epsilon instead?
          * or fail only if we get div by zero?? */
@@ -44,7 +41,7 @@ impl Object for Plane {
             let xi = r.at(t);
             let (u, v) = self.normal.any_orthonormal_pair();
             let uv = DVec2::new(u.dot(xi), v.dot(xi)).fract();
-            Hit::new(t, self, xi, self.normal, self.normal, uv)
+            Hit::new(t, &self.material, xi, self.normal, self.normal, uv)
         }
     }
 }

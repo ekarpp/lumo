@@ -85,7 +85,7 @@ impl<T: Bounded> KdTree<T> {
                     tt = h.as_ref().map_or(tt, |hit| hit.t);
                 }
                 return h.map(|mut h| {
-                    h.object = self;
+                    h.material = &self.material;
                     h
                 });
             }
@@ -135,10 +135,6 @@ impl<T: Bounded> Bounded for KdTree<T> {
 }
 
 impl<T: Bounded> Object for KdTree<T> {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let (t_start, t_end) = self.boundary.intersect(r);
         let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
