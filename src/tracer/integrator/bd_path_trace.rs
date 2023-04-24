@@ -1,19 +1,26 @@
 use super::*;
+use crate::tracer::material::Material;
 
-struct Vertex {
-    ng: DVec3,
-    xo: DVec3,
+struct Vertex<'a> {
+    h: Hit<'a>,
     gathered: DVec3,
     pdf_next: f64,
     pdf_prev: f64,
 }
 
-impl Vertex {
+impl<'a> Vertex<'a> {
     /// Camera vertex
     pub fn camera(xo: DVec3) -> Self {
-        Self {
+        let h = Hit::new(
+            0.0,
+            &Material::Blank,
             xo,
-            ng: DVec3::Z,
+            DVec3::X,
+            DVec3::X,
+            DVec2::X,
+        ).unwrap();
+        Self {
+            h,
             gathered: DVec3::ONE,
             pdf_prev: 0.0,
             pdf_next: 1.0,
@@ -22,9 +29,18 @@ impl Vertex {
 
     /// Light vertex
     pub fn light(xo: DVec3, ng: DVec3, gathered: DVec3, pdf_next: f64) -> Self {
-        Self {
+        // TODO: need a hit on the sampled point
+        let h = Hit::new(
+            0.0,
+            &Material::Blank,
             xo,
             ng,
+            ng,
+            DVec2::X,
+        ).unwrap();
+
+        Self {
+            h,
             gathered,
             pdf_next,
             pdf_prev: 0.0,
@@ -33,24 +49,38 @@ impl Vertex {
 
     /// Surface vertex
     pub fn surface(
-        xo: DVec3,
-        ng: DVec3,
+        h: Hit<'a>,
         gathered: DVec3,
         pdf_next: f64,
         prev: &Vertex
     ) -> Self {
+        let xo = h.p;
+        let ng = h.ng;
         Self {
-            xo,
-            ng,
+            h,
             gathered,
             pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
             pdf_prev: 0.0,
         }
     }
 
+    pub fn bsdf(&self, prev: &Vertex, next: &Vertex) -> DVec3 {
+        // these could be stored already normalized
+        let wo = (self.h.p - prev.h.p).normalize();
+        let wi = (next.h.p - self.h.p).normalize();
+
+        // this is a dumb hack.
+        // need to somehow figure if prev and next are on the same object
+        if wi.dot(self.h.ng) < crate::EPSILON {
+            DVec3::ZERO
+        } else {
+            self.h.material.bsdf_f(wo, wi, &self.h)
+        }
+    }
+
     fn solid_angle_to_area(&self, pdf: f64, xo: DVec3, ng: DVec3) -> f64 {
-        let wi = (xo - self.xo).normalize();
-        pdf * wi.dot(ng).abs() / xo.distance_squared(self.xo)
+        let wi = (xo - self.h.p).normalize();
+        pdf * wi.dot(ng).abs() / xo.distance_squared(self.h.p)
     }
 }
 
@@ -58,20 +88,40 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
 
-    let light_last = &light_path[light_path.len() - 1];
-    let camera_last = &camera_path[camera_path.len() - 1];
+    let t = camera_path.len();
+    let s = light_path.len();
 
-    let illuminance = light_last.gathered * camera_last.gathered;
-    // need to multiply by BSDFs, but vertices dont have them
-    // also need direction to next AND previous vertex
-    illuminance * geometry_term(scene, light_last, camera_last)
+    if t < 2 || s < 2 {
+        // because
+        return DVec3::ZERO;
+    }
+
+    let light_last = &light_path[s - 1];
+    let camera_last = &camera_path[t - 1];
+
+    if !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+        DVec3::ZERO
+    } else {
+        let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
+        let camera_bsdf = camera_last.bsdf(&camera_path[t - 2], light_last);
+
+        let illuminance = light_last.gathered * light_bsdf
+            * camera_bsdf * camera_last.gathered;
+
+        illuminance * geometry_term(light_last, camera_last)
+    }
 }
 
-fn geometry_term(scene: &Scene, v1: &Vertex, v2: &Vertex) -> f64 {
-    let wi = (v1.xo - v2.xo).normalize();
-    let wi_length_squared = v1.xo.distance_squared(v2.xo);
+fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
+    let v1_xo = v1.h.p;
+    let v2_xo = v2.h.p;
+    let v1_ng = v1.h.ng;
+    let v2_ng = v2.h.ng;
+
+    let wi = (v1_xo - v2_xo).normalize();
+    let wi_length_squared = v1_xo.distance_squared(v2_xo);
     // visibility test
-    v1.ng.dot(wi).abs() * v2.ng.dot(wi).abs() / wi_length_squared
+    v1_ng.dot(wi).abs() * v2_ng.dot(wi).abs() / wi_length_squared
 }
 
 fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
@@ -99,14 +149,14 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     walk(scene, ro, root, gathered, pdf_dir, true)
 }
 
-fn walk(
-    scene: &Scene,
+fn walk<'a>(
+    scene: &'a Scene,
     mut ro: Ray,
-    root: Vertex,
+    root: Vertex<'a>,
     mut gathered: DVec3,
     pdf_dir: f64,
     from_light: bool,
-) -> Vec<Vertex> {
+) -> Vec<Vertex<'a>> {
     let mut depth = 0;
     let mut vertices = vec![root];
     let mut pdf_next = pdf_dir;
@@ -119,8 +169,6 @@ fn walk(
         let ng = ho.ng;
 
         let prev_vertex = &mut vertices[depth];
-        let curr_vertex = Vertex::surface(xo, ng, gathered, pdf_next, prev_vertex);
-
 
         match material.bsdf_pdf(&ho, &ro) {
             None => break,
@@ -128,22 +176,29 @@ fn walk(
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
+                        let ns = ho.ns;
                         let ri = ho.generate_ray(wi);
                         // normalized
                         let wi = ri.dir;
+
+                        let curr_vertex = Vertex::surface(
+                            ho,
+                            gathered,
+                            pdf_next,
+                            prev_vertex
+                        );
+
                         pdf_next = scatter_pdf.value_for(&ri);
 
                         if pdf_next <= 0.0 {
                             break;
                         }
 
-                        let ns = ho.ns;
-
-                        gathered *= material.bsdf_f(wo, wi, &ho)
+                        gathered *= material.bsdf_f(wo, wi, &curr_vertex.h)
                             * ns.dot(wi).abs()
                             / pdf_next;
 
-                        // THIS BREAKS FOR REFRACTION IN MICROFACET
+                        // TODO: THIS BREAKS FOR REFRACTION IN MICROFACET
                         pdf_prev = pdf_next;
                         prev_vertex.pdf_prev =
                             curr_vertex.solid_angle_to_area(pdf_prev, xo, ng);
