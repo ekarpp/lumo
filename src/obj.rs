@@ -1,3 +1,4 @@
+use crate::Image;
 use crate::tracer::{Material, Triangle};
 use glam::{DMat3, DVec2, DVec3};
 use std::fs::File;
@@ -14,6 +15,48 @@ fn obj_error(message: &str) -> io::Error {
 pub fn obj_from_path(path: &str) -> Result<Vec<Triangle>> {
     println!("Loading .OBJ file \"{}\"", path);
     load_obj_file(File::open(path)?)
+}
+
+/// Loads `tex_name` from .zip at `url`
+pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
+    println!("Loading texture \"{}\" from \"{}\"", tex_name, url);
+    if !tex_name.ends_with(".png") {
+        return Err(obj_error("Can only load .png files"));
+    }
+
+    if !url.ends_with(".zip") {
+        return Err(obj_error("Can only extract textures from zip archives"));
+    }
+
+    let mut bytes = Vec::new();
+    ureq::get(url)
+        .call()
+        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
+        .into_reader()
+        .read_to_end(&mut bytes)?;
+
+    let mut zip = ZipArchive::new(Cursor::new(bytes))?;
+    bytes = Vec::new();
+    for i in 0..zip.len() {
+        let mut file = zip.by_index(i)?;
+
+        if file.name().eq(tex_name) {
+            println!("Extracting \"{}\"", file.name());
+            file.read_to_end(&mut bytes)?;
+            break;
+        }
+    }
+    if bytes.is_empty() {
+        return Err(obj_error("Could not find texture in the archive"));
+    }
+
+    let mut tmp_file = tempfile::tempfile()?;
+    tmp_file.write_all(&bytes)?;
+    tmp_file.rewind()?;
+
+    println!("Decoding texture");
+    Image::from_file(tmp_file)
+        .map_err(|decode_error| obj_error(&decode_error.to_string()))
 }
 
 /// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and

@@ -3,7 +3,7 @@ use lumo::*;
 use std::f64::consts::PI;
 use glam::{DVec3, DMat3};
 // By CosmoWenmann (https://www.thingiverse.com/thing:3974391) licensed under CC BY-NC-SA 4.0
-const IMAGE_FILE: &str = "examples/aem_aem21300_3dsl01_mo08-03_p_img.png";
+const TEX_FILE: &str = "aem_aem21300_3dsl01_mo08-03_p_img.png";
 const NEFE_URL: &str = "https://cdn.thingiverse.com/assets/c7/e1/b6/f6/12/SPK_Nefertiti_Scan_FOIA_Response.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -76,7 +76,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	scene.add(
             Mesh::new(
 		obj::obj_from_url(NEFE_URL)?,
-		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.8),
+		Material::specular(
+                    Texture::Image(obj::texture_from_url(NEFE_URL, TEX_FILE)?),
+                    0.8
+                )
             )
 		.to_unit_size()
 		.to_origin()
@@ -98,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let disk_towards = DVec3::new(-0.046, -0.192, -1.314);
     let disk_dir = DVec3::new(-0.9132592442858147, 0.38194206881899756, -0.05342207528313975);
 
-    // left, w.r.t camera    
+    // left, w.r.t camera
     scene.add_light(Disk::new(
 	disk_towards + 0.3 * disk_dir,
 	-disk_dir,
@@ -138,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		    .rotate_x(PI)
 		    .translate(-0.1, 0.0, 0.0)
     );
-    
+
     // above
     scene.add_light(Rectangle::new(
         xy_rect,
@@ -172,7 +175,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
 	renderer.set_samples(9);
     } else {
-	renderer.set_samples(4096);
         renderer.set_tone_map(ToneMap::HableFilmic);
     }
     renderer.render().save("nefe.png")?;

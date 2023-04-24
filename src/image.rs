@@ -25,10 +25,14 @@ impl Image {
         }
     }
 
-    /// Creates an `image` struct from a path
-    pub fn from_file(path: &str) -> Result<Self, DecodingError> {
-        println!("Reading \"{}\"", path);
-        let file = File::open(path)?;
+    /// Creates an `image` struct from a file at `path`
+    pub fn from_path(path: &str) -> Result<Self, DecodingError> {
+        println!("Decoding \"{}\"", path);
+        Self::from_file(File::open(path)?)
+    }
+
+    /// Creates an `image` from `file`
+    pub fn from_file(file: File) -> Result<Self, DecodingError> {
         let decoder = Decoder::new(file);
         let mut reader = decoder.read_info()?;
         let mut bytes = vec![0; reader.output_buffer_size()];
@@ -52,7 +56,7 @@ impl Image {
 
         // maybe not correct for textures, but we do it anyway
         assert!(width == height);
-        println!("Read succesfully");
+        println!("Decoded succesfully");
         Ok(Self {
             buffer,
             width,
