@@ -18,20 +18,20 @@ impl Medium {
     /// Constructs a medium contained in an invisible solid.
     ///
     /// # Arguments
-    /// * `density` - How much of each RGB channel gets absorbed while traversing
-    /// the medium. Value in `\[0,1\]^3`
+    /// * `absorption` - How much of each RGB channel gets absorbed while
+    /// traversing the medium. Value in `\[0,1\]^3`
     /// * `scattering` - How much of each RGB channel gets scattered on hit
     /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in
     /// `(-1,1)`
-    pub fn new(density: DVec3, scattering: DVec3, scatter_param: f64) -> Self {
+    pub fn new(absorption: DVec3, scattering: DVec3, scatter_param: f64) -> Self {
         assert!(-1.0 < scatter_param && scatter_param < 1.0);
-        assert!(color.min_element() >= 0.0);
-        assert!(density.max_element() <= 1.0
-                && density.min_element() >= 0.0);
+        assert!(scattering.min_element() >= 0.0);
+        assert!(absorption.max_element() <= 1.0
+                && absorption.min_element() >= 0.0);
 
         Self {
-            sigma_s: color,
-            sigma_t: color + density,
+            sigma_s: scattering,
+            sigma_t: scattering + absorption,
             material: Material::Volumetric(scatter_param),
         }
     }
