@@ -4,10 +4,12 @@ use super::*;
 /// at random depending on density. Examples of real life mediums include smoke,
 /// fog, and clouds.
 pub struct Medium {
-    /// Density of the medium along each RGB channel
-    density: DVec3,
-    /// Color of the medium
-    color: DVec3,
+    /// How much of each RGB channgel gets scattered when hitting the medium
+    sigma_s: DVec3,
+    /// Transmittance of the medium, defined as `sigma_a + sigma_s`, where
+    /// `sigma_a` tells how much each RGB channel gets absorbed while
+    /// traversing the medium
+    sigma_t: DVec3,
     /// Material of the medium
     material: Material,
 }
@@ -16,29 +18,31 @@ impl Medium {
     /// Constructs a medium contained in an invisible solid.
     ///
     /// # Arguments
-    /// * `density` - Density of the medium along each RBG channel in `\[0,1\]^3`
-    /// * `color` - Color of the medium
+    /// * `density` - How much of each RGB channel gets absorbed while traversing
+    /// the medium. Value in `\[0,1\]^3`
+    /// * `scattering` - How much of each RGB channel gets scattered on hit
     /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in
     /// `(-1,1)`
-    pub fn new(density: DVec3, color: DVec3, scatter_param: f64) -> Self {
+    pub fn new(density: DVec3, scattering: DVec3, scatter_param: f64) -> Self {
         assert!(-1.0 < scatter_param && scatter_param < 1.0);
+        assert!(color.min_element() >= 0.0);
         assert!(density.max_element() <= 1.0
                 && density.min_element() >= 0.0);
 
         Self {
-            density,
-            color,
+            sigma_s: color,
+            sigma_t: color + density,
             material: Material::Volumetric(scatter_param),
         }
     }
 
-    /// TODO
+    /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
     pub fn transmittance(&self, h: &Hit) -> DVec3 {
         let t_delta = h.t;
-        let transmittance = (-self.density * t_delta).exp();
+        let transmittance = (-self.sigma_t * t_delta).exp();
         let density = if h.is_medium() {
             // we hit a medium
-            self.density * transmittance
+            self.sigma_t * transmittance
         } else {
             transmittance
         };
@@ -46,7 +50,7 @@ impl Medium {
         let pdf = density.dot(DVec3::ONE) / 3.0;
 
         if h.is_medium() {
-            self.color * transmittance / pdf
+            self.sigma_s * transmittance / pdf
         } else {
             transmittance / pdf
         }
@@ -61,9 +65,9 @@ impl Object for Medium {
     fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         // choose a random color channel from density
         let density = match 3.0 * rand_utils::rand_f64() {
-            f if f < 1.0 => self.density.x,
-            f if f < 2.0 => self.density.y,
-            _ => self.density.z,
+            f if f < 1.0 => self.sigma_t.x,
+            f if f < 2.0 => self.sigma_t.y,
+            _ => self.sigma_t.z,
         };
 
         let ray_length = ro.dir.length();

@@ -41,7 +41,11 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     scene.set_medium(
-        Medium::new(DVec3::splat(0.1), srgb_to_linear(255, 0, 255), 0.99)
+        Medium::new(
+            DVec3::new(0.001764, 0.0032095, 0.0019617),
+            DVec3::new(0.31845, 0.31324, 0.30147),
+            -0.9
+        )
     );
 
     let renderer = Renderer::new(scene, camera);
