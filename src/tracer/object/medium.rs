@@ -1,8 +1,11 @@
 use super::*;
 
-/// An object of type medium. Mediums represent space where rays can scatter
-/// at random depending on density. Examples of real life mediums include smoke,
-/// fog, and clouds.
+#[cfg(test)]
+mod medium_test;
+
+/// A homogenous participating media. Mediums represent space where rays get
+/// absorbed and can scatter at random depending on density.
+/// Examples of real life mediums include smoke, fog, and clouds.
 pub struct Medium {
     /// How much of each RGB channgel gets scattered when hitting the medium
     sigma_s: DVec3,
@@ -38,6 +41,7 @@ impl Medium {
 
     /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
     pub fn transmittance(&self, h: &Hit) -> DVec3 {
+        // can this be infinity?
         let t_delta = h.t;
         let transmittance = (-self.sigma_t * t_delta).exp();
         let density = if h.is_medium() {
