@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     /* statue */
-    if cfg!(debug_assertions) {
+    if !cfg!(debug_assertions) {
 	scene.add(
             Cylinder::new(
 		0.0,
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	scene.add(
             Mesh::new(
 		obj::obj_from_url(NEFE_URL)?,
-		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.4),
+		Material::specular(Texture::Image(Image::from_file(IMAGE_FILE)?), 0.8),
             )
 		.to_unit_size()
 		.to_origin()
@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // left, w.r.t camera    
     scene.add_light(Disk::new(
-	disk_towards + 0.5 * disk_dir,
+	disk_towards + 0.3 * disk_dir,
 	-disk_dir,
 	0.05,
 	Material::Light(Texture::Solid(30.0 * DVec3::ONE))
@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add_light(Disk::new(
 	right_disk_origin,
 	disk_towards + 0.28 * DVec3::X - right_disk_origin,
-	0.05,
+	0.08,
 	Material::Light(Texture::Solid(20.0 * DVec3::ONE))
     ));
 
@@ -133,8 +133,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     scene.add_light(Rectangle::new(
 	xy_rect,
-	Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))))
-		    .scale(0.2, 0.2, 1.0)
+	Material::Light(Texture::Solid(2.0 * srgb_to_linear(255, 255, 255))))
+		    .scale(0.3, 0.3, 1.0)
 		    .rotate_x(PI)
 		    .translate(-0.1, 0.0, 0.0)
     );
@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .translate(-0.2, 0.5, -1.5)
     );
 
-    let camera = if cfg!(debug_assertions) {
+    let camera = if !cfg!(debug_assertions) {
 	Camera::perspective(
 	    0.5 * DVec3::Z,
 	    DVec3::NEG_Z,
@@ -169,10 +169,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let mut renderer = Renderer::new(scene, camera);
-    if cfg!(debug_assertions) {
-	renderer.set_samples(9)
+    if !cfg!(debug_assertions) {
+	renderer.set_samples(9);
     } else {
-	renderer.set_samples(2025)
+	renderer.set_samples(4096);
+        renderer.set_tone_map(ToneMap::HableFilmic);
     }
     renderer.render().save("nefe.png")?;
 
