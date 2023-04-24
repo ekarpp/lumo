@@ -229,7 +229,7 @@ impl<T: Object> Instance<T> {
     }
 
     /// Apply axis rotation AFTER current transformations
-    fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
+    pub fn rotate_axis(self, axis: DVec3, r: f64) -> Box<Instance<T>> {
         Self::new(self.object, DAffine3::from_axis_angle(axis, r) * self.transform)
     }
 }
