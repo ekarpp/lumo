@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     /* statue */
-    if !cfg!(debug_assertions) {
+    if cfg!(debug_assertions) {
 	scene.add(
             Cylinder::new(
 		0.0,
@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .translate(-0.2, 0.5, -1.5)
     );
 
-    let camera = if !cfg!(debug_assertions) {
+    let camera = if cfg!(debug_assertions) {
 	Camera::perspective(
 	    0.5 * DVec3::Z,
 	    DVec3::NEG_Z,
@@ -169,7 +169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let mut renderer = Renderer::new(scene, camera);
-    if !cfg!(debug_assertions) {
+    if cfg!(debug_assertions) {
 	renderer.set_samples(9);
     } else {
 	renderer.set_samples(4096);
