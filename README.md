@@ -11,10 +11,8 @@ Lumo is a CPU based multithreaded rendering engine. Made with the goal of learni
 * [Cook-Torrance microfacet BSDF](https://doi.org/10.1145/357290.357293) with [Beckmann and GGX](http://dx.doi.org/10.2312/EGWR/EGSR07/195-206) normal distribution functions
 * [Multiple importance sampling from VNDF for GGX](https://jcgt.org/published/0007/04/01/)
 * [Disney diffuse BRDF](https://disneyanimation.com/publications/physically-based-shading-at-disney/) with [energy normalization used in Frostbite engine](https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf)
-* Vertex and normal parsing from .OBJ files
-* Stratified sampling
-* kd-tree with SAH
-* Perlin noise generator
+* .OBJ file parsing
+* Surface area hierarchy based kD-trees
 
 ### Usage
 Once the repository is cloned, the `examples/` folder contains scenes. To run the `hello_sphere.rs` example execute the command:
@@ -26,15 +24,13 @@ cargo run --example hello_sphere
 The renderer can be configured either through its setter methods or partially through the CLI:
 
 ```
-Usage: hello_sphere [-s <samples>] [-t <threads>] [-w <width>] [-h <height>] [-d] [-b]
+Usage: hello_sphere [-s <samples>] [-t <threads>] [-d] [-b]
 
 Optional CLI configuration of renderer. Renderer setter methods have priority.
 
 Options:
   -s, --samples     number of samples per pixel (defaults to 1)
   -t, --threads     number of threads used (defaults to all)
-  -w, --width       width of the rendered image (defaults to 1000)
-  -h, --height      height of the rendered image (defaults to 1000)
   -d, --direct      use direct light integrator instead of path tracing.
   -b, --bdpt        use bidirectional path tracing instead of path tracing.
   --help            display usage information
@@ -49,7 +45,7 @@ use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), png::EncodingError> {
-    let camera = Camera::default();
+    let camera = Camera::default(1280, 720);
     let mut scene = Scene::default();
 
     scene.add(Plane::new(
@@ -88,6 +84,7 @@ fn main() -> Result<(), png::EncodingError> {
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
 ### Gallery
-![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png)
-![Cornell box](https://i.imgur.com/PoEVv6b.png)
-![Circle of spheres](https://i.imgur.com/GJXdijq.png)
+![Bust of Nefertiti](https://i.imgur.com/eQ0iaE1.png)
+![Cornell box](https://i.imgur.com/JfGOyIT.png)
+![Stanford dragon]()
+![Circle of spheres](https://i.imgur.com/vaALzZM.png)
