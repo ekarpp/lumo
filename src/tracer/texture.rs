@@ -37,7 +37,7 @@ impl Texture {
             Texture::Solid(c) => *c,
             Texture::Marble(pn, c) => {
                 let xo = h.p;
-                let turb = self.turbulence(pn, 0.0, MARBLE_SCALE * xo.abs(), 0);
+                let turb = Self::turbulence(pn, 0.0, MARBLE_SCALE * xo.abs(), 0);
                 let scaled = 1.0 -
                     (0.5 + 0.5 * (MARBLE_FREQ * xo.x + MARBLE_AMP * turb).sin())
                     .powi(6);
@@ -65,12 +65,12 @@ impl Texture {
 
     /// Computes the turbulence for the noise. I.e. absolute values of the
     /// noise at different octaves are summed together.
-    fn turbulence(&self, pn: &Perlin, acc: f64, p: DVec3, depth: i32) -> f64 {
+    fn turbulence(pn: &Perlin, acc: f64, p: DVec3, depth: i32) -> f64 {
         if depth >= MARBLE_OCTAVES {
             return acc;
         }
         let w = MARBLE_GAIN.powi(depth);
 
-        self.turbulence(pn, acc + w * pn.noise_at(p).abs(), 2.0 * p, depth + 1)
+        Self::turbulence(pn, acc + w * pn.noise_at(p).abs(), 2.0 * p, depth + 1)
     }
 }

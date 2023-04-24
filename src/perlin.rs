@@ -20,10 +20,8 @@ pub struct Perlin {
     perm: PermutationXyz,
 }
 
-impl Perlin {
-    /// Constructs new Perlin generator with the given underlying colour.
-    /// Pass texture instead?
-    pub fn new() -> Self {
+impl Default for Perlin {
+    fn default() -> Self {
         Self {
             lattice: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
             perm: PermutationXyz {
@@ -33,7 +31,9 @@ impl Perlin {
             },
         }
     }
+}
 
+impl Perlin {
     /// Computes Perlin noise at point `p`
     pub fn noise_at(&self, p: DVec3) -> f64 {
         let weight = p.fract();

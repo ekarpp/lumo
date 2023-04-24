@@ -88,7 +88,7 @@ fn shadow_ray(
                     let bsdf = if ho.is_medium() {
                         DVec3::ONE * p_scatter / ns.dot(wi).abs()
                     } else {
-                        material.bsdf_f(wo, wi, &ho)
+                        material.bsdf_f(wo, wi, ho)
                     };
 
                     bsdf
@@ -122,7 +122,7 @@ fn shadow_ray(
                     let bsdf = if ho.is_medium() {
                         DVec3::ONE * p_scatter / ns.dot(wi).abs()
                     } else {
-                        material.bsdf_f(wo, wi, &ho)
+                        material.bsdf_f(wo, wi, ho)
                     };
 
                     bsdf
