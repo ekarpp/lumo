@@ -70,7 +70,8 @@ impl<'a> Vertex<'a> {
         let wi = (next.h.p - self.h.p).normalize();
 
         // this is a dumb hack.
-        // need to somehow figure if prev and next are on the same object
+        // need to somehow figure if prev and next are on the same object.
+        // what if the object is transparent?
         if wi.dot(self.h.ng) < crate::EPSILON {
             DVec3::ZERO
         } else {
