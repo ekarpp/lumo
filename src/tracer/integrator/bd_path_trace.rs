@@ -89,7 +89,16 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
 
-    connect_paths(scene, &light_path, &camera_path)
+    let mut radiance = DVec3::ZERO;
+
+    for t in 0..camera_path.len() {
+        for s in 0..light_path.len() {
+            radiance +=
+                connect_paths(scene, &light_path[0..s], &camera_path[0..t]);
+        }
+    }
+
+    radiance
 }
 
 fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -> DVec3 {
@@ -219,11 +228,9 @@ fn walk<'a>(
                         vertices.push(curr_vertex);
 
                         // russian roulette
-                        if depth > 0 {
+                        if depth > 3 {
                             let luminance = crate::rgb_to_luminance(gathered);
                             let rr_prob = (1.0 - luminance).max(0.05);
-                            // TODO: TEMPORARY
-                            let rr_prob = 0.95;
                             if rand_utils::rand_f64() < rr_prob {
                                 break;
                             }
