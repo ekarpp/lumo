@@ -89,28 +89,40 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
 
+    connect_paths(scene, &light_path, &camera_path)
+}
+
+fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -> DVec3 {
     let t = camera_path.len();
     let s = light_path.len();
 
-    if t < 2 || s < 2 {
-        // because
-        return DVec3::ZERO;
-    }
-
-    let light_last = &light_path[s - 1];
-    let camera_last = &camera_path[t - 1];
-
-    if !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+    let radiance = if t == 0 || t == 1 {
+        // we dont do camera sampling
+        DVec3::ZERO
+    } else if s == 0 {
+        // check if camera[-1] is on light
+        DVec3::ZERO
+    } else if s == 1 {
+        // sample a light. can use the method in integrator?
         DVec3::ZERO
     } else {
-        let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
-        let camera_bsdf = camera_last.bsdf(&camera_path[t - 2], light_last);
+        let light_last = &light_path[s - 1];
+        let camera_last = &camera_path[t - 1];
 
-        let illuminance = light_last.gathered * light_bsdf
-            * camera_bsdf * camera_last.gathered;
+        if !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+            DVec3::ZERO
+        } else {
+            let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
+            let camera_bsdf = camera_last.bsdf(&camera_path[t - 2], light_last);
 
-        illuminance * geometry_term(light_last, camera_last)
-    }
+            light_last.gathered * light_bsdf
+                * camera_bsdf * camera_last.gathered
+                * geometry_term(light_last, camera_last)
+        }
+    };
+
+    // do MIS weight for path
+    radiance
 }
 
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
@@ -207,9 +219,11 @@ fn walk<'a>(
                         vertices.push(curr_vertex);
 
                         // russian roulette
-                        if depth > 3 {
+                        if depth > 0 {
                             let luminance = crate::rgb_to_luminance(gathered);
                             let rr_prob = (1.0 - luminance).max(0.05);
+                            // TODO: TEMPORARY
+                            let rr_prob = 0.95;
                             if rand_utils::rand_f64() < rr_prob {
                                 break;
                             }
