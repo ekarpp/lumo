@@ -157,6 +157,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	    DVec3::NEG_Z,
 	    DVec3::Y,
 	    90.0,
+            0.0,
+            0.0,
 	    1000,
 	    1000
 	)
@@ -166,6 +168,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             DVec3::new(0.0, -0.26, -1.45),
             DVec3::Y,
             0.2,
+            0.0,
+            0.0,
             683,
             1000,
 	)

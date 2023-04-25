@@ -21,6 +21,8 @@ fn main() -> Result<(), std::io::Error> {
         DVec3::ZERO,
         DVec3::new(0.0, 1.0, -1.0),
         90.0,
+        0.0,
+        0.0,
         1000,
         1000,
     );
