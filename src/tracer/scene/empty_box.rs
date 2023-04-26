@@ -16,22 +16,22 @@ impl Scene {
         mat_right: Material,
     ) -> Self {
         // aka Y of ground, negate for roof
-        let ground = -1.0;
+        let ground = -0.75;
         // aka X of right wall, negate for left wall
         let right = 1.0;
         // aka Z of front wall, negate for background
         let front = -2.0;
         // 0.5x of sidelength of area light
-        let light_dim = 0.4;
+        let light_dim = 0.3;
 
         let mut scene = Self::default();
 
         /* rectangular area light */
         scene.add_light(Rectangle::new(
             DMat3::from_cols(
-                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front + light_dim),
-                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front - light_dim),
-                DVec3::new(light_dim, -ground - EPSILON, 0.5 * front - light_dim),
+                DVec3::new(-light_dim, -ground - EPSILON, 0.65 * front + light_dim),
+                DVec3::new(-light_dim, -ground - EPSILON, 0.65 * front - light_dim),
+                DVec3::new(light_dim, -ground - EPSILON, 0.65 * front - light_dim),
             ),
             Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
         ));
