@@ -1,6 +1,19 @@
 use super::*;
 use crate::tracer::material::Material;
 
+/*
+ * TODO:
+ * (1, 7) hit for light vertex initialization
+ * (2) store directions in vertex?
+ * (3, 6) proper visibility test
+ * (4) PBRT has no geometry term but we need it?
+ * (5) implement MIS
+ * (8) previous pdf needs pdf with orders swapped. refraction not commutative
+ * (9) need to modify vertex PDFs?
+ *
+ * + this needs proper refactoring and cleanup...
+*/
+
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
@@ -31,7 +44,7 @@ impl<'a> Vertex<'a> {
 
     /// Light vertex
     pub fn light(xo: DVec3, ng: DVec3, gathered: DVec3, pdf_next: f64) -> Self {
-        // TODO: need a hit on the sampled point
+        // TODO (1)
         let h = Hit::new(
             0.0,
             &Material::Blank,
@@ -69,10 +82,11 @@ impl<'a> Vertex<'a> {
     }
 
     pub fn bsdf(&self, prev: &Vertex, next: &Vertex) -> DVec3 {
-        // these could be stored already normalized
+        // TODO (2)
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();
 
+        // TODO (3)
         // this is a dumb hack.
         // need to somehow figure if prev and next are on the same object.
         // what if the object is transparent?
@@ -157,6 +171,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
 
                             let g = geometry_term(&light_last, camera_last);
                             sampled_vertex = Some(light_last);
+                            // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
@@ -192,11 +207,12 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
 }
 
 fn mis_weight(
-    scene: &Scene,
-    light_path: &[Vertex],
-    camera_path: &[Vertex],
-    sampled_vertex: Option<Vertex>
+    _scene: &Scene,
+    _light_path: &[Vertex],
+    _camera_path: &[Vertex],
+    _sampled_vertex: Option<Vertex>
 ) -> f64 {
+    // TODO (5)
     1.0
 }
 
@@ -208,7 +224,7 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
 
     let wi = (v1_xo - v2_xo).normalize();
     let wi_length_squared = v1_xo.distance_squared(v2_xo);
-
+    // TODO (6) proper visibility test, here?
     v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }
 
@@ -227,7 +243,8 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
         rand_utils::unit_square()
     );
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
-    let emit = DVec3::ONE;//TODO: emit needs a hit light.material().emit(HIT)
+    // TODO (7) Need the hit also here to get emittance
+    let emit = DVec3::ONE;
 
     let root = Vertex::light(ro.origin, ng, emit, pdf_origin * pdf_light);
 
@@ -289,8 +306,7 @@ fn walk<'a>(
                             * ns.dot(wi).abs()
                             / pdf_next;
 
-                        // TODO: THIS BREAKS FOR REFRACTION IN MICROFACET
-                        // the directions should be reversed
+                        // TODO (8)
                         pdf_prev = pdf_next;
                         vertices[prev].pdf_prev =
                             vertices[curr].solid_angle_to_area(pdf_prev, xo, ng);
@@ -302,7 +318,8 @@ fn walk<'a>(
                             if rand_utils::rand_f64() < rr_prob {
                                 break;
                             }
-                            // need to modify vertex PDFs?
+
+                            // TODO (9)
                             gathered /= 1.0 - rr_prob;
                         }
 
