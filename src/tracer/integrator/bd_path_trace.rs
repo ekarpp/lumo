@@ -94,7 +94,7 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     for t in 0..camera_path.len() {
         for s in 0..light_path.len() {
             radiance +=
-                connect_paths(scene, &light_path[0..s], &camera_path[0..t]);
+                connect_paths(scene, &light_path[0..=s], &camera_path[0..=t]);
         }
     }
 
@@ -109,8 +109,15 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         // we dont do camera sampling
         DVec3::ZERO
     } else if s == 0 {
-        // check if camera[-1] is on light
-        DVec3::ZERO
+        let camera_last = &camera_path[t - 1];
+        let emittance = camera_last.h.material.emit(&camera_last.h);
+
+        if emittance.length_squared() == 0.0 {
+            // not on light
+            DVec3::ZERO
+        } else {
+            camera_last.gathered * emittance
+        }
     } else if s == 1 {
         let light = scene.uniform_random_light();
         let camera_last = &camera_path[t - 1];
@@ -223,7 +230,10 @@ fn walk<'a>(
         let prev_vertex = &mut vertices[depth];
 
         match material.bsdf_pdf(&ho, &ro) {
-            None => break,
+            None => {
+                // we hit a light, need to create a vertex for it
+                break;
+            }
             Some(scatter_pdf) => {
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
