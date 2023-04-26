@@ -127,6 +127,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         if camera_last.on_light {
             DVec3::ZERO
         } else {
+            // sample a point on the light
             let light = scene.uniform_random_light();
 
             let xo = camera_last.h.p;
@@ -153,9 +154,13 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
                                 &camera_path[t - 2],
                                 &light_last
                             );
+
+                            let g = geometry_term(&light_last, camera_last);
                             sampled_vertex = Some(light_last);
+                            // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
+                                * g
                         }
                     }
                 }
@@ -203,7 +208,7 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
 
     let wi = (v1_xo - v2_xo).normalize();
     let wi_length_squared = v1_xo.distance_squared(v2_xo);
-    // visibility test
+
     v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }
 
