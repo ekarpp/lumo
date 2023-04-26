@@ -3,7 +3,7 @@ use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = Camera::default(1000, 1000);
+    let camera = Camera::default(1000, 750);
     let def_color = srgb_to_linear(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
