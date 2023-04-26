@@ -251,26 +251,26 @@ fn walk<'a>(
         let wo = ro.dir;
         let ng = ho.ng;
 
-        let prev_vertex = &mut vertices[depth];
+        let prev = depth;
+        let curr = depth + 1;
         vertices.push(Vertex::surface(
             ho,
             gathered,
             pdf_next,
-            prev_vertex
+            &vertices[prev],
         ));
-        let curr_vertex = &mut vertices[depth + 1];
-
-        match material.bsdf_pdf(&curr_vertex.h, &ro) {
+        let ho = &vertices[curr].h;
+        match material.bsdf_pdf(ho, &ro) {
             None => {
-                curr_vertex.on_light = true;
+                vertices[curr].on_light = true;
                 break;
             }
             Some(scatter_pdf) => {
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
-                        let ns = curr_vertex.h.ns;
-                        let ri = curr_vertex.h.generate_ray(wi);
+                        let ns = ho.ns;
+                        let ri = ho.generate_ray(wi);
                         // normalized
                         let wi = ri.dir;
 
@@ -280,17 +280,15 @@ fn walk<'a>(
                             break;
                         }
 
-                        gathered *= material.bsdf_f(wo, wi, &curr_vertex.h)
+                        gathered *= material.bsdf_f(wo, wi, &ho)
                             * ns.dot(wi).abs()
                             / pdf_next;
 
                         // TODO: THIS BREAKS FOR REFRACTION IN MICROFACET
                         // the directions should be reversed
                         pdf_prev = pdf_next;
-                        prev_vertex.pdf_prev =
-                            curr_vertex.solid_angle_to_area(pdf_prev, xo, ng);
-
-                        vertices.push(curr_vertex);
+                        vertices[prev].pdf_prev =
+                            vertices[curr].solid_angle_to_area(pdf_prev, xo, ng);
 
                         // russian roulette
                         if depth > 3 {
