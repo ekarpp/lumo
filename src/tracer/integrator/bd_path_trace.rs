@@ -6,6 +6,7 @@ struct Vertex<'a> {
     gathered: DVec3,
     pdf_next: f64,
     pdf_prev: f64,
+    pub on_light: bool,
 }
 
 impl<'a> Vertex<'a> {
@@ -24,6 +25,7 @@ impl<'a> Vertex<'a> {
             gathered: DVec3::ONE,
             pdf_prev: 0.0,
             pdf_next: 1.0,
+            on_light: false,
         }
     }
 
@@ -44,6 +46,7 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_next,
             pdf_prev: 0.0,
+            on_light: true,
         }
     }
 
@@ -61,6 +64,7 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
             pdf_prev: 0.0,
+            on_light: false,
         }
     }
 
@@ -91,10 +95,10 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
 
     let mut radiance = DVec3::ZERO;
 
-    for t in 0..camera_path.len() {
-        for s in 0..light_path.len() {
+    for t in 0..=camera_path.len() {
+        for s in 0..=light_path.len() {
             radiance +=
-                connect_paths(scene, &light_path[0..=s], &camera_path[0..=t]);
+                connect_paths(scene, &light_path[0..s], &camera_path[0..t]);
         }
     }
 
@@ -110,43 +114,47 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         DVec3::ZERO
     } else if s == 0 {
         let camera_last = &camera_path[t - 1];
-        let emittance = camera_last.h.material.emit(&camera_last.h);
-
-        if emittance.length_squared() == 0.0 {
-            // not on light
+        if !camera_last.on_light {
             DVec3::ZERO
         } else {
+            let emittance = camera_last.h.material.emit(&camera_last.h);
             camera_last.gathered * emittance
         }
     } else if s == 1 {
-        let light = scene.uniform_random_light();
         let camera_last = &camera_path[t - 1];
-        let xo = camera_last.h.p;
-        let pdf_light = ObjectPdf::new(light, xo);
+        if camera_last.on_light {
+            DVec3::ZERO
+        } else {
+            let light = scene.uniform_random_light();
 
-        match pdf_light.sample_direction(rand_utils::unit_square()) {
-            None => DVec3::ZERO,
-            Some(wi) => {
-                let ri = camera_last.h.generate_ray(wi);
-                match scene.hit_light(&ri, light) {
-                    None => DVec3::ZERO,
-                    Some(hi) => {
-                        let xi = hi.p;
-                        let ng = hi.ng;
-                        let ns = hi.ns;
-                        let emittance = hi.material.emit(&hi);
-                        let light_last = Vertex::light(
-                            xi,
-                            ng,
-                            emittance,
-                            0.0,
-                        );
-                        let bsdf = camera_last.bsdf(
-                            &camera_path[t - 2],
-                            &light_last
-                        );
+            let xo = camera_last.h.p;
+            let pdf_light = ObjectPdf::new(light, xo);
 
-                        camera_last.gathered * bsdf * ns.dot(wi).abs() * emittance
+            match pdf_light.sample_direction(rand_utils::unit_square()) {
+                None => DVec3::ZERO,
+                Some(wi) => {
+                    let ri = camera_last.h.generate_ray(wi);
+                    match scene.hit_light(&ri, light) {
+                        None => DVec3::ZERO,
+                        Some(hi) => {
+                            let xi = hi.p;
+                            let ng = hi.ng;
+                            let ns = hi.ns;
+                            let emittance = hi.material.emit(&hi);
+                            let light_last = Vertex::light(
+                                xi,
+                                ng,
+                                emittance,
+                                0.0,
+                            );
+                            let bsdf = camera_last.bsdf(
+                                &camera_path[t - 2],
+                                &light_last
+                            );
+
+                            camera_last.gathered * bsdf
+                                * ns.dot(wi).abs() * emittance
+                        }
                     }
                 }
             }
@@ -155,7 +163,8 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+        if camera_last.on_light ||
+            !scene.unoccluded(light_last.h.p, camera_last.h.p) {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
@@ -228,27 +237,28 @@ fn walk<'a>(
         let ng = ho.ng;
 
         let prev_vertex = &mut vertices[depth];
+        let mut curr_vertex = Vertex::surface(
+            ho,
+            gathered,
+            pdf_next,
+            prev_vertex
+        );
 
-        match material.bsdf_pdf(&ho, &ro) {
+
+        match material.bsdf_pdf(&curr_vertex.h, &ro) {
             None => {
-                // we hit a light, need to create a vertex for it
+                curr_vertex.on_light = true;
+                vertices.push(curr_vertex);
                 break;
             }
             Some(scatter_pdf) => {
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
-                        let ns = ho.ns;
-                        let ri = ho.generate_ray(wi);
+                        let ns = curr_vertex.h.ns;
+                        let ri = curr_vertex.h.generate_ray(wi);
                         // normalized
                         let wi = ri.dir;
-
-                        let curr_vertex = Vertex::surface(
-                            ho,
-                            gathered,
-                            pdf_next,
-                            prev_vertex
-                        );
 
                         pdf_next = scatter_pdf.value_for(&ri);
 
