@@ -165,8 +165,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.on_light ||
-            !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+        if camera_last.on_light || !scene.unoccluded(light_last.h.p, camera_last.h.p) {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
@@ -199,13 +198,13 @@ fn mis_weight(
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     let v1_xo = v1.h.p;
     let v2_xo = v2.h.p;
-    let v1_ng = v1.h.ng;
-    let v2_ng = v2.h.ng;
+    let v1_ns = v1.h.ns;
+    let v2_ns = v2.h.ns;
 
     let wi = (v1_xo - v2_xo).normalize();
     let wi_length_squared = v1_xo.distance_squared(v2_xo);
     // visibility test
-    v1_ng.dot(wi).abs() * v2_ng.dot(wi).abs() / wi_length_squared
+    v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }
 
 fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
@@ -287,6 +286,7 @@ fn walk<'a>(
                             / pdf_next;
 
                         // TODO: THIS BREAKS FOR REFRACTION IN MICROFACET
+                        // the directions should be reversed
                         pdf_prev = pdf_next;
                         prev_vertex.pdf_prev =
                             curr_vertex.solid_angle_to_area(pdf_prev, xo, ng);
