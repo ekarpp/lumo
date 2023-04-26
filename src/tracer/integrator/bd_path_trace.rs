@@ -109,6 +109,8 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
     let t = camera_path.len();
     let s = light_path.len();
 
+    let mut sampled_vertex: Option<Vertex> = None;
+
     let radiance = if t == 0 || t == 1 {
         // we dont do camera sampling
         DVec3::ZERO
@@ -151,7 +153,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
                                 &camera_path[t - 2],
                                 &light_last
                             );
-
+                            sampled_vertex = Some(light_last);
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
                         }
@@ -176,8 +178,22 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         }
     };
 
+    let weight = if radiance.length_squared() == 0.0 {
+        0.0
+    } else {
+        mis_weight(scene, light_path, camera_path, sampled_vertex)
+    };
     // do MIS weight for path
-    radiance
+    radiance * weight
+}
+
+fn mis_weight(
+    scene: &Scene,
+    light_path: &[Vertex],
+    camera_path: &[Vertex],
+    sampled_vertex: Option<Vertex>
+) -> f64 {
+    1.0
 }
 
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
