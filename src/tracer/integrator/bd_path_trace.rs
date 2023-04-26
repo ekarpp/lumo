@@ -252,18 +252,17 @@ fn walk<'a>(
         let ng = ho.ng;
 
         let prev_vertex = &mut vertices[depth];
-        let mut curr_vertex = Vertex::surface(
+        vertices.push(Vertex::surface(
             ho,
             gathered,
             pdf_next,
             prev_vertex
-        );
-
+        ));
+        let curr_vertex = &mut vertices[depth + 1];
 
         match material.bsdf_pdf(&curr_vertex.h, &ro) {
             None => {
                 curr_vertex.on_light = true;
-                vertices.push(curr_vertex);
                 break;
             }
             Some(scatter_pdf) => {
