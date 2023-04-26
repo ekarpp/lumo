@@ -112,8 +112,38 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         // check if camera[-1] is on light
         DVec3::ZERO
     } else if s == 1 {
-        // sample a light. can use the method in integrator?
-        DVec3::ZERO
+        let light = scene.uniform_random_light();
+        let camera_last = &camera_path[t - 1];
+        let xo = camera_last.h.p;
+        let pdf_light = ObjectPdf::new(light, xo);
+
+        match pdf_light.sample_direction(rand_utils::unit_square()) {
+            None => DVec3::ZERO,
+            Some(wi) => {
+                let ri = camera_last.h.generate_ray(wi);
+                match scene.hit_light(&ri, light) {
+                    None => DVec3::ZERO,
+                    Some(hi) => {
+                        let xi = hi.p;
+                        let ng = hi.ng;
+                        let ns = hi.ns;
+                        let emittance = hi.material.emit(&hi);
+                        let light_last = Vertex::light(
+                            xi,
+                            ng,
+                            emittance,
+                            0.0,
+                        );
+                        let bsdf = camera_last.bsdf(
+                            &camera_path[t - 2],
+                            &light_last
+                        );
+
+                        camera_last.gathered * bsdf * ns.dot(wi).abs() * emittance
+                    }
+                }
+            }
+        }
     } else {
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
