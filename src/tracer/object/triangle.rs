@@ -94,7 +94,7 @@ impl Bounded for Triangle {
 }
 
 impl Object for Triangle {
-    /// Barycentric triangle intersection with Möller-Trumbore algorithm
+    /// Watertight intersection due to Woop et. al. 2013
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
 
@@ -139,10 +139,12 @@ impl Object for Triangle {
 
         let det = edges.dot(DVec3::ONE);
 
+        // ray coplanar to triangle
         if det == 0.0 {
             return None;
         }
 
+        // divide by wi.z here due to the way we apply shear
         let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) / wi.z;
 
         // check that hit is within bounds
@@ -153,11 +155,12 @@ impl Object for Triangle {
             return None;
         }
 
+        let t = t_scaled / det;
+
         let barycentrics = edges / det;
         let alpha = barycentrics.x;
         let beta = barycentrics.y;
         let gamma = barycentrics.z;
-        let t = t_scaled / det;
 
         let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
         let ns = ns.normalize();
