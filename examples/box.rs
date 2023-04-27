@@ -16,7 +16,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         DVec3::new(-0.45, -0.5, -1.5),
         0.25,
-        Material::metal(
+        Material::metallic(
             Texture::Solid(srgb_to_linear(255, 255, 255)),
             0.0,
         )
@@ -27,8 +27,8 @@ fn main() -> Result<(), std::io::Error> {
         0.25,
         Material::transparent(
             Texture::Solid(srgb_to_linear(255, 255, 255)),
+            0.0,
             1.5,
-            0.0
         ),
     ));
 

@@ -29,7 +29,7 @@ fn shoot_rays(mesh: Box<dyn Object>) {
 #[test]
 fn intersect_teapot() {
     let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap(),
         Material::Blank,
     )
         .to_unit_size()
@@ -42,7 +42,7 @@ fn intersect_teapot() {
 #[test]
 fn intersect_sphere() {
     let mesh = Mesh::new(
-        crate::obj::obj_from_url(SPHERE_URL).unwrap(),
+        crate::parser::obj_from_url(SPHERE_URL).unwrap(),
         Material::Blank,
     )
         .to_unit_size()
@@ -64,7 +64,7 @@ fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
 #[test]
 fn all_objects_correctly_split() {
     let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap(),
         Material::Blank,
     );
 
@@ -96,7 +96,7 @@ fn all_objects_correctly_split() {
 #[test]
 fn all_objects_in_tree() {
     let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap(),
         Material::Blank,
     );
 

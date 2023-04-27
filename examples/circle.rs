@@ -71,7 +71,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Plane::new(
         ground * DVec3::Y,
         DVec3::Y,
-        Material::metal(Texture::Solid(srgb_to_linear(150, 40, 39)), 0.009999),
+        Material::metallic(Texture::Solid(srgb_to_linear(150, 40, 39)), 0.009999),
     ));
 
     let r = 0.2;

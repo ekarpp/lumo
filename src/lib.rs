@@ -12,8 +12,8 @@ pub use perlin::Perlin;
 pub use renderer::Renderer;
 pub use tone_mapping::ToneMap;
 
-/// .OBJ file loader. Supports loading only vertices, normals, and faces.
-pub mod obj;
+/// Wavefront .mtl and .obj parser
+pub mod parser;
 /// The heart.
 pub mod tracer;
 

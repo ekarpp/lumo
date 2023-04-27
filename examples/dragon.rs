@@ -15,11 +15,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            obj::obj_from_url(DRAGON_URL)?,
+            parser::obj_from_url(DRAGON_URL)?,
             Material::transparent(
                 Texture::Solid(srgb_to_linear(255, 0, 255)),
+                0.03,
                 1.5,
-                0.03
             ),
         )
         .to_unit_size()

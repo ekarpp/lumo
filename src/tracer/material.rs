@@ -23,24 +23,36 @@ pub enum Material {
 }
 
 impl Material {
+    /// Helper function to create a microfacet material
+    pub fn microfacet(
+        texture: Texture,
+        roughness: f64,
+        refraction_idx: f64,
+        metallicity: f64,
+        transparent: bool
+    ) -> Self {
+        let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
+        Self::Microfacet(texture, mfd)
+    }
+
     /// Metallic microfacet material
-    pub fn metal(texture: Texture, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::metallic(roughness))
+    pub fn metallic(texture: Texture, roughness: f64) -> Self {
+        Self::microfacet(texture, roughness, 1.5, 1.0, false)
     }
 
     /// Specular microfacet material
     pub fn specular(texture: Texture, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::specular(roughness))
+        Self::microfacet(texture, roughness, 1.5, 0.0, false)
     }
 
     /// Diffuse material
     pub fn diffuse(texture: Texture) -> Self {
-        Self::Microfacet(texture, MfDistribution::diffuse())
+        Self::microfacet(texture, 1.0, 1.5, 0.0, false)
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, rfrct_idx: f64, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::transparent(rfrct_idx, roughness))
+    pub fn transparent(texture: Texture, roughness: f64, refraction_idx: f64) -> Self {
+        Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
     }
 
     /// Perfect reflection

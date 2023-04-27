@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::metal(
+        Cube::new(Material::metallic(
             Texture::Solid(srgb_to_linear(61, 45, 36)),
             0.0,
         ))
@@ -75,9 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
 	scene.add(
             Mesh::new(
-		obj::obj_from_url(NEFE_URL)?,
+		parser::obj_from_url(NEFE_URL)?,
 		Material::specular(
-                    Texture::Image(obj::texture_from_url(NEFE_URL, TEX_FILE)?),
+                    Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
                     0.8
                 )
             )
