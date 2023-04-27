@@ -97,12 +97,29 @@ impl Object for Triangle {
     /// Barycentric triangle intersection with Möller-Trumbore algorithm
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
-        let mut at = self.a - xo;
-        let mut bt = self.b - xo;
-        let mut ct = self.c - xo;
 
-        // need to permute
-        let wi = r.dir;
+        let wi_abs = r.dir.abs();
+        // index for max component, permute it cyclically to z position
+        let kz = if wi_abs.x > wi_abs.y {
+            if wi_abs.x > wi_abs.z { 0 } else { 2 }
+        } else {
+            if wi_abs.y > wi_abs.z { 1 } else { 2 }
+        };
+
+        let permute = |vec: DVec3| {
+            match kz {
+                0 => DVec3::new(vec.y, vec.z, vec.x),
+                1 => DVec3::new(vec.z, vec.x, vec.y),
+                _ => vec,
+
+            }
+        };
+
+        // permute to avoid division by zero
+        let wi = permute(r.dir);
+        let mut at = permute(self.a - xo);
+        let mut bt = permute(self.b - xo);
+        let mut ct = permute(self.c - xo);
 
         let shear = DVec3::new(-wi.x, -wi.y, 0.0) / wi.z;
 
@@ -121,12 +138,14 @@ impl Object for Triangle {
         }
 
         let det = edges.dot(DVec3::ONE);
+
         if det == 0.0 {
             return None;
         }
 
         let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) / wi.z;
 
+        // check that hit is within bounds
         let b1 = det < 0.0 && (t_scaled > t_min * det || t_scaled < t_max * det);
         let b2 = det > 0.0 && (t_scaled < t_min * det || t_scaled > t_max * det);
 
