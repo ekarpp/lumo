@@ -153,15 +153,20 @@ impl Object for Triangle {
             return None;
         }
 
-        let alpha = edges.x / det;
-        let beta = edges.y / det;
-        let gamma = edges.z / det;
+        let barycentrics = edges / det;
+        let alpha = barycentrics.x;
+        let beta = barycentrics.y;
+        let gamma = barycentrics.z;
         let t = t_scaled / det;
 
         let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
         let ns = ns.normalize();
 
         let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
+
+        let abc = DMat3::from_cols(self.a, self.b, self.c);
+
+        let err = efloat::gamma(7) * (abc * barycentrics).abs();
 
         Hit::new(t, &self.material, r.at(t), ns, self.ng, uv)
     }

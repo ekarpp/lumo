@@ -69,6 +69,8 @@ impl Object for Sphere {
         let v = (-ni.y).acos() / PI;
         let uv = DVec2::new(u, v);
 
+        let err = efloat::gamma(5) * xi.abs();
+
         Hit::new(t, &self.material, xi, ni, ni, uv)
     }
 }

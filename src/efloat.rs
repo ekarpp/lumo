@@ -1,7 +1,8 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// Used for error estimation in manually propagated floating point errors
-pub fn gamma(n: f64) -> f64 {
+pub fn gamma(n: i32) -> f64 {
+    let n = n as f64;
     (n * f64::EPSILON) / (1.0 - n * f64::EPSILON)
 }
 

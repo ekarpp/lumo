@@ -1,5 +1,5 @@
 use crate::rand_utils;
-use crate::Axis;
+use crate::{Axis, efloat};
 use crate::EPSILON;
 use crate::tracer::hit::Hit;
 use crate::tracer::material::Material;
