@@ -27,6 +27,47 @@ fn shoot_rays(mesh: Box<dyn Object>) {
 }
 
 #[test]
+fn intersect_planar() {
+    let vertices = vec![
+        DVec3::NEG_X,
+        DVec3::X,
+        DVec3::X + DVec3::Y,
+        DVec3::NEG_X + DVec3::Y,
+    ];
+
+    let triangles = vec![
+        *Triangle::new(
+            DMat3::from_cols(
+                vertices[0],
+                vertices[1],
+                vertices[2],
+            ),
+            None,
+            None,
+            Material::Blank
+        ),
+        *Triangle::new(
+            DMat3::from_cols(
+                vertices[0],
+                vertices[2],
+                vertices[3],
+            ),
+            None,
+            None,
+            Material::Blank
+        )
+    ];
+
+    let mesh = Mesh::new(
+        triangles,
+        Material::Blank,
+    );
+
+    let r = Ray::new(0.5 * (DVec3::Y + DVec3::Z), DVec3::NEG_Z);
+    assert!(mesh.hit(&r, 0.0, INFINITY).is_some());
+}
+
+#[test]
 fn intersect_teapot() {
     let mesh = Mesh::new(
         crate::parser::obj_from_url(TEAPOT_URL).unwrap().remove(0),
