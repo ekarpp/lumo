@@ -125,7 +125,7 @@ impl Object for Triangle {
             return None;
         }
 
-        let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) * shear.z;
+        let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) / wi.z;
 
         let b1 = det < 0.0 && (t_scaled > t_min * det || t_scaled < t_max * det);
         let b2 = det > 0.0 && (t_scaled < t_min * det || t_scaled > t_max * det);
