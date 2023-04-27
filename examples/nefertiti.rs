@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
 	scene.add(
             Mesh::new(
-		parser::obj_from_url(NEFE_URL)?,
+		parser::obj_from_url(NEFE_URL)?.remove(0),
 		Material::specular(
                     Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
                     0.8

@@ -2,10 +2,11 @@ use super::*;
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-pub fn load_file(file: File) -> Result<Vec<Triangle>> {
+pub fn load_file(file: File) -> Result<Vec<Vec<Triangle>>> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
     let mut uvs: Vec<DVec2> = Vec::new();
+    let mut meshes: Vec<Vec<Triangle>> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();
 
     let reader = BufReader::new(file);
@@ -17,6 +18,12 @@ pub fn load_file(file: File) -> Result<Vec<Triangle>> {
         let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
 
         match tokens[0] {
+            "g" => {
+                if !triangles.is_empty() {
+                    meshes.push(triangles);
+                    triangles = Vec::new();
+                }
+            }
             "v" => {
                 let vertex = parse_vec3(&tokens)?;
                 vertices.push(vertex);
@@ -36,9 +43,12 @@ pub fn load_file(file: File) -> Result<Vec<Triangle>> {
             _ => (),
         }
     }
-
-    println!("Parsed .OBJ file with {} triangles", triangles.len());
-    Ok(triangles)
+    meshes.push(triangles);
+    println!("Parsed .OBJ file with {} meshes and a total of {} triangles",
+             meshes.len(),
+             meshes.iter().fold(0, |sum, mesh| sum + mesh.len())
+    );
+    Ok(meshes)
 }
 
 /// Some .objs have degenerate triangles. This filters them out.

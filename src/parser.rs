@@ -52,7 +52,7 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
 }
 
 /// Loads a .OBJ file at the given path
-pub fn obj_from_path(path: &str) -> Result<Vec<Triangle>> {
+pub fn obj_from_path(path: &str) -> Result<Vec<Vec<Triangle>>> {
     println!("Loading .OBJ file \"{}\"", path);
     obj::load_file(File::open(path)?)
 }
@@ -101,7 +101,7 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
 
 /// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
 /// .OBJ files within a zip archive.
-pub fn obj_from_url(url: &str) -> Result<Vec<Triangle>> {
+pub fn obj_from_url(url: &str) -> Result<Vec<Vec<Triangle>>> {
     println!("Loading .OBJ from \"{}\"", url);
     let mut bytes = Vec::new();
     ureq::get(url)

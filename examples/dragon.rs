@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            parser::obj_from_url(DRAGON_URL)?,
+            parser::obj_from_url(DRAGON_URL)?.remove(0),
             Material::transparent(
                 Texture::Solid(srgb_to_linear(255, 0, 255)),
                 0.03,

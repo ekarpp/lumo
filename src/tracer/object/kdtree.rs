@@ -28,8 +28,10 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
-        println!("Creating kd-tree of {} triangles", objects.len());
         let start = Instant::now();
+        if objects.len() > 10_000 {
+            println!("Creating kd-tree of {} triangles", objects.len());
+        }
 
         let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects
@@ -46,7 +48,9 @@ impl<T: Bounded> KdTree<T> {
             .unwrap();
         let root = pool.install(|| KdNode::construct(&bounds, &boundary, indices));
 
-        println!("Created kd-tree in {:#?}", start.elapsed());
+        if objects.len() > 10_000 {
+            println!("Created kd-tree in {:#?}", start.elapsed());
+        }
 
         Self {
             root,
