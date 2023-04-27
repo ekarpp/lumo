@@ -70,7 +70,7 @@ fn intersect_planar() {
 #[test]
 fn intersect_teapot() {
     let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().remove(0),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
         Material::Blank,
     )
         .to_unit_size()
@@ -83,7 +83,7 @@ fn intersect_teapot() {
 #[test]
 fn intersect_sphere() {
     let mesh = Mesh::new(
-        crate::parser::obj_from_url(SPHERE_URL).unwrap().remove(0),
+        crate::parser::obj_from_url(SPHERE_URL).unwrap().into_iter().flatten().collect(),
         Material::Blank,
     )
         .to_unit_size()
@@ -105,7 +105,7 @@ fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
 #[test]
 fn all_objects_correctly_split() {
     let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().remove(0),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
         Material::Blank,
     );
 
@@ -137,7 +137,7 @@ fn all_objects_correctly_split() {
 #[test]
 fn all_objects_in_tree() {
     let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().remove(0),
+        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
         Material::Blank,
     );
 

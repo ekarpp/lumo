@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     scene.add(
         Mesh::new(
-            parser::obj_from_url(TEAPOT_URL)?.remove(0),
+            parser::obj_from_url(TEAPOT_URL)?.into_iter().flatten().collect(),
             Material::diffuse(
                 Texture::Marble(Perlin::default(), srgb_to_linear(255, 255, 255))
             ),
