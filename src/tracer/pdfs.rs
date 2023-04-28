@@ -210,10 +210,11 @@ impl MfdPdf {
     /// PDF for NDF scattering
     fn sample_ndf_scatter_pdf(&self, wh: DVec3) -> f64 {
         let wh_dot_v = self.v.dot(wh);
+
+        // probability to sample wh w.r.t. to v.
         // wh and v always same hemisphere. need to make sure ng is there too
-        let ng = if self.ng.dot(self.v) < 0.0 { -self.ng } else { self.ng };
-        // probability to sample wh w.r.t. to v
-        self.mfd.sample_normal_pdf(wh, self.v, ng)
+        // uvw.w is ng flipped to the correct hemisphere
+        self.mfd.sample_normal_pdf(wh, self.v, self.uvw.w)
             // jacobian
             / (4.0 * wh_dot_v)
     }

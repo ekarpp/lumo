@@ -78,8 +78,8 @@ impl MfDistribution {
         let energy_bias = 0.5 * roughness2;
         let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
 
-        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_v).powi(5);
-        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_wi).powi(5);
+        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_v.abs()).powi(5);
+        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_wi.abs()).powi(5);
 
         let energy_factor = 1.0 + roughness2 * (1.0 / 1.51 - 1.0);
 
@@ -99,6 +99,7 @@ impl MfDistribution {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = wh.dot(no).powi(2);
+
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
@@ -109,11 +110,12 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let roughness2 = cfg.roughness * cfg.roughness;
                 let cos2_theta = wh.dot(no).powi(2);
+
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
+                    let roughness2 = cfg.roughness * cfg.roughness;
                     let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
 
                     (-tan2_theta / roughness2).exp()
