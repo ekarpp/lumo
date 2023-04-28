@@ -55,7 +55,7 @@ impl Object for Cone {
             return None;
         }
 
-        let u = xi.x.atan2(xi.z) / 2.0 * PI;
+        let u = (xi.x.atan2(xi.z) + PI) / (2.0 * PI);
         let v = xi.y / self.height;
         let uv = DVec2::new(u, v);
 
