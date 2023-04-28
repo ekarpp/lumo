@@ -88,10 +88,14 @@ impl Object for Medium {
             None
         } else {
             let t = t_min + hit_dist / ray_length;
-            let xo = ro.at(t);
+            let xi = ro.at(t);
             // need shading normal to cancel out the dot product in integrator.
-            // set geometric normal to zero, so hit does not do ray origin offset
-            Hit::new(t, &self.material, xo, DVec3::X, DVec3::ZERO, DVec2::ZERO)
+            let ns = DVec3::X;
+            let ng = DVec3::ZERO;
+            let uv = DVec2::ZERO;
+            let err = DVec3::ZERO;
+
+            Hit::new(t, &self.material, xi, err, ns, ng, uv)
         }
     }
 }

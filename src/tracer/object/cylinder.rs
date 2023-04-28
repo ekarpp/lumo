@@ -80,6 +80,6 @@ impl Object for Cylinder {
 
         let err = efloat::gamma(3) * DVec3::new(xi.x, 0.0, xi.z).abs();
 
-        Hit::new(t, &self.material, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, err, ni, ni, uv)
     }
 }

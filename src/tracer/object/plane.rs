@@ -41,7 +41,8 @@ impl Object for Plane {
             let xi = r.at(t);
             let (u, v) = self.normal.any_orthonormal_pair();
             let uv = DVec2::new(u.dot(xi), v.dot(xi)).fract();
-            Hit::new(t, &self.material, xi, self.normal, self.normal, uv)
+            let err = DVec3::ZERO;
+            Hit::new(t, &self.material, xi, err, self.normal, self.normal, uv)
         }
     }
 }

@@ -173,7 +173,7 @@ impl Object for Triangle {
 
         let err = efloat::gamma(7) * (abc * barycentrics).abs();
 
-        Hit::new(t, &self.material, r.at(t), ns, self.ng, uv)
+        Hit::new(t, &self.material, r.at(t), err, ns, self.ng, uv)
     }
 }
 

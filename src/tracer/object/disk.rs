@@ -57,8 +57,8 @@ impl Object for Disk {
             let u = self.uvw.u.dot(xi_local);
             let v = self.uvw.v.dot(xi_local);
             let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
-
-            Hit::new(t, &self.material, xi, self.normal, self.normal, uv)
+            let err = DVec3::ZERO;
+            Hit::new(t, &self.material, xi, err, self.normal, self.normal, uv)
         }
     }
 }

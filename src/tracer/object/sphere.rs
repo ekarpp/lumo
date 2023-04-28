@@ -71,7 +71,7 @@ impl Object for Sphere {
 
         let err = efloat::gamma(5) * xi.abs();
 
-        Hit::new(t, &self.material, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, err, ni, ni, uv)
     }
 }
 

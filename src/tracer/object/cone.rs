@@ -68,7 +68,8 @@ impl Object for Cone {
         let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
         let ni = DVec3::new(xi.x, radius * tan_theta, xi.z);
         let ni = ni.normalize();
+        let err = DVec3::ZERO;
 
-        Hit::new(t, &self.material, xi, ni, ni, uv)
+        Hit::new(t, &self.material, xi, err, ni, ni, uv)
     }
 }
