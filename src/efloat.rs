@@ -37,6 +37,7 @@ fn _previous_double(v: f64) -> f64 {
 }
 
 /// `f64` with running floating point error tracking
+#[derive(Copy, Clone)]
 pub struct EFloat64 {
     /// Actual `f64` value
     value: f64,
@@ -55,13 +56,26 @@ impl EFloat64 {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn sqrt(self) -> Self {
+    pub fn sqrt(&self) -> Self {
         Self::new(
             self.value.sqrt(),
             _previous_double(self.low.sqrt()),
             _next_double(self.high.sqrt()),
         )
+    }
+
+    pub fn quadratic(a: EFloat64, b: EFloat64, c: EFloat64) -> Option<(EFloat64, EFloat64)> {
+        let disc = b.value * b.value - 4.0 * a.value * c.value;
+
+        if disc < 0.0 {
+            return None;
+        }
+        let disc_root = EFloat64::from(disc).sqrt();
+
+        let t1 = (-b - disc_root) / (EFloat64::from(2.0) * a);
+        let t2 = (-b + disc_root) / (EFloat64::from(2.0) * a);
+
+        Some((t1, t2))
     }
 }
 
