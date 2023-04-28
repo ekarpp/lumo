@@ -50,7 +50,12 @@ impl<'a> Hit<'a> {
     /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: DVec3) -> Ray {
         let norm = if wi.dot(self.ng) >= 0.0 { self.ng } else { -self.ng };
-        let xi = self.p + norm * EPSILON;
+
+        let err = DVec3::splat(EPSILON);
+        let offset = err.dot(norm.abs());
+
+        let xi = self.p + norm * offset;
+        // round xi doubles up/down?
 
         Ray::new(
             xi,
