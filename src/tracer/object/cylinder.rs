@@ -37,9 +37,11 @@ impl Object for Cylinder {
             return None;
         }
 
+        let radius2 = self.radius * self.radius;
+
         let a = wo.x * wo.x + wo.z * wo.z;
         let b = 2.0 * (wo.x * xo.x + wo.z * xo.z);
-        let c = xo.x * xo.x + xo.z * xo.z - self.radius * self.radius;
+        let c = xo.x * xo.x + xo.z * xo.z - radius2;
 
         let disc = b * b - 4.0 * a * c;
 
@@ -61,6 +63,14 @@ impl Object for Cylinder {
         if xi.y < 0.0 || xi.y > self.height {
             return None;
         }
+
+        // reproject x and z
+        let hit_radius2 = xi.x * xi.x + xi.z * xi.z;
+        let xi = DVec3::new(
+            xi.x * radius2 / hit_radius2,
+            xi.y,
+            xi.z * radius2 / hit_radius2,
+        );
 
         let ni = DVec3::new(xi.x, 0.0, xi.z) / self.radius;
 
