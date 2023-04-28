@@ -149,15 +149,37 @@ impl Object for Triangle {
 
         // check that hit is within bounds
         let b1 = det < 0.0 &&
-            (t_scaled > (t_min + EPSILON) * det || t_scaled < t_max * det);
+            (t_scaled > t_min * det || t_scaled < t_max * det);
         let b2 = det > 0.0 &&
-            (t_scaled < (t_min + EPSILON) * det || t_scaled > t_max * det);
+            (t_scaled < t_min * det || t_scaled > t_max * det);
 
         if b1 || b2 {
             return None;
         }
 
         let t = t_scaled / det;
+
+        // compute floating point error and verify we are below t_min
+        let max_z_v = at.z.abs().max(bt.z.abs()).max(ct.z.abs());
+        let delta_z = efloat::gamma(3) * max_z_v;
+
+        let max_y_v = at.y.abs().max(bt.y.abs()).max(ct.y.abs());
+        let delta_y = efloat::gamma(5) * (max_y_v + max_z_v);
+
+        let max_x_v = at.x.abs().max(bt.x.abs()).max(ct.x.abs());
+        let delta_x = efloat::gamma(5) * (max_x_v + max_z_v);
+
+        let delta_e = 2.0 * (efloat::gamma(2) * max_x_v * max_y_v
+                                + delta_y * max_x_v + delta_x * max_y_v);
+
+        let max_e = edges.x.abs().max(edges.y.abs()).max(edges.z.abs());
+
+        let delta_t = 3.0 * (efloat::gamma(3) * max_e * max_z_v
+                             + delta_e * max_z_v + delta_z * max_e) / det.abs();
+
+        if t <= t_min + delta_t {
+            return None;
+        }
 
         let barycentrics = edges / det;
         let alpha = barycentrics.x;
