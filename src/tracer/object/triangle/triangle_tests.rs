@@ -35,14 +35,14 @@ fn point_order_irrelevant() {
 #[test]
 fn no_self_intersect() {
     let abc = DMat3::from_cols(
-        DVec3::new(-5.0, 0.0, -3.0),
-        DVec3::new(5.0, 0.0, -3.0),
-        DVec3::new(5.0, 0.0, 3.0),
+        DVec3::new(0.0, 0.0, 0.0),
+        DVec3::new(1.0, 0.0, 0.0),
+        DVec3::new(1.0, 0.0, -1.0),
     );
 
     let t = Triangle::new(abc, None, None, get_mat());
 
-    let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 0.0, -1.0));
+    let r = Ray::new(DVec3::new(0.5, 0.0, -0.25), DVec3::Y);
     assert!(t.hit(&r, 0.0, INFINITY).is_none());
 }
 
