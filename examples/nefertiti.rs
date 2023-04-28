@@ -175,12 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	)
     };
 
-    let mut renderer = Renderer::new(scene, camera);
-    if cfg!(debug_assertions) {
-	renderer.set_samples(9);
-    } else {
-        renderer.set_tone_map(ToneMap::HableFilmic);
-    }
+    let renderer = Renderer::new(scene, camera);
     renderer.render().save("nefe.png")?;
 
     Ok(())
