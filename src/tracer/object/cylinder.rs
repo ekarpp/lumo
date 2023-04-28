@@ -78,6 +78,8 @@ impl Object for Cylinder {
         let v = xi.y / self.height;
         let uv = DVec2::new(u, v);
 
+        let err = efloat::gamma(3) * DVec3::new(xi.x, 0.0, xi.z).abs();
+
         Hit::new(t, &self.material, xi, ni, ni, uv)
     }
 }
