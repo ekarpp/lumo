@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod cylinder_tests;
+
 /// Cylinder aligned with the `y` axis with base at `y=0`
 pub struct Cylinder {
     /// Radius of the cylinder
@@ -28,6 +31,11 @@ impl Object for Cylinder {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
         let wo = r.dir;
+
+        // co-planar to cylinder
+        if wo.x == 0.0 && wo.z == 0.0 {
+            return None;
+        }
 
         let a = wo.x * wo.x + wo.z * wo.z;
         let b = 2.0 * (wo.x * xo.x + wo.z * xo.z);
