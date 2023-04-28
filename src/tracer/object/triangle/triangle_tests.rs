@@ -47,6 +47,20 @@ fn no_self_intersect() {
 }
 
 #[test]
+fn no_hit_behind() {
+    let abc = DMat3::from_cols(
+        DVec3::new(0.0, 0.0, 0.0),
+        DVec3::new(1.0, 0.0, 0.0),
+        DVec3::new(1.0, 0.0, -1.0),
+    );
+
+    let t = Triangle::new(abc, None, None, get_mat());
+
+    let r = Ray::new(DVec3::new(0.5, 0.1, -0.25), DVec3::Y);
+    assert!(t.hit(&r, 0.0, INFINITY).is_none());
+}
+
+#[test]
 fn sampled_rays_hit() {
     let abc = DMat3::from_cols(
         DVec3::ZERO,

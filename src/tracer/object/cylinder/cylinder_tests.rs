@@ -49,7 +49,5 @@ fn passes_through_middle() {
 
     let r = Ray::new(xo, wi);
 
-    let h = c.hit(&r, 0.0, INFINITY);
-
     assert!(c.hit(&r, 0.0, INFINITY).is_none());
 }
