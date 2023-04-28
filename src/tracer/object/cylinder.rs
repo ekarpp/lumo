@@ -1,26 +1,23 @@
 use super::*;
 
-/// Cylinder aligned with the `y` axis defined by its radius + maximum
-/// and minimum `y` coordinates.
+/// Cylinder aligned with the `y` axis with base at `y=0`
 pub struct Cylinder {
     /// Radius of the cylinder
     radius: f64,
-    /// Minimum `y` coordinate of the cylinder
-    y_min: f64,
-    /// Maximum `y` coordinate of the cylinder
-    y_max: f64,
+    /// Height of the cylinder
+    height: f64,
     /// Material of the cylinder
     material: Material,
 }
 
 impl Cylinder {
     /// Cylinder constructor
-    pub fn new(y_min: f64, y_max: f64, radius: f64, material: Material) -> Box<Self> {
-        assert!(y_max > y_min);
+    pub fn new(height: f64, radius: f64, material: Material) -> Box<Self> {
+        assert!(height > 0.0);
+        assert!(radius > 0.0);
 
         Box::new(Self {
-            y_min,
-            y_max,
+            height,
             radius,
             material,
         })
@@ -53,14 +50,14 @@ impl Object for Cylinder {
 
         let xi = r.at(t);
         // what if the other t is fine?
-        if xi.y < self.y_min || xi.y > self.y_max {
+        if xi.y < 0.0 || xi.y > self.height {
             return None;
         }
 
         let ni = DVec3::new(xi.x, 0.0, xi.z) / self.radius;
 
         let u = ((-xi.z).atan2(xi.x) + PI) / (2.0 * PI);
-        let v = (xi.y - self.y_min) / (self.y_max - self.y_min);
+        let v = xi.y / self.height;
         let uv = DVec2::new(u, v);
 
         Hit::new(t, &self.material, xi, ni, ni, uv)
