@@ -16,6 +16,9 @@ pub struct Cone {
 impl Cone {
     /// Constructs a cone from the given `height` and `radius`
     pub fn new(height: f64, radius: f64, material: Material) -> Box<Self> {
+        assert!(height > 0.0);
+        assert!(radius > 0.0);
+
         Box::new(Self {
             height,
             radius,
