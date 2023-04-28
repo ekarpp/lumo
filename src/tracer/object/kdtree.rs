@@ -111,20 +111,20 @@ impl<T: Bounded> KdTree<T> {
 
         // PBR Figure 4.19 (a). we hit only the first aabb.
         if t_split > t_end || t_split <= 0.0 {
-            self.hit_subtree(node_first, r, t_start, t_end, &aabb_first)
+            self.hit_subtree(node_first, r, t_min, t_end, &aabb_first)
         // PBR Figure 4.19 (b). we hit only the second aabb.
         } else if t_split < t_start {
-            self.hit_subtree(node_second, r, t_start, t_end, &aabb_second)
+            self.hit_subtree(node_second, r, t_min, t_end, &aabb_second)
         } else {
             match self.hit_subtree(node_first, r, t_start, t_end, &aabb_first) {
-                None => self.hit_subtree(node_second, r, t_start, t_end, &aabb_second),
+                None => self.hit_subtree(node_second, r, t_min, t_end, &aabb_second),
                 Some(h1) => {
                     /* if we hit something in the first AABB before the split,
                      * there is no need to process the other subtree. */
                     if h1.t < t_split {
                         Some(h1)
                     } else {
-                        self.hit_subtree(node_second, r, t_start, h1.t, &aabb_second).or(Some(h1))
+                        self.hit_subtree(node_second, r, t_min, h1.t, &aabb_second).or(Some(h1))
                     }
                 }
             }
@@ -146,7 +146,7 @@ impl<T: Bounded> Object for KdTree<T> {
         if t_start > t_end {
             None
         } else {
-            self.hit_subtree(&self.root, r, t_start, t_end, &self.boundary)
+            self.hit_subtree(&self.root, r, t_min, t_end, &self.boundary)
         }
     }
 }
