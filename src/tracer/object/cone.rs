@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod cone_tests;
+
 /// Cone aligned with the `y` axis and base disk at `y=0`
 pub struct Cone {
     /// Height of the cone
