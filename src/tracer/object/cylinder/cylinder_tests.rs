@@ -1,7 +1,5 @@
 use super::*;
 
-use super::*;
-
 fn cylinder(r: f64) -> Box<Cylinder> {
     Cylinder::new(1.0, r, Material::Blank)
 }
@@ -37,8 +35,6 @@ fn coplanar_misses() {
     let c = cylinder(radius);
     let r = Ray::new(radius * DVec3::ONE, DVec3::Y);
 
-    let h = c.hit(&r, 0.0, INFINITY);
-
     assert!(c.hit(&r, 0.0, INFINITY).is_none());
 }
 
@@ -54,10 +50,6 @@ fn passes_through_middle() {
     let r = Ray::new(xo, wi);
 
     let h = c.hit(&r, 0.0, INFINITY);
-
-    if let Some(h) = h {
-        println!("{}", h.t);
-    }
 
     assert!(c.hit(&r, 0.0, INFINITY).is_none());
 }

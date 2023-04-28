@@ -66,7 +66,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
 	scene.add(
             Cylinder::new(
-		0.0,
 		0.6,
 		0.1,
 		Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))))

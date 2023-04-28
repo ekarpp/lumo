@@ -13,7 +13,8 @@ fn zero_medium_has_no_effect() {
         DVec3::X,
         DVec3::X,
         DVec3::X,
-        DVec2::X
+        DVec3::X,
+        DVec2::X,
     ).unwrap();
     assert!(m.transmittance(&h) == DVec3::ONE);
 }
