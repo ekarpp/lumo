@@ -148,8 +148,10 @@ impl Object for Triangle {
         let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) / wi.z;
 
         // check that hit is within bounds
-        let b1 = det < 0.0 && (t_scaled > t_min * det || t_scaled < t_max * det);
-        let b2 = det > 0.0 && (t_scaled < t_min * det || t_scaled > t_max * det);
+        let b1 = det < 0.0 &&
+            (t_scaled > (t_min + EPSILON) * det || t_scaled < t_max * det);
+        let b2 = det > 0.0 &&
+            (t_scaled < (t_min + EPSILON) * det || t_scaled > t_max * det);
 
         if b1 || b2 {
             return None;
