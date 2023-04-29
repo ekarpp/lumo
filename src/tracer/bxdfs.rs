@@ -34,10 +34,15 @@ pub fn bsdf_microfacet(
         let wh_dot_v = wh.dot(v);
 
         let d = mfd.d(wh, ng);
-        let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
-        let sin2_ti = sin2_to * mfd.get_rfrct_idx() * mfd.get_rfrct_idx();
-        let f = if ri_inside && sin2_ti > 1.0 {
-            DVec3::ONE
+        let f = if ri_inside {
+            let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
+            let sin2_ti = sin2_to * mfd.get_rfrct_idx() * mfd.get_rfrct_idx();
+            if sin2_ti > 1.0 {
+                // total internal reflection
+                DVec3::ONE
+            } else {
+                mfd.f(v, wh, albedo)
+            }
         } else {
             mfd.f(v, wh, albedo)
         };
