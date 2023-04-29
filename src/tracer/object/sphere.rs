@@ -63,7 +63,7 @@ impl Object for Sphere {
         let (t0, t1) = t0t1.unwrap();
 
         // sphere too far or behind
-        if t0.high > t_max || t1.low <= t_min {
+        if t0.high >= t_max || t1.low <= t_min {
             return None;
         }
 

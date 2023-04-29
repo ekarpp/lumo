@@ -51,7 +51,7 @@ impl Object for Cone {
         let (t0, t1) = t0t1.unwrap();
 
         // cone behind or too far
-        if t0.high > t_max || t1.low <= t_min {
+        if t0.high >= t_max || t1.low <= t_min {
             return None;
         }
 
