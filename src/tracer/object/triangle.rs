@@ -159,7 +159,7 @@ impl Object for Triangle {
 
         let t = t_scaled / det;
 
-        // compute floating point error and verify we are below t_min
+        // compute floating point error and verify we are not below t_min
         let max_z_v = at.z.abs().max(bt.z.abs()).max(ct.z.abs());
         let delta_z = efloat::gamma(3) * max_z_v;
 
