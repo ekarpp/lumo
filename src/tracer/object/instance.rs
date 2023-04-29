@@ -82,7 +82,19 @@ impl<T: Object> Object for Instance<T> {
         self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
             h.ns = (self.normal_transform * h.ns).normalize();
             h.ng = (self.normal_transform * h.ng).normalize();
-            h.p = r.at(h.t);
+
+            let err = efloat::gamma(3) * DVec3::new(
+                (self.transform.matrix3.row(0) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.x.abs(),
+                (self.transform.matrix3.row(1) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.y.abs(),
+                (self.transform.matrix3.row(2) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.z.abs(),
+            );
+
+            h.p = self.transform.transform_point3(h.p);
+            // TODO: just add them for now...
+            h.fp_error += err;
             h
         })
     }
