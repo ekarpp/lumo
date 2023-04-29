@@ -140,7 +140,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         }
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
-        if camera_last.on_light {
+        if camera_last.on_light || camera_last.h.material.is_delta() {
             DVec3::ZERO
         } else {
             // sample a point on the light
