@@ -2,7 +2,7 @@ use super::*;
 
 pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
     let mut last_specular = true;
-    let mut illuminance = DVec3::ZERO;
+    let mut radiance = DVec3::ZERO;
     let mut gathered = DVec3::ONE;
     let mut depth = 0;
 
@@ -13,24 +13,21 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
         match material.bsdf_pdf(&ho, &ro) {
             None => {
                 if last_specular {
-                    illuminance += gathered * material.emit(&ho)
+                    radiance += gathered * material.emit(&ho)
                 }
                 break;
             }
             Some(scatter_pdf) => {
                 if !material.is_delta() {
-                    illuminance += gathered * JitteredSampler::new(SHADOW_SPLITS)
-                        .fold(DVec3::ZERO, |sum, rand_sq| {
-                            sum + shadow_ray(
-                                scene,
-                                &ro,
-                                &ho,
-                                scatter_pdf.as_ref(),
-                                rand_sq
-                            )
-                        })
-                        / SHADOW_SPLITS as f64;
-                };
+                    radiance += gathered
+                        * shadow_ray(
+                            scene,
+                            &ro,
+                            &ho,
+                            scatter_pdf.as_ref(),
+                            rand_utils::unit_square()
+                        );
+                }
 
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => {
@@ -78,5 +75,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
         }
     }
 
-    illuminance
+    radiance
 }

@@ -1,5 +1,4 @@
 use crate::rand_utils;
-use crate::samplers::JitteredSampler;
 use crate::tracer::hit::Hit;
 use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;
@@ -10,10 +9,6 @@ use std::fmt;
 mod bd_path_trace;
 mod direct_light;
 mod path_trace;
-
-/// How many shadow rays per vertex in path tracer? Preferably square for
-/// jittered sampler.
-const SHADOW_SPLITS: u32 = 1;
 
 /// Enum to choose which integrator to use
 pub enum Integrator {
@@ -64,12 +59,12 @@ fn shadow_ray(
 
     let light = scene.uniform_random_light();
 
-    let mut illuminance = DVec3::ZERO;
+    let mut radiance = DVec3::ZERO;
     let pdf_light = ObjectPdf::new(light, xo);
 
     // refactor these to separate function?
     // sample light first
-    illuminance += match pdf_light.sample_direction(rand_sq) {
+    radiance += match pdf_light.sample_direction(rand_sq) {
         None => DVec3::ZERO,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
@@ -103,7 +98,7 @@ fn shadow_ray(
     };
 
     // then sample BSDF
-    illuminance += match pdf_scatter.sample_direction(rand_sq) {
+    radiance += match pdf_scatter.sample_direction(rand_sq) {
         None => DVec3::ZERO,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
@@ -136,5 +131,5 @@ fn shadow_ray(
         }
     };
 
-    illuminance * scene.num_lights() as f64
+    radiance * scene.num_lights() as f64
 }

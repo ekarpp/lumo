@@ -51,18 +51,14 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
                             }
                         }
                     } else {
-                        JitteredSampler::new(SHADOW_SPLITS)
-                            .fold(DVec3::ZERO, |sum, rand_sq| {
-                                sum + shadow_ray(
-                                    scene,
-                                    &ro,
-                                    &ho,
-                                    scatter_pdf.as_ref(),
-                                    rand_sq
-                                )
-                            })
-                            * scene.transmittance(&ho)
-                            / SHADOW_SPLITS as f64
+                        scene.transmittance(&ho)
+                            * shadow_ray(
+                                scene,
+                                &ro,
+                                &ho,
+                                scatter_pdf.as_ref(),
+                                rand_utils::unit_square()
+                            )
                     }
                 }
             }
