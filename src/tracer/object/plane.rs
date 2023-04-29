@@ -38,7 +38,7 @@ impl Object for Plane {
         let xo = r.origin;
         let wi = r.dir;
 
-        // co planar to disk
+        // co planar to plane
         if self.normal.dot(wi).abs() < EPSILON {
             return None;
         }
