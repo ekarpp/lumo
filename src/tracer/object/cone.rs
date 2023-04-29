@@ -32,44 +32,57 @@ impl Object for Cone {
         let xo = r.origin;
         let wi = r.dir;
 
-        let tan_theta = self.radius / self.height;
+        let dx = EFloat64::from(wi.x); let dy = EFloat64::from(wi.y);
+        let dz = EFloat64::from(wi.z); let ox = EFloat64::from(xo.x);
+        let oy = EFloat64::from(xo.y); let oz = EFloat64::from(xo.z);
+
+        let tan_theta = EFloat64::from(self.radius) / EFloat64::from(self.height);
         let tan2_theta = tan_theta * tan_theta;
-        let xoy_height = xo.y - self.height;
+        let oy_height = oy - EFloat64::from(self.height);
 
-        let a = wi.dot(DVec3::new(wi.x, -tan2_theta * wi.y, wi.z));
-        let b = 2.0 * wi.dot(DVec3::new(xo.x, -tan2_theta * xoy_height, xo.z));
-        let c = xo.x * xo.x - tan2_theta * xoy_height.powi(2) + xo.z * xo.z;
+        let a = dx * dx - tan2_theta * dy * dy + dz * dz;
+        let b = EFloat64::from(2.0) * (dx * ox - tan2_theta * dy * oy_height + dz * oz);
+        let c = ox * ox - tan2_theta * oy_height * oy_height + oz * oz;
 
-        let disc = b * b - 4.0 * a * c;
+        let t0t1 = EFloat64::quadratic(a, b, c);
+        if t0t1.is_none() {
+            return None;
+        }
+        let (t0, t1) = t0t1.unwrap();
 
-        if disc < 0.0 {
+        // cone behind or too far
+        if t0.high > t_max || t1.low <= t_min {
             return None;
         }
 
-        let disc_root = disc.sqrt();
-        let mut t = (-b - disc_root) / (2.0 * a);
-        if t < t_min + EPSILON || t > t_max {
-            t = (-b + disc_root) / (2.0 * a);
-            if t < t_min + EPSILON || t > t_max {
+        let mut t = if t0.low <= t_min { t1 } else { t0 };
+        let mut xi = r.at(t.value);
+
+        // check both hits against cone height
+        if xi.y < 0.0 || xi.y > self.height {
+            t = t1;
+            xi = r.at(t.value);
+
+            if xi.y < 0.0 || xi.y > self.height {
                 return None;
             }
         }
 
-        let xi = r.at(t);
-
-        if xi.y < 0.0 || xi.y > self.height {
-            return None;
-        }
+        // TODO: propagate errors from transformation
+        let err = DVec3::new(
+            50.0 * (ox + dx * t).abs_error(),
+            50.0 * (oy + dy * t).abs_error(),
+            50.0 * (oz + dz * t).abs_error(),
+        );
 
         let u = ((-xi.z).atan2(xi.x) + PI) / (2.0 * PI);
         let v = xi.y / self.height;
         let uv = DVec2::new(u, v);
 
         let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
-        let ni = DVec3::new(xi.x, radius * tan_theta, xi.z);
+        let ni = DVec3::new(xi.x, radius * tan_theta.value, xi.z);
         let ni = ni.normalize();
-        let err = DVec3::ZERO;
 
-        Hit::new(t, &self.material, xi, err, ni, ni, uv)
+        Hit::new(t.value, &self.material, xi, err, ni, ni, uv)
     }
 }

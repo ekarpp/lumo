@@ -40,11 +40,11 @@ pub fn previous_double(v: f64) -> f64 {
 #[derive(Copy, Clone)]
 pub struct EFloat64 {
     /// Actual `f64` value
-    value: f64,
+    pub value: f64,
     /// Lower bound of error interval
-    low: f64,
+    pub low: f64,
     /// Higher bound of error interval
-    high: f64,
+    pub high: f64,
 }
 
 impl EFloat64 {
@@ -66,16 +66,26 @@ impl EFloat64 {
 
     pub fn quadratic(a: EFloat64, b: EFloat64, c: EFloat64) -> Option<(EFloat64, EFloat64)> {
         let disc = b.value * b.value - 4.0 * a.value * c.value;
-
         if disc < 0.0 {
             return None;
         }
         let disc_root = EFloat64::from(disc).sqrt();
 
-        let t1 = (-b - disc_root) / (EFloat64::from(2.0) * a);
-        let t2 = (-b + disc_root) / (EFloat64::from(2.0) * a);
+        let mut t0 = (-b - disc_root) / (EFloat64::from(2.0) * a);
+        let mut t1 = (-b + disc_root) / (EFloat64::from(2.0) * a);
 
-        Some((t1, t2))
+        if t0.value > t1.value {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+
+        // t0 always lower value
+        Some((t0, t1))
+    }
+
+    pub fn abs_error(&self) -> f64 {
+        next_double(
+            (self.high - self.value).abs().max((self.value - self.low).abs())
+        )
     }
 }
 
