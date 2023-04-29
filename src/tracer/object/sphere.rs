@@ -40,29 +40,37 @@ impl Object for Sphere {
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
-        let from_origin = xo - self.origin;
-        let radius2 = self.radius * self.radius;
+        let wi = r.dir;
 
-        let a = r.dir.length_squared();
-        let half_b = from_origin.dot(r.dir);
-        let c = from_origin.length_squared() - radius2;
-        let disc = half_b * half_b - a * c;
+        let dx = EFloat64::from(wi.x);
+        let dy = EFloat64::from(wi.y);
+        let dz = EFloat64::from(wi.z);
 
-        if disc < 0.0 {
+        let ox = EFloat64::from(xo.x) - EFloat64::from(self.origin.x);
+        let oy = EFloat64::from(xo.y) - EFloat64::from(self.origin.y);
+        let oz = EFloat64::from(xo.z) - EFloat64::from(self.origin.z);
+
+        let radius2 = EFloat64::from(self.radius) * EFloat64::from(self.radius);
+
+        let a = dx * dx + dy * dy + dz * dz;
+        let b = EFloat64::from(2.0) * (dx * ox + dy * oy + dz * oz);
+        let c = ox * ox + oy * oy + oz * oz - radius2;
+
+        let t0t1 = EFloat64::quadratic(a, b, c);
+        if t0t1.is_none() {
             return None;
         }
-        let disc_root = disc.sqrt();
-        let mut t = (-half_b - disc_root) / a;
-        if t < t_min + EPSILON || t > t_max {
-            t = (-half_b + disc_root) / a;
-            if t < t_min + EPSILON || t > t_max {
-                return None;
-            }
+        let (t0, t1) = t0t1.unwrap();
+
+        // sphere too far or behind
+        if t0.high > t_max || t1.low <= t_min {
+            return None;
         }
 
-        let xi = r.at(t);
+        let t = if t0.low <= t_min { t1 } else { t0 };
+        let xi = r.at(t.value);
         // reproject to sphere to reduce floating point error
-        let xi = xi * radius2 / xi.distance_squared(self.origin);
+        let xi = xi * radius2.value / xi.distance_squared(self.origin);
         let ni = (xi - self.origin) / self.radius;
 
         let u = ((-ni.z).atan2(ni.x) + PI) / (2.0 * PI);
@@ -71,7 +79,7 @@ impl Object for Sphere {
 
         let err = efloat::gamma(5) * xi.abs();
 
-        Hit::new(t, &self.material, xi, err, ni, ni, uv)
+        Hit::new(t.value, &self.material, xi, err, ni, ni, uv)
     }
 }
 
