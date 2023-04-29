@@ -37,9 +37,8 @@ impl Object for Cylinder {
             return None;
         }
 
-        let dx = EFloat64::from(wi.x); let dy = EFloat64::from(wi.y);
-        let dz = EFloat64::from(wi.z); let ox = EFloat64::from(xo.x);
-        let oy = EFloat64::from(xo.y); let oz = EFloat64::from(xo.z);
+        let dx = EFloat64::from(wi.x); let dz = EFloat64::from(wi.z);
+        let ox = EFloat64::from(xo.x); let oz = EFloat64::from(xo.z);
 
         let radius2 = EFloat64::from(self.radius) * EFloat64::from(self.radius);
 

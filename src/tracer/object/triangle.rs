@@ -191,8 +191,6 @@ impl Object for Triangle {
 
         let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
 
-        let abc = DMat3::from_cols(self.a, self.b, self.c);
-
         let err = efloat::gamma(7) * DVec3::new(
             (barycentrics * DVec3::new(self.a.x, self.b.x, self.c.x))
              .abs().dot(DVec3::ONE),
