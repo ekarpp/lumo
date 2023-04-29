@@ -193,7 +193,14 @@ impl Object for Triangle {
 
         let abc = DMat3::from_cols(self.a, self.b, self.c);
 
-        let err = efloat::gamma(7) * (abc * barycentrics).abs();
+        let err = efloat::gamma(7) * DVec3::new(
+            (barycentrics * DVec3::new(self.a.x, self.b.x, self.c.x))
+             .abs().dot(DVec3::ONE),
+            (barycentrics * DVec3::new(self.a.y, self.b.y, self.c.y))
+             .abs().dot(DVec3::ONE),
+            (barycentrics * DVec3::new(self.a.z, self.b.z, self.c.z))
+             .abs().dot(DVec3::ONE),
+        );
 
         Hit::new(t, &self.material, r.at(t), err, ns, self.ng, uv)
     }
