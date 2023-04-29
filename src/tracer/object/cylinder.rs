@@ -60,7 +60,7 @@ impl Object for Cylinder {
         let mut t = if t0.low > t_min {
             t0
         } else {
-            if t1.high > t_max {
+            if t1.high >= t_max {
                 return None;
             }
             t1
@@ -72,7 +72,7 @@ impl Object for Cylinder {
             t = t1;
             xi = r.at(t.value);
 
-            if t.high > t_max || xi.y < 0.0 || xi.y > self.height {
+            if t.high >= t_max || xi.y < 0.0 || xi.y > self.height {
                 return None;
             }
         }

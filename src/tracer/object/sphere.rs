@@ -70,7 +70,7 @@ impl Object for Sphere {
         let t = if t0.low > t_min {
             t0
         } else {
-            if t1.high > t_max {
+            if t1.high >= t_max {
                 return None;
             }
             t1
@@ -79,13 +79,14 @@ impl Object for Sphere {
         let xi = r.at(t.value);
         // reproject to sphere to reduce floating point error
         let xi = xi * radius2.value / xi.distance_squared(self.origin);
+        // in future move sphere origin to world origin and instance
+        let err = 50.0 * efloat::gamma(8) * xi.abs();
+
         let ni = (xi - self.origin) / self.radius;
 
         let u = ((-ni.z).atan2(ni.x) + PI) / (2.0 * PI);
         let v = (-ni.y).acos() / PI;
         let uv = DVec2::new(u, v);
-
-        let err = efloat::gamma(5) * xi.abs();
 
         Hit::new(t.value, &self.material, xi, err, ni, ni, uv)
     }
