@@ -221,7 +221,7 @@ impl MfdPdf {
 
     /// PDF for hemisphere cos sampling
     fn sample_cos_hemisphere_pdf(&self, wi: DVec3) -> f64 {
-        let cos_theta = self.ng.dot(wi);
+        let cos_theta = self.uvw.w.dot(wi);
         if cos_theta > 0.0 {
             cos_theta / PI
         } else {

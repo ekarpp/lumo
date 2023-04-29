@@ -30,13 +30,13 @@ pub fn bsdf_microfacet(
     let ri_inside = ng.dot(wi) < 0.0;
     if ro_inside == ri_inside {
         let wh = (wi + v).normalize();
-        let ng_dot_wh = ng.dot(wh);
-        let wh_dot_v = wh.dot(v);
 
         let d = mfd.d(wh, ng);
-        let f = if ri_inside {
+        let f = if mfd.is_transparent() && ri_inside {
+            let wh_dot_v = wh.dot(v);
             let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
             let sin2_ti = sin2_to * mfd.get_rfrct_idx() * mfd.get_rfrct_idx();
+
             if sin2_ti > 1.0 {
                 // total internal reflection
                 DVec3::ONE
@@ -62,6 +62,7 @@ pub fn bsdf_microfacet(
         if mfd.is_transparent() {
             specular
         } else {
+            let ng_dot_wh = ng.dot(wh);
             let diffuse = (DVec3::ONE - f) * albedo
                 * mfd.disney_diffuse(ng_dot_v, ng_dot_wh, ng_dot_wi) / PI;
 
