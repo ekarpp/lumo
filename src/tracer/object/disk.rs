@@ -28,6 +28,7 @@ impl Disk {
         let nz = EFloat64::from(normal.z); let ox = EFloat64::from(origin.x);
         let oy = EFloat64::from(origin.y); let oz = EFloat64::from(origin.z);
 
+        // origin.dot(-normal)
         let d = ox * (-nx) + oy * (-ny) + oz * (-nz);
 
         Box::new(Self {
