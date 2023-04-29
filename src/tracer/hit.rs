@@ -1,3 +1,4 @@
+use crate::efloat;
 use crate::tracer::material::Material;
 use crate::tracer::ray::Ray;
 use glam::{DVec2, DVec3};
@@ -53,11 +54,31 @@ impl<'a> Hit<'a> {
     /// Generates a ray at point of impact. Would be better to use accurate
     /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: DVec3) -> Ray {
-        let norm = if wi.dot(self.ng) >= 0.0 { self.ng } else { -self.ng };
+        let scaled_err = self.fp_error.dot(self.ng.abs());
 
-        let offset = self.fp_error.dot(norm.abs());
-        let xi = self.p + norm * offset;
-        // round xi doubles up/down?
+        let offset = if wi.dot(self.ng) >= 0.0 {
+            self.ng * scaled_err
+        } else {
+            -self.ng * scaled_err
+        };
+
+        let xi = self.p + offset;
+
+        let move_double = |v: f64, n: f64| {
+            if n > 0.0 {
+                efloat::next_double(v)
+            } else if n < 0.0 {
+                efloat::previous_double(v)
+            } else {
+                v
+            }
+        };
+
+        let xi = DVec3::new(
+            move_double(xi.x, offset.x),
+            move_double(xi.y, offset.y),
+            move_double(xi.z, offset.z),
+        );
 
         Ray::new(
             xi,

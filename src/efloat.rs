@@ -7,7 +7,7 @@ pub fn gamma(n: i32) -> f64 {
 }
 
 /// Makes the smallest increment possible to `v`
-fn _next_double(v: f64) -> f64 {
+pub fn next_double(v: f64) -> f64 {
     if v.is_infinite() && v > 0.0 {
         v
     } else {
@@ -22,7 +22,7 @@ fn _next_double(v: f64) -> f64 {
 }
 
 /// Makes the smalles decrement possible to `v`
-fn _previous_double(v: f64) -> f64 {
+pub fn previous_double(v: f64) -> f64 {
     if v.is_infinite() && v < 0.0 {
         v
     } else {
@@ -59,8 +59,8 @@ impl EFloat64 {
     pub fn sqrt(&self) -> Self {
         Self::new(
             self.value.sqrt(),
-            _previous_double(self.low.sqrt()),
-            _next_double(self.high.sqrt()),
+            previous_double(self.low.sqrt()),
+            next_double(self.high.sqrt()),
         )
     }
 
@@ -107,8 +107,8 @@ impl Add for EFloat64 {
     fn add(self, other: Self) -> Self {
         Self::new(
             self.value + other.value,
-            _previous_double(self.low + other.low),
-            _next_double(self.high + other.high),
+            previous_double(self.low + other.low),
+            next_double(self.high + other.high),
         )
     }
 }
@@ -119,8 +119,8 @@ impl Sub for EFloat64 {
     fn sub(self, other: Self) -> Self {
         Self::new(
             self.value - other.value,
-            _previous_double(self.low - other.high),
-            _next_double(self.high - other.low),
+            previous_double(self.low - other.high),
+            next_double(self.high - other.low),
         )
     }
 }
@@ -148,8 +148,8 @@ impl Mul for EFloat64 {
 
         Self::new(
             self.value * other.value,
-            _previous_double(min),
-            _next_double(max),
+            previous_double(min),
+            next_double(max),
         )
     }
 }
@@ -185,8 +185,8 @@ impl Div for EFloat64 {
 
             Self::new(
                 self.value / other.value,
-                _previous_double(min),
-                _next_double(max),
+                previous_double(min),
+                next_double(max),
             )
         }
     }
