@@ -55,7 +55,14 @@ impl Object for Cone {
             return None;
         }
 
-        let mut t = if t0.low <= t_min { t1 } else { t0 };
+        let mut t = if t0.low > t_min {
+            t0
+        } else {
+            if t1.high > t_max {
+                return None;
+            }
+            t1
+        };
         let mut xi = r.at(t.value);
 
         // check both hits against cone height
@@ -63,7 +70,7 @@ impl Object for Cone {
             t = t1;
             xi = r.at(t.value);
 
-            if xi.y < 0.0 || xi.y > self.height {
+            if t.high > t_max || xi.y < 0.0 || xi.y > self.height {
                 return None;
             }
         }

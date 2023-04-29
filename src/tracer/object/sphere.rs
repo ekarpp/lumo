@@ -67,7 +67,15 @@ impl Object for Sphere {
             return None;
         }
 
-        let t = if t0.low <= t_min { t1 } else { t0 };
+        let t = if t0.low > t_min {
+            t0
+        } else {
+            if t1.high > t_max {
+                return None;
+            }
+            t1
+        };
+
         let xi = r.at(t.value);
         // reproject to sphere to reduce floating point error
         let xi = xi * radius2.value / xi.distance_squared(self.origin);
