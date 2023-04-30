@@ -11,6 +11,7 @@ pub struct Face {
 }
 
 impl Face {
+    /// Constructs a new face fron the indices. `nidx` and/or `tidx` may be empty
     pub fn new(vidx: Vec<usize>, nidx: Vec<usize>, tidx: Vec<usize>) -> Self {
         Self {
             vidx,
@@ -21,9 +22,7 @@ impl Face {
 }
 
 /// Mesh of triangles accelerated with a kdtree
-pub struct TriangleMesh<'a> {
-    /// Acceleration structure
-    kdtree: KdTree<Triangle<'a>>,
+pub struct TriangleMesh {
     /// All vertices of the mesh
     pub vertices: Vec<DVec3>,
     /// All shading normals of the mesh
@@ -32,19 +31,20 @@ pub struct TriangleMesh<'a> {
     pub uvs: Vec<DVec2>,
 }
 
-impl TriangleMesh<'_> {
+impl TriangleMesh {
+    /// Constructs a mesh, i.e. kdtree, from the given data.
+    /// `normals` and/or `uvs` may be empty.
     pub fn new(
         vertices: Vec<DVec3>,
         faces: Vec<Face>,
         normals: Vec<DVec3>,
         uvs: Vec<DVec2>,
         material: Material,
-    ) -> Box<Self> {
-        let mut mesh = Box::new(Self {
-            kdtree: KdTree::new(Vec::new(), Material::Blank),
-            vertices: Vec::new(),
-            normals: Vec::new(),
-            uvs: Vec::new(),
+    ) -> Mesh {
+        let mesh = Arc::new(Self {
+            vertices,
+            normals,
+            uvs,
         });
 
         let mut triangles = Vec::with_capacity(faces.len());
@@ -55,9 +55,9 @@ impl TriangleMesh<'_> {
                 let vidx = (face.vidx[a], face.vidx[b], face.vidx[c]);
 
                 if Self::degenerate_triangle(
-                    vertices[vidx.0],
-                    vertices[vidx.1],
-                    vertices[vidx.2],
+                    mesh.vertices[vidx.0],
+                    mesh.vertices[vidx.1],
+                    mesh.vertices[vidx.2],
                 ) {
                     continue;
                 }
@@ -74,40 +74,15 @@ impl TriangleMesh<'_> {
                     Some((face.tidx[a], face.tidx[b], face.tidx[c]))
                 };
 
-                triangles.push(Triangle::new(&mesh, vidx, nidx, tidx));
+                triangles.push(Triangle::new(mesh.clone(), vidx, nidx, tidx));
             }
         }
 
-        mesh.kdtree = KdTree::new(triangles, material);
-        mesh.vertices = vertices;
-        mesh.normals = normals;
-        mesh.uvs = uvs;
-
-        mesh
+        KdTree::new(triangles, material)
     }
 
     fn degenerate_triangle(a: DVec3, b: DVec3, c: DVec3) -> bool {
         let ng = (b - a).cross(c - a);
         ng.length() == 0.0
-    }
-}
-
-impl Object for TriangleMesh<'_> {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.kdtree.hit(r, t_min, t_max)
-    }
-}
-
-impl Bounded for TriangleMesh<'_> {
-    fn bounding_box(&self) -> AaBoundingBox { self.kdtree.bounding_box() }
-}
-
-impl Sampleable for TriangleMesh<'_> {
-    fn area(&self) -> f64 {
-        self.kdtree.area()
-    }
-
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
-        self.kdtree.sample_on(rand_sq)
     }
 }

@@ -4,9 +4,9 @@ use super::*;
 mod triangle_tests;
 
 /// Triangle specified by three points
-pub struct Triangle<'a> {
+pub struct Triangle {
     /// Reference to the mesh
-    mesh: &'a TriangleMesh<'a>,
+    mesh: Arc<TriangleMesh>,
     /// Indices of the vertices in the mesh
     vidx: (usize, usize, usize),
     /// Indices of the shading normals in the mesh
@@ -15,7 +15,7 @@ pub struct Triangle<'a> {
     tidx: Option<(usize, usize, usize)>,
 }
 
-impl<'a> Triangle<'a> {
+impl Triangle {
     /// Constructs on triangle of the mesh.
     ///
     /// # Arguments
@@ -24,7 +24,7 @@ impl<'a> Triangle<'a> {
     /// * `nidx` - Indices to shading normals
     /// * `tidx` - Indices to texture coordinates
     pub fn new(
-        mesh: &'a TriangleMesh<'a>,
+        mesh: Arc<TriangleMesh>,
         vidx: (usize, usize, usize),
         nidx: Option<(usize, usize, usize)>,
         tidx: Option<(usize, usize, usize)>,
@@ -42,7 +42,7 @@ impl<'a> Triangle<'a> {
     fn c(&self) -> DVec3 { self.mesh.vertices[self.vidx.2] }
 }
 
-impl Bounded for Triangle<'_> {
+impl Bounded for Triangle {
     fn bounding_box(&self) -> AaBoundingBox {
         AaBoundingBox::new(
             self.a().min(self.b().min(self.c())),
@@ -51,7 +51,7 @@ impl Bounded for Triangle<'_> {
     }
 }
 
-impl Object for Triangle<'_> {
+impl Object for Triangle {
     /// Watertight intersection due to Woop et. al. 2013
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
@@ -179,7 +179,7 @@ impl Object for Triangle<'_> {
     }
 }
 
-impl Sampleable for Triangle<'_> {
+impl Sampleable for Triangle {
     fn area(&self) -> f64 {
         (self.b() - self.a()).cross(self.c() - self.a()).length() / 2.0
     }

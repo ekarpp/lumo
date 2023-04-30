@@ -2,7 +2,7 @@ use super::*;
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-pub fn load_file(file: File, material: Material) -> Result<Box<TriangleMesh<'static>>> {
+pub fn load_file(file: File, material: Material) -> Result<Mesh> {
     let mut vertices: Vec<DVec3> = Vec::new();
     let mut normals: Vec<DVec3> = Vec::new();
     let mut uvs: Vec<DVec2> = Vec::new();

@@ -3,7 +3,7 @@ pub use integrator::Integrator;
 pub use material::Material;
 pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Object};
 pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
-pub use object::{Sampleable, Medium, TriangleMesh, Face};
+pub use object::{Sampleable, Medium, TriangleMesh, Face, Mesh};
 pub use scene::Scene;
 pub use texture::Texture;
 

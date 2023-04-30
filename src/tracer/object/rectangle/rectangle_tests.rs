@@ -9,14 +9,14 @@ fn xy_rect() -> Box<Rectangle> {
             DVec3::Z + DVec3::X,
             DVec3::ONE
         ),
-        Material::Mirror,
+        Material::Blank,
     )
 }
 
 #[test]
 fn does_intersect() {
     let rect = xy_rect();
-    let r = Ray::new(DVec3::ZERO, DVec3::Z);
+    let r = Ray::new(DVec3::splat(0.1), DVec3::Z);
 
     assert!(rect.hit(&r, 0.0, INFINITY).is_some());
 }

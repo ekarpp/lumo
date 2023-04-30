@@ -6,12 +6,12 @@ mod rectangle_tests;
 
 
 /// Rectangle defined by two triangles
-pub struct Rectangle<'a> {
+pub struct Rectangle {
     /// Just a mesh...
-    mesh: TriangleMesh<'a>
+    mesh: Mesh,
 }
 
-impl Rectangle<'_> {
+impl Rectangle {
     /// Constructs a rectangle from three points. Fourth point, namely `b`,
     /// is mirrored around the triangle
     ///
@@ -26,7 +26,7 @@ impl Rectangle<'_> {
         let faces = vec![Face::new(vec![0,1,2,3], vec![], vec![])];
 
         Box::new(Self {
-            mesh: *TriangleMesh::new(vertices, faces, vec![], vec![], material)
+            mesh: TriangleMesh::new(vertices, faces, vec![], vec![], material)
         })
     }
 
@@ -37,13 +37,13 @@ impl Rectangle<'_> {
     }
 }
 
-impl Object for Rectangle<'_> {
+impl Object for Rectangle {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         self.mesh.hit(r, t_min, t_max)
     }
 }
 
-impl Sampleable for Rectangle<'_> {
+impl Sampleable for Rectangle {
     fn area(&self) -> f64 {
         self.mesh.area()
     }

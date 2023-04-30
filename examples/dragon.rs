@@ -14,14 +14,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     scene.add(
-        Mesh::new(
-            parser::obj_from_url(DRAGON_URL)?.remove(0),
+        parser::mesh_from_url(
+            DRAGON_URL,
             Material::transparent(
                 Texture::Solid(srgb_to_linear(255, 0, 255)),
                 0.03,
                 1.5,
             ),
-        )
+        )?
         .to_unit_size()
         .to_origin()
         .rotate_y(5.0 * PI / 8.0)

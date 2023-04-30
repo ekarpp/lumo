@@ -13,12 +13,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     scene.add(
-        Mesh::new(
-            parser::obj_from_url(TEAPOT_URL)?.into_iter().flatten().collect(),
+        parser::mesh_from_url(
+            TEAPOT_URL,
             Material::diffuse(
                 Texture::Marble(Perlin::default(), srgb_to_linear(255, 255, 255))
             ),
-        )
+        )?
         .to_unit_size()
         .to_origin()
         .translate(0.0, -0.25, -1.5),

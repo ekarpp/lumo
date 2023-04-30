@@ -1,5 +1,5 @@
 use crate::Image;
-use crate::tracer::{Material, Texture, TriangleMesh, Face};
+use crate::tracer::{Material, Texture, TriangleMesh, Face, Mesh};
 use glam::{DVec2, DVec3};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Result};
@@ -52,14 +52,14 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
 }
 
 /// Loads a .OBJ file at the given path
-pub fn mesh_from_path(path: &str, material: Material) -> Result<Box<TriangleMesh>> {
+pub fn mesh_from_path(path: &str, material: Material) -> Result<Mesh> {
     println!("Loading .OBJ file \"{}\"", path);
     obj::load_file(File::open(path)?, material)
 }
 
 /// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
 /// .OBJ files within a zip archive.
-pub fn mesh_from_url(url: &str, material: Material) -> Result<Box<TriangleMesh>> {
+pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
     println!("Loading .OBJ from \"{}\"", url);
     let mut bytes = Vec::new();
     ureq::get(url)

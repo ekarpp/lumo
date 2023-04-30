@@ -13,14 +13,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     scene.add(
-        Mesh::new(
-            parser::obj_from_url(BUNNY_URL)?.remove(0),
+        parser::mesh_from_url(
+            BUNNY_URL,
             Material::transparent(
                 Texture::Solid(srgb_to_linear(0, 255, 0)),
                 0.1,
                 1.5,
             ),
-        )
+        )?
         .scale(0.3, 0.3, 0.3)
         .translate(0.0, -0.65, -1.5),
     );

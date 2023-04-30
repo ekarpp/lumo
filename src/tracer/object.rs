@@ -7,6 +7,7 @@ use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
 use glam::{DAffine3, DMat3, DVec2, DVec3};
 use std::f64::{consts::PI, INFINITY};
+use std::sync::Arc;
 
 pub use aabb::AaBoundingBox;
 pub use cone::Cone;
@@ -14,7 +15,7 @@ pub use cube::Cube;
 pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
-pub use kdtree::KdTree;
+pub use kdtree::{KdTree, Mesh};
 pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;

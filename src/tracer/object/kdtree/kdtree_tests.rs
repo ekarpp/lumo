@@ -34,32 +34,16 @@ fn intersect_planar() {
         DVec3::X + DVec3::Y,
         DVec3::NEG_X + DVec3::Y,
     ];
-
-    let triangles = vec![
-        *Triangle::new(
-            DMat3::from_cols(
-                vertices[0],
-                vertices[1],
-                vertices[2],
-            ),
-            None,
-            None,
-            Material::Blank
-        ),
-        *Triangle::new(
-            DMat3::from_cols(
-                vertices[0],
-                vertices[2],
-                vertices[3],
-            ),
-            None,
-            None,
-            Material::Blank
-        )
+    let faces = vec![
+        Face::new(vec![0, 1, 2], vec![], vec![]),
+        Face::new(vec![0, 2, 3], vec![], vec![]),
     ];
 
-    let mesh = Mesh::new(
-        triangles,
+    let mesh = TriangleMesh::new(
+        vertices,
+        faces,
+        vec![],
+        vec![],
         Material::Blank,
     );
 
@@ -69,10 +53,10 @@ fn intersect_planar() {
 
 #[test]
 fn intersect_teapot() {
-    let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
         Material::Blank,
-    )
+    ).unwrap()
         .to_unit_size()
         .to_origin()
         .scale(0.8, 0.8, 0.8);
@@ -82,10 +66,10 @@ fn intersect_teapot() {
 
 #[test]
 fn intersect_sphere() {
-    let mesh = Mesh::new(
-        crate::parser::obj_from_url(SPHERE_URL).unwrap().into_iter().flatten().collect(),
+    let mesh = crate::parser::mesh_from_url(
+        SPHERE_URL,
         Material::Blank,
-    )
+    ).unwrap()
         .to_unit_size()
         .to_origin()
         .scale(0.5, 0.5, 0.5);
@@ -104,10 +88,10 @@ fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
 
 #[test]
 fn all_objects_correctly_split() {
-    let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
         Material::Blank,
-    );
+    ).unwrap();
 
     let mut stack = VecDeque::from([(mesh.root, mesh.boundary)]);
 
@@ -136,10 +120,10 @@ fn all_objects_correctly_split() {
 
 #[test]
 fn all_objects_in_tree() {
-    let mesh = Mesh::new(
-        crate::parser::obj_from_url(TEAPOT_URL).unwrap().into_iter().flatten().collect(),
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
         Material::Blank,
-    );
+    ).unwrap();
 
     let mut found = HashSet::new();
     let mut stack = VecDeque::from([mesh.root]);

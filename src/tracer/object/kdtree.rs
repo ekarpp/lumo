@@ -3,6 +3,9 @@ use crate::cli::TracerCli;
 use std::time::Instant;
 use std::f64::INFINITY;
 
+/// Triangle mesh constructed as a kD-tree
+pub type Mesh = KdTree<Triangle>;
+
 #[cfg(test)]
 mod kdtree_tests;
 

@@ -4,12 +4,12 @@ use super::*;
 mod cube_tests;
 
 /// A unit cube consisting of 6 squares
-pub struct Cube<'a> {
+pub struct Cube {
     /// Just a mesh...
-    mesh: TriangleMesh<'a>
+    mesh: Mesh
 }
 
-impl Cube<'_> {
+impl Cube {
     /// Constructs an unit cube. To get the desired shape, one should instance
     /// this.
     ///
@@ -37,25 +37,25 @@ impl Cube<'_> {
         ];
 
         Box::new(Self {
-            mesh: *TriangleMesh::new(vertices, faces, vec![], vec![], material)
+            mesh: TriangleMesh::new(vertices, faces, vec![], vec![], material)
         })
     }
 }
 
-impl Bounded for Cube<'_> {
+impl Bounded for Cube {
     fn bounding_box(&self) -> AaBoundingBox {
         // we only support unit cubes, so... let instances do the job.
         AaBoundingBox::new(DVec3::ZERO, DVec3::ONE)
     }
 }
 
-impl Object for Cube<'_> {
+impl Object for Cube {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         self.mesh.hit(r, t_min, t_max)
     }
 }
 
-impl Sampleable for Cube<'_> {
+impl Sampleable for Cube {
     fn area(&self) -> f64 {
         self.mesh.area()
     }
