@@ -1,6 +1,6 @@
 use crate::Image;
-use crate::tracer::{Material, Texture, Triangle};
-use glam::{DMat3, DVec2, DVec3};
+use crate::tracer::{Material, Texture, TriangleMesh, Face};
+use glam::{DVec2, DVec3};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Result};
 use std::io::{Cursor, Read, Seek, Write};
@@ -52,9 +52,48 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
 }
 
 /// Loads a .OBJ file at the given path
-pub fn obj_from_path(path: &str) -> Result<Vec<Vec<Triangle>>> {
+pub fn mesh_from_path(path: &str, material: Material) -> Result<Box<TriangleMesh>> {
     println!("Loading .OBJ file \"{}\"", path);
-    obj::load_file(File::open(path)?)
+    obj::load_file(File::open(path)?, material)
+}
+
+/// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
+/// .OBJ files within a zip archive.
+pub fn mesh_from_url(url: &str, material: Material) -> Result<Box<TriangleMesh>> {
+    println!("Loading .OBJ from \"{}\"", url);
+    let mut bytes = Vec::new();
+    ureq::get(url)
+        .call()
+        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
+        .into_reader()
+        .read_to_end(&mut bytes)?;
+
+    if url.ends_with(".zip") {
+        println!("Found zip archive, searching for .OBJ files");
+        let mut zip = ZipArchive::new(Cursor::new(bytes))?;
+        bytes = Vec::new();
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i)?;
+
+            if file.name().ends_with("obj") {
+                println!("Extracting \"{}\"", file.name());
+                file.read_to_end(&mut bytes)?;
+                break;
+            }
+        }
+        if bytes.is_empty() {
+            return Err(obj_error("Could not find .OBJ files in the archive"));
+        }
+    } else if !url.ends_with(".obj") {
+        return Err(obj_error(
+            "Bad URL, or at least does not end with .zip or .obj",
+        ));
+    }
+
+    let mut tmp_file = tempfile::tempfile()?;
+    tmp_file.write_all(&bytes)?;
+    tmp_file.rewind()?;
+    obj::load_file(tmp_file, material)
 }
 
 /// Loads `tex_name` from .zip at `url`
@@ -97,43 +136,4 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
     println!("Decoding texture");
     Image::from_file(tmp_file)
         .map_err(|decode_error| obj_error(&decode_error.to_string()))
-}
-
-/// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
-/// .OBJ files within a zip archive.
-pub fn obj_from_url(url: &str) -> Result<Vec<Vec<Triangle>>> {
-    println!("Loading .OBJ from \"{}\"", url);
-    let mut bytes = Vec::new();
-    ureq::get(url)
-        .call()
-        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
-        .into_reader()
-        .read_to_end(&mut bytes)?;
-
-    if url.ends_with(".zip") {
-        println!("Found zip archive, searching for .OBJ files");
-        let mut zip = ZipArchive::new(Cursor::new(bytes))?;
-        bytes = Vec::new();
-        for i in 0..zip.len() {
-            let mut file = zip.by_index(i)?;
-
-            if file.name().ends_with("obj") {
-                println!("Extracting \"{}\"", file.name());
-                file.read_to_end(&mut bytes)?;
-                break;
-            }
-        }
-        if bytes.is_empty() {
-            return Err(obj_error("Could not find .OBJ files in the archive"));
-        }
-    } else if !url.ends_with(".obj") {
-        return Err(obj_error(
-            "Bad URL, or at least does not end with .zip or .obj",
-        ));
-    }
-
-    let mut tmp_file = tempfile::tempfile()?;
-    tmp_file.write_all(&bytes)?;
-    tmp_file.rewind()?;
-    obj::load_file(tmp_file)
 }

@@ -4,96 +4,54 @@ use super::*;
 mod triangle_tests;
 
 /// Triangle specified by three points
-pub struct Triangle {
-    /// Point `a`
-    a: DVec3,
-    /// Point `b`
-    b: DVec3,
-    /// Point `c`
-    c: DVec3,
-    /// Geometric normal. CCW in the order of vertices.
-    ng: DVec3,
-    /// Shading normal for the vertex `a`
-    na: DVec3,
-    /// Shading normal for the vertex `b`
-    nb: DVec3,
-    /// Shading normal for the vertex `c`
-    nc: DVec3,
-    /// Texutre coordinate for the vertex `a`
-    ta: DVec2,
-    /// Texutre coordinate for the vertex `b`
-    tb: DVec2,
-    /// Texutre coordinate for the vertex `c`
-    tc: DVec2,
-    /// Material of the triangle
-    material: Material,
+pub struct Triangle<'a> {
+    /// Reference to the mesh
+    mesh: &'a TriangleMesh<'a>,
+    /// Indices of the vertices in the mesh
+    vidx: (usize, usize, usize),
+    /// Indices of the shading normals in the mesh
+    nidx: Option<(usize, usize, usize)>,
+    /// Indices of the texture coordinates in the mesh
+    tidx: Option<(usize, usize, usize)>,
 }
 
-impl Triangle {
-    /// Constructs triangle from three points. Normal determined from order of
-    /// the points, they are in counter-clockwise order.
+impl<'a> Triangle<'a> {
+    /// Constructs on triangle of the mesh.
     ///
     /// # Arguments
-    /// * `abc` - Three vertices of the triangle stored in the columns
-    /// * `nabc` - Optional shading normals for each vertex stored in the columns
-    /// * `tabc` - Optional texture coordinates for each vertex stored in the columns
-    /// * `material` - Material of the triangle
+    /// * `mesh` - Reference to the mesh
+    /// * `vidx` - Indices to triangle vertices
+    /// * `nidx` - Indices to shading normals
+    /// * `tidx` - Indices to texture coordinates
     pub fn new(
-        abc: DMat3,
-        nabc: Option<DMat3>,
-        tabc: Option<DMat3>,
-        material: Material,
-    ) -> Box<Self> {
-        let a = abc.col(0);
-        let b = abc.col(1);
-        let c = abc.col(2);
-        /* check degeneracy */
-        let b_m_a = b - a;
-        let c_m_a = c - a;
-        let ng = (b_m_a).cross(c_m_a);
-        assert!(ng.length() != 0.0);
-        let ng = ng.normalize();
-
-        let (na, nb, nc) = match nabc {
-            None => (ng, ng, ng),
-            Some(nabc) => (nabc.col(0), nabc.col(1), nabc.col(2)),
-        };
-
-        let (ta, tb, tc) = match tabc {
-            None => (DVec2::ZERO, DVec2::X, DVec2::ONE),
-            Some(tabc) => (
-                tabc.col(0).truncate(),
-                tabc.col(1).truncate(),
-                tabc.col(2).truncate(),
-            ),
-        };
-
-        Box::new(Self {
-            a,
-            b,
-            c,
-            material,
-            ng,
-            na,
-            nb,
-            nc,
-            ta,
-            tb,
-            tc,
-        })
+        mesh: &'a TriangleMesh<'a>,
+        vidx: (usize, usize, usize),
+        nidx: Option<(usize, usize, usize)>,
+        tidx: Option<(usize, usize, usize)>,
+    ) -> Self {
+        Self {
+            mesh,
+            vidx,
+            nidx,
+            tidx,
+        }
     }
+
+    fn a(&self) -> DVec3 { self.mesh.vertices[self.vidx.0] }
+    fn b(&self) -> DVec3 { self.mesh.vertices[self.vidx.1] }
+    fn c(&self) -> DVec3 { self.mesh.vertices[self.vidx.2] }
 }
 
-impl Bounded for Triangle {
+impl Bounded for Triangle<'_> {
     fn bounding_box(&self) -> AaBoundingBox {
         AaBoundingBox::new(
-            self.a.min(self.b.min(self.c)),
-            self.a.max(self.b.max(self.c)),
+            self.a().min(self.b().min(self.c())),
+            self.a().max(self.b().max(self.c())),
         )
     }
 }
 
-impl Object for Triangle {
+impl Object for Triangle<'_> {
     /// Watertight intersection due to Woop et. al. 2013
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
@@ -117,9 +75,9 @@ impl Object for Triangle {
 
         // permute to avoid division by zero
         let wi = permute(r.dir);
-        let mut at = permute(self.a - xo);
-        let mut bt = permute(self.b - xo);
-        let mut ct = permute(self.c - xo);
+        let mut at = permute(self.a() - xo);
+        let mut bt = permute(self.b() - xo);
+        let mut ct = permute(self.c() - xo);
 
         let shear = DVec3::new(-wi.x, -wi.y, 0.0) / wi.z;
 
@@ -186,55 +144,54 @@ impl Object for Triangle {
         let beta = barycentrics.y;
         let gamma = barycentrics.z;
 
-        let ns = alpha * self.na + beta * self.nb + gamma * self.nc;
-        let ns = ns.normalize();
+        let ng = (self.b() - self.a()).cross(self.c() - self.a()).normalize();
+        let ns = if let Some(nidx) = self.nidx {
+            let na = self.mesh.normals[nidx.0];
+            let nb = self.mesh.normals[nidx.1];
+            let nc = self.mesh.normals[nidx.2];
+            alpha * na + beta * nb + gamma * nc
+        } else {
+            ng
+        };
 
-        let uv = alpha * self.ta + beta * self.tb + gamma * self.tc;
+        let (ta, tb, tc) = if let Some(tidx) = self.tidx {
+            let ta = self.mesh.uvs[tidx.0];
+            let tb = self.mesh.uvs[tidx.1];
+            let tc = self.mesh.uvs[tidx.2];
+            (ta, tb, tc)
+        } else {
+            (DVec2::ZERO, DVec2::X, DVec2::ONE)
+        };
+
+        let uv = alpha * ta + beta * tb + gamma * tc;
 
         let err = efloat::gamma(7) * DVec3::new(
-            (barycentrics * DVec3::new(self.a.x, self.b.x, self.c.x))
+            (barycentrics * DVec3::new(self.a().x, self.b().x, self.c().x))
              .abs().dot(DVec3::ONE),
-            (barycentrics * DVec3::new(self.a.y, self.b.y, self.c.y))
+            (barycentrics * DVec3::new(self.a().y, self.b().y, self.c().y))
              .abs().dot(DVec3::ONE),
-            (barycentrics * DVec3::new(self.a.z, self.b.z, self.c.z))
+            (barycentrics * DVec3::new(self.a().z, self.b().z, self.c().z))
              .abs().dot(DVec3::ONE),
         );
 
-        Hit::new(t, &self.material, r.at(t), err, ns, self.ng, uv)
+        // material will be set by parent object
+        Hit::new(t, &Material::Blank, r.at(t), err, ns, ng, uv)
     }
 }
 
-impl Sampleable for Triangle {
+impl Sampleable for Triangle<'_> {
     fn area(&self) -> f64 {
-        let b_m_a = self.b - self.a;
-        let c_m_a = self.c - self.a;
-        b_m_a.cross(c_m_a).length() / 2.0
+        (self.b() - self.a()).cross(self.c() - self.a()).length() / 2.0
     }
 
     /// Random point with barycentrics.
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
-        let b_m_a = self.b - self.a;
-        let c_m_a = self.c - self.a;
+        let b_m_a = self.b() - self.a();
+        let c_m_a = self.c() - self.a();
+        let ng = b_m_a.cross(c_m_a).normalize();
 
-        (self.a + beta * b_m_a + gamma * c_m_a, self.ng)
-    }
-
-    /// Choose random point on surface of triangle. Shoot ray towards it.
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let (xi, _) = self.sample_on(rand_sq);
-        xi - xo
-    }
-
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
-        match self.hit(ri, 0.0, INFINITY) {
-            None => (0.0, None),
-            Some(hi) => {
-                let p = 1.0 / self.area();
-
-                (p, Some(hi))
-            }
-        }
+        (self.a() + beta * b_m_a + gamma * c_m_a, ng)
     }
 }

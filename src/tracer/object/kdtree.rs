@@ -6,9 +6,6 @@ use std::f64::INFINITY;
 #[cfg(test)]
 mod kdtree_tests;
 
-/// Triangle mesh constructed as a kD-tree
-pub type Mesh = KdTree<Triangle>;
-
 /// A k dimensional tree used to accelerate ray intersection calculations.
 /// Implements a binary tree that splits a large mesh of objects to smaller
 /// subobjects.
@@ -148,6 +145,18 @@ impl<T: Bounded> Object for KdTree<T> {
         } else {
             self.hit_subtree(&self.root, r, t_min, t_end, &self.boundary)
         }
+    }
+}
+
+impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
+    fn area(&self) -> f64 {
+        // maybe sloooow for big ones
+        self.objects.iter().fold(0.0, |sum, obj| sum + obj.area())
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+        let n = rand_utils::rand_f64() * self.objects.len() as f64;
+        self.objects[n.floor() as usize].sample_on(rand_sq)
     }
 }
 

@@ -1,9 +1,9 @@
 pub use camera::Camera;
 pub use integrator::Integrator;
 pub use material::Material;
-pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Mesh, Object};
+pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Object};
 pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
-pub use object::{Sampleable, Medium};
+pub use object::{Sampleable, Medium, TriangleMesh, Face};
 pub use scene::Scene;
 pub use texture::Texture;
 

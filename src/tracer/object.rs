@@ -14,12 +14,13 @@ pub use cube::Cube;
 pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
-pub use kdtree::{KdTree, Mesh};
+pub use kdtree::KdTree;
 pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;
 pub use triangle::Triangle;
+pub use triangle_mesh::{TriangleMesh, Face};
 
 /// Axis aligned bounding boxes
 mod aabb;
@@ -46,6 +47,8 @@ mod rectangle;
 mod sphere;
 /// Defines triangles.
 mod triangle;
+/// Triangle meshes, stores vertices, normals and texture coordinates to save space
+mod triangle_mesh;
 
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
@@ -98,12 +101,25 @@ pub trait Sampleable: Object {
     /// # Arguments
     /// * `xo` - Point on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3;
+    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
+        let (xi, _) = self.sample_on(rand_sq);
+        xi - xo
+    }
 
     /// PDF for sampling points on the surface uniformly at random. Returns PDF
     /// with respect to area and hit to self, if found.
     ///
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>);
+    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
+        match self.hit(ri, 0.0, INFINITY) {
+            None => (0.0, None),
+            Some(hi) => {
+                // might not work for solids, cause might be multiple hits
+                let p = 1.0 / self.area();
+
+                (p, Some(hi))
+            }
+        }
+    }
 }

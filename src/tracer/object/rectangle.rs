@@ -3,84 +3,52 @@ use super::*;
 #[cfg(test)]
 mod rectangle_tests;
 
-/// Given a triangle, with points read from the columns of the matrix `abc`,
-/// returns `b` mirrored to define a rectangle.
-fn _triangle_to_rect(abc: DMat3) -> DVec3 {
-    abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
-}
+
 
 /// Rectangle defined by two triangles
-pub struct Rectangle {
-    triangles: (Triangle, Triangle),
-    material: Material,
+pub struct Rectangle<'a> {
+    /// Just a mesh...
+    mesh: TriangleMesh<'a>
 }
 
-impl Rectangle {
+impl Rectangle<'_> {
     /// Constructs a rectangle from three points. Fourth point, namely `b`,
     /// is mirrored around the triangle
     ///
     /// # Arguments
-    /// * `abc` - Points `a,b,c` stored in the columns
-    /// * `norm_dir` - Direction towards which the normal should point
+    /// * `abc` - Points `a,b,c` stored in the columns. Normal in CCW
     /// * `material` - Material of the rectangle
     pub fn new(abc: DMat3, material: Material) -> Box<Self> {
-        /* figure out the correct order of points... */
-        let t1 = Triangle::new(abc, None, None, Material::Blank);
-        let d = _triangle_to_rect(abc);
-        let cda = DMat3::from_cols(abc.col(2), d, abc.col(0));
-        let t2 = Triangle::new(cda, None, None, Material::Blank);
+        let vertices = vec![
+            abc.col(0), abc.col(1), abc.col(2), Self::_triangle_to_rect(abc)
+        ];
+
+        let faces = vec![Face::new(vec![0,1,2,3], vec![], vec![])];
 
         Box::new(Self {
-            triangles: (*t1, *t2),
-            material,
+            mesh: *TriangleMesh::new(vertices, faces, vec![], vec![], material)
         })
     }
 
-    /// Choose either of the triangles uniformly at random
-    fn choose_triangle(&self) -> &Triangle {
-        if rand_utils::rand_f64() > 0.5 {
-            &self.triangles.0
-        } else {
-            &self.triangles.1
-        }
+    /// Given a triangle, with points read from the columns of the matrix `abc`,
+    /// returns `b` mirrored to define a rectangle.
+    fn _triangle_to_rect(abc: DMat3) -> DVec3 {
+        abc.col(1) + (abc.col(0) - abc.col(1)) + (abc.col(2) - abc.col(1))
     }
 }
 
-impl Object for Rectangle {
+impl Object for Rectangle<'_> {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
-        self.triangles.0
-            .hit(r, t_min, t_max)
-            .or_else(|| self.triangles.1.hit(r, t_min, t_max))
-            .map(|mut h| { h.material = &self.material; h })
+        self.mesh.hit(r, t_min, t_max)
     }
 }
 
-impl Sampleable for Rectangle {
+impl Sampleable for Rectangle<'_> {
     fn area(&self) -> f64 {
-        // they both have the same area but do this anyways
-        self.triangles.0.area() + self.triangles.1.area()
-    }
-
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        self.choose_triangle().sample_towards(xo, rand_sq)
-    }
-
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
-        /* ray can hit either of the triangles. sum pdf from both
-         * (if miss, pdf = 0) and divide by two. (rectangle = two identical
-         * triangles => area two times bigger) */
-        let (p, hi) = self.triangles.0.sample_towards_pdf(ri);
-        let (p, hi) = if p == 0.0 {
-            self.triangles.1.sample_towards_pdf(ri)
-        } else {
-            (p, hi)
-        };
-
-        // by construction, rectangle has 2x area of triangle
-        (p / 2.0, hi)
+        self.mesh.area()
     }
 
     fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
-        self.choose_triangle().sample_on(rand_sq)
+        self.mesh.sample_on(rand_sq)
     }
 }
