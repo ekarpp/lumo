@@ -47,6 +47,12 @@ impl TriangleMesh {
             uvs,
         });
 
+        Self::new_from_faces(mesh, faces, material)
+    }
+
+    /// Helper function that constructs triangles in kdtree
+    /// given mesh, faces and material
+    pub fn new_from_faces(mesh: Arc<Self>, faces: Vec<Face>, material: Material) -> Mesh {
         let mut triangles = Vec::with_capacity(faces.len());
 
         for face in faces {

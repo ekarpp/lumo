@@ -1,12 +1,14 @@
 use crate::Image;
-use crate::tracer::{Material, Texture, TriangleMesh, Face, Mesh};
+use crate::tracer::{Scene, Material, Texture, TriangleMesh, Face, Mesh};
 use glam::{DVec2, DVec3};
 use std::fs::File;
+use std::sync::Arc;
 use std::io::{self, BufRead, BufReader, Result};
 use std::io::{Cursor, Read, Seek, Write};
 use std::collections::HashMap;
 use zip::ZipArchive;
 use regex::Regex;
+use mtl::MtlConfig;
 
 /// .obj parser
 mod obj;
@@ -56,6 +58,9 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
         .map_err(|_| obj_error("Could not parse index in file"))
 }
 
+/* these thigs below could be optimized alot...
+ * but its boring work for little? gain */
+
 fn _get_url(url: &str) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
 
@@ -90,6 +95,15 @@ fn _extract_zip(bytes: Vec<u8>, re: Regex) -> Result<Vec<u8>> {
     }
 }
 
+fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
+    let mut tmp_file = tempfile::tempfile()?;
+
+    tmp_file.write_all(&bytes)?;
+    tmp_file.rewind()?;
+
+    Ok(tmp_file)
+}
+
 /// Loads a .OBJ file at the given path
 pub fn mesh_from_path(path: &str, material: Material) -> Result<Mesh> {
     println!("Loading .OBJ file \"{}\"", path);
@@ -111,32 +125,73 @@ pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
         ));
     }
 
-    let mut tmp_file = tempfile::tempfile()?;
-    tmp_file.write_all(&bytes)?;
-    tmp_file.rewind()?;
-    obj::load_file(tmp_file, material)
+    let obj_file = _bytes_to_file(bytes)?;
+    obj::load_file(obj_file, material)
 }
 
 /// Loads `tex_name` from .zip at `url`
 pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
-    println!("Loading texture \"{}\" from \"{}\"", tex_name, url);
     if !tex_name.ends_with(".png") {
         return Err(obj_error("Can only load .png files"));
     }
-
     if !url.ends_with(".zip") {
         return Err(obj_error("Can only extract textures from zip archives"));
     }
+
+    println!("Loading texture \"{}\" from \"{}\"", tex_name, url);
 
     let resp = _get_url(url)?;
 
     let file_bytes = _extract_zip(resp, Regex::new(tex_name).unwrap())?;
 
-    let mut tmp_file = tempfile::tempfile()?;
-    tmp_file.write_all(&file_bytes)?;
-    tmp_file.rewind()?;
+    let file = _bytes_to_file(file_bytes)?;
 
     println!("Decoding texture");
-    Image::from_file(tmp_file)
+    Image::from_file(file)
         .map_err(|decode_error| obj_error(&decode_error.to_string()))
+}
+
+/// Parses a whole scene from a .obj file specified by `name`
+/// in a .zip archive at `url`
+pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
+    if !url.ends_with(".zip") {
+        return Err(obj_error("Can only load scenes from .zip"));
+    }
+    if !obj_name.ends_with(".obj") {
+        return Err(obj_error("Can only parse .obj files"));
+    }
+
+    println!("Loading scene \"{}\" from \"{}\"", obj_name, url);
+
+    let resp = _get_url(url)?;
+
+    let obj_bytes = _extract_zip(resp.clone(), Regex::new(obj_name).unwrap())?;
+
+    let obj_file = _bytes_to_file(obj_bytes.clone())?;
+
+    // parse materials first
+    let mut materials = HashMap::<String, MtlConfig>::new();
+    let reader = BufReader::new(obj_file);
+    for line in reader.lines() {
+        let line = line?.trim().to_string();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
+
+        match tokens[0] {
+            "mtllib" => {
+                let mtllib_name = tokens[1];
+                let mtl_bytes = _extract_zip(resp.clone(), Regex::new(mtllib_name).unwrap())?;
+                let mtl_file = _bytes_to_file(mtl_bytes)?;
+
+                mtl::load_file(mtl_file, &mut materials)?;
+            }
+            _ => (),
+        }
+    }
+
+    let obj_file = _bytes_to_file(obj_bytes)?;
+
+    obj::load_scene(obj_file, materials)
 }

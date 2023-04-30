@@ -22,7 +22,7 @@ impl Default for MtlConfig {
 }
 
 impl MtlConfig {
-    pub fn material(&self) -> Material {
+    pub fn build_material(&self) -> Material {
         if self.emission_color.length_squared() != 0.0 {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
@@ -38,10 +38,9 @@ impl MtlConfig {
     }
 }
 
-pub fn load_file(file: File) -> Result<HashMap<String, MtlConfig>> {
+pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Result<()> {
     let reader = BufReader::new(file);
 
-    let mut materials = HashMap::new();
     let mut mtl = MtlConfig::default();
     let mut mtl_name = String::default();
 
@@ -86,5 +85,7 @@ pub fn load_file(file: File) -> Result<HashMap<String, MtlConfig>> {
         }
     }
 
-    Ok(materials)
+    materials.insert(mtl_name, mtl);
+
+    Ok(())
 }
