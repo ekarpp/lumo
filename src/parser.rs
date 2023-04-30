@@ -6,6 +6,7 @@ use std::io::{self, BufRead, BufReader, Result};
 use std::io::{Cursor, Read, Seek, Write};
 use std::collections::HashMap;
 use zip::ZipArchive;
+use regex::Regex;
 
 /// .obj parser
 mod obj;
@@ -17,12 +18,14 @@ fn obj_error(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
 
+/// For .obj and .mtl parsers
 fn parse_double(token: &str) -> Result<f64> {
     token
         .parse()
         .map_err(|_| obj_error("Could not parse double in file"))
 }
 
+/// For .obj and .mtl parsers
 fn parse_vec2(tokens: &[&str]) -> Result<DVec2> {
     Ok(DVec2::new(
         parse_double(tokens[1])?,
@@ -30,6 +33,7 @@ fn parse_vec2(tokens: &[&str]) -> Result<DVec2> {
     ))
 }
 
+/// For .obj and .mtl parsers
 fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
     Ok(DVec3::new(
         parse_double(tokens[1])?,
@@ -38,6 +42,7 @@ fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
     ))
 }
 
+/// For .obj and .mtl parsers
 fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
     token
         .parse::<i32>()
@@ -51,6 +56,40 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
         .map_err(|_| obj_error("Could not parse index in file"))
 }
 
+fn _get_url(url: &str) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+
+    ureq::get(url)
+        .call()
+        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
+        .into_reader()
+        .read_to_end(&mut bytes)?;
+
+    Ok(bytes)
+}
+
+fn _extract_zip(bytes: Vec<u8>, re: Regex) -> Result<Vec<u8>> {
+    println!("Reading .zip");
+    let mut zip = ZipArchive::new(Cursor::new(bytes))?;
+    let mut data = Vec::new();
+
+    for i in 0..zip.len() {
+        let mut file = zip.by_index(i)?;
+
+        if re.is_match(file.name()) {
+            println!("Extracting \"{}\"", file.name());
+            file.read_to_end(&mut data)?;
+            break;
+        }
+    }
+
+    if data.is_empty() {
+        Err(obj_error("Could not find file in the archive"))
+    } else {
+        Ok(data)
+    }
+}
+
 /// Loads a .OBJ file at the given path
 pub fn mesh_from_path(path: &str, material: Material) -> Result<Mesh> {
     println!("Loading .OBJ file \"{}\"", path);
@@ -61,29 +100,11 @@ pub fn mesh_from_path(path: &str, material: Material) -> Result<Mesh> {
 /// .OBJ files within a zip archive.
 pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
     println!("Loading .OBJ from \"{}\"", url);
-    let mut bytes = Vec::new();
-    ureq::get(url)
-        .call()
-        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
-        .into_reader()
-        .read_to_end(&mut bytes)?;
+    let mut bytes = _get_url(url)?;
 
     if url.ends_with(".zip") {
         println!("Found zip archive, searching for .OBJ files");
-        let mut zip = ZipArchive::new(Cursor::new(bytes))?;
-        bytes = Vec::new();
-        for i in 0..zip.len() {
-            let mut file = zip.by_index(i)?;
-
-            if file.name().ends_with("obj") {
-                println!("Extracting \"{}\"", file.name());
-                file.read_to_end(&mut bytes)?;
-                break;
-            }
-        }
-        if bytes.is_empty() {
-            return Err(obj_error("Could not find .OBJ files in the archive"));
-        }
+        bytes = _extract_zip(bytes, Regex::new(r".+\.obj$").unwrap())?;
     } else if !url.ends_with(".obj") {
         return Err(obj_error(
             "Bad URL, or at least does not end with .zip or .obj",
@@ -107,30 +128,12 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
         return Err(obj_error("Can only extract textures from zip archives"));
     }
 
-    let mut bytes = Vec::new();
-    ureq::get(url)
-        .call()
-        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
-        .into_reader()
-        .read_to_end(&mut bytes)?;
+    let resp = _get_url(url)?;
 
-    let mut zip = ZipArchive::new(Cursor::new(bytes))?;
-    bytes = Vec::new();
-    for i in 0..zip.len() {
-        let mut file = zip.by_index(i)?;
-
-        if file.name().eq(tex_name) {
-            println!("Extracting \"{}\"", file.name());
-            file.read_to_end(&mut bytes)?;
-            break;
-        }
-    }
-    if bytes.is_empty() {
-        return Err(obj_error("Could not find texture in the archive"));
-    }
+    let file_bytes = _extract_zip(resp, Regex::new(tex_name).unwrap())?;
 
     let mut tmp_file = tempfile::tempfile()?;
-    tmp_file.write_all(&bytes)?;
+    tmp_file.write_all(&file_bytes)?;
     tmp_file.rewind()?;
 
     println!("Decoding texture");
