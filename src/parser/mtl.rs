@@ -1,12 +1,21 @@
 use super::*;
 
-/// Holds the properties of a material
+/// Holds the properties of a microfacet material
 pub struct MtlConfig {
+    /// Base color of the material
     pub diffuse_color: DVec3,
+    /// Specular color of the material. Currently material color = kd + ks
     pub specular_color: DVec3,
+    /// Emittance of the material. If not zero vector, then createas a light
     pub emission_color: DVec3,
+    /// How much each light channel passes on transmission. Unused ATM
+    pub transmission_filter: DVec3,
+    /// Refraction index of the material
     pub refraction_idx: f64,
+    /// Roughness of the material
     pub roughness: f64,
+    /// Illumination model, see docs.
+    /// If 6 or 7 makes transparent, if 5 makes metal, otherwise unused.
     pub illumination_model: usize,
 }
 
@@ -16,6 +25,7 @@ impl Default for MtlConfig {
             diffuse_color: DVec3::ZERO,
             specular_color: DVec3::ZERO,
             emission_color: DVec3::ZERO,
+            transmission_filter: DVec3::ZERO,
             refraction_idx: 1.5,
             roughness: 1.0,
             illumination_model: 0,
@@ -28,14 +38,16 @@ impl MtlConfig {
         if self.emission_color.length_squared() != 0.0 {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
-            let texture = Texture::Solid(self.diffuse_color);
+            let texture = Texture::Solid(self.diffuse_color + self.specular_color);
+
+            let metallicity = if self.illumination_model == 5 { 1.0 } else { 0.0 };
             let is_transparent = self.illumination_model == 6
                 || self.illumination_model == 7;
             Material::microfacet(
                 texture,
                 self.roughness,
                 self.refraction_idx,
-                0.0,
+                metallicity,
                 is_transparent,
             )
         }
@@ -74,6 +86,10 @@ pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Resu
             "Ks" => {
                 let ks = parse_vec3(&tokens)?;
                 mtl.specular_color = ks;
+            }
+            "Tf" => {
+                let tf = parse_vec3(&tokens)?;
+                mtl.transmission_filter = tf;
             }
             "Ni" => {
                 let ni = parse_double(&tokens[1])?;
