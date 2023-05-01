@@ -45,7 +45,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
 
                                 bsdf
                                     * scene.transmittance(&ho)
-                                    * ns.dot(wi).abs()
+                                    * material.shading_cosine(wi, ns)
                                     * _integrate(scene, ri, depth + 1)
                                     / p_scatter
                             }

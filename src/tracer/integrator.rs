@@ -81,7 +81,7 @@ fn shadow_ray(
                     // assume that mediums get sampled perfectly
                     // according to the BSDF and thus cancel out PDF
                     let bsdf = if ho.is_medium() {
-                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                        DVec3::ONE * p_scatter
                     } else {
                         material.bsdf_f(wo, wi, ho)
                     };
@@ -89,7 +89,7 @@ fn shadow_ray(
                     bsdf
                         * scene.transmittance(&hi)
                         * hi.material.emit(&hi)
-                        * ns.dot(wi).abs()
+                        * material.shading_cosine(wi, ns)
                         * weight
                         / p_light
                 }
@@ -115,7 +115,7 @@ fn shadow_ray(
                     // assume that mediums get sampled perfectly
                     // according to the BSDF and thus cancel out PDF
                     let bsdf = if ho.is_medium() {
-                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                        DVec3::ONE * p_scatter
                     } else {
                         material.bsdf_f(wo, wi, ho)
                     };
@@ -123,7 +123,7 @@ fn shadow_ray(
                     bsdf
                         * scene.transmittance(&hi)
                         * hi.material.emit(&hi)
-                        * ns.dot(wi).abs()
+                        * material.shading_cosine(wi, ns)
                         * weight
                         / p_scatter
                 }

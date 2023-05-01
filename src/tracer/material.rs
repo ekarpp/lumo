@@ -95,14 +95,27 @@ impl Material {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            // cancel the applied shading cosine for mirror and glass
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
+            Self::Mirror | Self::Glass(..) => DVec3::ONE,
             // volumetric BSDF handled in integrator to cancel out PDF
             Self::Volumetric(..) => unreachable!(),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, t.albedo_at(h), mfd)
             }
             _ => DVec3::ZERO,
+        }
+    }
+
+    /// Computes the shading cosine coefficient per material
+    pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
+        match self {
+            Self::Microfacet(_, mfd) => {
+                if mfd.is_transparent() {
+                    1.0
+                } else {
+                    ns.dot(wi).abs()
+                }
+            }
+            _ => 1.0
         }
     }
 
