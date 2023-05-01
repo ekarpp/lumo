@@ -1,6 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Medium, Object, Plane, Rectangle, Sampleable};
+use crate::tracer::{Medium, Object, Rectangle, Sampleable};
 use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;

@@ -1,5 +1,5 @@
 use super::*;
-use crate::tracer::Sphere;
+use crate::tracer::{Plane, Sphere};
 use crate::EPSILON;
 
 /* light at y = 2, plane at y = 1 perp to z */

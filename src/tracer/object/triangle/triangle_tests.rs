@@ -1,11 +1,6 @@
 use super::*;
-use crate::tracer::texture::Texture;
 
 const NUM_RAYS: usize = 10000;
-
-fn get_mat() -> Material {
-    Material::diffuse(Texture::Solid(DVec3::ONE))
-}
 
 #[test]
 fn no_self_intersect() {
