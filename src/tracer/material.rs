@@ -100,7 +100,7 @@ impl Material {
             // volumetric BSDF handled in integrator to cancel out PDF
             Self::Volumetric(..) => unreachable!(),
             Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
+                bxdfs::bsdf_microfacet(wo, wi, ng, ns, t.albedo_at(h), mfd)
             }
             _ => DVec3::ZERO,
         }
