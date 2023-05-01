@@ -7,6 +7,7 @@ pub struct MtlConfig {
     pub emission_color: DVec3,
     pub refraction_idx: f64,
     pub roughness: f64,
+    pub illumination_model: usize,
 }
 
 impl Default for MtlConfig {
@@ -17,6 +18,7 @@ impl Default for MtlConfig {
             emission_color: DVec3::ZERO,
             refraction_idx: 1.5,
             roughness: 1.0,
+            illumination_model: 0,
         }
     }
 }
@@ -27,12 +29,14 @@ impl MtlConfig {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
             let texture = Texture::Solid(self.diffuse_color);
+            let is_transparent = self.illumination_model == 6
+                || self.illumination_model == 7;
             Material::microfacet(
                 texture,
                 self.roughness,
                 self.refraction_idx,
                 0.0,
-                false,
+                is_transparent,
             )
         }
     }
@@ -80,6 +84,10 @@ pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Resu
                 // blender uses this mapping
                 let roughness = 1.0 - ns.min(900.0).sqrt() / 30.0;
                 mtl.roughness = roughness;
+            }
+            "illum" => {
+                let illum = parse_double(&tokens[1])?;
+                mtl.illumination_model = illum as usize;
             }
             _ => (),
         }
