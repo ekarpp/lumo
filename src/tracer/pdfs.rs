@@ -140,7 +140,9 @@ impl Pdf for VolumetricPdf {
 pub struct MfdPdf {
     /// Direction from point of impact to viewer
     v: DVec3,
-    /// Macrosurface geometric normal. Same hemisphere as `v`.
+    /// Macrosurface shading normal. Same hemisphere as `v`.
+    ns: DVec3,
+    /// Macrosurface geometric normal. Points outside of surface.
     ng: DVec3,
     /// Probability to sample ray from NDF
     ndf_sample_prob: f64,
@@ -153,18 +155,20 @@ pub struct MfdPdf {
 impl MfdPdf {
     pub fn new(
         v: DVec3,
+        ns: DVec3,
         ng: DVec3,
         albedo: DVec3,
         mfd: MfDistribution
     ) -> Self {
         // refraction needs v and wh to be in same hemisphere so we do this
-        let w = if v.dot(ng) < 0.0 { -ng } else { ng };
-        let uvw = Onb::new(w);
+        let ns = if v.dot(ng) < 0.0 { -ns } else { ns };
+        let uvw = Onb::new(ns);
 
         Self {
             v,
             uvw,
             ndf_sample_prob: mfd.probability_ndf_sample(albedo),
+            ns,
             ng,
             mfd,
         }
@@ -212,16 +216,15 @@ impl MfdPdf {
         let wh_dot_v = self.v.dot(wh);
 
         // probability to sample wh w.r.t. to v.
-        // wh and v always same hemisphere. need to make sure ng is there too
-        // uvw.w is ng flipped to the correct hemisphere
-        self.mfd.sample_normal_pdf(wh, self.v, self.uvw.w)
+        // wh and v always same hemisphere. ns flipped to same in constructor.
+        self.mfd.sample_normal_pdf(wh, self.v, self.ns)
             // jacobian
             / (4.0 * wh_dot_v)
     }
 
     /// PDF for hemisphere cos sampling
     fn sample_cos_hemisphere_pdf(&self, wi: DVec3) -> f64 {
-        let cos_theta = self.uvw.w.dot(wi);
+        let cos_theta = self.ns.dot(wi);
         if cos_theta > 0.0 {
             cos_theta / PI
         } else {
@@ -231,10 +234,8 @@ impl MfdPdf {
 
     /// PDF for NDF refraction
     fn sample_ndf_refract_pdf(&self, wi: DVec3) -> f64 {
-        let ng_dot_wi = self.ng.dot(wi);
-        let ng_dot_v = self.ng.dot(self.v);
-        let v_inside = ng_dot_v < 0.0;
-        let wi_inside = ng_dot_wi < 0.0;
+        let v_inside = self.ng.dot(self.v) < 0.0;
+        let wi_inside = self.ng.dot(wi) < 0.0;
 
         if v_inside == wi_inside {
             let wh = (self.v + wi).normalize();
@@ -244,7 +245,7 @@ impl MfdPdf {
 
             if v_inside && sin2_ti > 1.0 {
                 let wh_dot_v = wh.dot(self.v);
-                self.mfd.sample_normal_pdf(wh, self.v, -self.ng)
+                self.mfd.sample_normal_pdf(wh, self.v, self.ns)
                     / (4.0 * wh_dot_v)
             } else {
                 // wi and v same hemisphere but not total internal reflection.
@@ -265,9 +266,10 @@ impl MfdPdf {
                 // same hemisphere w.r.t wh, zero probability for refraction
                 0.0
             } else {
-                // wh and ng need to be in same hemisphere, hemisphere of v makes
+                // wh and ns need to be in same hemisphere, hemisphere of v makes
                 // no difference.
-                self.mfd.sample_normal_pdf(wh, self.v, self.ng)
+                let wh = if self.ns.dot(wh) < 0.0 { -wh } else { wh };
+                self.mfd.sample_normal_pdf(wh, self.v, self.ns)
                     // jacobian
                     * (eta_ratio * eta_ratio * wh_dot_wi).abs()
                     / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)

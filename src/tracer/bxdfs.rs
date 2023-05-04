@@ -111,8 +111,9 @@ pub fn bsdf_microfacet_pdf(
     mfd: &MfDistribution,
 ) -> Option<Box<dyn Pdf>> {
     let ns = ho.ns;
+    let ng = ho.ng;
     let v = -ro.dir;
-    Some( Box::new(MfdPdf::new(v, ns, albedo, *mfd)) )
+    Some( Box::new(MfdPdf::new(v, ns, ng, albedo, *mfd)) )
 }
 
 /// Scattering function for mirror material. Perfect reflection.
