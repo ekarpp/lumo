@@ -108,13 +108,7 @@ impl Material {
     /// Computes the shading cosine coefficient per material
     pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
         match self {
-            Self::Microfacet(_, mfd) => {
-                if mfd.is_transparent() {
-                    1.0
-                } else {
-                    ns.dot(wi).abs()
-                }
-            }
+            Self::Microfacet(..) => ns.dot(wi).abs(),
             _ => 1.0
         }
     }
