@@ -8,7 +8,7 @@ use crate::tracer::material::Material;
  * (5) implement MIS
  * (8) previous pdf needs pdf with orders swapped. refraction not commutative
  * (9) need to modify vertex PDFs?
- *
+ * (10) Need to account for radiance/importance transport in refraction
  * + this needs proper refactoring and cleanup...
  */
 
@@ -294,6 +294,7 @@ fn walk<'a>(
                             material.shading_cosine(wi, ns)
                         };
 
+                        // TODO (10)
                         gathered *= material.bsdf_f(wo, wi, &ho)
                             * shading_cosine
                             / pdf_next;
