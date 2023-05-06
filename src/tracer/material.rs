@@ -122,7 +122,7 @@ impl Material {
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }
-            _ => None,
+            Self::Light(_) | Self::Blank => None,
         }
     }
 }
