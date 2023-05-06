@@ -16,6 +16,7 @@ use crate::tracer::material::Material;
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
+    #[allow(dead_code)]
     pdf_next: f64,
     pdf_prev: f64,
 }
@@ -246,6 +247,7 @@ fn walk<'a>(
     let mut depth = 0;
     let mut vertices = vec![root];
     let mut pdf_next = pdf_dir;
+    #[allow(unused_assignments)]
     let mut pdf_prev = 0.0;
 
     while let Some(ho) = scene.hit(&ro) {
