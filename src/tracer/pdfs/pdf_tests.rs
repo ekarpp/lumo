@@ -6,6 +6,7 @@ fn mfd_pdf() -> MfdPdf {
     MfdPdf::new(
         DVec3::Z,
         DVec3::Z,
+        DVec3::Z,
         DVec3::ONE,
         MfDistribution::new(1.0, 1.5, 0.0, false),
     )
