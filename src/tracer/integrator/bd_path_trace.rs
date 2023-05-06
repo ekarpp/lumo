@@ -9,6 +9,7 @@ use crate::tracer::material::Material;
  * (8) previous pdf needs pdf with orders swapped. refraction not commutative
  * (9) need to modify vertex PDFs?
  * (10) Need to account for radiance/importance transport in refraction
+ * (11) Need to make temporary changes to PDFs, check PBRT
  * + this needs proper refactoring and cleanup...
  */
 
@@ -91,7 +92,7 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     for t in 0..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance +=
-                connect_paths(scene, &light_path[0..s], &camera_path[0..t]);
+                connect_paths(scene, &light_path, s, &camera_path, t);
         }
     }
 
@@ -101,9 +102,13 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
 /// Connects a light subpath and a camera subpath.
 /// Camera sampling not implemented i.e. camera paths of length 0 or 1 discarded.
 /// Special logic if light path length 0 or 1.
-fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -> DVec3 {
-    let t = camera_path.len();
-    let s = light_path.len();
+fn connect_paths(
+    scene: &Scene,
+    light_path: &[Vertex],
+    s: usize,
+    camera_path: &[Vertex],
+    t: usize,
+) -> DVec3 {
 
     let mut sampled_vertex: Option<Vertex> = None;
 
@@ -179,20 +184,47 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
     let weight = if radiance.length_squared() == 0.0 {
         0.0
     } else {
-        mis_weight(scene, light_path, camera_path, sampled_vertex)
+        mis_weight(scene, light_path, s, camera_path, t, sampled_vertex)
     };
     // do MIS weight for path
     radiance * weight
 }
 
 fn mis_weight(
-    _scene: &Scene,
-    _light_path: &[Vertex],
-    _camera_path: &[Vertex],
-    _sampled_vertex: Option<Vertex>
+    scene: &Scene,
+    light_path: &[Vertex],
+    s: usize,
+    camera_path: &[Vertex],
+    t: usize,
+    sampled_vertex: Option<Vertex>
 ) -> f64 {
+    if s + t == 2 {
+        return 1.0;
+    }
+
+    // TODO (11)
+
+    let map0 = |pdf: f64| {
+        if pdf == 0.0 { 1.0 } else { pdf }
+    };
+
+    let mut sum_ri = 0.0;
+    let mut ri = 1.0;
+    // vertices in camera path
+    for i in (1..t).rev() {
+        ri *= map0(camera_path[i].pdf_prev) / map0(camera_path[i].pdf_next);
+        sum_ri += ri;
+    }
+
+    ri = 1.0;
+    // vertices in light path
+    for i in (1..s).rev() {
+        ri *= map0(light_path[i].pdf_prev) / map0(light_path[i].pdf_next);
+        sum_ri += ri;
+    }
+
     // TODO (5)
-    1.0
+    1.0 / (1.0 + sum_ri)
 }
 
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
