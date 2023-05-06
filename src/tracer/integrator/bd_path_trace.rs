@@ -304,8 +304,7 @@ fn walk<'a>(
                         // TODO (8)
                         pdf_prev = pdf_next;
                         vertices[prev].pdf_prev =
-                            vertices[curr].solid_angle_to_area(pdf_prev, xo, ng);
-
+                            vertices[prev].solid_angle_to_area(pdf_prev, xo, ng);
                         // russian roulette
                         if depth > 3 {
                             let luminance = crate::rgb_to_luminance(gathered);
