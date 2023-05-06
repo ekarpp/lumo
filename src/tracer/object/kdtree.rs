@@ -157,9 +157,11 @@ impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
         self.objects.iter().fold(0.0, |sum, obj| sum + obj.area())
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         let n = rand_utils::rand_f64() * self.objects.len() as f64;
-        self.objects[n.floor() as usize].sample_on(rand_sq)
+        let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
+        ho.material = &self.material;
+        ho
     }
 }
 

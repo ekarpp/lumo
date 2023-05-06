@@ -98,13 +98,21 @@ impl Sampleable for Sphere {
     }
 
     /// Sample on unit sphere and scale
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);
 
         let xo = self.origin + self.radius * rand_sph;
         let ng = (xo - self.origin) / self.radius;
 
-        (xo, ng)
+        Hit::new(
+            0.0,
+            &self.material,
+            xo,
+            DVec3::ZERO,
+            ng,
+            ng,
+            DVec2::ZERO,
+        ).unwrap()
     }
 
     /// Visible area from `xo` forms a cone. Sample a random point on the
@@ -116,7 +124,7 @@ impl Sampleable for Sphere {
 
         let xi = if dist_origin2 < radius2 {
             // if inside sphere, just sample on the surface
-            let (xi, _) = self.sample_on(rand_sq);
+            let xi = self.sample_on(rand_sq).p;
             xi
         } else {
             /* uvw-orthonormal basis,

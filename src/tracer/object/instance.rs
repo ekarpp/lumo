@@ -106,13 +106,14 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         todo!()
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
-        let (sample_local, ng_local) = self.object.sample_on(rand_sq);
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+        let mut ho = self.object.sample_on(rand_sq);
 
-        let sampled = self.transform.transform_point3(sample_local);
-        let normal = self.normal_transform * ng_local;
+        ho.ng = self.normal_transform * ho.ng;
+        ho.ns = self.normal_transform * ho.ns;
+        ho.p = self.transform.transform_point3(ho.p);
 
-        (sampled, normal)
+        ho
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {

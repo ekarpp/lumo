@@ -48,7 +48,7 @@ impl Sampleable for Rectangle {
         self.mesh.area()
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         self.mesh.sample_on(rand_sq)
     }
 }

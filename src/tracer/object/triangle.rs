@@ -40,6 +40,20 @@ impl Triangle {
     fn a(&self) -> DVec3 { self.mesh.vertices[self.vidx.0] }
     fn b(&self) -> DVec3 { self.mesh.vertices[self.vidx.1] }
     fn c(&self) -> DVec3 { self.mesh.vertices[self.vidx.2] }
+
+    fn shading_normal(&self, barycentrics: DVec3, ng: DVec3) -> DVec3 {
+        match self.nidx {
+            None => ng,
+            Some(nidx) => {
+                let na = self.mesh.normals[nidx.0];
+                let nb = self.mesh.normals[nidx.1];
+                let nc = self.mesh.normals[nidx.2];
+                barycentrics.x * na
+                    + barycentrics.y * nb
+                    + barycentrics.z * nc
+            }
+        }
+    }
 }
 
 impl Bounded for Triangle {
@@ -145,14 +159,7 @@ impl Object for Triangle {
         let gamma = barycentrics.z;
 
         let ng = (self.b() - self.a()).cross(self.c() - self.a()).normalize();
-        let ns = if let Some(nidx) = self.nidx {
-            let na = self.mesh.normals[nidx.0];
-            let nb = self.mesh.normals[nidx.1];
-            let nc = self.mesh.normals[nidx.2];
-            alpha * na + beta * nb + gamma * nc
-        } else {
-            ng
-        };
+        let ns = self.shading_normal(barycentrics, ng);
 
         let (ta, tb, tc) = if let Some(tidx) = self.tidx {
             let ta = self.mesh.uvs[tidx.0];
@@ -185,13 +192,28 @@ impl Sampleable for Triangle {
     }
 
     /// Random point with barycentrics.
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
+        let alpha = 1.0 - gamma - beta;
+        let barycentrics = DVec3::new(alpha, beta, gamma);
+
         let b_m_a = self.b() - self.a();
         let c_m_a = self.c() - self.a();
         let ng = b_m_a.cross(c_m_a).normalize();
+        let ns = self.shading_normal(barycentrics, ng);
 
-        (self.a() + beta * b_m_a + gamma * c_m_a, ng)
+        let xo = self.a() + beta * b_m_a + gamma * c_m_a;
+
+        Hit::new(
+            0.0,
+            // set by parent
+            &Material::Blank,
+            xo,
+            DVec3::ZERO,
+            ns,
+            ng,
+            DVec2::ZERO,
+        ).unwrap()
     }
 }

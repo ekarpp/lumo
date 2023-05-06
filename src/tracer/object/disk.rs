@@ -92,7 +92,7 @@ impl Sampleable for Disk {
         PI * self.radius * self.radius
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
         let xo = self.origin + self.uvw.to_world(DVec3::new(
@@ -101,11 +101,19 @@ impl Sampleable for Disk {
             0.0,
         ));
 
-        (xo, self.normal)
+        Hit::new(
+            0.0,
+            &self.material,
+            xo,
+            DVec3::ZERO,
+            self.normal,
+            self.normal,
+            DVec2::ZERO,
+        ).unwrap()
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let (xi, _) = self.sample_on(rand_sq);
+        let xi = self.sample_on(rand_sq).p;
         xi - xo
     }
 

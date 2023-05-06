@@ -71,15 +71,17 @@ pub trait Sampleable: Object {
 
     /// Samples a ray leaving at random point on the surface of the object.
     /// Direction cos weighed on the hemisphere. Returns also normal at ray origin
-    fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> (Ray, DVec3) {
-        let (xo, ng) = self.sample_on(rand_sq0);
+    fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> (Ray, Hit) {
+        let ho = self.sample_on(rand_sq0);
+        let ng = ho.ng;
+        let xo = ho.p;
         let uvw = Onb::new(ng);
         let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
         let wi = uvw.to_world(wi_local);
         // pdf start = 1 / area
         // pdf dir = cos hemisphere
         // prob want to make sample_leaving_pdf function
-        (Ray::new(xo, wi), ng)
+        (Ray::new(xo, wi), ho)
     }
 
     /// Returns PDF for sampled ray (i) origin and (ii) direction
@@ -94,7 +96,7 @@ pub trait Sampleable: Object {
 
     /// Returns randomly sampled point on the surface of the object
     /// and the normal at the point.
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3);
+    fn sample_on(&self, rand_sq: DVec2) -> Hit;
 
     /// Sample random direction from `xo` towards area of object
     /// that is visible form `xo`
@@ -103,7 +105,7 @@ pub trait Sampleable: Object {
     /// * `xo` - Point on the "from" object
     /// * `rand_sq` - Uniformly random point on unit square
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
-        let (xi, _) = self.sample_on(rand_sq);
+        let xi = self.sample_on(rand_sq).p;
         xi - xo
     }
 

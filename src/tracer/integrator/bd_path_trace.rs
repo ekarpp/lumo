@@ -3,7 +3,6 @@ use crate::tracer::material::Material;
 
 /*
  * TODO:
- * (1, 7) hit for light vertex initialization
  * (2) store directions in vertex?
  * (3, 6) proper visibility test
  * (4) PBRT has no geometry term but we need it?
@@ -44,18 +43,7 @@ impl<'a> Vertex<'a> {
     }
 
     /// Light vertex
-    pub fn light(xo: DVec3, ng: DVec3, gathered: DVec3, pdf_next: f64) -> Self {
-        // TODO (1)
-        let h = Hit::new(
-            0.0,
-            &Material::Blank,
-            xo,
-            DVec3::ZERO,
-            ng,
-            ng,
-            DVec2::X,
-        ).unwrap();
-
+    pub fn light(h: Hit<'a>, gathered: DVec3, pdf_next: f64) -> Self {
         Self {
             h,
             gathered,
@@ -156,13 +144,10 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
                     match scene.hit_light(&ri, light) {
                         None => DVec3::ZERO,
                         Some(hi) => {
-                            let xi = hi.p;
-                            let ng = hi.ng;
                             let ns = hi.ns;
                             let emittance = hi.material.emit(&hi);
                             let light_last = Vertex::light(
-                                xi,
-                                ng,
+                                hi,
                                 emittance,
                                 0.0,
                             );
@@ -240,17 +225,17 @@ fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
 fn light_path(scene: &Scene) -> Vec<Vertex> {
     let light = scene.uniform_random_light();
     let pdf_light = 1.0 / scene.num_lights() as f64;
-    let (ro, ng) = light.sample_leaving(
+    let (ro, ho) = light.sample_leaving(
         rand_utils::unit_square(),
         rand_utils::unit_square()
     );
+    let ng = ho.ng;
+    let ns = ho.ns;
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
-    // TODO (7) Need the hit also here to get emittance
-    let emit = DVec3::ONE;
+    let emit = ho.material.emit(&ho);
+    let root = Vertex::light(ho, emit, pdf_origin * pdf_light);
 
-    let root = Vertex::light(ro.origin, ng, emit, pdf_origin * pdf_light);
-
-    let gathered = emit * ng.dot(ro.dir).abs()
+    let gathered = emit * ns.dot(ro.dir).abs()
         / (pdf_light * pdf_origin * pdf_dir);
 
     walk(scene, ro, root, gathered, pdf_dir, true)
