@@ -10,14 +10,14 @@ use crate::tracer::material::Material;
  * (9) need to modify vertex PDFs?
  *
  * + this needs proper refactoring and cleanup...
-*/
+ */
 
+/// Abstraction of a vertex in the paths
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
     pdf_next: f64,
     pdf_prev: f64,
-    pub on_light: bool,
 }
 
 impl<'a> Vertex<'a> {
@@ -37,7 +37,6 @@ impl<'a> Vertex<'a> {
             gathered: DVec3::ONE,
             pdf_prev: 0.0,
             pdf_next: 1.0,
-            on_light: false,
         }
     }
 
@@ -48,7 +47,6 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_next,
             pdf_prev: 0.0,
-            on_light: true,
         }
     }
 
@@ -66,7 +64,6 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
             pdf_prev: 0.0,
-            on_light: false,
         }
     }
 
@@ -100,6 +97,9 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     radiance
 }
 
+/// Connects a light subpath and a camera subpath.
+/// Camera sampling not implemented i.e. camera paths of length 0 or 1 discarded.
+/// Special logic if light path length 0 or 1.
 fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -> DVec3 {
     let t = camera_path.len();
     let s = light_path.len();
@@ -111,7 +111,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         DVec3::ZERO
     } else if s == 0 {
         let camera_last = &camera_path[t - 1];
-        if !camera_last.on_light {
+        if !camera_last.h.is_light() {
             DVec3::ZERO
         } else {
             let emittance = camera_last.h.material.emit(&camera_last.h);
@@ -119,7 +119,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         }
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
-        if camera_last.on_light || camera_last.h.material.is_delta() {
+        if camera_last.h.is_light() || camera_last.h.material.is_delta() {
             DVec3::ZERO
         } else {
             // sample a point on the light
@@ -163,7 +163,7 @@ fn connect_paths(scene: &Scene, light_path: &[Vertex], camera_path: &[Vertex]) -
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.on_light || !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+        if camera_last.h.is_light() || !scene.unoccluded(light_last.h.p, camera_last.h.p) {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
@@ -206,6 +206,7 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }
 
+/// Generates a ray path starting from the camera
 fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
     let root = Vertex::camera(r.origin);
     let gathered = DVec3::ONE;
@@ -213,6 +214,7 @@ fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
     walk(scene, r, root, gathered, 1.0, false)
 }
 
+/// Generates a ray path strating from a light
 fn light_path(scene: &Scene) -> Vec<Vertex> {
     let light = scene.uniform_random_light();
     let pdf_light = 1.0 / scene.num_lights() as f64;
@@ -232,6 +234,7 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     walk(scene, ro, root, gathered, pdf_dir, true)
 }
 
+/// Ray that randomly scatters around from the given root vertex
 fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
@@ -261,10 +264,7 @@ fn walk<'a>(
         ));
         let ho = &vertices[curr].h;
         match material.bsdf_pdf(ho, &ro) {
-            None => {
-                vertices[curr].on_light = true;
-                break;
-            }
+            None => break,
             Some(scatter_pdf) => {
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
@@ -280,8 +280,16 @@ fn walk<'a>(
                             break;
                         }
 
+                        let shading_cosine = if from_light {
+                            let xp = vertices[prev].h.p;
+                            let v = (xp - xo).normalize();
+                            material.shading_cosine(v, ns)
+                        } else {
+                            material.shading_cosine(wi, ns)
+                        };
+
                         gathered *= material.bsdf_f(wo, wi, &ho)
-                            * ns.dot(wi).abs()
+                            * shading_cosine
                             / pdf_next;
 
                         // TODO (8)

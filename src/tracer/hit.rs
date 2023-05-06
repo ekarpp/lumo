@@ -90,4 +90,9 @@ impl<'a> Hit<'a> {
     pub fn is_medium(&self) -> bool {
         matches!(self.material, Material::Volumetric(..))
     }
+
+    /// Did we hit a light?
+    pub fn is_light(&self) -> bool {
+        matches!(self.material, Material::Light(..))
+    }
 }
