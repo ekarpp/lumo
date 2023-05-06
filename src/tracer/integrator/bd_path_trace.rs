@@ -264,7 +264,13 @@ fn walk<'a>(
         ));
         let ho = &vertices[curr].h;
         match material.bsdf_pdf(ho, &ro) {
-            None => break,
+            None => {
+                // we hit a light. if tracing from a light, discard latest vertex
+                if from_light {
+                    vertices.pop();
+                }
+                break;
+            }
             Some(scatter_pdf) => {
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
