@@ -4,7 +4,6 @@ use crate::tracer::material::Material;
 /*
  * TODO:
  * (2) store directions in vertex?
- * (3, 6) proper visibility test
  * (4) PBRT has no geometry term but we need it?
  * (5) implement MIS
  * (8) previous pdf needs pdf with orders swapped. refraction not commutative
@@ -76,15 +75,7 @@ impl<'a> Vertex<'a> {
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();
 
-        // TODO (3)
-        // this is a dumb hack.
-        // need to somehow figure if prev and next are on the same object.
-        // what if the object is transparent?
-        if wi.dot(self.h.ng) < crate::EPSILON {
-            DVec3::ZERO
-        } else {
-            self.h.material.bsdf_f(wo, wi, &self.h)
-        }
+        self.h.material.bsdf_f(wo, wi, &self.h)
     }
 
     fn solid_angle_to_area(&self, pdf: f64, xo: DVec3, ng: DVec3) -> f64 {
@@ -211,7 +202,7 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
 
     let wi = (v1_xo - v2_xo).normalize();
     let wi_length_squared = v1_xo.distance_squared(v2_xo);
-    // TODO (6) proper visibility test, here?
+
     v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }
 

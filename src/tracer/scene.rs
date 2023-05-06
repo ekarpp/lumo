@@ -93,21 +93,12 @@ impl Scene {
     /// Are there any objects blocking from `p1` to `p2`
     pub fn unoccluded(&self, p1: DVec3, p2: DVec3) -> bool {
         let r = Ray::new(p1, p2 - p1);
-        let t_max = p1.distance(p2) - EPSILON;
+        let h = self.hit(&r);
 
-        for object in &self.objects {
-            if object.hit(&r, 0.0, t_max).is_some() {
-                return false;
-            }
+        match h {
+            None => false,
+            Some(h) => h.p.distance_squared(p2) < EPSILON,
         }
-
-        for light in &self.lights {
-            if light.hit(&r, 0.0, t_max).is_some() {
-                return false;
-            }
-        }
-
-        true
     }
 
     /// Does ray `r` reach the light object `light`?
