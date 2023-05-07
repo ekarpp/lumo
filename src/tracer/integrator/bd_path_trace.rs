@@ -191,6 +191,22 @@ fn connect_paths(
     radiance * weight
 }
 
+fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
+    let ho = &curr.h;
+    let xo = prev.h.p;
+    let xi = curr.h.p;
+    let wo = xi - xo;
+    let ro = Ray::new(xo, wo);
+    let wi = next.h.p - xi;
+    let ri = Ray::new(xi, wi);
+    let sa = match ho.material.bsdf_pdf(ho, &ro) {
+        None => 0.0,
+        Some(pdf) => pdf.value_for(&ri),
+    };
+
+    sa * ri.dir.dot(next.h.ng).abs() / wi.length_squared()
+}
+
 fn mis_weight(
     scene: &Scene,
     light_path: &[Vertex],
@@ -211,15 +227,75 @@ fn mis_weight(
 
     let mut sum_ri = 0.0;
     let mut ri = 1.0;
+
+    if t > 0 {
+        let ct = &camera_path[t - 1];
+        let pdf_prev = if s == 0 {
+            // need light area measure here
+            0.1786
+        } else if s == 1 {
+            //let light_vertex = sampled_vertex.get_or_insert(light_path[s - 1]);
+            // how to get to light - 2 if it dont exist??
+            0.1786
+        } else {
+            let ls = &light_path[s - 1];
+            let ls_m = &light_path[s - 2];
+            pdf_area(ls_m, ls, ct)
+        };
+
+        ri *= map0(pdf_prev) / map0(ct.pdf_next);
+        sum_ri += ri;
+    }
+
+    if t > 1 {
+        let ct = &camera_path[t - 1];
+        let ct_m = &camera_path[t - 2];
+        let pdf_prev = if s == 0 {
+            0.1786
+        } else {
+            let ls = &light_path[s - 1];
+            pdf_area(ls, ct, ct_m)
+        };
+        ri *= map0(pdf_prev) / map0(ct_m.pdf_next);
+        sum_ri += ri;
+    }
+
     // vertices in camera path
-    for i in (1..t).rev() {
+    for i in (1..t.max(2) - 2).rev() {
         ri *= map0(camera_path[i].pdf_prev) / map0(camera_path[i].pdf_next);
         sum_ri += ri;
     }
 
     ri = 1.0;
+
+    if s > 0 {
+        let ls = &light_path[s - 1];
+        let pdf_prev = if t < 2 {
+            0.0
+        } else {
+            let ct = &camera_path[t - 1];
+            let ct_m = &camera_path[t - 2];
+            pdf_area(ct_m, ct, ls)
+        };
+        ri *= map0(pdf_prev) / map0(ls.pdf_next);
+        sum_ri += ri;
+    }
+
+    if s > 1 {
+        let ls = &light_path[s - 1];
+        let ls_m = &light_path[s - 2];
+        let pdf_prev = if t < 1 {
+            0.0
+        } else {
+            let ct = &camera_path[t - 1];
+            pdf_area(ct, ls, ls_m)
+        };
+        ri *= map0(pdf_prev) / map0(ls_m.pdf_next);
+        sum_ri += ri;
+    }
+
     // vertices in light path
-    for i in (1..s).rev() {
+    for i in (1..s.max(2) - 2).rev() {
         ri *= map0(light_path[i].pdf_prev) / map0(light_path[i].pdf_next);
         sum_ri += ri;
     }
