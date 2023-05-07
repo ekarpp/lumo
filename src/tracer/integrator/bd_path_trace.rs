@@ -243,7 +243,7 @@ fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
     let root = Vertex::camera(r.origin);
     let gathered = DVec3::ONE;
 
-    walk(scene, r, root, gathered, 1.0, false)
+    walk(scene, r, root, gathered, 1.0, Transport::Radiance)
 }
 
 /// Generates a ray path strating from a light
@@ -263,7 +263,7 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     let gathered = emit * ns.dot(ro.dir).abs()
         / (pdf_light * pdf_origin * pdf_dir);
 
-    walk(scene, ro, root, gathered, pdf_dir, true)
+    walk(scene, ro, root, gathered, pdf_dir, Transport::Importance)
 }
 
 /// Ray that randomly scatters around from the given root vertex
@@ -273,7 +273,7 @@ fn walk<'a>(
     root: Vertex<'a>,
     mut gathered: DVec3,
     pdf_dir: f64,
-    from_light: bool,
+    transport: Transport,
 ) -> Vec<Vertex<'a>> {
     let mut depth = 0;
     let mut vertices = vec![root];
@@ -299,7 +299,7 @@ fn walk<'a>(
         match material.bsdf_pdf(ho, &ro) {
             None => {
                 // we hit a light. if tracing from a light, discard latest vertex
-                if from_light {
+                if matches!(transport, Transport::Importance) {
                     vertices.pop();
                 }
                 break;
@@ -320,12 +320,13 @@ fn walk<'a>(
                             break;
                         }
 
-                        let shading_cosine = if from_light {
-                            let xp = vertices[prev].h.p;
-                            let v = (xp - xo).normalize();
-                            material.shading_cosine(v, ns)
-                        } else {
-                            material.shading_cosine(wi, ns)
+                        let shading_cosine = match transport {
+                            Transport::Radiance => material.shading_cosine(wi, ns),
+                            Transport::Importance => {
+                                let xp = vertices[prev].h.p;
+                                let v = (xp - xo).normalize();
+                                material.shading_cosine(v, ns)
+                            }
                         };
 
                         // TODO (10)

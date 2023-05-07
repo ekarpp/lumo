@@ -1,4 +1,4 @@
-use crate::rand_utils;
+use crate::{Transport, rand_utils};
 use crate::tracer::hit::Hit;
 use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;

@@ -48,6 +48,14 @@ pub fn rgb_to_luminance(rgb: DVec3) -> f64 {
     rgb.dot(DVec3::new(0.2126, 0.7152, 0.0722))
 }
 
+/// Enum to determine from which direction we are tracing rays
+pub enum Transport {
+    /// Starting from camera
+    Radiance = 0,
+    /// Starting from light
+    Importance = 1,
+}
+
 /// Represents an axis in the cartesian coordinate system
 #[derive(Copy, Clone)]
 pub enum Axis {
