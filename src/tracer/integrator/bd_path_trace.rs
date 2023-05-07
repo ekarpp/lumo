@@ -17,7 +17,6 @@ use crate::tracer::material::Material;
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
-    #[allow(dead_code)]
     pdf_next: f64,
     pdf_prev: f64,
 }
@@ -306,6 +305,7 @@ fn walk<'a>(
                 break;
             }
             Some(scatter_pdf) => {
+                // create vertex here, add pdf to it
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
