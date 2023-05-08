@@ -16,8 +16,8 @@ pub enum Material {
     Mirror,
     /// Perfect refraction with refraction index as argument
     Glass(f64),
-    /// Volumetric material for mediums
-    Volumetric(f64),
+    /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
+    Volumetric(f64, DVec3, DVec3),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -97,7 +97,14 @@ impl Material {
         match self {
             Self::Mirror | Self::Glass(..) => DVec3::ONE,
             // volumetric BSDF handled in integrator to cancel out PDF
-            Self::Volumetric(..) => unreachable!(),
+            Self::Volumetric(_, sigma_t, sigma_s) => {
+                let transmittance = (-*sigma_t * h.t).exp();
+                // cancel out the transmittance pdf taken from scene transmitance
+                let pdf = (transmittance * *sigma_t).dot(DVec3::ONE)
+                    / transmittance.dot(DVec3::ONE);
+
+                if pdf == 0.0 { DVec3::ONE } else { *sigma_s / pdf }
+            }
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, t.albedo_at(h), mfd)
             }
@@ -118,7 +125,7 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric(g) => bxdfs::brdf_volumetric_pdf(ro, *g),
+            Self::Volumetric(g, ..) => bxdfs::brdf_volumetric_pdf(ro, *g),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }

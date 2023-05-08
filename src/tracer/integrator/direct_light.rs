@@ -35,12 +35,13 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
 
                                 let ns = ho.ns;
 
-                                // assume that mediums get sampled perfectly
-                                // according to the BSDF and thus cancel out PDF
+                                let bsdf = material.bsdf_f(wo, wi, &ho);
                                 let bsdf = if ho.is_medium() {
-                                    DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                                    // assume that mediums get sampled perfectly
+                                    // according to the BSDF thus cancel out PDF
+                                    bsdf * p_scatter
                                 } else {
-                                    material.bsdf_f(wo, wi, &ho)
+                                    bsdf
                                 };
 
                                 bsdf

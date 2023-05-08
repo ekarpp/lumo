@@ -7,8 +7,6 @@ mod medium_test;
 /// absorbed and can scatter at random depending on density.
 /// Examples of real life mediums include smoke, fog, and clouds.
 pub struct Medium {
-    /// How much of each RGB channgel gets scattered when hitting the medium
-    sigma_s: DVec3,
     /// Transmittance of the medium, defined as `sigma_a + sigma_s`, where
     /// `sigma_a` tells how much each RGB channel gets absorbed while
     /// traversing the medium
@@ -32,32 +30,27 @@ impl Medium {
         assert!(absorption.max_element() <= 1.0
                 && absorption.min_element() >= 0.0);
 
+        let sigma_s = scattering;
+        let sigma_t = scattering + absorption;
+
         Self {
-            sigma_s: scattering,
-            sigma_t: scattering + absorption,
-            material: Material::Volumetric(scatter_param),
+            sigma_t,
+            material: Material::Volumetric(scatter_param, sigma_t, sigma_s),
         }
     }
 
     /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
     pub fn transmittance(&self, h: &Hit) -> DVec3 {
+        // need to move some of the stuff to bsdf?
         // can this be infinity?
         let t_delta = h.t;
         let transmittance = (-self.sigma_t * t_delta).exp();
-        let density = if h.is_medium() {
-            // we hit a medium
-            self.sigma_t * transmittance
-        } else {
-            transmittance
-        };
 
-        let pdf = density.dot(DVec3::ONE) / 3.0;
+        let pdf = transmittance.dot(DVec3::ONE) / 3.0;
 
         if pdf == 0.0 {
             // this medium does not do much...
             DVec3::ONE
-        } else if h.is_medium() {
-            self.sigma_s * transmittance / pdf
         } else {
             transmittance / pdf
         }
