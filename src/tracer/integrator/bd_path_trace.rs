@@ -157,7 +157,10 @@ fn connect_paths(
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
-                                * geometry_term(&light_last, camera_last)
+                                * geometry_term(
+                                    sampled_vertex.as_ref().unwrap(),
+                                    camera_last
+                                )
                         }
                     }
                 }
