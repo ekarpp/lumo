@@ -19,7 +19,7 @@ pub enum Integrator {
     PathTrace,
     /// Naive integrator that importance samples light once.
     DirectLight,
-    /// Bidirectional path tracing. Not implemented.
+    /// Bidirectional path tracing.
     BDPathTrace,
 }
 

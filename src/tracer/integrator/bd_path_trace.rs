@@ -152,13 +152,12 @@ fn connect_paths(
                                 &light_last
                             );
 
-                            let g = geometry_term(&light_last, camera_last);
                             sampled_vertex = Some(light_last);
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
-                                * g
+                                * geometry_term(&light_last, camera_last)
                         }
                     }
                 }
@@ -283,9 +282,7 @@ fn walk<'a>(
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
-        let xo = ho.p;
-        let wo = ro.dir;
-        let ng = ho.ng;
+        gathered *= scene.transmittance(&ho);
 
         let prev = depth;
         let curr = depth + 1;
@@ -309,6 +306,10 @@ fn walk<'a>(
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
+                        let xo = ho.p;
+                        let wo = ro.dir;
+                        let ng = ho.ng;
+
                         let ns = ho.ns;
                         let ri = ho.generate_ray(wi);
                         // normalized
@@ -329,10 +330,14 @@ fn walk<'a>(
                             }
                         };
 
+                        let bsdf = if ho.is_medium() {
+                            DVec3::ONE * pdf_next
+                        } else {
+                            material.bsdf_f(wo, wi, &ho)
+                        };
+
                         // TODO (10)
-                        gathered *= material.bsdf_f(wo, wi, &ho)
-                            * shading_cosine
-                            / pdf_next;
+                        gathered *= bsdf * shading_cosine / pdf_next;
 
                         // TODO (8)
                         pdf_prev = pdf_next;
