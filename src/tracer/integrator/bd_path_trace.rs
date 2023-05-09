@@ -109,8 +109,9 @@ fn connect_paths(
     camera_path: &[Vertex],
     t: usize,
 ) -> DVec3 {
-
-    let mut sampled_vertex: Option<Vertex> = None;
+    // binding
+    let mut light_last = Vertex::camera(DVec3::ZERO);
+    let mut sampled_vertex: Option<&Vertex> = None;
 
     let radiance = if t == 0 || t == 1 {
         // we dont do camera sampling
@@ -143,7 +144,7 @@ fn connect_paths(
                         Some(hi) => {
                             let ns = hi.ns;
                             let emittance = hi.material.emit(&hi);
-                            let light_last = Vertex::light(
+                            light_last = Vertex::light(
                                 hi,
                                 light,
                                 emittance,
@@ -154,7 +155,7 @@ fn connect_paths(
                                 &light_last
                             );
 
-                            sampled_vertex = Some(light_last);
+                            sampled_vertex = Some(&light_last);
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
@@ -215,7 +216,7 @@ fn mis_weight(
     s: usize,
     camera_path: &[Vertex],
     t: usize,
-    sampled_vertex: Option<Vertex>
+    sampled_vertex: Option<&Vertex>
 ) -> f64 {
     if s + t == 2 {
         return 1.0;
@@ -236,9 +237,23 @@ fn mis_weight(
             // probability for the origin. uniformly sampled on light surface
             ct.h.light.map_or(0.0, |light| 1.0 / light.area())
         } else if s == 1 {
-            //let light_vertex = sampled_vertex.get_or_insert(light_path[s - 1]);
-            // how to get to light - 2 if it dont exist??
-            0.1786
+            let ls = sampled_vertex.unwrap_or(&light_path[s - 1]);
+            match ls.h.light {
+                None => 0.0,
+                Some(light) => {
+                    let xo = ls.h.p;
+                    let xi = ct.h.p;
+                    let wi = xi - xo;
+                    let ri = Ray::new(xo, wi);
+                    // normalized
+                    let wi = ri.dir;
+                    let ng = ls.h.ng;
+                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
+                    let ng = ct.h.ng;
+                    // convert solid angle to area
+                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
+                }
+            }
         } else {
             let ls = &light_path[s - 1];
             let ls_m = &light_path[s - 2];
