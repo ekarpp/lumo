@@ -1,5 +1,6 @@
 use crate::efloat;
 use crate::tracer::material::Material;
+use crate::tracer::object::Sampleable;
 use crate::tracer::ray::Ray;
 use glam::{DVec2, DVec3};
 
@@ -11,6 +12,8 @@ pub struct Hit<'a> {
     pub material: &'a Material,
     /// 3D point where object was hit
     pub p: DVec3,
+    /// Optional reference to light if we hit one
+    pub light: Option<&'a dyn Sampleable>,
     /// Floating point error bounds of the impact point
     pub fp_error: DVec3,
     /// Normal of the surface used for shading calculations
@@ -44,6 +47,7 @@ impl<'a> Hit<'a> {
             t,
             material,
             p: xi,
+            light: None,
             fp_error,
             ns,
             ng,

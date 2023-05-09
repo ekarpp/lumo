@@ -82,9 +82,11 @@ impl Scene {
         // lazy, something better should be done.
         // use enum wrapper? have issues with instances..
         for light in &self.lights {
-            h = light.hit(r, 0.0, t_max).or(h);
-            // update distance to closest found so far
-            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+            h = light.hit(r, 0.0, t_max).map(|mut hit| {
+                t_max = hit.t;
+                hit.light = Some(light.as_ref());
+                hit
+            }).or(h);
         }
 
         h
