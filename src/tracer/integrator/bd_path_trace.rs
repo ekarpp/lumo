@@ -5,11 +5,9 @@ use crate::tracer::material::Material;
  * TODO:
  * (2) store directions in vertex?
  * (4) PBRT has no geometry term but we need it?
- * (5) implement MIS
  * (8) previous pdf needs pdf with orders swapped. refraction not commutative
  * (9) need to modify vertex PDFs?
  * (10) Need to account for radiance/importance transport in refraction
- * (11) Need to make temporary changes to PDFs, check PBRT
  * + this needs proper refactoring and cleanup...
  */
 
@@ -216,8 +214,6 @@ fn mis_weight(
         return 1.0;
     }
 
-    // TODO (11)
-
     let map0 = |pdf: f64| {
         if pdf == 0.0 { 1.0 } else { pdf }
     };
@@ -329,7 +325,6 @@ fn mis_weight(
         sum_ri += ri;
     }
 
-    // TODO (5)
     1.0 / (1.0 + sum_ri)
 }
 
