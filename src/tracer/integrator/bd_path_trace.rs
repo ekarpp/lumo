@@ -3,6 +3,7 @@ use crate::tracer::material::Material;
 
 /*
  * TODO:
+ * (1, 3) Need to modify sampled_vertex PDFs and use them properly
  * (2) store directions in vertex?
  * (4) PBRT has no geometry term but we need it?
  * (8) previous pdf needs pdf with orders swapped. refraction not commutative
@@ -140,6 +141,7 @@ fn connect_paths(
                         Some(hi) => {
                             let ns = hi.ns;
                             let emittance = hi.material.emit(&hi);
+                            // TODO (1)
                             sampled_vertex = Some(Vertex::light(
                                 hi,
                                 light,
@@ -228,7 +230,7 @@ fn mis_weight(
             ct.h.light.map_or(0.0, |light| 1.0 / light.area())
         } else if s == 1 {
             let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
-
+            // TODO (3) ?
             match ls.h.light {
                 None => 0.0,
                 Some(light) => {
