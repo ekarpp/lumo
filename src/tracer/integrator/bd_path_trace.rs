@@ -17,7 +17,6 @@ use crate::tracer::material::Material;
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
-    light: Option<&'a dyn Sampleable>,
     pdf_next: f64,
     pdf_prev: f64,
 }
@@ -36,7 +35,6 @@ impl<'a> Vertex<'a> {
         ).unwrap();
         Self {
             h,
-            light: None,
             gathered: DVec3::ONE,
             pdf_prev: 0.0,
             pdf_next: 1.0,
@@ -44,10 +42,10 @@ impl<'a> Vertex<'a> {
     }
 
     /// Light vertex
-    pub fn light(h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_next: f64) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_next: f64) -> Self {
+        h.light = Some(light);
         Self {
             h,
-            light: Some(light),
             gathered,
             pdf_next,
             pdf_prev: 0.0,
@@ -65,7 +63,6 @@ impl<'a> Vertex<'a> {
         let ng = h.ng;
         Self {
             h,
-            light: None,
             gathered,
             pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
             pdf_prev: 0.0,
