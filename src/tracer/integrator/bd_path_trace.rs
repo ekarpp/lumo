@@ -109,6 +109,8 @@ fn connect_paths(
     camera_path: &[Vertex],
     t: usize,
 ) -> DVec3 {
+    let mut sampled_vertex: Option<Vertex> = None;
+
     let radiance = if t == 0 || t == 1 {
         // we dont do camera sampling
         DVec3::ZERO
@@ -140,22 +142,23 @@ fn connect_paths(
                         Some(hi) => {
                             let ns = hi.ns;
                             let emittance = hi.material.emit(&hi);
-                            let light_last = Vertex::light(
+                            sampled_vertex = Some(Vertex::light(
                                 hi,
                                 light,
                                 emittance,
                                 0.0,
-                            );
+                            ));
+                            let light_last = sampled_vertex.as_ref().unwrap();
                             let bsdf = camera_last.bsdf(
                                 &camera_path[t - 2],
-                                &light_last
+                                light_last
                             );
 
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
-                                * geometry_term(&light_last, camera_last)
+                                * geometry_term(light_last, camera_last)
                         }
                     }
                 }
@@ -180,7 +183,7 @@ fn connect_paths(
     let weight = if radiance.length_squared() == 0.0 {
         0.0
     } else {
-        mis_weight(light_path, s, camera_path, t)
+        mis_weight(light_path, s, camera_path, t, sampled_vertex)
     };
     // do MIS weight for path
     radiance * weight
@@ -207,6 +210,7 @@ fn mis_weight(
     s: usize,
     camera_path: &[Vertex],
     t: usize,
+    sampled_vertex: Option<Vertex>,
 ) -> f64 {
     if s + t == 2 {
         return 1.0;
@@ -227,9 +231,24 @@ fn mis_weight(
             // probability for the origin. uniformly sampled on light surface
             ct.h.light.map_or(0.0, |light| 1.0 / light.area())
         } else if s == 1 {
-            // we don't do camera sampling
-            // but we reach this if clause..
-            0.0
+            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
+
+            match ls.h.light {
+                None => 0.0,
+                Some(light) => {
+                    let xo = ls.h.p;
+                    let xi = ct.h.p;
+                    let wi = xi - xo;
+                    let ri = Ray::new(xo, wi);
+                    // normalized
+                    let wi = ri.dir;
+                    let ng = ls.h.ng;
+                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
+                    let ng = ct.h.ng;
+                    // convert solid angle to area
+                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
+                }
+            }
         } else {
             let ls = &light_path[s - 1];
             let ls_m = &light_path[s - 2];
