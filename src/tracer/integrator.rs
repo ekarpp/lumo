@@ -1,5 +1,6 @@
 use crate::{Transport, rand_utils};
 use crate::tracer::hit::Hit;
+use crate::tracer::object::Sampleable;
 use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;

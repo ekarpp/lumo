@@ -17,6 +17,7 @@ use crate::tracer::material::Material;
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
+    light: Option<&'a dyn Sampleable>,
     pdf_next: f64,
     pdf_prev: f64,
 }
@@ -35,6 +36,7 @@ impl<'a> Vertex<'a> {
         ).unwrap();
         Self {
             h,
+            light: None,
             gathered: DVec3::ONE,
             pdf_prev: 0.0,
             pdf_next: 1.0,
@@ -42,9 +44,10 @@ impl<'a> Vertex<'a> {
     }
 
     /// Light vertex
-    pub fn light(h: Hit<'a>, gathered: DVec3, pdf_next: f64) -> Self {
+    pub fn light(h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_next: f64) -> Self {
         Self {
             h,
+            light: Some(light),
             gathered,
             pdf_next,
             pdf_prev: 0.0,
@@ -62,6 +65,7 @@ impl<'a> Vertex<'a> {
         let ng = h.ng;
         Self {
             h,
+            light: None,
             gathered,
             pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
             pdf_prev: 0.0,
@@ -144,6 +148,7 @@ fn connect_paths(
                             let emittance = hi.material.emit(&hi);
                             let light_last = Vertex::light(
                                 hi,
+                                light,
                                 emittance,
                                 0.0,
                             );
@@ -336,7 +341,7 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     let ns = ho.ns;
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
     let emit = ho.material.emit(&ho);
-    let root = Vertex::light(ho, emit, pdf_origin * pdf_light);
+    let root = Vertex::light(ho, light, emit, pdf_origin * pdf_light);
 
     let gathered = emit * ns.dot(ro.dir).abs()
         / (pdf_light * pdf_origin * pdf_dir);
