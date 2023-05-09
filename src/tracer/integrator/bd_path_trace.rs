@@ -233,8 +233,8 @@ fn mis_weight(
     if t > 0 {
         let ct = &camera_path[t - 1];
         let pdf_prev = if s == 0 {
-            // need light area measure here
-            0.1786
+            // probability for the origin. uniformly sampled on light surface
+            ct.h.light.map_or(0.0, |light| 1.0 / light.area())
         } else if s == 1 {
             //let light_vertex = sampled_vertex.get_or_insert(light_path[s - 1]);
             // how to get to light - 2 if it dont exist??
