@@ -228,6 +228,7 @@ fn mis_weight(
             ct.h.light.map_or(0.0, |light| 1.0 / light.area())
         } else if s == 1 {
             // we don't do camera sampling
+            // but we reach this if clause..
             0.0
         } else {
             let ls = &light_path[s - 1];
@@ -279,7 +280,7 @@ fn mis_weight(
         let ls = &light_path[s - 1];
         let pdf_prev = if t < 2 {
             // we don't do camera sampling
-            0.0
+            panic!()
         } else {
             let ct = &camera_path[t - 1];
             let ct_m = &camera_path[t - 2];
@@ -294,7 +295,7 @@ fn mis_weight(
         let ls_m = &light_path[s - 2];
         let pdf_prev = if t < 1 {
             // we don't do camera sampling
-            0.0
+            panic!()
         } else {
             let ct = &camera_path[t - 1];
             pdf_area(ct, ls, ls_m)
