@@ -1,3 +1,4 @@
+use crate::Transport;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
@@ -11,6 +12,7 @@ use std::f64::consts::PI;
 /// * `wo` - Incoming direction to the point of impact
 /// * `wi` - Direction towards "light" from the point of impact
 /// * `ng` - Geometric normal of the surface at the point of impact
+/// * `mode` - Toggle between radiance and importance transport
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
@@ -18,6 +20,7 @@ pub fn bsdf_microfacet(
     wi: DVec3,
     ng: DVec3,
     ns: DVec3,
+    mode: Transport,
     albedo: DVec3,
     mfd: &MfDistribution
 ) -> DVec3 {
@@ -77,6 +80,10 @@ pub fn bsdf_microfacet(
         } else {
             rfrct_idx
         };
+        let scale = match mode {
+            Transport::Radiance => eta_ratio * eta_ratio,
+            Transport::Importance => 1.0,
+        };
 
         let wh = (wi * eta_ratio + v).normalize();
         let wh = if wh.dot(v) < 0.0 { -wh } else { wh };
@@ -92,7 +99,7 @@ pub fn bsdf_microfacet(
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
-        (wh_dot_wi * wh_dot_v / (ns_dot_wi * ns_dot_v)).abs()
+        scale * (wh_dot_wi * wh_dot_v / (ns_dot_wi * ns_dot_v)).abs()
             * albedo * d * (DVec3::ONE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }

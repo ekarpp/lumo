@@ -1,3 +1,4 @@
+use crate::Transport;
 use crate::tracer::bxdfs;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
@@ -91,7 +92,7 @@ impl Material {
     }
 
     /// What is the color at `h`?
-    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, h: &Hit) -> DVec3 {
+    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> DVec3 {
         let ns = h.ns;
         let ng = h.ng;
         match self {
@@ -106,7 +107,7 @@ impl Material {
                 if pdf == 0.0 { DVec3::ONE } else { *sigma_s / pdf }
             }
             Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(wo, wi, ng, ns, t.albedo_at(h), mfd)
+                bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
             }
             _ => DVec3::ZERO,
         }

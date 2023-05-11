@@ -73,7 +73,7 @@ impl<'a> Vertex<'a> {
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.h.material.bsdf_f(wo, wi, &self.h)
+        self.h.material.bsdf_f(wo, wi, Transport::Radiance, &self.h)
     }
 
     fn solid_angle_to_area(&self, pdf: f64, xo: DVec3, ng: DVec3) -> f64 {
@@ -377,7 +377,7 @@ fn walk<'a>(
     root: Vertex<'a>,
     mut gathered: DVec3,
     pdf_dir: f64,
-    transport: Transport,
+    mode: Transport,
 ) -> Vec<Vertex<'a>> {
     let mut depth = 0;
     let mut vertices = vec![root];
@@ -401,7 +401,7 @@ fn walk<'a>(
         match material.bsdf_pdf(ho, &ro) {
             None => {
                 // we hit a light. if tracing from a light, discard latest vertex
-                if matches!(transport, Transport::Importance) {
+                if matches!(mode, Transport::Importance) {
                     vertices.pop();
                 }
                 break;
@@ -426,7 +426,7 @@ fn walk<'a>(
                             break;
                         }
 
-                        let shading_cosine = match transport {
+                        let shading_cosine = match mode {
                             Transport::Radiance => material.shading_cosine(wi, ns),
                             Transport::Importance => {
                                 let xp = vertices[prev].h.p;
@@ -439,7 +439,7 @@ fn walk<'a>(
                         let bsdf = if ho.is_medium() {
                             DVec3::ONE * pdf_next
                         } else {
-                            material.bsdf_f(wo, wi, &ho)
+                            material.bsdf_f(wo, wi, mode, &ho)
                         };
 
                         // TODO (10)

@@ -49,6 +49,7 @@ pub fn rgb_to_luminance(rgb: DVec3) -> f64 {
 }
 
 /// Enum to determine from which direction we are tracing rays
+#[derive(Copy, Clone)]
 pub enum Transport {
     /// Starting from camera
     Radiance = 0,
