@@ -431,8 +431,8 @@ fn walk<'a>(
                             Transport::Importance => {
                                 let xp = vertices[prev].h.p;
                                 let v = (xp - xo).normalize();
-                                wi.cos(ng).abs() * material.shading_cosine(v, ns)
-                                    / v.cos(ng).abs()
+                                wi.dot(ng).abs() * material.shading_cosine(v, ns)
+                                    / v.dot(ng).abs()
                             }
                         };
 
