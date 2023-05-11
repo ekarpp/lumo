@@ -96,7 +96,20 @@ impl Material {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            Self::Mirror | Self::Glass(..) => DVec3::ONE,
+            Self::Mirror => DVec3::ONE,
+            Self::Glass(eta) => {
+                match mode {
+                    Transport::Importance => DVec3::ONE,
+                    Transport::Radiance => {
+                        let inside = wi.dot(ng) > 0.0;
+                        if inside {
+                            DVec3::splat(1.0 / (eta * eta))
+                        } else {
+                            DVec3::splat(eta * eta)
+                        }
+                    }
+                }
+            }
             // volumetric BSDF handled in integrator to cancel out PDF
             Self::Volumetric(_, sigma_t, sigma_s) => {
                 let transmittance = (-*sigma_t * h.t).exp();
