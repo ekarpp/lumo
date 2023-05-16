@@ -6,7 +6,6 @@ use crate::tracer::material::Material;
  * (1, 3) Need to modify sampled_vertex PDFs and use them properly
  * (2) store directions in vertex?
  * (4) PBRT has no geometry term but we need it?
- * (8) previous pdf needs pdf with orders swapped. refraction not commutative
  * (9) need to modify vertex PDFs?
  * (10) Need to account for radiance/importance transport in refraction
  * + this needs proper refactoring and cleanup...
@@ -199,7 +198,7 @@ fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
     let ri = Ray::new(xi, wi);
     let sa = match ho.material.bsdf_pdf(ho, &ro) {
         None => 0.0,
-        Some(pdf) => pdf.value_for(&ri),
+        Some(pdf) => pdf.value_for(&ri, false),
     };
 
     sa * ri.dir.dot(next.h.ng).abs() / wi.length_squared()
@@ -420,7 +419,7 @@ fn walk<'a>(
                         // normalized
                         let wi = ri.dir;
 
-                        pdf_next = scatter_pdf.value_for(&ri);
+                        pdf_next = scatter_pdf.value_for(&ri, false);
 
                         if pdf_next <= 0.0 {
                             break;
@@ -445,8 +444,7 @@ fn walk<'a>(
                         // TODO (10)
                         gathered *= bsdf * shading_cosine / pdf_next;
 
-                        // TODO (8)
-                        pdf_prev = pdf_next;
+                        pdf_prev = scatter_pdf.value_for(&ri, true);
                         vertices[prev].pdf_prev =
                             vertices[prev].solid_angle_to_area(pdf_prev, xo, ng);
                         // russian roulette

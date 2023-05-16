@@ -72,8 +72,8 @@ fn shadow_ray(
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
                 Some(hi) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let p_light = pdf_light.value_for(&ri, false);
+                    let p_scatter = pdf_scatter.value_for(&ri, false);
                     let wi = ri.dir;
                     // check bad samples?
                     let weight = p_light * p_light
@@ -107,8 +107,8 @@ fn shadow_ray(
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
                 Some(hi) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let p_light = pdf_light.value_for(&ri, false);
+                    let p_scatter = pdf_scatter.value_for(&ri, false);
                     let wi = ri.dir;
                     // check bad samples?
                     let weight = p_scatter * p_scatter

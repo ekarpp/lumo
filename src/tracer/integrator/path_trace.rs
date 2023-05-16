@@ -37,7 +37,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                         let ri = ho.generate_ray(wi);
                         let wo = ro.dir;
                         let wi = ri.dir;
-                        let p_scatter = scatter_pdf.value_for(&ri);
+                        let p_scatter = scatter_pdf.value_for(&ri, false);
 
                         // resample bad sample?
                         if p_scatter <= 0.0 {

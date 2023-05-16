@@ -26,7 +26,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
                                 let wi = ri.dir;
                                 let wo = ro.dir;
 
-                                let p_scatter = scatter_pdf.value_for(&ri);
+                                let p_scatter = scatter_pdf.value_for(&ri, false);
 
                                 if p_scatter <= 0.0 {
                                     // return something better?
