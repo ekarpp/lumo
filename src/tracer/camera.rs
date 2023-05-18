@@ -2,6 +2,7 @@ use crate::rand_utils;
 use crate::tracer::ray::Ray;
 use crate::tracer::onb::Onb;
 use glam::{DVec2, DVec3, IVec2};
+use std::f64::consts::PI;
 
 /// Common configuration for cameras
 pub struct CameraConfig {
@@ -148,11 +149,15 @@ impl Camera {
         )
     }
 
+    fn get_cfg(&self) -> &CameraConfig {
+        match self {
+            Self::Orthographic(cfg, _) | Self::Perspective(cfg, _) => cfg,
+        }
+    }
+
     /// Returns the resolution of the image
     pub fn get_resolution(&self) -> IVec2 {
-        match self {
-            Self::Orthographic(cfg, _) | Self::Perspective(cfg, _) => cfg.resolution,
-        }
+        self.get_cfg().resolution
     }
 
     /// Adds depth of field to camera space ray and transform to world space ray
@@ -198,5 +203,58 @@ impl Camera {
             }
         }
 
+    }
+
+    /// Estimates gathered importance when sampling towards camera from `xi`.
+    /// Returns the importance value and PDF w.r.t solid angle
+    pub fn sample_towards(&self, xi: DVec3, rand_sq: DVec2) -> (DVec3, f64) {
+        let cfg = self.get_cfg();
+        let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
+            * cfg.lens_radius;
+        let xo = cfg.origin + cfg.camera_basis.to_world(xo_local);
+        let ng = cfg.camera_basis.to_world(DVec3::Z);
+        let wi = (xi - xo).normalize();
+
+        let lens_area = if cfg.lens_radius == 0.0 {
+            1.0
+        } else {
+            cfg.lens_radius * cfg.lens_radius * PI
+        };
+
+        (
+            self.importance_sample(Ray::new(xo, wi)),
+            xi.distance_squared(xo) / (ng.dot(wi) * lens_area),
+        )
+    }
+
+    fn importance_sample(&self, ro: Ray) -> DVec3 {
+        match self {
+            Self::Orthographic(..) => unimplemented!(),
+            Self::Perspective(cfg, _) => {
+                let wi = ro.dir;
+                let ng = cfg.camera_basis.to_world(DVec3::Z);
+                let cos_theta = ng.dot(wi);
+                if cos_theta < 0.0 {
+                    return DVec3::ZERO;
+                }
+
+                let lens_area = if cfg.lens_radius == 0.0 {
+                    1.0
+                } else {
+                    cfg.lens_radius * cfg.lens_radius * PI
+                };
+
+                let resolution = self.get_resolution().as_dvec2();
+                let min_res = resolution.min_element();
+                let image_plane_area = 4.0 * resolution.x * resolution.y
+                    / (min_res * min_res);
+
+                let area_coeff = lens_area * image_plane_area;
+
+                let cos2_theta = cos_theta * cos_theta;
+
+                DVec3::splat(1.0 / (area_coeff * cos2_theta * cos2_theta))
+            }
+        }
     }
 }
