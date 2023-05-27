@@ -1,4 +1,5 @@
 use crate::{Transport, rand_utils};
+use crate::tracer::camera::Camera;
 use crate::tracer::hit::Hit;
 use crate::tracer::object::Sampleable;
 use crate::tracer::pdfs::{ObjectPdf, Pdf};
@@ -36,11 +37,11 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, r: Ray) -> DVec3 {
+    pub fn integrate(&self, s: &Scene, c: &Camera, r: Ray) -> DVec3 {
         match self {
             Self::PathTrace => path_trace::integrate(s, r),
             Self::DirectLight => direct_light::integrate(s, r),
-            Self::BDPathTrace => bd_path_trace::integrate(s, r),
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r),
         }
     }
 }

@@ -21,7 +21,7 @@ struct Vertex<'a> {
 
 impl<'a> Vertex<'a> {
     /// Camera vertex
-    pub fn camera(xo: DVec3) -> Self {
+    pub fn camera(xo: DVec3, gathered: DVec3) -> Self {
         let h = Hit::new(
             0.0,
             &Material::Blank,
@@ -33,7 +33,7 @@ impl<'a> Vertex<'a> {
         ).unwrap();
         Self {
             h,
-            gathered: DVec3::ONE,
+            gathered,
             pdf_prev: 0.0,
             pdf_next: 1.0,
         }
@@ -81,7 +81,7 @@ impl<'a> Vertex<'a> {
     }
 }
 
-pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
+pub fn integrate(scene: &Scene, camera: &Camera, r: Ray) -> DVec3 {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
 
@@ -90,7 +90,7 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
     for t in 0..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance +=
-                connect_paths(scene, &light_path, s, &camera_path, t);
+                connect_paths(scene, camera, &light_path, s, &camera_path, t);
         }
     }
 
@@ -102,6 +102,7 @@ pub fn integrate(scene: &Scene, r: Ray) -> DVec3 {
 /// Special logic if light path length 0 or 1.
 fn connect_paths(
     scene: &Scene,
+    camera: &Camera,
     light_path: &[Vertex],
     s: usize,
     camera_path: &[Vertex],
@@ -109,8 +110,8 @@ fn connect_paths(
 ) -> DVec3 {
     let mut sampled_vertex: Option<Vertex> = None;
 
-    let radiance = if t == 0 || t == 1 {
-        // we dont do camera sampling
+    let radiance = if t == 0 {
+        // rays can't intersect our camera
         DVec3::ZERO
     } else if s == 0 {
         let camera_last = &camera_path[t - 1];
@@ -119,6 +120,23 @@ fn connect_paths(
         } else {
             let emittance = camera_last.h.material.emit(&camera_last.h);
             camera_last.gathered * emittance
+        }
+    } else if t == 1 {
+        let light_last = &light_path[s - 1];
+        let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
+        let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
+        // TODO (22) remove s == 1
+        if pdf <= 0.0 || s == 1 {
+            DVec3::ZERO
+        } else {
+            let light_scnd_last = &light_path[s - 2];
+            let importance = camera.importance_sample(&ro) / pdf;
+            let wi = -ro.dir;
+            sampled_vertex = Some(Vertex::camera(ro.origin, importance));
+            let camera_last = sampled_vertex.as_ref().unwrap();
+            // mat.shading_cosine
+            light_last.gathered * wi.dot(light_last.h.ns).abs() * importance
+                * light_last.bsdf(light_scnd_last, camera_last)
         }
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
@@ -155,6 +173,7 @@ fn connect_paths(
 
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
+                            // mat.shading_cosine
                             camera_last.gathered * bsdf
                                 * ns.dot(wi).abs() * emittance
                                 * geometry_term(light_last, camera_last)
@@ -211,6 +230,8 @@ fn mis_weight(
     t: usize,
     sampled_vertex: Option<Vertex>,
 ) -> f64 {
+    return 1.0;
+
     if s + t == 2 {
         return 1.0;
     }
@@ -343,8 +364,8 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
 
 /// Generates a ray path starting from the camera
 fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
-    let root = Vertex::camera(r.origin);
     let gathered = DVec3::ONE;
+    let root = Vertex::camera(r.origin, gathered);
 
     walk(scene, r, root, gathered, 1.0, Transport::Radiance)
 }

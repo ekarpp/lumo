@@ -93,6 +93,7 @@ impl Renderer {
             .map(|rand_sq: DVec2| {
                 let rgb = self.integrator.integrate(
                     &self.scene,
+                    &self.camera,
                     self.camera.generate_ray(xy + rand_sq)
                 );
 

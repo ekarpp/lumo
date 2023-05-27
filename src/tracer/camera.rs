@@ -205,15 +205,24 @@ impl Camera {
 
     }
 
-    /// Estimates gathered importance when sampling towards camera from `xi`.
-    /// Returns the importance value and PDF w.r.t solid angle
-    pub fn sample_towards(&self, xi: DVec3, rand_sq: DVec2) -> (DVec3, f64) {
+    /// Samples a ray leaving from the lens of the camera towards `xi`
+    pub fn sample_towards(&self, xi: DVec3, rand_sq: DVec2) -> Ray {
         let cfg = self.get_cfg();
         let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
             * cfg.lens_radius;
         let xo = cfg.origin + cfg.camera_basis.to_world(xo_local);
-        let ng = cfg.camera_basis.to_world(DVec3::Z);
+
         let wi = (xi - xo).normalize();
+
+        Ray::new(xo, wi)
+    }
+
+    /// Probability that `ro` towards `xi` got sampled
+    pub fn sample_towards_pdf(&self, ro: &Ray, xi: DVec3) -> f64 {
+        let cfg = self.get_cfg();
+        let xo = ro.origin;
+        let wi = ro.dir;
+        let ng = cfg.camera_basis.to_world(DVec3::Z);
 
         let lens_area = if cfg.lens_radius == 0.0 {
             1.0
@@ -221,13 +230,11 @@ impl Camera {
             cfg.lens_radius * cfg.lens_radius * PI
         };
 
-        (
-            self.importance_sample(Ray::new(xo, wi)),
-            xi.distance_squared(xo) / (ng.dot(wi) * lens_area),
-        )
+        xi.distance_squared(xo) / (ng.dot(wi) * lens_area)
     }
 
-    fn importance_sample(&self, ro: Ray) -> DVec3 {
+    /// Incident importance for the ray `ro` starting from the camera lens
+    pub fn importance_sample(&self, ro: &Ray) -> DVec3 {
         match self {
             Self::Orthographic(..) => unimplemented!(),
             Self::Perspective(cfg, _) => {
