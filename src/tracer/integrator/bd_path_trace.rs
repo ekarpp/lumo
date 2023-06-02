@@ -130,7 +130,7 @@ fn connect_paths(
             DVec3::ZERO
         } else {
             let light_scnd_last = &light_path[s - 2];
-            let importance = camera.importance_sample(&ro) / pdf;
+            let importance = camera.importance_sample(&ro).color / pdf;
             let wi = -ro.dir;
             sampled_vertex = Some(Vertex::camera(ro.origin, importance));
             let camera_last = sampled_vertex.as_ref().unwrap();

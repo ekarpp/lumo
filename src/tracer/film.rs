@@ -11,6 +11,14 @@ pub struct FilmSample {
     pub color: DVec3,
 }
 
+impl FilmSample {
+    pub fn new(x: i32, y: i32, color: DVec3) -> Self {
+        Self {
+            x, y, color
+        }
+    }
+}
+
 /// Film that contains the image being rendered
 pub struct Film {
     samples: Vec<DVec3>,

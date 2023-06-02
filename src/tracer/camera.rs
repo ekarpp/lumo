@@ -1,4 +1,5 @@
 use crate::rand_utils;
+use crate::tracer::film::FilmSample;
 use crate::tracer::ray::Ray;
 use crate::tracer::onb::Onb;
 use glam::{DVec2, DVec3, IVec2};
@@ -234,15 +235,15 @@ impl Camera {
     }
 
     /// Incident importance for the ray `ro` starting from the camera lens
-    pub fn importance_sample(&self, ro: &Ray) -> DVec3 {
+    pub fn importance_sample(&self, ro: &Ray) -> FilmSample {
         match self {
             Self::Orthographic(..) => unimplemented!(),
             Self::Perspective(cfg, _) => {
                 let wi = ro.dir;
-                let ng = cfg.camera_basis.to_world(DVec3::Z);
-                let cos_theta = ng.dot(wi);
+                let wi_local = cfg.camera_basis.to_local(wi);
+                let cos_theta = wi_local.z;
                 if cos_theta < 0.0 {
-                    return DVec3::ZERO;
+                    return FilmSample::new(0, 0, DVec3::ZERO);
                 }
 
                 let lens_area = if cfg.lens_radius == 0.0 {
@@ -260,7 +261,22 @@ impl Camera {
 
                 let cos2_theta = cos_theta * cos_theta;
 
-                DVec3::splat(1.0 / (area_coeff * cos2_theta * cos2_theta))
+                let color = DVec3::splat(
+                    1.0 / (area_coeff * cos2_theta * cos2_theta)
+                );
+
+                let fl = if cfg.lens_radius == 0.0 {
+                    1.0 / cos_theta
+                } else {
+                    cfg.focal_length / cos_theta
+                };
+
+                let focus = ro.at(fl);
+                let focus_local = cfg.camera_basis.to_local(focus) - cfg.origin;
+                let raster_xy = (focus_local.truncate() * min_res + resolution)
+                    .as_ivec2() / 2;
+
+                FilmSample::new(raster_xy.x, raster_xy.y, color)
             }
         }
     }
