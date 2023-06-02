@@ -4,9 +4,17 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
+/// Sample for the film
+pub struct FilmSample {
+    pub x: i32,
+    pub y: i32,
+    pub color: DVec3,
+}
+
 /// Film that contains the image being rendered
 pub struct Film {
-    samples: Vec<Vec<DVec3>>,
+    samples: Vec<DVec3>,
+    num_samples: Vec<u64>,
     pub width: i32,
     pub height: i32,
 }
@@ -14,17 +22,20 @@ pub struct Film {
 impl Film {
     /// Creates a new empty film
     pub fn new(width: i32, height: i32) -> Self {
+        let n = width * height;
         Self {
-            samples: vec![vec![]; width as usize * height as usize],
+            samples: vec![DVec3::ZERO; n as usize],
+            num_samples: vec![0; n as usize],
             width,
             height,
         }
     }
 
     /// Adds a sample to the film
-    pub fn add_sample(&mut self, x: i32, y: i32, sample: DVec3) {
-        let idx = (x + y * self.width) as usize;
-        self.samples[idx].push(sample);
+    pub fn add_sample(&mut self, sample: FilmSample) {
+        let idx = (sample.x + self.width * sample.y) as usize;
+        self.samples[idx] += sample.color;
+        self.num_samples[idx] += 1;
     }
 
     fn rgb_image(&self) -> Vec<u8> {
@@ -33,8 +44,7 @@ impl Film {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx].iter().sum::<DVec3>()
-                    / self.samples[idx].len() as f64;
+                let px = self.samples[idx] / self.num_samples[idx] as f64;
 
                 img.push(self.lin_to_srgb(px.x));
                 img.push(self.lin_to_srgb(px.y));
