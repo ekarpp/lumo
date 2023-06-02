@@ -230,7 +230,7 @@ fn mis_weight(
     t: usize,
     sampled_vertex: Option<Vertex>,
 ) -> f64 {
-    return 1.0;
+    //return 1.0;
 
     if s + t == 2 {
         return 1.0;
