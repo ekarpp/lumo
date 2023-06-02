@@ -11,6 +11,8 @@ pub use texture::Texture;
 mod bxdfs;
 /// Abstraction for a camera
 mod camera;
+/// Film contains the image being rendered
+mod film;
 /// Abstraction for a hit between a ray and an object.
 mod hit;
 /// Integrator to estimate the irradiance at each point

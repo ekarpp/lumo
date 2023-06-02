@@ -1,4 +1,8 @@
 use glam::DVec3;
+use png::{BitDepth, ColorType, Encoder, EncodingError};
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
 /// Film that contains the image being rendered
 pub struct Film {
@@ -24,13 +28,13 @@ impl Film {
     }
 
     fn rgb_image(&self) -> Vec<u8> {
-        let img = Vec::new();
+        let mut img = Vec::new();
 
         for y in 0..self.height {
             for x in 0..self.width {
-                let idx = (x + y * self.widht) as usize;
-                let px = self.samples[idx].iter().sum()
-                    / self.samples[idx].len();
+                let idx = (x + y * self.width) as usize;
+                let px = self.samples[idx].iter().sum::<DVec3>()
+                    / self.samples[idx].len() as f64;
 
                 img.push(self.lin_to_srgb(px.x));
                 img.push(self.lin_to_srgb(px.y));
@@ -52,7 +56,11 @@ impl Film {
         let path = Path::new(fname);
 
         let mut binding = BufWriter::new(File::create(path)?);
-        let mut encoder = Encoder::new(&mut binding, self.width, self.height);
+        let mut encoder = Encoder::new(
+            &mut binding,
+            self.width as u32,
+            self.height as u32,
+        );
         encoder.set_color(ColorType::Rgb);
         encoder.set_depth(BitDepth::Eight);
 
