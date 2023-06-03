@@ -117,15 +117,22 @@ fn connect_light_path(
 
     let light_last = &light_path[s - 1];
     let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
-    let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
+    let xi = light_last.h.p;
+    let pdf = camera.sample_towards_pdf(&ro, xi);
 
     // VISIBILITY CHECK
     if pdf <= 0.0 {
-        return FilmSample::default()
+        return FilmSample::default();
+    }
+    let wi = -ro.dir;
+    let v = Ray::new(xi, wi);
+    let t2 = v.origin.distance_squared(ro.origin);
+
+    if scene.hit(&v).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
+        return FilmSample::default();
     }
 
     let light_scnd_last = &light_path[s - 2];
-    let wi = -ro.dir;
     let mut sample = camera.importance_sample(&ro);
     sample.color /= pdf;
     let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
