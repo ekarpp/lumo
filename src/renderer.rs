@@ -73,12 +73,12 @@ impl Renderer {
 
         let start = Instant::now();
         let samples: Vec<FilmSample> = (0..self.resolution.y)
-            // TODO: fix parallelism
-        //.into_par_iter()
-            .flat_map(|y: i32| {
+            .into_par_iter()
+            .map(|y: i32| {
                 (0..self.resolution.x)
                     .flat_map(move |x: i32| self.get_samples(x, y))
             })
+            .flatten_iter()
             .collect();
 
         let mut film = Film::new(self.resolution.x, self.resolution.y);
