@@ -87,14 +87,16 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
     let mut sample = FilmSample::new(DVec3::ZERO, x, y);
     let mut samples = vec![];
 
-    for t in 0..=camera_path.len() {
+    for s in 2..=light_path.len() {
+        samples.push(connect_light_path(scene, camera, &camera_path, &light_path, s));
+    }
+
+    for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
             sample.color += connect_paths(
                 scene,
-                camera,
                 &light_path, s,
                 &camera_path, t,
-                &mut samples
             );
         }
     }
@@ -103,18 +105,53 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
     samples
 }
 
+/// Paths starting from light and sample the camera (i.e. t == 1 and s > 1)
+fn connect_light_path(
+    scene: &Scene,
+    camera: &Camera,
+    camera_path: &[Vertex],
+    light_path: &[Vertex],
+    s: usize
+) -> FilmSample {
+    // assert!(s >= 2);
+
+    let light_last = &light_path[s - 1];
+    let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
+    let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
+
+    // VISIBILITY CHECK
+    if pdf <= 0.0 {
+        return FilmSample::default()
+    }
+
+    let light_scnd_last = &light_path[s - 2];
+    let wi = -ro.dir;
+    let mut sample = camera.importance_sample(&ro);
+    sample.color /= pdf;
+    let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
+    let camera_last = sampled_vertex.as_ref().unwrap();
+
+    // mat.shading_cosine
+    sample.color *= light_last.gathered
+        * wi.dot(light_last.h.ns).abs()
+        * light_last.bsdf(light_scnd_last, camera_last)
+        * mis_weight(light_path, s, camera_path, 1, sampled_vertex);
+
+    sample
+}
+
 /// Connects a light subpath and a camera subpath.
 /// Camera sampling not implemented i.e. camera paths of length 0 or 1 discarded.
 /// Special logic if light path length 0 or 1.
 fn connect_paths(
     scene: &Scene,
-    camera: &Camera,
     light_path: &[Vertex],
     s: usize,
     camera_path: &[Vertex],
     t: usize,
-    samples: &mut Vec<FilmSample>,
 ) -> DVec3 {
+    // assert!(t >= 2);
+
     let mut sampled_vertex: Option<Vertex> = None;
 
     let radiance = if t == 0 {
@@ -128,28 +165,6 @@ fn connect_paths(
             let emittance = camera_last.h.material.emit(&camera_last.h);
             camera_last.gathered * emittance
         }
-    } else if t == 1 {
-        let light_last = &light_path[s - 1];
-        let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
-        let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
-        // TODO (22) remove s != 1
-        // VISIBILITY CHECK
-        if pdf > 0.0 && s != 1 {
-            let light_scnd_last = &light_path[s - 2];
-            let wi = -ro.dir;
-            let mut sample = camera.importance_sample(&ro);
-            sample.color /= pdf;
-            sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
-            let camera_last = sampled_vertex.as_ref().unwrap();
-
-            // mat.shading_cosine
-            sample.color *= light_last.gathered
-                * wi.dot(light_last.h.ns).abs()
-                * light_last.bsdf(light_scnd_last, camera_last);
-            samples.push(sample);
-        }
-
-        DVec3::ZERO
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
         if camera_last.h.is_light() || camera_last.h.material.is_delta() {
@@ -215,7 +230,7 @@ fn connect_paths(
     } else {
         mis_weight(light_path, s, camera_path, t, sampled_vertex)
     };
-    // do MIS weight for path
+
     radiance * weight
 }
 
@@ -242,7 +257,7 @@ fn mis_weight(
     t: usize,
     sampled_vertex: Option<Vertex>,
 ) -> f64 {
-    // return 1.0;
+    // assert!(t != 0)
 
     if s + t == 2 {
         return 1.0;
@@ -329,7 +344,7 @@ fn mis_weight(
         let ls = &light_path[s - 1];
         let pdf_prev = if t < 2 {
             // we don't do camera sampling
-            panic!()
+            1.0
         } else {
             let ct = &camera_path[t - 1];
             let ct_m = &camera_path[t - 2];
@@ -344,7 +359,7 @@ fn mis_weight(
         let ls_m = &light_path[s - 2];
         let pdf_prev = if t < 1 {
             // we don't do camera sampling
-            panic!()
+            1.0
         } else {
             let ct = &camera_path[t - 1];
             pdf_area(ct, ls, ls_m)
