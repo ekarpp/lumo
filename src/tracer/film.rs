@@ -57,6 +57,10 @@ impl Film {
 
     /// Adds a sample to the film
     pub fn add_sample(&mut self, sample: FilmSample) {
+        if !(0..self.width).contains(&sample.x)
+            || !(0..self.height).contains(&sample.y) {
+            return;
+        }
         let idx = (sample.x + self.width * sample.y) as usize;
         self.samples[idx] += sample.color;
         self.num_samples[idx] += 1;
