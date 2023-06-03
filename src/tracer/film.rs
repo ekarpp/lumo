@@ -36,7 +36,7 @@ impl FilmSample {
 /// Film that contains the image being rendered
 pub struct Film {
     samples: Vec<DVec3>,
-    num_samples: Vec<u64>,
+    num_samples: u32,
     /// Width of the image
     pub width: i32,
     /// Height of the image
@@ -45,11 +45,11 @@ pub struct Film {
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new(num_samples: u32, width: i32, height: i32) -> Self {
         let n = width * height;
         Self {
             samples: vec![DVec3::ZERO; n as usize],
-            num_samples: vec![0; n as usize],
+            num_samples,
             width,
             height,
         }
@@ -63,7 +63,6 @@ impl Film {
         }
         let idx = (sample.x + self.width * sample.y) as usize;
         self.samples[idx] += sample.color;
-        self.num_samples[idx] += 1;
     }
 
     /// Empties the vector and adds each sample to film
@@ -79,7 +78,7 @@ impl Film {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx] / self.num_samples[idx] as f64;
+                let px = self.samples[idx] / self.num_samples as f64;
 
                 img.push(self.lin_to_srgb(px.x));
                 img.push(self.lin_to_srgb(px.y));

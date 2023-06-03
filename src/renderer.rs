@@ -81,7 +81,7 @@ impl Renderer {
             .flatten_iter()
             .collect();
 
-        let mut film = Film::new(self.resolution.x, self.resolution.y);
+        let mut film = Film::new(self.num_samples, self.resolution.x, self.resolution.y);
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
         film

@@ -133,6 +133,7 @@ fn connect_paths(
         let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
         let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
         // TODO (22) remove s != 1
+        // VISIBILITY CHECK
         if pdf > 0.0 && s != 1 {
             let light_scnd_last = &light_path[s - 2];
             let wi = -ro.dir;
