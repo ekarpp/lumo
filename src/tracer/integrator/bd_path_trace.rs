@@ -99,6 +99,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
         }
     }
 
+    samples.push(sample);
     samples
 }
 
