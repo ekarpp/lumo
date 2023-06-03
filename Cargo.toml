@@ -3,6 +3,7 @@ name = "lumo"
 version = "0.2.6"
 description = "CPU based rendering engine"
 license = "MIT"
+rust-version = "1.70"
 repository = "https://github.com/ekarpp/lumo"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
 keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]

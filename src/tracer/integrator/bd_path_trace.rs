@@ -120,7 +120,6 @@ fn connect_light_path(
     let xi = light_last.h.p;
     let pdf = camera.sample_towards_pdf(&ro, xi);
 
-    // VISIBILITY CHECK
     if pdf <= 0.0 {
         return FilmSample::default();
     }
@@ -161,10 +160,8 @@ fn connect_paths(
 
     let mut sampled_vertex: Option<Vertex> = None;
 
-    let radiance = if t == 0 {
-        // rays can't intersect our camera
-        DVec3::ZERO
-    } else if s == 0 {
+    let radiance = if s == 0 {
+        // all vertices on camera path. check if last vertex is ON a light.
         let camera_last = &camera_path[t - 1];
         if !camera_last.h.is_light() {
             DVec3::ZERO
@@ -173,11 +170,12 @@ fn connect_paths(
             camera_last.gathered * emittance
         }
     } else if s == 1 {
+        // just one vertex on the light path. instead of using it, we sample a
+        // point on the same (TODO: at the moment uniform random) light.
         let camera_last = &camera_path[t - 1];
         if camera_last.h.is_light() || camera_last.h.material.is_delta() {
             DVec3::ZERO
         } else {
-            // sample a point on the light
             let light = scene.uniform_random_light();
 
             let xo = camera_last.h.p;
@@ -217,6 +215,9 @@ fn connect_paths(
             }
         }
     } else {
+        // all other cases
+        // assert!(s >= 2);
+        // assert!(t >= 2);
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
@@ -265,6 +266,7 @@ fn mis_weight(
     sampled_vertex: Option<Vertex>,
 ) -> f64 {
     // assert!(t != 0)
+    // if `sampled_vertex.is_some()` then t == 1 XOR s == 1
 
     if s + t == 2 {
         return 1.0;
@@ -364,13 +366,10 @@ fn mis_weight(
     if s > 1 {
         let ls = &light_path[s - 1];
         let ls_m = &light_path[s - 2];
-        let pdf_prev = if t < 1 {
-            // we don't do camera sampling
-            1.0
-        } else {
-            let ct = &camera_path[t - 1];
-            pdf_area(ct, ls, ls_m)
-        };
+        let ct = sampled_vertex.as_ref().unwrap_or(&camera_path[t - 1]);
+
+        let pdf_prev = pdf_area(ct, ls, ls_m);
+
         ri *= map0(pdf_prev) / map0(ls_m.pdf_next);
         sum_ri += ri;
     }
