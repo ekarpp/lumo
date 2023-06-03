@@ -1,4 +1,5 @@
 pub use camera::Camera;
+pub use film::{Film, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
 pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Object};

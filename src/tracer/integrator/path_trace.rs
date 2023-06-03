@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
+pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
     let mut last_specular = true;
     let mut radiance = DVec3::ZERO;
     let mut gathered = DVec3::ONE;
@@ -77,5 +77,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
         }
     }
 
-    radiance
+    FilmSample::new(radiance, x, y)
 }

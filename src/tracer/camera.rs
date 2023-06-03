@@ -203,7 +203,6 @@ impl Camera {
                 Self::add_dof(xo_local, DVec3::Z, cfg)
             }
         }
-
     }
 
     /// Samples a ray leaving from the lens of the camera towards `xi`
@@ -243,7 +242,7 @@ impl Camera {
                 let wi_local = cfg.camera_basis.to_local(wi);
                 let cos_theta = wi_local.z;
                 if cos_theta < 0.0 {
-                    return FilmSample::new(0, 0, DVec3::ZERO);
+                    return FilmSample::default();
                 }
 
                 let lens_area = if cfg.lens_radius == 0.0 {
@@ -276,7 +275,7 @@ impl Camera {
                 let raster_xy = (focus_local.truncate() * min_res + resolution)
                     .as_ivec2() / 2;
 
-                FilmSample::new(raster_xy.x, raster_xy.y, color)
+                FilmSample::new(color, raster_xy.x, raster_xy.y)
             }
         }
     }

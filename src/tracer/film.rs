@@ -6,13 +6,27 @@ use std::path::Path;
 
 /// Sample for the film
 pub struct FilmSample {
+    /// Raster coordinate `x` of the sample
     pub x: i32,
+    /// Raster coordinate `y` of the sample
     pub y: i32,
+    /// Color of the sample
     pub color: DVec3,
 }
 
+impl Default for FilmSample {
+    fn default() -> Self {
+        Self {
+            x: -1,
+            y: -1,
+            color: DVec3::ZERO,
+        }
+    }
+}
+
 impl FilmSample {
-    pub fn new(x: i32, y: i32, color: DVec3) -> Self {
+    /// Creates a sample of `color` at raster `(x,y)`
+    pub fn new(color: DVec3, x: i32, y: i32) -> Self {
         Self {
             x, y, color
         }
@@ -23,7 +37,9 @@ impl FilmSample {
 pub struct Film {
     samples: Vec<DVec3>,
     num_samples: Vec<u64>,
+    /// Width of the image
     pub width: i32,
+    /// Height of the image
     pub height: i32,
 }
 
@@ -44,6 +60,13 @@ impl Film {
         let idx = (sample.x + self.width * sample.y) as usize;
         self.samples[idx] += sample.color;
         self.num_samples[idx] += 1;
+    }
+
+    /// Empties the vector and adds each sample to film
+    pub fn add_samples(&mut self, mut samples: Vec<FilmSample>) {
+        while let Some(sample) = samples.pop() {
+            self.add_sample(sample);
+        }
     }
 
     fn rgb_image(&self) -> Vec<u8> {

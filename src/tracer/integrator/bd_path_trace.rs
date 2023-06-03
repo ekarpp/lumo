@@ -81,20 +81,25 @@ impl<'a> Vertex<'a> {
     }
 }
 
-pub fn integrate(scene: &Scene, camera: &Camera, r: Ray) -> DVec3 {
+pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
     let light_path = light_path(scene);
     let camera_path = camera_path(scene, r);
-
-    let mut radiance = DVec3::ZERO;
+    let mut sample = FilmSample::new(DVec3::ZERO, x, y);
+    let mut samples = vec![];
 
     for t in 0..=camera_path.len() {
         for s in 0..=light_path.len() {
-            radiance +=
-                connect_paths(scene, camera, &light_path, s, &camera_path, t);
+            sample.color += connect_paths(
+                scene,
+                camera,
+                &light_path, s,
+                &camera_path, t,
+                &mut samples
+            );
         }
     }
 
-    radiance
+    samples
 }
 
 /// Connects a light subpath and a camera subpath.
@@ -107,6 +112,7 @@ fn connect_paths(
     s: usize,
     camera_path: &[Vertex],
     t: usize,
+    samples: &mut Vec<FilmSample>,
 ) -> DVec3 {
     let mut sampled_vertex: Option<Vertex> = None;
 
@@ -130,13 +136,18 @@ fn connect_paths(
             DVec3::ZERO
         } else {
             let light_scnd_last = &light_path[s - 2];
-            let importance = camera.importance_sample(&ro).color / pdf;
             let wi = -ro.dir;
-            sampled_vertex = Some(Vertex::camera(ro.origin, importance));
+            let mut sample = camera.importance_sample(&ro);
+            sample.color /= pdf;
+            sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
             let camera_last = sampled_vertex.as_ref().unwrap();
+
             // mat.shading_cosine
-            light_last.gathered * wi.dot(light_last.h.ns).abs() * importance
-                * light_last.bsdf(light_scnd_last, camera_last)
+            sample.color *= light_last.gathered
+                * wi.dot(light_last.h.ns).abs()
+                * light_last.bsdf(light_scnd_last, camera_last);
+            samples.push(sample);
+            DVec3::ZERO
         }
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
