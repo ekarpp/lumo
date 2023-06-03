@@ -132,10 +132,8 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
         let pdf = camera.sample_towards_pdf(&ro, light_last.h.p);
-        // TODO (22) remove s == 1
-        if pdf <= 0.0 || s == 1 {
-            DVec3::ZERO
-        } else {
+        // TODO (22) remove s != 1
+        if pdf > 0.0 && s != 1 {
             let light_scnd_last = &light_path[s - 2];
             let wi = -ro.dir;
             let mut sample = camera.importance_sample(&ro);
@@ -148,8 +146,9 @@ fn connect_paths(
                 * wi.dot(light_last.h.ns).abs()
                 * light_last.bsdf(light_scnd_last, camera_last);
             samples.push(sample);
-            DVec3::ZERO
         }
+
+        DVec3::ZERO
     } else if s == 1 {
         let camera_last = &camera_path[t - 1];
         if camera_last.h.is_light() || camera_last.h.material.is_delta() {
@@ -242,7 +241,7 @@ fn mis_weight(
     t: usize,
     sampled_vertex: Option<Vertex>,
 ) -> f64 {
-    //return 1.0;
+    // return 1.0;
 
     if s + t == 2 {
         return 1.0;
