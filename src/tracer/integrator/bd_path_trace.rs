@@ -15,8 +15,8 @@ use crate::tracer::material::Material;
 struct Vertex<'a> {
     h: Hit<'a>,
     gathered: DVec3,
-    pdf_next: f64,
-    pdf_prev: f64,
+    pdf_fwd: f64,
+    pdf_bck: f64,
 }
 
 impl<'a> Vertex<'a> {
@@ -34,19 +34,19 @@ impl<'a> Vertex<'a> {
         Self {
             h,
             gathered,
-            pdf_prev: 0.0,
-            pdf_next: 1.0,
+            pdf_bck: 0.0,
+            pdf_fwd: 1.0,
         }
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_next: f64) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_fwd: f64) -> Self {
         h.light = Some(light);
         Self {
             h,
             gathered,
-            pdf_next,
-            pdf_prev: 0.0,
+            pdf_fwd,
+            pdf_bck: 0.0,
         }
     }
 
@@ -54,7 +54,7 @@ impl<'a> Vertex<'a> {
     pub fn surface(
         h: Hit<'a>,
         gathered: DVec3,
-        pdf_next: f64,
+        pdf_fwd: f64,
         prev: &Vertex
     ) -> Self {
         let xo = h.p;
@@ -62,8 +62,8 @@ impl<'a> Vertex<'a> {
         Self {
             h,
             gathered,
-            pdf_next: prev.solid_angle_to_area(pdf_next, xo, ng),
-            pdf_prev: 0.0,
+            pdf_fwd: prev.solid_angle_to_area(pdf_fwd, xo, ng),
+            pdf_bck: 0.0,
         }
     }
 
@@ -279,6 +279,7 @@ fn mis_weight(
     let mut sum_ri = 0.0;
     let mut ri = 1.0;
 
+    // applies the updated PDF for camera_last of the connection
     if t > 0 {
         let ct = &camera_path[t - 1];
         let pdf_prev = if s == 0 {
@@ -309,10 +310,11 @@ fn mis_weight(
             pdf_area(ls_m, ls, ct)
         };
 
-        ri *= map0(pdf_prev) / map0(ct.pdf_next);
+        ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
         sum_ri += ri;
     }
 
+    // applies the updated PDF for camera t - 2 using the connection
     if t > 1 {
         let ct = &camera_path[t - 1];
         let ct_m = &camera_path[t - 2];
@@ -334,35 +336,38 @@ fn mis_weight(
                 }
             }
         } else {
-            let ls = &light_path[s - 1];
+            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
             pdf_area(ls, ct, ct_m)
         };
-        ri *= map0(pdf_prev) / map0(ct_m.pdf_next);
+        ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
         sum_ri += ri;
     }
 
     // vertices in camera path
     for i in (1..t.max(2) - 2).rev() {
-        ri *= map0(camera_path[i].pdf_prev) / map0(camera_path[i].pdf_next);
+        ri *= map0(camera_path[i].pdf_bck) / map0(camera_path[i].pdf_fwd);
         sum_ri += ri;
     }
 
-    ri = 1.0;
+    let mut ri = 1.0;
 
+    // applies the updated PDF at light_last using the connection
     if s > 0 {
         let ls = &light_path[s - 1];
         let pdf_prev = if t < 2 {
-            // we don't do camera sampling
+            // probability that the direction got sampled from camera.
+            // should be 1.0?
             1.0
         } else {
             let ct = &camera_path[t - 1];
             let ct_m = &camera_path[t - 2];
             pdf_area(ct_m, ct, ls)
         };
-        ri *= map0(pdf_prev) / map0(ls.pdf_next);
+        ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
         sum_ri += ri;
     }
 
+    // applies the updated PDF at light_last using the connection
     if s > 1 {
         let ls = &light_path[s - 1];
         let ls_m = &light_path[s - 2];
@@ -370,13 +375,13 @@ fn mis_weight(
 
         let pdf_prev = pdf_area(ct, ls, ls_m);
 
-        ri *= map0(pdf_prev) / map0(ls_m.pdf_next);
+        ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
         sum_ri += ri;
     }
 
     // vertices in light path
     for i in (1..s.max(2) - 2).rev() {
-        ri *= map0(light_path[i].pdf_prev) / map0(light_path[i].pdf_next);
+        ri *= map0(light_path[i].pdf_bck) / map0(light_path[i].pdf_fwd);
         sum_ri += ri;
     }
 
@@ -434,9 +439,9 @@ fn walk<'a>(
 ) -> Vec<Vertex<'a>> {
     let mut depth = 0;
     let mut vertices = vec![root];
-    let mut pdf_next = pdf_dir;
+    let mut pdf_fwd = pdf_dir;
     #[allow(unused_assignments)]
-    let mut pdf_prev = 0.0;
+    let mut pdf_bck = 0.0;
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
@@ -447,7 +452,7 @@ fn walk<'a>(
         vertices.push(Vertex::surface(
             ho,
             gathered,
-            pdf_next,
+            pdf_fwd,
             &vertices[prev],
         ));
         let ho = &vertices[curr].h;
@@ -473,9 +478,9 @@ fn walk<'a>(
                         // normalized
                         let wi = ri.dir;
 
-                        pdf_next = scatter_pdf.value_for(&ri, false);
+                        pdf_fwd = scatter_pdf.value_for(&ri, false);
 
-                        if pdf_next <= 0.0 {
+                        if pdf_fwd <= 0.0 {
                             break;
                         }
 
@@ -490,17 +495,17 @@ fn walk<'a>(
                         };
 
                         let bsdf = if ho.is_medium() {
-                            DVec3::ONE * pdf_next
+                            DVec3::ONE * pdf_fwd
                         } else {
                             material.bsdf_f(wo, wi, mode, &ho)
                         };
 
                         // TODO (10)
-                        gathered *= bsdf * shading_cosine / pdf_next;
+                        gathered *= bsdf * shading_cosine / pdf_fwd;
 
-                        pdf_prev = scatter_pdf.value_for(&ri, true);
-                        vertices[prev].pdf_prev =
-                            vertices[prev].solid_angle_to_area(pdf_prev, xo, ng);
+                        pdf_bck = scatter_pdf.value_for(&ri, true);
+                        vertices[prev].pdf_bck =
+                            vertices[prev].solid_angle_to_area(pdf_bck, xo, ng);
                         // russian roulette
                         if depth > 3 {
                             let luminance = crate::rgb_to_luminance(gathered);
