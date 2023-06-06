@@ -201,16 +201,16 @@ impl MfdPdf {
 
     /// Samples a random microfacet normal and refracts direction around it
     fn sample_ndf_refract(&self, rand_sq: DVec2) -> Option<DVec3> {
+        let local_v = self.uvw.to_local(self.v);
+        let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
+        let wh = self.uvw.to_world(local_wh).normalize();
+
         let inside = self.ng.dot(self.v) < 0.0;
         let eta_ratio = if inside {
             self.mfd.get_rfrct_idx()
         } else {
             1.0 / self.mfd.get_rfrct_idx()
         };
-        let local_v = self.uvw.to_local(self.v);
-        let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
-
-        let wh = self.uvw.to_world(local_wh).normalize();
 
         Some( bxdfs::refract(eta_ratio, self.v, wh) )
     }
@@ -259,7 +259,6 @@ impl MfdPdf {
                 0.0
             }
         } else {
-            // changes just here, need mode. just swap wi/v around??
             let eta_ratio = if v_inside {
                 1.0 / self.mfd.get_rfrct_idx()
             } else {
