@@ -23,6 +23,11 @@ opt-level = 2
 [profile.test]
 opt-level = 2
 
+[profile.gdb]
+inherits = "dev"
+opt-level = 0
+debug = true
+
 [dependencies]
 argh = "0.1.10"
 glam = "0.23.0"
