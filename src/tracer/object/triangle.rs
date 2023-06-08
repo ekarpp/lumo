@@ -160,6 +160,7 @@ impl Object for Triangle {
 
         let ng = (self.b() - self.a()).cross(self.c() - self.a()).normalize();
         let ns = self.shading_normal(barycentrics, ng);
+        let xi = alpha * self.a() + beta * self.b() + gamma * self.c();
 
         let (ta, tb, tc) = if let Some(tidx) = self.tidx {
             let ta = self.mesh.uvs[tidx.0];
@@ -182,7 +183,7 @@ impl Object for Triangle {
         );
 
         // material will be set by parent object
-        Hit::new(t, &Material::Blank, r.at(t), err, ns, ng, uv)
+        Hit::new(t, &Material::Blank, xi, err, ns, ng, uv)
     }
 }
 
