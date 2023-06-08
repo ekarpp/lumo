@@ -32,9 +32,6 @@ impl Ray {
         self.origin + t * self.dir
     }
 
-    /// Did we hit the backface of the surface?
-    pub fn backface(&self, ng: DVec3) -> bool { self.dir.dot(ng) > 0.0 }
-
     /// Coordinate of origin along axis
     pub fn o(&self, axis: Axis) -> f64 {
         match axis {

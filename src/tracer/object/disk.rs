@@ -85,7 +85,7 @@ impl Object for Disk {
             Hit::new(
                 t.value,
                 &self.material,
-                r.backface(self.normal),
+                r.dir,
                 xi,
                 err,
                 self.normal,
@@ -113,7 +113,7 @@ impl Sampleable for Disk {
         Hit::new(
             0.0,
             &self.material,
-            false,
+            -self.normal,
             xo,
             DVec3::ZERO,
             self.normal,

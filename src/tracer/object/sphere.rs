@@ -88,7 +88,7 @@ impl Object for Sphere {
         let v = (-ni.y).acos() / PI;
         let uv = DVec2::new(u, v);
 
-        Hit::new(t.value, &self.material, r.backface(ni), xi, err, ni, ni, uv)
+        Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }
 }
 
@@ -107,7 +107,7 @@ impl Sampleable for Sphere {
         Hit::new(
             0.0,
             &self.material,
-            false,
+            -ng,
             xo,
             DVec3::ZERO,
             ng,

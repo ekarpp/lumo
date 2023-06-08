@@ -31,6 +31,7 @@ impl<'a> Hit<'a> {
     ///
     /// * `t` - Value of ray at which hit occurred
     /// * `material` - Material of the object which got hit
+    /// * `wo` - Direction towards to point of intersection
     /// * `xi` - Point in world space at which object got hit
     /// * `fp_error` - Floating point error bounds for `xi`
     /// * `ns` - Shading normal of the object at the point of impact
@@ -39,13 +40,14 @@ impl<'a> Hit<'a> {
     pub fn new(
         t: f64,
         material: &'a Material,
-        backface: bool,
+        wo: DVec3,
         xi: DVec3,
         fp_error: DVec3,
         ns: DVec3,
         ng: DVec3,
         uv: DVec2,
     ) -> Option<Self> {
+        let backface = wo.dot(ng) > 0.0;
         Some(Self {
             t,
             material,

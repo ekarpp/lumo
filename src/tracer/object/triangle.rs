@@ -183,7 +183,7 @@ impl Object for Triangle {
         );
 
         // material will be set by parent object
-        Hit::new(t, &Material::Blank, r.backface(ng), xi, err, ns, ng, uv)
+        Hit::new(t, &Material::Blank, r.dir, xi, err, ns, ng, uv)
     }
 }
 
@@ -210,7 +210,7 @@ impl Sampleable for Triangle {
             0.0,
             // set by parent
             &Material::Blank,
-            false,
+            -ng,
             xo,
             DVec3::ZERO,
             ns,

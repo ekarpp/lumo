@@ -70,7 +70,7 @@ impl Object for Plane {
             Hit::new(
                 t.value,
                 &self.material,
-                r.backface(self.normal),
+                r.dir,
                 xi,
                 err,
                 self.normal,
