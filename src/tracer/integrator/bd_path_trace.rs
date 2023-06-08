@@ -125,7 +125,7 @@ fn connect_light_path(
         return FilmSample::default();
     }
     let wi = -ro.dir;
-    let v = Ray::new(xi, wi);
+    let v = light_last.h.generate_ray(wi);
     let t2 = v.origin.distance_squared(ro.origin);
 
     if scene.hit(&v).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
