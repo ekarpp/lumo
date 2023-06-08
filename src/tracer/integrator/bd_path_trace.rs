@@ -222,7 +222,7 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.h.is_light() || !scene.unoccluded(light_last.h.p, camera_last.h.p) {
+        if camera_last.h.is_light() || !scene.unoccluded(&light_last.h, &camera_last.h) {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);

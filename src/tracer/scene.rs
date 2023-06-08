@@ -1,7 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
 use crate::tracer::{Medium, Object, Rectangle, Sampleable};
-use crate::EPSILON;
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
 
@@ -88,18 +87,20 @@ impl Scene {
                 hit
             }).or(h);
         }
-
+        if t_max < 1e-10 {
+            print!("1");
+        }
         h
     }
 
     /// Are there any objects blocking from `p1` to `p2`
-    pub fn unoccluded(&self, p1: DVec3, p2: DVec3) -> bool {
-        let r = Ray::new(p1, p2 - p1);
+    pub fn unoccluded(&self, h1: &Hit, h2: &Hit) -> bool {
+        let r = h1.generate_ray(h2.p - h1.p);
         let h = self.hit(&r);
 
         match h {
             None => false,
-            Some(h) => h.p.distance_squared(p2) < EPSILON,
+            Some(h) => h.p.distance_squared(h2.p) < crate::EPSILON,
         }
     }
 
@@ -110,7 +111,7 @@ impl Scene {
             Some(hi) => hi,
         };
         // consider also checking medium
-        let t_max = light_hit.t - EPSILON;
+        let t_max = light_hit.t - crate::EPSILON;
 
         for object in &self.objects {
             if object.hit(r, 0.0, t_max).is_some() {

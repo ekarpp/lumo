@@ -1,5 +1,5 @@
 use super::*;
-use crate::srgb_to_linear;
+use crate::{srgb_to_linear, EPSILON};
 
 impl Scene {
     /// Constructs an empty "Cornell box". Middle of the box is at
