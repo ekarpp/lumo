@@ -93,17 +93,6 @@ impl Scene {
         h
     }
 
-    /// Are there any objects blocking from `p1` to `p2`
-    pub fn unoccluded(&self, h1: &Hit, h2: &Hit) -> bool {
-        let r = h1.generate_ray(h2.p - h1.p);
-        let h = self.hit(&r);
-
-        match h {
-            None => false,
-            Some(h) => h.p.distance_squared(h2.p) < crate::EPSILON,
-        }
-    }
-
     /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit> {
         let light_hit = match light.hit(r, 0.0, INFINITY) {

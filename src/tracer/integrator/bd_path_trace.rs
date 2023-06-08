@@ -68,6 +68,7 @@ impl<'a> Vertex<'a> {
         }
     }
 
+    /// Computes BSDF at hit of `self`
     pub fn bsdf(&self, prev: &Vertex, next: &Vertex) -> DVec3 {
         // TODO (2)
         let wo = (self.h.p - prev.h.p).normalize();
@@ -76,6 +77,7 @@ impl<'a> Vertex<'a> {
         self.h.material.bsdf_f(wo, wi, Transport::Radiance, &self.h)
     }
 
+    /// Converts solid angle `pdf` to area PDF
     fn solid_angle_to_area(&self, pdf: f64, xo: DVec3, ng: DVec3) -> f64 {
         let wi = (xo - self.h.p).normalize();
         pdf * wi.dot(ng).abs() / xo.distance_squared(self.h.p)
@@ -222,7 +224,7 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.h.is_light() || !scene.unoccluded(&light_last.h, &camera_last.h) {
+        if camera_last.h.is_light() || unoccluded(scene, &light_last.h, &camera_last.h) {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
@@ -243,6 +245,18 @@ fn connect_paths(
     radiance * weight
 }
 
+/// Are there any objects blocking from `p1` to `p2`
+fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
+    let r = h1.generate_ray(h2.p - h1.p);
+    let h = s.hit(&r);
+
+    match h {
+        None => false,
+        Some(h) => h.p.distance_squared(h2.p) < crate::EPSILON,
+    }
+}
+
+/// Area pdf at `curr` ???
 fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
     let ho = &curr.h;
     let xo = prev.h.p;
@@ -259,6 +273,7 @@ fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
     sa * ri.dir.dot(next.h.ng).abs() / wi.length_squared()
 }
 
+/// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
 fn mis_weight(
     light_path: &[Vertex],
     s: usize,
@@ -389,6 +404,7 @@ fn mis_weight(
     1.0 / (1.0 + sum_ri)
 }
 
+/// Geometry term ???
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     let v1_xo = v1.h.p;
     let v2_xo = v2.h.p;
