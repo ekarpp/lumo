@@ -87,9 +87,7 @@ impl Scene {
                 hit
             }).or(h);
         }
-        if t_max < 1e-10 {
-            print!("1");
-        }
+
         h
     }
 
