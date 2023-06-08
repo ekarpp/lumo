@@ -10,6 +10,7 @@ fn zero_medium_has_no_effect() {
     let h = Hit::new(
         100.0,
         &m.material,
+        false,
         DVec3::X,
         DVec3::X,
         DVec3::X,

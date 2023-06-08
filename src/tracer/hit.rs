@@ -18,10 +18,12 @@ pub struct Hit<'a> {
     pub fp_error: DVec3,
     /// Normal of the surface used for shading calculations
     pub ns: DVec3,
-    /// Geometric normal of the surface used for scattering calculations
+    /// Geometric normal of the surface
     pub ng: DVec3,
     /// Texture coordinates in `\[0,1\]^2`
     pub uv: DVec2,
+    /// Are we on the backface?
+    pub backface: bool,
 }
 
 impl<'a> Hit<'a> {
@@ -37,6 +39,7 @@ impl<'a> Hit<'a> {
     pub fn new(
         t: f64,
         material: &'a Material,
+        backface: bool,
         xi: DVec3,
         fp_error: DVec3,
         ns: DVec3,
@@ -46,6 +49,7 @@ impl<'a> Hit<'a> {
         Some(Self {
             t,
             material,
+            backface,
             p: xi,
             light: None,
             fp_error,
@@ -58,12 +62,12 @@ impl<'a> Hit<'a> {
     /// Generates a ray at point of impact. Would be better to use accurate
     /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: DVec3) -> Ray {
-        let scaled_err = self.fp_error.dot(self.ng.abs());
+        let scaled_err = self.fp_error.dot(self.ns.abs());
 
         let offset = if wi.dot(self.ng) >= 0.0 {
-            self.ng * scaled_err
+            self.ns * scaled_err
         } else {
-            -self.ng * scaled_err
+            -self.ns * scaled_err
         };
 
         let xi = self.p + offset;

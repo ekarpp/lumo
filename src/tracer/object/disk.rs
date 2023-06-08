@@ -82,7 +82,16 @@ impl Object for Disk {
             let u = self.uvw.u.dot(xi_local);
             let v = self.uvw.v.dot(xi_local);
             let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
-            Hit::new(t.value, &self.material, xi, err, self.normal, self.normal, uv)
+            Hit::new(
+                t.value,
+                &self.material,
+                r.backface(self.normal),
+                xi,
+                err,
+                self.normal,
+                self.normal,
+                uv
+            )
         }
     }
 }
@@ -104,6 +113,7 @@ impl Sampleable for Disk {
         Hit::new(
             0.0,
             &self.material,
+            false,
             xo,
             DVec3::ZERO,
             self.normal,

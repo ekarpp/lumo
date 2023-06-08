@@ -88,7 +88,7 @@ impl Object for Medium {
             let uv = DVec2::ZERO;
             let err = DVec3::ZERO;
 
-            Hit::new(t, &self.material, xi, err, ns, ng, uv)
+            Hit::new(t, &self.material, false, xi, err, ns, ng, uv)
         }
     }
 }

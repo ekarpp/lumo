@@ -25,6 +25,7 @@ impl<'a> Vertex<'a> {
         let h = Hit::new(
             0.0,
             &Material::Blank,
+            false,
             xo,
             DVec3::ZERO,
             DVec3::X,

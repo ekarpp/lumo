@@ -86,7 +86,11 @@ impl Material {
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {
-            Self::Light(t) => t.albedo_at(h),
+            Self::Light(t) => if h.backface {
+                DVec3::ZERO
+            } else {
+                t.albedo_at(h)
+            },
             _ => DVec3::ZERO,
         }
     }

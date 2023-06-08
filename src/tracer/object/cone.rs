@@ -90,6 +90,6 @@ impl Object for Cone {
         let ni = DVec3::new(xi.x, radius * tan_theta.value, xi.z);
         let ni = ni.normalize();
 
-        Hit::new(t.value, &self.material, xi, err, ni, ni, uv)
+        Hit::new(t.value, &self.material, r.backface(ni), xi, err, ni, ni, uv)
     }
 }
