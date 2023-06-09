@@ -183,7 +183,7 @@ fn connect_paths(
             DVec3::ZERO
         } else {
             // .unwrap() not nice :(
-            let light = camera_last.h.light.unwrap();
+            let light = light_path[0].h.light.unwrap();
 
             let xo = camera_last.h.p;
             let pdf_light = ObjectPdf::new(light, xo);
