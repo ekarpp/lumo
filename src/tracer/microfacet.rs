@@ -45,14 +45,19 @@ impl MfDistribution {
         Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, metallicity, transparent))
     }
 
+    /// Is the material transparent?
+    pub fn is_transparent(&self) -> bool {
+        self.get_config().transparent
+    }
+
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
         self.is_transparent() || self.get_config().roughness < 0.01
     }
 
-    /// Is the material transparent?
-    pub fn is_transparent(&self) -> bool {
-        self.get_config().transparent
+    /// Does the material have delta scattering distribution?
+    pub fn is_delta(&self) -> bool {
+        self.get_config().roughness < 1e-2
     }
 
     /// Gets the refraction index
@@ -60,6 +65,7 @@ impl MfDistribution {
         self.get_config().refraction_idx
     }
 
+    /// Get roughness from config
     pub fn get_roughness(&self) -> f64 {
         self.get_config().roughness
     }

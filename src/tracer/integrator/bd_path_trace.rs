@@ -55,17 +55,18 @@ impl<'a> Vertex<'a> {
     pub fn surface(
         h: Hit<'a>,
         gathered: DVec3,
-        pdf_fwd: f64,
-        prev: &Vertex
     ) -> Self {
-        let xo = h.p;
-        let ng = h.ng;
         Self {
             h,
             gathered,
-            pdf_fwd: prev.solid_angle_to_area(pdf_fwd, xo, ng),
+            pdf_fwd: 0.0,
             pdf_bck: 0.0,
         }
+    }
+
+    /// Are we on a surface with delta material?
+    pub fn is_delta(&self) -> bool {
+        self.h.material.is_delta()
     }
 
     /// Computes BSDF at hit of `self`
@@ -78,9 +79,9 @@ impl<'a> Vertex<'a> {
     }
 
     /// Converts solid angle `pdf` to area PDF
-    fn solid_angle_to_area(&self, pdf: f64, xo: DVec3, ng: DVec3) -> f64 {
-        let wi = (xo - self.h.p).normalize();
-        pdf * wi.dot(ng).abs() / xo.distance_squared(self.h.p)
+    fn solid_angle_to_area(&self, pdf: f64, xi: DVec3, ng: DVec3) -> f64 {
+        let wi = (xi - self.h.p).normalize();
+        pdf * wi.dot(ng).abs() / xi.distance_squared(self.h.p)
     }
 }
 
@@ -119,6 +120,10 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
+    if light_last.is_delta() {
+        return FilmSample::default();
+    }
+
     let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
     let xi = light_last.h.p;
     let pdf = camera.sample_towards_pdf(&ro, xi);
@@ -259,6 +264,11 @@ fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
 /// Area pdf at `curr` ???
 fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
     let ho = &curr.h;
+
+    if ho.material.is_delta() {
+        return 0.0;
+    }
+
     let xo = prev.h.p;
     let xi = curr.h.p;
     let wo = xi - xo;
@@ -466,11 +476,16 @@ fn walk<'a>(
 
         let prev = depth;
         let curr = depth + 1;
+        vertices[prev].pdf_fwd = if vertices[prev].is_delta() {
+            0.0
+        } else {
+            let xi = ho.p;
+            let ng = ho.ng;
+            vertices[prev].solid_angle_to_area(pdf_fwd, xi, ng)
+        };
         vertices.push(Vertex::surface(
             ho,
             gathered,
-            pdf_fwd,
-            &vertices[prev],
         ));
         let ho = &vertices[curr].h;
         match material.bsdf_pdf(ho, &ro) {
@@ -521,8 +536,13 @@ fn walk<'a>(
                         gathered *= bsdf * shading_cosine / pdf_fwd;
 
                         pdf_bck = scatter_pdf.value_for(&ri, true);
-                        vertices[prev].pdf_bck =
-                            vertices[prev].solid_angle_to_area(pdf_bck, xo, ng);
+                        vertices[curr].pdf_bck = if material.is_delta() {
+                            0.0
+                        } else {
+                            let ng = vertices[prev].h.ng;
+                            vertices[prev].solid_angle_to_area(pdf_bck, xo, ng)
+                        };
+
                         // russian roulette
                         if depth > 3 {
                             let luminance = crate::rgb_to_luminance(gathered);
