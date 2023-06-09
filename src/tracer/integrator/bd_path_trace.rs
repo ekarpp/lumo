@@ -53,11 +53,20 @@ impl<'a> Vertex<'a> {
     pub fn surface(
         h: Hit<'a>,
         gathered: DVec3,
+        pdf_fwd: f64,
+        prev: &Vertex,
     ) -> Self {
+        let pdf_fwd = if prev.is_delta() {
+            0.0
+        } else {
+            let xi = h.p;
+            let ng = h.ng;
+            prev.solid_angle_to_area(pdf_fwd, xi, ng)
+        };
         Self {
             h,
             gathered,
-            pdf_fwd: 0.0,
+            pdf_fwd,
             pdf_bck: 0.0,
         }
     }
@@ -78,8 +87,9 @@ impl<'a> Vertex<'a> {
 
     /// Converts solid angle `pdf` to area PDF
     fn solid_angle_to_area(&self, pdf: f64, xi: DVec3, ng: DVec3) -> f64 {
-        let wi = (xi - self.h.p).normalize();
-        pdf * wi.dot(ng).abs() / xi.distance_squared(self.h.p)
+        let xo = self.h.p;
+        let wi = (xi - xo).normalize();
+        pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
     }
 }
 
@@ -118,6 +128,7 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
+
     if light_last.is_delta() {
         return FilmSample::default();
     }
@@ -188,7 +199,7 @@ fn connect_paths(
         // just one vertex on the light path. instead of using it, we sample a
         // point on the same light.
         let camera_last = &camera_path[t - 1];
-        if camera_last.h.is_light() || camera_last.h.material.is_delta() {
+        if camera_last.h.is_light() || camera_last.is_delta() {
             DVec3::ZERO
         } else {
             // .unwrap() not nice :(
@@ -235,7 +246,7 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.h.is_light() || !unoccluded(scene, &light_last.h, &camera_last.h) {
+        if camera_last.h.is_light() || !unoccluded(scene, &light_last.h, &camera_last.h) || camera_last.is_delta() || light_last.is_delta() {
             DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
@@ -472,8 +483,6 @@ fn walk<'a>(
     let mut depth = 0;
     let mut vertices = vec![root];
     let mut pdf_fwd = pdf_dir;
-    #[allow(unused_assignments)]
-    let mut pdf_bck = 0.0;
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
@@ -481,16 +490,11 @@ fn walk<'a>(
 
         let prev = depth;
         let curr = depth + 1;
-        vertices[prev].pdf_fwd = if vertices[prev].is_delta() {
-            0.0
-        } else {
-            let xi = ho.p;
-            let ng = ho.ng;
-            vertices[prev].solid_angle_to_area(pdf_fwd, xi, ng)
-        };
         vertices.push(Vertex::surface(
             ho,
             gathered,
+            pdf_fwd,
+            &vertices[prev],
         ));
         let ho = &vertices[curr].h;
         match material.bsdf_pdf(ho, &ro) {
@@ -538,11 +542,11 @@ fn walk<'a>(
 
                         gathered *= bsdf * shading_cosine / pdf_fwd;
 
-                        pdf_bck = scatter_pdf.value_for(&ri, true);
-                        vertices[curr].pdf_bck = if material.is_delta() {
+                        vertices[prev].pdf_bck = if material.is_delta() {
                             0.0
                         } else {
                             let ng = vertices[prev].h.ng;
+                            let pdf_bck = scatter_pdf.value_for(&ri, true);
                             vertices[prev].solid_angle_to_area(pdf_bck, xo, ng)
                         };
 
@@ -555,7 +559,7 @@ fn walk<'a>(
                             }
 
                             // TODO (9)
-                            gathered /= 1.0 - rr_prob;
+                            //gathered /= 1.0 - rr_prob;
                         }
 
                         depth += 1;
