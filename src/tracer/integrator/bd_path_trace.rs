@@ -182,7 +182,8 @@ fn connect_paths(
         if camera_last.h.is_light() || camera_last.h.material.is_delta() {
             DVec3::ZERO
         } else {
-            let light = scene.uniform_random_light();
+            // .unwrap() not nice :(
+            let light = camera_last.h.light.unwrap();
 
             let xo = camera_last.h.p;
             let pdf_light = ObjectPdf::new(light, xo);
@@ -377,7 +378,7 @@ fn mis_weight(
         let ls = &light_path[s - 1];
         let pdf_prev = if t < 2 {
             // probability that the direction got sampled from camera.
-            // should be 1.0?
+            // should be 1.0? yes.
             1.0
         } else {
             let ct = &camera_path[t - 1];
@@ -492,7 +493,6 @@ fn walk<'a>(
                 break;
             }
             Some(scatter_pdf) => {
-                // create vertex here, add pdf to it
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => break,
                     Some(wi) => {
