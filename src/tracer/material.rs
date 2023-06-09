@@ -80,7 +80,6 @@ impl Material {
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
         match self {
-            Self::Light(_) => false,
             Self::Microfacet(_, mfd) => mfd.is_delta(),
             _ => true,
         }

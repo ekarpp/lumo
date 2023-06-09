@@ -56,7 +56,7 @@ impl<'a> Vertex<'a> {
         pdf_fwd: f64,
         prev: &Vertex,
     ) -> Self {
-        let pdf_fwd = if prev.is_delta() {
+        let pdf_fwd = if h.material.is_delta() {
             0.0
         } else {
             let xi = h.p;
