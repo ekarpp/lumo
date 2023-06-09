@@ -39,13 +39,13 @@ impl<'a> Vertex<'a> {
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_fwd: f64) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_fwd: f64, pdf_bck: f64) -> Self {
         h.light = Some(light);
         Self {
             h,
             gathered,
             pdf_fwd,
-            pdf_bck: 0.0,
+            pdf_bck,
         }
     }
 
@@ -222,6 +222,7 @@ fn connect_paths(
                                 light,
                                 emittance,
                                 0.0,
+                                0.0,
                             ));
                             let light_last = sampled_vertex.as_ref().unwrap();
                             let bsdf = camera_last.bsdf(
@@ -278,16 +279,15 @@ fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
     }
 }
 
-/// Area pdf at `curr` ???
+/// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
 fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
-    let ho = &curr.h;
-
-    if ho.material.is_delta() {
+    if curr.is_delta() {
         return 0.0;
     }
 
+    let ho = &curr.h;
     let xo = prev.h.p;
-    let xi = curr.h.p;
+    let xi = ho.p;
     let wo = xi - xo;
     let ro = Ray::new(xo, wo);
     let wi = next.h.p - xi;
@@ -463,7 +463,7 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     let ns = ho.ns;
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
     let emit = ho.material.emit(&ho);
-    let root = Vertex::light(ho, light, emit, pdf_origin * pdf_light);
+    let root = Vertex::light(ho, light, emit, pdf_dir, pdf_origin * pdf_light);
 
     let gathered = emit * ns.dot(ro.dir).abs()
         / (pdf_light * pdf_origin * pdf_dir);
