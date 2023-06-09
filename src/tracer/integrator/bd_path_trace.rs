@@ -123,17 +123,18 @@ fn connect_light_path(
     }
 
     let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
+    let xo = ro.origin;
     let xi = light_last.h.p;
     let pdf = camera.sample_towards_pdf(&ro, xi);
 
     if pdf <= 0.0 {
         return FilmSample::default();
     }
-    let wi = -ro.dir;
-    let v = light_last.h.generate_ray(wi);
-    let t2 = v.origin.distance_squared(ro.origin);
+    let v = -ro.dir;
+    let vr = light_last.h.generate_ray(v);
+    let t2 = xo.distance_squared(xi);
 
-    if scene.hit(&v).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
+    if scene.hit(&vr).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
         return FilmSample::default();
     }
 
@@ -142,10 +143,18 @@ fn connect_light_path(
     sample.color /= pdf;
     let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
     let camera_last = sampled_vertex.as_ref().unwrap();
-    let ns = light_last.h.ns;
+
+    let shading_cosine = {
+        let xn = light_scnd_last.h.p;
+        let wi = (xn - xi).normalize();
+        let ns = light_last.h.ns;
+        let ng = light_last.h.ng;
+        wi.dot(ng).abs() * light_last.h.material.shading_cosine(v, ns)
+            / v.dot(ng).abs()
+    };
 
     sample.color *= light_last.gathered
-        * light_last.h.material.shading_cosine(wi, ns)
+        * shading_cosine
         * light_last.bsdf(light_scnd_last, camera_last)
         * mis_weight(light_path, s, camera_path, 1, sampled_vertex);
 
