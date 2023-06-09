@@ -177,7 +177,7 @@ fn connect_paths(
         }
     } else if s == 1 {
         // just one vertex on the light path. instead of using it, we sample a
-        // point on the same (TODO: at the moment uniform random) light.
+        // point on the same light.
         let camera_last = &camera_path[t - 1];
         if camera_last.h.is_light() || camera_last.h.material.is_delta() {
             DVec3::ZERO
