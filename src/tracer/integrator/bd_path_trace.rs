@@ -144,10 +144,10 @@ fn connect_light_path(
     sample.color /= pdf;
     let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
     let camera_last = sampled_vertex.as_ref().unwrap();
+    let ns = light_last.h.ns;
 
-    // mat.shading_cosine
     sample.color *= light_last.gathered
-        * wi.dot(light_last.h.ns).abs()
+        * light_last.h.material.shading_cosine(wi, ns)
         * light_last.bsdf(light_scnd_last, camera_last)
         * mis_weight(light_path, s, camera_path, 1, sampled_vertex);
 
@@ -213,9 +213,8 @@ fn connect_paths(
 
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
-                            // mat.shading_cosine
-                            camera_last.gathered * bsdf
-                                * ns.dot(wi).abs() * emittance
+                            camera_last.gathered * bsdf * emittance
+                                * camera_last.h.material.shading_cosine(wi, ns)
                                 * geometry_term(light_last, camera_last)
                         }
                     }
