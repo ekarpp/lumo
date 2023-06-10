@@ -2,6 +2,13 @@ use super::*;
 use crate::tracer::material::Material;
 
 /*
+ * BUGS:
+ * (1) MIS weight for polygon with transparent microfacet on low roughness delta
+ * (2) Camera sampling raster coordinates
+ */
+
+
+/*
  * TODO:
  * (2) store directions in vertex?
  * (4) PBRT has no geometry term but we need it?
