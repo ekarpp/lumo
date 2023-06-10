@@ -1,5 +1,7 @@
 use super::*;
-use crate::{srgb_to_linear, EPSILON};
+use crate::srgb_to_linear;
+
+const LIGHT_EPS: f64 = 0.01;
 
 impl Scene {
     /// Constructs an empty "Cornell box". Middle of the box is at
@@ -26,18 +28,18 @@ impl Scene {
         let back = 0.0;
 
         // 0.5x of sidelength of area light
-        let l_dim = 0.3;
+        let l_dim = 0.1;
 
         let mut scene = Self::default();
 
         /* rectangular area light */
         scene.add_light(Rectangle::new(
             DMat3::from_cols(
-                DVec3::new(-l_dim, ceiling - EPSILON, 0.5 * front + l_dim),
-                DVec3::new(-l_dim, ceiling - EPSILON, 0.5 * front - l_dim),
-                DVec3::new(l_dim, ceiling - EPSILON, 0.5 * front - l_dim),
+                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front + l_dim),
+                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
+                DVec3::new(l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+            Material::Light(Texture::Solid(10.0 * srgb_to_linear(255, 255, 255))),
         ));
 
         /* left wall */
