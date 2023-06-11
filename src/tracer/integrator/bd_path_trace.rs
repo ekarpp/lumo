@@ -334,7 +334,11 @@ fn mis_weight(
         let ct = &camera_path[t - 1];
         let pdf_prev = if s == 0 {
             // probability for the origin. uniformly sampled on light surface
-            ct.h.light.map_or(0.0, |light| 1.0 / light.area())
+            if ct.is_delta() {
+                0.0
+            } else {
+                ct.h.light.map_or(0.0, |light| 1.0 / light.area())
+            }
         } else if s == 1 {
             let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
             match ls.h.light {
