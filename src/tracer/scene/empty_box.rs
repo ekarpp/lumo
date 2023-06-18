@@ -39,7 +39,7 @@ impl Scene {
                 DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
                 DVec3::new(l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(10.0 * srgb_to_linear(255, 255, 255))),
+            Material::Light(Texture::Solid(1.0 * srgb_to_linear(255, 255, 255))),
         ));
 
         /* left wall */

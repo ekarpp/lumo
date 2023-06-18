@@ -15,109 +15,18 @@ use crate::tracer::material::Material;
  * (9) need to modify vertex PDFs? maybe forget RR?
  * + this needs proper refactoring and cleanup...
  */
+use vertex::Vertex;
 
-/// Abstraction of a vertex in the paths
-struct Vertex<'a> {
-    h: Hit<'a>,
-    gathered: DVec3,
-    pdf_fwd: f64,
-    pdf_bck: f64,
-}
-
-impl<'a> Vertex<'a> {
-    /// Camera vertex
-    pub fn camera(xo: DVec3, gathered: DVec3) -> Self {
-        let h = Hit::new(
-            0.0,
-            &Material::Blank,
-            DVec3::NEG_X,
-            xo,
-            DVec3::ZERO,
-            DVec3::X,
-            DVec3::X,
-            DVec2::X,
-        ).unwrap();
-        Self {
-            h,
-            gathered,
-            pdf_bck: 1.0,
-            pdf_fwd: 0.0,
-        }
-    }
-
-    /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_bck: f64) -> Self {
-        h.light = Some(light);
-        Self {
-            h,
-            gathered,
-            pdf_bck,
-            pdf_fwd: 0.0,
-        }
-    }
-
-    /// Surface vertex
-    pub fn surface(
-        h: Hit<'a>,
-        gathered: DVec3,
-        pdf_fwd: f64,
-        prev: &Vertex,
-    ) -> Self {
-        let pdf_fwd = if h.material.is_delta() {
-            0.0
-        } else {
-            let xo = prev.h.p;
-            let xi = h.p;
-            let wi = (xi - xo).normalize();
-            let ng = h.ng;
-
-            pdf_fwd * wi.dot(ng).abs() / xi.distance_squared(xo)
-        };
-        Self {
-            h,
-            gathered,
-            pdf_fwd,
-            pdf_bck: 0.0,
-        }
-    }
-
-    /// Are we a surface/light vertex?
-    fn is_surface(&self) -> bool {
-        !matches!(self.h.material, Material::Blank)
-    }
-
-    /// Are we on a surface with delta material?
-    pub fn is_delta(&self) -> bool {
-        self.h.material.is_delta()
-    }
-
-    /// Computes BSDF at hit of `self`
-    pub fn bsdf(&self, prev: &Vertex, next: &Vertex) -> DVec3 {
-        // TODO (2)
-        let wo = (self.h.p - prev.h.p).normalize();
-        let wi = (next.h.p - self.h.p).normalize();
-
-        self.h.material.bsdf_f(wo, wi, Transport::Radiance, &self.h)
-    }
-
-    /// Converts solid angle `pdf` to area PDF
-    fn solid_angle_to_area(&self, pdf: f64, next: &Vertex) -> f64 {
-        let xo = self.h.p;
-        let xi = next.h.p;
-        let wi = (xi - xo).normalize();
-
-        if next.is_surface() {
-            let ng = next.h.ng;
-            pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
-        } else {
-            pdf / xi.distance_squared(xo)
-        }
-    }
-}
+/// Vertex abstraction
+mod vertex;
+/// Light and camera path generators
+mod path_gen;
+/// Multiple improtance sampling weights
+mod mis;
 
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
-    let light_path = light_path(scene);
-    let camera_path = camera_path(scene, camera, r);
+    let light_path = path_gen::light_path(scene);
+    let camera_path = path_gen::camera_path(scene, camera, r);
     let mut sample = FilmSample::new(DVec3::ZERO, x, y);
     let mut samples = vec![];
 
@@ -189,7 +98,7 @@ fn connect_light_path(
     sample.color *= light_last.gathered
         * shading_cosine
         * light_last.bsdf(light_scnd_last, camera_last)
-        * mis_weight(light_path, s, camera_path, 1, sampled_vertex);
+        * mis::mis_weight(light_path, s, camera_path, 1, sampled_vertex);
 
     sample
 }
@@ -283,7 +192,7 @@ fn connect_paths(
     let weight = if radiance.length_squared() == 0.0 {
         0.0
     } else {
-        mis_weight(light_path, s, camera_path, t, sampled_vertex)
+        mis::mis_weight(light_path, s, camera_path, t, sampled_vertex)
     };
 
     radiance * weight
@@ -321,141 +230,6 @@ fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
     sa * ri.dir.dot(next.h.ng).abs() / wi.length_squared()
 }
 
-/// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
-fn mis_weight(
-    light_path: &[Vertex],
-    s: usize,
-    camera_path: &[Vertex],
-    t: usize,
-    sampled_vertex: Option<Vertex>,
-) -> f64 {
-    // assert!(t != 0)
-    // if `sampled_vertex.is_some()` then t == 1 XOR s == 1
-
-    if s + t == 2 {
-        return 1.0;
-    }
-
-    let map0 = |pdf: f64| {
-        if pdf == 0.0 { 1.0 } else { pdf }
-    };
-
-    let mut sum_ri = 0.0;
-    let mut ri = 1.0;
-
-    // applies the updated PDF for camera_last of the connection
-    if t > 0 {
-        let ct = &camera_path[t - 1];
-        let pdf_prev = if s == 0 {
-            // probability for the origin. uniformly sampled on light surface
-            if ct.is_delta() {
-                0.0
-            } else {
-                ct.h.light.map_or(0.0, |light| 1.0 / light.area())
-            }
-            // check camera and light path initializations. fix the mis weights to be like there. double check they are correct.
-        } else if s == 1 {
-            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
-            match ls.h.light {
-                None => 0.0,
-                Some(light) => {
-                    let xo = ls.h.p;
-                    let xi = ct.h.p;
-                    let wi = xi - xo;
-                    let ri = Ray::new(xo, wi);
-                    // normalized
-                    let wi = ri.dir;
-                    let ng = ls.h.ng;
-                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                    let ng = ct.h.ng;
-                    // convert solid angle to area
-                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-                }
-            }
-        } else {
-            let ls = &light_path[s - 1];
-            let ls_m = &light_path[s - 2];
-            pdf_area(ls_m, ls, ct)
-        };
-
-        ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
-        sum_ri += ri;
-    }
-
-    // applies the updated PDF for camera t - 2 using the connection
-    if t > 1 {
-        let ct = &camera_path[t - 1];
-        let ct_m = &camera_path[t - 2];
-        let pdf_prev = if s == 0 {
-            match ct.h.light {
-                None => 0.0,
-                Some(light) => {
-                    let xo = ct.h.p;
-                    let xi = ct_m.h.p;
-                    let wi = xi - xo;
-                    let ri = Ray::new(xo, wi);
-                    // normalized
-                    let wi = ri.dir;
-                    let ng = ct.h.ng;
-                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                    let ng = ct_m.h.ng;
-                    // convert solid angle to area
-                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-                }
-            }
-        } else {
-            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
-            pdf_area(ls, ct, ct_m)
-        };
-        ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
-        sum_ri += ri;
-    }
-
-    // vertices in camera path
-    for i in (1..t.max(2) - 2).rev() {
-        ri *= map0(camera_path[i].pdf_bck) / map0(camera_path[i].pdf_fwd);
-        sum_ri += ri;
-    }
-
-    let mut ri = 1.0;
-
-    // applies the updated PDF at light_last using the connection
-    if s > 0 {
-        let ls = &light_path[s - 1];
-        let pdf_prev = if t < 2 {
-            // probability that the direction got sampled from camera.
-            // should be 1.0? yes.
-            1.0
-        } else {
-            let ct = &camera_path[t - 1];
-            let ct_m = &camera_path[t - 2];
-            pdf_area(ct_m, ct, ls)
-        };
-        ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
-        sum_ri += ri;
-    }
-
-    // applies the updated PDF at light_last using the connection
-    if s > 1 {
-        let ls = &light_path[s - 1];
-        let ls_m = &light_path[s - 2];
-        let ct = sampled_vertex.as_ref().unwrap_or(&camera_path[t - 1]);
-
-        let pdf_prev = pdf_area(ct, ls, ls_m);
-
-        ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
-        sum_ri += ri;
-    }
-
-    // vertices in light path
-    for i in (1..s.max(2) - 2).rev() {
-        ri *= map0(light_path[i].pdf_bck) / map0(light_path[i].pdf_fwd);
-        sum_ri += ri;
-    }
-
-    1.0 / (1.0 + sum_ri)
-}
-
 /// Geometry term ???
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     let v1_xo = v1.h.p;
@@ -467,135 +241,4 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     let wi_length_squared = v1_xo.distance_squared(v2_xo);
 
     v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
-}
-
-/// Generates a ray path starting from the camera
-fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vertex<'a>> {
-    let gathered = DVec3::ONE;
-    let root = Vertex::camera(r.origin, gathered);
-    let wi = r.dir;
-    let pdf_fwd = camera.pdf(wi);
-
-    walk(scene, r, root, gathered, pdf_fwd, Transport::Radiance)
-}
-
-/// Generates a ray path strating from a light
-fn light_path(scene: &Scene) -> Vec<Vertex> {
-    let light = scene.uniform_random_light();
-    let pdf_light = 1.0 / scene.num_lights() as f64;
-    let (ro, ho) = light.sample_leaving(
-        rand_utils::unit_square(),
-        rand_utils::unit_square()
-    );
-    let ng = ho.ng;
-    let ns = ho.ns;
-    let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
-    let emit = ho.material.emit(&ho);
-    let root = Vertex::light(ho, light, emit, pdf_origin * pdf_light);
-
-    let gathered = emit * ns.dot(ro.dir).abs()
-        / (pdf_light * pdf_origin * pdf_dir);
-
-    walk(scene, ro, root, gathered, pdf_dir, Transport::Importance)
-}
-
-/// Ray that randomly scatters around from the given root vertex
-fn walk<'a>(
-    scene: &'a Scene,
-    mut ro: Ray,
-    root: Vertex<'a>,
-    mut gathered: DVec3,
-    pdf_dir: f64,
-    mode: Transport,
-) -> Vec<Vertex<'a>> {
-    let mut depth = 0;
-    let mut vertices = vec![root];
-    let mut pdf_fwd = pdf_dir;
-
-    while let Some(ho) = scene.hit(&ro) {
-        let material = ho.material;
-        gathered *= scene.transmittance(&ho);
-
-        let prev = depth;
-        let curr = depth + 1;
-        vertices.push(Vertex::surface(
-            ho,
-            gathered,
-            pdf_fwd,
-            &vertices[prev],
-        ));
-        let ho = &vertices[curr].h;
-        match material.bsdf_pdf(ho, &ro) {
-            None => {
-                // we hit a light. if tracing from a light, discard latest vertex
-                if matches!(mode, Transport::Importance) {
-                    vertices.pop();
-                }
-                break;
-            }
-            Some(scatter_pdf) => {
-                match scatter_pdf.sample_direction(rand_utils::unit_square()) {
-                    None => break,
-                    Some(wi) => {
-                        let xo = ho.p;
-                        let wo = ro.dir;
-                        let ng = ho.ng;
-
-                        let ns = ho.ns;
-                        let ri = ho.generate_ray(wi);
-                        // normalized
-                        let wi = ri.dir;
-
-                        pdf_fwd = scatter_pdf.value_for(&ri, false);
-
-                        if pdf_fwd <= 0.0 {
-                            break;
-                        }
-
-                        let shading_cosine = match mode {
-                            Transport::Radiance => material.shading_cosine(wi, ns),
-                            Transport::Importance => {
-                                let xp = vertices[prev].h.p;
-                                let v = (xp - xo).normalize();
-                                wi.dot(ng).abs() * material.shading_cosine(v, ns)
-                                    / v.dot(ng).abs()
-                            }
-                        };
-
-                        let bsdf = if ho.is_medium() {
-                            DVec3::ONE * pdf_fwd
-                        } else {
-                            material.bsdf_f(wo, wi, mode, &ho)
-                        };
-
-                        gathered *= bsdf * shading_cosine / pdf_fwd;
-
-                        vertices[prev].pdf_bck = if material.is_delta() || !vertices[prev].is_surface() {
-                            0.0
-                        } else {
-                            let pdf_bck = scatter_pdf.value_for(&ri, true);
-                            vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
-                        };
-
-                        // russian roulette
-                        if depth > 3 {
-                            let luminance = crate::rgb_to_luminance(gathered);
-                            let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_f64() < rr_prob {
-                                break;
-                            }
-
-                            // TODO (9)
-                            //gathered /= 1.0 - rr_prob;
-                        }
-
-                        depth += 1;
-                        ro = ri;
-                    }
-                }
-            }
-        }
-    }
-
-    vertices
 }
