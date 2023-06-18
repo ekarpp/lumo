@@ -164,7 +164,7 @@ fn connect_paths(
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf * emittance
                                 * camera_last.h.material.shading_cosine(wi, ns)
-                                * geometry_term(light_last, camera_last)
+                                * light_last.g(camera_last)
                         }
                     }
                 }
@@ -185,7 +185,7 @@ fn connect_paths(
 
             light_last.gathered * light_bsdf
                 * camera_bsdf * camera_last.gathered
-                * geometry_term(light_last, camera_last)
+                * light_last.g(camera_last)
         }
     };
 
@@ -207,17 +207,4 @@ fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
         None => false,
         Some(h) => h.p.distance_squared(h2.p) < crate::EPSILON,
     }
-}
-
-/// Geometry term ???
-fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
-    let v1_xo = v1.h.p;
-    let v2_xo = v2.h.p;
-    let v1_ns = v1.h.ns;
-    let v2_ns = v2.h.ns;
-
-    let wi = (v1_xo - v2_xo).normalize();
-    let wi_length_squared = v1_xo.distance_squared(v2_xo);
-
-    v1_ns.dot(wi).abs() * v2_ns.dot(wi).abs() / wi_length_squared
 }

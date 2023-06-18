@@ -98,6 +98,19 @@ impl<'a> Vertex<'a> {
         }
     }
 
+    /// Geometry term btwn `self` and `v` ... ...
+    /// it is symmetric??
+    pub fn g(&self, v: &Vertex) -> f64 {
+        let xo = self.h.p;
+        let xi = v.h.p;
+        let no = self.h.ns;
+        let ni = v.h.ns;
+
+        let wi = (xi - xo).normalize();
+
+        no.dot(wi).abs() * ni.dot(wi).abs() / xo.distance_squared(xi)
+    }
+
     /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
     pub fn pdf_area(&self, prev: &Vertex, next: &Vertex) -> f64 {
         if self.is_delta() {
