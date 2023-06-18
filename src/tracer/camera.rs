@@ -233,6 +233,34 @@ impl Camera {
         xi.distance_squared(xo) / (ng.dot(wi) * lens_area)
     }
 
+    /// PDF for `wi` direction. Surface of the raster pixel over the whole image plane area?
+    pub fn pdf(&self, wi: DVec3) -> f64 {
+        let cfg = self.get_cfg();
+        let wi_local = cfg.camera_basis.to_local(wi);
+        let cos_theta = wi_local.z;
+
+        if cos_theta < 0.0 {
+            0.0
+        } else {
+            let lens_area = if cfg.lens_radius == 0.0 {
+                1.0
+            } else {
+                cfg.lens_radius * cfg.lens_radius * PI
+            };
+
+            let resolution = self.get_resolution().as_dvec2();
+            let min_res = resolution.min_element();
+            let image_plane_area = 4.0 * resolution.x * resolution.y
+                / (min_res * min_res);
+
+            let area_coeff = lens_area * image_plane_area;
+
+            let cos2_theta = cos_theta * cos_theta;
+
+            1.0 / (area_coeff * cos2_theta * cos2_theta)
+        }
+    }
+
     /// Incident importance for the ray `ro` starting from the camera lens
     pub fn importance_sample(&self, ro: &Ray) -> FilmSample {
         match self {
@@ -245,30 +273,18 @@ impl Camera {
                     return FilmSample::default();
                 }
 
-                let lens_area = if cfg.lens_radius == 0.0 {
-                    1.0
-                } else {
-                    cfg.lens_radius * cfg.lens_radius * PI
-                };
+                let pdf = self.pdf(wi);
 
-                let resolution = self.get_resolution().as_dvec2();
-                let min_res = resolution.min_element();
-                let image_plane_area = 4.0 * resolution.x * resolution.y
-                    / (min_res * min_res);
-
-                let area_coeff = lens_area * image_plane_area;
-
-                let cos2_theta = cos_theta * cos_theta;
-
-                let color = DVec3::splat(
-                    1.0 / (area_coeff * cos2_theta * cos2_theta)
-                );
+                let color = DVec3::splat(pdf);
 
                 let fl = if cfg.lens_radius == 0.0 {
                     1.0 / cos_theta
                 } else {
                     cfg.focal_length / cos_theta
                 };
+
+                let resolution = self.get_resolution().as_dvec2();
+                let min_res = resolution.min_element();
 
                 let focus = ro.at(fl);
                 let focus_local = cfg.camera_basis.to_local(focus) - cfg.origin;

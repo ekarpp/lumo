@@ -40,19 +40,19 @@ impl<'a> Vertex<'a> {
         Self {
             h,
             gathered,
-            pdf_bck: 0.0,
-            pdf_fwd: 1.0,
+            pdf_bck: 1.0,
+            pdf_fwd: 0.0,
         }
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_fwd: f64, pdf_bck: f64) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_bck: f64) -> Self {
         h.light = Some(light);
         Self {
             h,
             gathered,
-            pdf_fwd,
             pdf_bck,
+            pdf_fwd: 0.0,
         }
     }
 
@@ -66,9 +66,12 @@ impl<'a> Vertex<'a> {
         let pdf_fwd = if h.material.is_delta() {
             0.0
         } else {
+            let xo = prev.h.p;
             let xi = h.p;
+            let wi = (xi - xo).normalize();
             let ng = h.ng;
-            prev.solid_angle_to_area(pdf_fwd, xi, ng)
+
+            pdf_fwd * wi.dot(ng).abs() / xi.distance_squared(xo)
         };
         Self {
             h,
@@ -76,6 +79,11 @@ impl<'a> Vertex<'a> {
             pdf_fwd,
             pdf_bck: 0.0,
         }
+    }
+
+    /// Are we a surface/light vertex?
+    fn is_surface(&self) -> bool {
+        !matches!(self.h.material, Material::Blank)
     }
 
     /// Are we on a surface with delta material?
@@ -93,16 +101,23 @@ impl<'a> Vertex<'a> {
     }
 
     /// Converts solid angle `pdf` to area PDF
-    fn solid_angle_to_area(&self, pdf: f64, xi: DVec3, ng: DVec3) -> f64 {
+    fn solid_angle_to_area(&self, pdf: f64, next: &Vertex) -> f64 {
         let xo = self.h.p;
+        let xi = next.h.p;
         let wi = (xi - xo).normalize();
-        pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
+
+        if next.is_surface() {
+            let ng = next.h.ng;
+            pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
+        } else {
+            pdf / xi.distance_squared(xo)
+        }
     }
 }
 
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
     let light_path = light_path(scene);
-    let camera_path = camera_path(scene, r);
+    let camera_path = camera_path(scene, camera, r);
     let mut sample = FilmSample::new(DVec3::ZERO, x, y);
     let mut samples = vec![];
 
@@ -229,7 +244,6 @@ fn connect_paths(
                                 light,
                                 emittance,
                                 0.0,
-                                0.0,
                             ));
                             let light_last = sampled_vertex.as_ref().unwrap();
                             let bsdf = camera_last.bsdf(
@@ -339,6 +353,7 @@ fn mis_weight(
             } else {
                 ct.h.light.map_or(0.0, |light| 1.0 / light.area())
             }
+            // check camera and light path initializations. fix the mis weights to be like there. double check they are correct.
         } else if s == 1 {
             let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
             match ls.h.light {
@@ -455,11 +470,13 @@ fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
 }
 
 /// Generates a ray path starting from the camera
-fn camera_path(scene: &Scene, r: Ray) -> Vec<Vertex> {
+fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vertex<'a>> {
     let gathered = DVec3::ONE;
     let root = Vertex::camera(r.origin, gathered);
+    let wi = r.dir;
+    let pdf_fwd = camera.pdf(wi);
 
-    walk(scene, r, root, gathered, 1.0, Transport::Radiance)
+    walk(scene, r, root, gathered, pdf_fwd, Transport::Radiance)
 }
 
 /// Generates a ray path strating from a light
@@ -474,7 +491,7 @@ fn light_path(scene: &Scene) -> Vec<Vertex> {
     let ns = ho.ns;
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ro, ng);
     let emit = ho.material.emit(&ho);
-    let root = Vertex::light(ho, light, emit, pdf_dir, pdf_origin * pdf_light);
+    let root = Vertex::light(ho, light, emit, pdf_origin * pdf_light);
 
     let gathered = emit * ns.dot(ro.dir).abs()
         / (pdf_light * pdf_origin * pdf_dir);
@@ -553,12 +570,11 @@ fn walk<'a>(
 
                         gathered *= bsdf * shading_cosine / pdf_fwd;
 
-                        vertices[prev].pdf_bck = if material.is_delta() {
+                        vertices[prev].pdf_bck = if material.is_delta() || !vertices[prev].is_surface() {
                             0.0
                         } else {
-                            let ng = vertices[prev].h.ng;
                             let pdf_bck = scatter_pdf.value_for(&ri, true);
-                            vertices[prev].solid_angle_to_area(pdf_bck, xo, ng)
+                            vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
                         };
 
                         // russian roulette
