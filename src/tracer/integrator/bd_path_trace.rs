@@ -209,27 +209,6 @@ fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
     }
 }
 
-/// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
-fn pdf_area(prev: &Vertex, curr: &Vertex, next: &Vertex) -> f64 {
-    if curr.is_delta() {
-        return 0.0;
-    }
-
-    let ho = &curr.h;
-    let xo = prev.h.p;
-    let xi = ho.p;
-    let wo = xi - xo;
-    let ro = Ray::new(xo, wo);
-    let wi = next.h.p - xi;
-    let ri = Ray::new(xi, wi);
-    let sa = match ho.material.bsdf_pdf(ho, &ro) {
-        None => 0.0,
-        Some(pdf) => pdf.value_for(&ri, false),
-    };
-
-    sa * ri.dir.dot(next.h.ng).abs() / wi.length_squared()
-}
-
 /// Geometry term ???
 fn geometry_term(v1: &Vertex, v2: &Vertex) -> f64 {
     let v1_xo = v1.h.p;

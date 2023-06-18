@@ -54,7 +54,7 @@ pub fn mis_weight(
         } else {
             let ls = &light_path[s - 1];
             let ls_m = &light_path[s - 2];
-            pdf_area(ls_m, ls, ct)
+            ls.pdf_area(ls_m, ct)
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
@@ -84,7 +84,7 @@ pub fn mis_weight(
             }
         } else {
             let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
-            pdf_area(ls, ct, ct_m)
+            ct.pdf_area(ls, ct_m)
         };
         ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
         sum_ri += ri;
@@ -108,7 +108,7 @@ pub fn mis_weight(
         } else {
             let ct = &camera_path[t - 1];
             let ct_m = &camera_path[t - 2];
-            pdf_area(ct_m, ct, ls)
+            ct.pdf_area(ct_m, ls)
         };
         ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
         sum_ri += ri;
@@ -120,7 +120,7 @@ pub fn mis_weight(
         let ls_m = &light_path[s - 2];
         let ct = sampled_vertex.as_ref().unwrap_or(&camera_path[t - 1]);
 
-        let pdf_prev = pdf_area(ct, ls, ls_m);
+        let pdf_prev = ls.pdf_area(ct, ls_m);
 
         ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
         sum_ri += ri;

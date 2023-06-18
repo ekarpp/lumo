@@ -97,4 +97,29 @@ impl<'a> Vertex<'a> {
             pdf / xi.distance_squared(xo)
         }
     }
+
+    /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
+    pub fn pdf_area(&self, prev: &Vertex, next: &Vertex) -> f64 {
+        if self.is_delta() {
+            return 0.0;
+        }
+
+        let ho = &self.h;
+        let xo = prev.h.p;
+        let xi = ho.p;
+        let wo = xi - xo;
+        let ro = Ray::new(xo, wo);
+        let xii = next.h.p;
+        let wi = xii - xi;
+        let ri = Ray::new(xi, wi);
+        // normalized
+        let wi = ri.dir;
+        let sa = match ho.material.bsdf_pdf(ho, &ro) {
+            None => 0.0,
+            Some(pdf) => pdf.value_for(&ri, false),
+        };
+        let ng = next.h.ng;
+
+        sa * wi.dot(ng).abs() / xi.distance_squared(xii)
+    }
 }
