@@ -1,3 +1,4 @@
+#![allow(warnings)]
 use super::*;
 
 /// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
@@ -10,6 +11,7 @@ pub fn mis_weight(
 ) -> f64 {
     // assert!(t != 0)
     // if `sampled_vertex.is_some()` then t == 1 XOR s == 1
+    return 1.0;
 
     if s + t == 2 {
         return 1.0;
