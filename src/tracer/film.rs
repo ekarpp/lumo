@@ -12,6 +12,8 @@ pub struct FilmSample {
     pub y: i32,
     /// Color of the sample
     pub color: DVec3,
+    /// "Splat" sample i.e. from sampling camera
+    pub splat: bool,
 }
 
 impl Default for FilmSample {
@@ -20,15 +22,16 @@ impl Default for FilmSample {
             x: -1,
             y: -1,
             color: DVec3::ZERO,
+            splat: true,
         }
     }
 }
 
 impl FilmSample {
     /// Creates a sample of `color` at raster `(x,y)`
-    pub fn new(color: DVec3, x: i32, y: i32) -> Self {
+    pub fn new(color: DVec3, x: i32, y: i32, splat: bool) -> Self {
         Self {
-            x, y, color
+            x, y, color, splat,
         }
     }
 }
@@ -63,7 +66,9 @@ impl Film {
         }
         let idx = (sample.x + self.width * sample.y) as usize;
         self.samples[idx] += sample.color;
-        self.num_samples[idx] += 1;
+        if !sample.splat {
+            self.num_samples[idx] += 1;
+        }
     }
 
     /// Empties the vector and adds each sample to film

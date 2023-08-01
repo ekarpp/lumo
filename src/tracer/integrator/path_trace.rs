@@ -77,5 +77,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
         }
     }
 
-    FilmSample::new(radiance, x, y)
+    FilmSample::new(radiance, x, y, false)
 }

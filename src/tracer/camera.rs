@@ -291,7 +291,7 @@ impl Camera {
                 let raster_xy = (focus_local.truncate() * min_res + resolution)
                     .as_ivec2() / 2;
 
-                FilmSample::new(color, raster_xy.x, raster_xy.y)
+                FilmSample::new(color, raster_xy.x, raster_xy.y, true)
             }
         }
     }

@@ -27,7 +27,7 @@ mod mis;
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);
     let camera_path = path_gen::camera_path(scene, camera, r);
-    let mut sample = FilmSample::new(DVec3::ZERO, x, y);
+    // let mut sample = FilmSample::new(DVec3::ZERO, x, y, false);
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
@@ -36,15 +36,17 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
 
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
-            sample.color += connect_paths(
-                scene,
-                &light_path, s,
-                &camera_path, t,
-            );
+            samples.push(FilmSample::new(
+                connect_paths(
+                    scene,
+                    &light_path, s,
+                    &camera_path, t,
+                ),
+                x, y, false
+            ));
         }
     }
 
-    samples.push(sample);
     samples
 }
 

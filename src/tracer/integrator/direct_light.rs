@@ -2,7 +2,7 @@ use super::*;
 
 pub fn integrate(scene: &Scene, ro: Ray, x: i32, y: i32) -> FilmSample {
     let radiance = _integrate(scene, ro, 0);
-    FilmSample::new(radiance, x, y)
+    FilmSample::new(radiance, x, y, false)
 }
 
 const MAX_RECURSION: usize = 50;
