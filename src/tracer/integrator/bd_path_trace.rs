@@ -179,8 +179,11 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.h.is_light() || !unoccluded(scene, &light_last.h, &camera_last.h) || camera_last.is_delta() || light_last.is_delta() {
-            DVec3::ZERO
+        if camera_last.h.is_light()
+            || camera_last.is_delta()
+            || light_last.is_delta()
+            || !visible(scene, &light_last.h, &camera_last.h) {
+                DVec3::ZERO
         } else {
             let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
             let camera_bsdf = camera_last.bsdf(&camera_path[t - 2], light_last);
@@ -200,13 +203,19 @@ fn connect_paths(
     radiance * weight
 }
 
-/// Are there any objects blocking from `p1` to `p2`
-fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
-    let r = h1.generate_ray(h2.p - h1.p);
-    let h = s.hit(&r);
+/// Is `h1` visible from `h2`?
+fn visible(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
+    let xo = h1.p;
+    let xi = h2.p;
+    let r = h1.generate_ray(xi - xo);
+    let wi = r.dir;
 
-    match h {
+    if wi.dot(h1.ng) < crate::EPSILON {
+        return false;
+    }
+
+    match s.hit(&r) {
         None => false,
-        Some(h) => h.ng.dot(h1.ng) > crate::EPSILON
+        Some(h) => h.p.distance_squared(xi) < crate::EPSILON,
     }
 }
