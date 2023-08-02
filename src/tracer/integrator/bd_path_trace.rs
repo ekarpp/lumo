@@ -207,6 +207,6 @@ fn unoccluded(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
 
     match h {
         None => false,
-        Some(h) => h.p.distance_squared(h2.p) < crate::EPSILON,
+        Some(h) => h.ng.dot(h1.ng) > crate::EPSILON
     }
 }
