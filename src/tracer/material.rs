@@ -2,15 +2,18 @@ use crate::Transport;
 use crate::tracer::bxdfs;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::Pdf;
+use crate::tracer::pdfs::{Pdf, CosPdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use glam::DVec3;
+use std::f64::consts::PI;
 
 /// Describes which material an object is made out of
 pub enum Material {
     /// Glossy
     Microfacet(Texture, MfDistribution),
+    /// Lambertian diffuse material. Mostly for debugging
+    Lambertian(Texture),
     /// Emits light
     Light(Texture),
     /// Perfect reflection
@@ -80,6 +83,7 @@ impl Material {
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
         match self {
+            Self::Lambertian(_) => false,
             Self::Microfacet(_, mfd) => mfd.is_delta(),
             _ => true,
         }
@@ -129,6 +133,7 @@ impl Material {
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
             }
+            Self::Lambertian(t) => t.albedo_at(h) / PI,
             _ => DVec3::ZERO,
         }
     }
@@ -136,7 +141,7 @@ impl Material {
     /// Computes the shading cosine coefficient per material
     pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
         match self {
-            Self::Microfacet(..) => ns.dot(wi).abs(),
+            Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
             _ => 1.0
         }
     }
@@ -147,6 +152,7 @@ impl Material {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
             Self::Volumetric(g, ..) => bxdfs::brdf_volumetric_pdf(ro, *g),
+            Self::Lambertian(_) => Some(Box::new(CosPdf::new(ho.ns))),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }

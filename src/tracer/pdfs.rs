@@ -27,6 +27,34 @@ pub trait Pdf {
     fn value_for(&self, ri: &Ray, swap_dir: bool) -> f64;
 }
 
+/// Cosine weighed hemisphere sampling
+pub struct CosPdf {
+    uvw: Onb,
+}
+
+impl CosPdf {
+    pub fn new(ns: DVec3) -> Self {
+        let uvw = Onb::new(ns);
+        Self { uvw }
+    }
+}
+
+impl Pdf for CosPdf {
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
+        Some(self.uvw.to_world(rand_utils::square_to_cos_hemisphere(rand_sq)))
+    }
+
+    fn value_for(&self, ri: &Ray, _swap_dir: bool) -> f64 {
+        let wi = ri.dir;
+        let cos_theta = self.uvw.w.dot(wi);
+        if cos_theta > 0.0 {
+            cos_theta / PI
+        } else {
+            0.0
+        }
+    }
+}
+
 /// Randomly samples a direction towards a point on the object that is visible
 pub struct ObjectPdf<'a> {
     /// Object to do sampling from
