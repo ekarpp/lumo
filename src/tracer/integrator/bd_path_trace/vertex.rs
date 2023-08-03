@@ -36,7 +36,8 @@ impl<'a> Vertex<'a> {
             h,
             gathered,
             pdf_bck,
-            pdf_fwd: 0.0,
+            // this might cause issues later on...
+            pdf_fwd: 1.0 / light.area(),
         }
     }
 
