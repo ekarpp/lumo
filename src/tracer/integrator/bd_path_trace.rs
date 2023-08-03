@@ -93,7 +93,7 @@ fn connect_light_path(
         let wi = (xn - xi).normalize();
         let ns = light_last.h.ns;
         let ng = light_last.h.ng;
-        wi.dot(ng).abs() * light_last.h.material.shading_cosine(v, ns)
+        wi.dot(ng).abs() * light_last.shading_cosine(v, ns)
             / v.dot(ng).abs()
     };
 
@@ -136,10 +136,12 @@ fn connect_paths(
         // just one vertex on the light path. instead of using it, we sample a
         // point on the same light.
         let camera_last = &camera_path[t - 1];
-        if camera_last.is_light() || camera_last.is_delta() {
+        // can't sample from delta and light as last exited early
+        if camera_last.is_delta() {
             DVec3::ZERO
         } else {
             // .unwrap() not nice :(
+            // just sample any random light?
             let light = light_path[0].h.light.unwrap();
 
             let xo = camera_last.h.p;
@@ -183,8 +185,7 @@ fn connect_paths(
         let light_last = &light_path[s - 1];
         let camera_last = &camera_path[t - 1];
 
-        if camera_last.h.is_light()
-            || camera_last.is_delta()
+        if camera_last.is_delta()
             || light_last.is_delta()
             || !visible(scene, &light_last.h, &camera_last.h) {
                 DVec3::ZERO
