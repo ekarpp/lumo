@@ -70,6 +70,11 @@ impl<'a> Vertex<'a> {
         !matches!(self.h.material, Material::Blank)
     }
 
+    /// Are we on a light?
+    pub fn is_light(&self) -> bool {
+        self.h.is_light()
+    }
+
     /// Are we on a surface with delta material?
     pub fn is_delta(&self) -> bool {
         self.h.material.is_delta()

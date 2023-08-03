@@ -117,6 +117,11 @@ fn connect_paths(
 ) -> DVec3 {
     // assert!(t >= 2);
 
+    // camera path ends on a light, but light path not empty
+    if s != 0 && camera_path[t - 1].is_light() {
+        return DVec3::ZERO;
+    }
+
     let mut sampled_vertex: Option<Vertex> = None;
 
     let radiance = if s == 0 {
