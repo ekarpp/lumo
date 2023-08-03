@@ -65,9 +65,13 @@ impl<'a> Vertex<'a> {
         }
     }
 
+    fn material(&self) -> &Material {
+        &self.h.material
+    }
+
     /// Are we a surface/light vertex?
     pub fn is_surface(&self) -> bool {
-        !matches!(self.h.material, Material::Blank)
+        !matches!(self.material(), Material::Blank)
     }
 
     /// Are we on a light?
@@ -77,7 +81,17 @@ impl<'a> Vertex<'a> {
 
     /// Are we on a surface with delta material?
     pub fn is_delta(&self) -> bool {
-        self.h.material.is_delta()
+        self.material().is_delta()
+    }
+
+    /// Helper to get emittance at hit
+    pub fn emittance(&self) -> DVec3 {
+        self.material().emit(&self.h)
+    }
+
+    /// Helper to get shading cosine at hit
+    pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
+        self.material().shading_cosine(wi, ns)
     }
 
     /// Computes BSDF at hit of `self`
@@ -86,7 +100,7 @@ impl<'a> Vertex<'a> {
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.h.material.bsdf_f(wo, wi, Transport::Radiance, &self.h)
+        self.material().bsdf_f(wo, wi, Transport::Radiance, &self.h)
     }
 
     /// Converts solid angle `pdf` to area PDF

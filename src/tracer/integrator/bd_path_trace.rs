@@ -127,17 +127,16 @@ fn connect_paths(
     let radiance = if s == 0 {
         // all vertices on camera path. check if last vertex is ON a light.
         let camera_last = &camera_path[t - 1];
-        if !camera_last.h.is_light() {
+        if !camera_last.is_light() {
             DVec3::ZERO
         } else {
-            let emittance = camera_last.h.material.emit(&camera_last.h);
-            camera_last.gathered * emittance
+            camera_last.gathered * camera_last.emittance()
         }
     } else if s == 1 {
         // just one vertex on the light path. instead of using it, we sample a
         // point on the same light.
         let camera_last = &camera_path[t - 1];
-        if camera_last.h.is_light() || camera_last.is_delta() {
+        if camera_last.is_light() || camera_last.is_delta() {
             DVec3::ZERO
         } else {
             // .unwrap() not nice :(
@@ -170,7 +169,7 @@ fn connect_paths(
                             // TODO (4)
                             // geometry term not used in PBRT, but it breaks w/o
                             camera_last.gathered * bsdf * emittance
-                                * camera_last.h.material.shading_cosine(wi, ns)
+                                * camera_last.shading_cosine(wi, ns)
                                 * light_last.g(camera_last)
                         }
                     }
