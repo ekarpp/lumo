@@ -73,6 +73,7 @@ impl Camera {
     /// * `focal_length` - Distance to the plane of focus for depth of field
     /// * `width` - Width of the rendered image
     /// * `height` - Height of the rendered image
+    #[allow(clippy::too_many_arguments)]
     pub fn orthographic(
         origin: DVec3,
         towards: DVec3,
@@ -110,6 +111,7 @@ impl Camera {
     /// * `focal_length` - Distance to the plane of focus for depth of field
     /// * `width` - Width of the rendered image
     /// * `height` - Height of the rendered image
+    #[allow(clippy::too_many_arguments)]
     pub fn perspective(
         origin: DVec3,
         towards: DVec3,

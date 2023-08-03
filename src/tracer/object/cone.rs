@@ -44,11 +44,7 @@ impl Object for Cone {
         let b = EFloat64::from(2.0) * (dx * ox - tan2_theta * dy * oy_height + dz * oz);
         let c = ox * ox - tan2_theta * oy_height * oy_height + oz * oz;
 
-        let t0t1 = EFloat64::quadratic(a, b, c);
-        if t0t1.is_none() {
-            return None;
-        }
-        let (t0, t1) = t0t1.unwrap();
+        let (t0, t1) = EFloat64::quadratic(a, b, c)?;
 
         // cone behind or too far
         if t0.high >= t_max || t1.low <= t_min {

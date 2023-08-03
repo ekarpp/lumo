@@ -37,6 +37,7 @@ impl<'a> Hit<'a> {
     /// * `ns` - Shading normal of the object at the point of impact
     /// * `ng` - Geometric normal of the object at the point of impact
     /// * `uv` - Texture coordinates in `\[0,1\]^2`
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         t: f64,
         material: &'a Material,

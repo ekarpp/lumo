@@ -56,11 +56,7 @@ impl Object for Sphere {
         let b = EFloat64::from(2.0) * (dx * ox + dy * oy + dz * oz);
         let c = ox * ox + oy * oy + oz * oz - radius2;
 
-        let t0t1 = EFloat64::quadratic(a, b, c);
-        if t0t1.is_none() {
-            return None;
-        }
-        let (t0, t1) = t0t1.unwrap();
+        let (t0, t1) = EFloat64::quadratic(a, b, c)?;
 
         // sphere too far or behind
         if t0.high >= t_max || t1.low <= t_min {

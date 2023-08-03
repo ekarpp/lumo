@@ -92,17 +92,17 @@ pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Resu
                 mtl.transmission_filter = tf;
             }
             "Ni" => {
-                let ni = parse_double(&tokens[1])?;
+                let ni = parse_double(tokens[1])?;
                 mtl.refraction_idx = ni;
             }
             "Ns" => {
-                let ns = parse_double(&tokens[1])?;
+                let ns = parse_double(tokens[1])?;
                 // blender uses this mapping
                 let roughness = 1.0 - ns.min(900.0).sqrt() / 30.0;
                 mtl.roughness = roughness;
             }
             "illum" => {
-                let illum = parse_double(&tokens[1])?;
+                let illum = parse_double(tokens[1])?;
                 mtl.illumination_model = illum as usize;
             }
             _ => (),

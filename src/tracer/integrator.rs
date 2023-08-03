@@ -81,7 +81,7 @@ fn shadow_ray(
                     let weight = p_light * p_light
                         / (p_light * p_light + p_scatter * p_scatter);
 
-                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, &ho);
+                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, ho);
                     let bsdf = if ho.is_medium() {
                         // assume that mediums get sampled perfectly
                         // according to the BSDF and thus cancel out PDF
@@ -116,7 +116,7 @@ fn shadow_ray(
                     let weight = p_scatter * p_scatter
                         / (p_scatter * p_scatter + p_light * p_light);
 
-                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, &ho);
+                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, ho);
                     let bsdf = if ho.is_medium() {
                         // assume that mediums get sampled perfectly
                         // according to the BSDF and thus cancel out PDF

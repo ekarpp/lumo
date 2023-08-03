@@ -72,10 +72,12 @@ impl Object for Triangle {
 
         let wi_abs = r.dir.abs();
         // index for max component, permute it cyclically to z position
-        let kz = if wi_abs.x > wi_abs.y {
-            if wi_abs.x > wi_abs.z { 0 } else { 2 }
+        let kz = if wi_abs.x > wi_abs.y && wi_abs.x > wi_abs.z {
+            0
+        } else if wi_abs.y > wi_abs.z {
+            1
         } else {
-            if wi_abs.y > wi_abs.z { 1 } else { 2 }
+            2
         };
 
         let permute = |vec: DVec3| {

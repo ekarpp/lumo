@@ -124,7 +124,7 @@ fn parse_tokens(
             uvs.push(uv);
         }
         "f" => {
-            let face = parse_face(&tokens, &vertices, &normals, &uvs)?;
+            let face = parse_face(&tokens, vertices, normals, uvs)?;
             faces.extend(face);
         }
         _ => (),

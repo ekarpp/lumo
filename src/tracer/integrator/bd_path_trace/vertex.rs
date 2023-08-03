@@ -67,7 +67,7 @@ impl<'a> Vertex<'a> {
     }
 
     fn material(&self) -> &Material {
-        &self.h.material
+        self.h.material
     }
 
     /// Are we a surface/light vertex?

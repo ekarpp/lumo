@@ -153,6 +153,7 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
 
 /// Parses a whole scene from a .obj file specified by `name`
 /// in a .zip archive at `url`
+#[allow(clippy::single_match)]
 pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
     if !url.ends_with(".zip") {
         return Err(obj_error("Can only load scenes from .zip"));

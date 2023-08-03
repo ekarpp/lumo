@@ -96,7 +96,7 @@ fn walk<'a>(
                         let bsdf = if ho.is_medium() {
                             DVec3::ONE * pdf_fwd
                         } else {
-                            material.bsdf_f(wo, wi, mode, &ho)
+                            material.bsdf_f(wo, wi, mode, ho)
                         };
 
                         gathered *= bsdf * shading_cosine / pdf_fwd;

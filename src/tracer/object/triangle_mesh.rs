@@ -34,6 +34,7 @@ pub struct TriangleMesh {
 impl TriangleMesh {
     /// Constructs a mesh, i.e. kdtree, from the given data.
     /// `normals` and/or `uvs` may be empty.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(
         vertices: Vec<DVec3>,
         faces: Vec<Face>,
