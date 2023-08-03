@@ -27,7 +27,8 @@ mod mis;
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);
     let camera_path = path_gen::camera_path(scene, camera, r);
-    // let mut sample = FilmSample::new(DVec3::ZERO, x, y, false);
+
+    let mut radiance = DVec3::ZERO;
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
@@ -36,17 +37,15 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
 
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
-            samples.push(FilmSample::new(
-                connect_paths(
-                    scene,
-                    &light_path, s,
-                    &camera_path, t,
-                ),
-                x, y, false
-            ));
+            radiance += connect_paths(
+                scene,
+                &light_path, s,
+                &camera_path, t,
+            );
         }
     }
 
+    samples.push(FilmSample::new(radiance, x, y, false));
     samples
 }
 
@@ -155,7 +154,8 @@ fn connect_paths(
                         None => DVec3::ZERO,
                         Some(hi) => {
                             let ns = hi.ns;
-                            let emittance = hi.material.emit(&hi);
+                            let emittance = hi.material.emit(&hi)
+                                / pdf_light.value_for(&ri, false);
                             sampled_vertex = Some(Vertex::light(
                                 hi,
                                 light,
@@ -168,11 +168,8 @@ fn connect_paths(
                                 light_last
                             );
 
-                            // TODO (4)
-                            // geometry term not used in PBRT, but it breaks w/o
-                            camera_last.gathered * bsdf * emittance
+                            camera_last.gathered * bsdf * light_last.gathered
                                 * camera_last.shading_cosine(wi, ns)
-                                * light_last.g(camera_last)
                         }
                     }
                 }
