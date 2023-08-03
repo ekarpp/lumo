@@ -98,7 +98,7 @@ fn connect_light_path(
 
     sample.color *= light_last.gathered
         * shading_cosine
-        * light_last.bsdf(light_scnd_last, camera_last)
+        * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
         * mis::mis_weight(light_path, s, camera_path, 1, sampled_vertex);
 
     sample
@@ -165,7 +165,8 @@ fn connect_paths(
                             let light_last = sampled_vertex.as_ref().unwrap();
                             let bsdf = camera_last.bsdf(
                                 &camera_path[t - 2],
-                                light_last
+                                light_last,
+                                Transport::Radiance,
                             );
 
                             camera_last.gathered * bsdf * light_last.gathered
@@ -186,13 +187,21 @@ fn connect_paths(
             || light_last.is_delta()
             || !visible(scene, &light_last.h, &camera_last.h) {
                 DVec3::ZERO
-        } else {
-            let light_bsdf = light_last.bsdf(&light_path[s - 2], camera_last);
-            let camera_bsdf = camera_last.bsdf(&camera_path[t - 2], light_last);
+            } else {
+                let light_bsdf = light_last.bsdf(
+                    &light_path[s - 2],
+                    camera_last,
+                    Transport::Importance,
+                );
+                let camera_bsdf = camera_last.bsdf(
+                    &camera_path[t - 2],
+                    light_last,
+                    Transport::Radiance,
+                );
 
-            light_last.gathered * light_bsdf
-                * camera_bsdf * camera_last.gathered
-                * light_last.g(camera_last)
+                light_last.gathered * light_bsdf
+                    * camera_bsdf * camera_last.gathered
+                    * light_last.g(camera_last)
         }
     };
 

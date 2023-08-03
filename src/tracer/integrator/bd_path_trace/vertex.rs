@@ -96,12 +96,12 @@ impl<'a> Vertex<'a> {
     }
 
     /// Computes BSDF at hit of `self`
-    pub fn bsdf(&self, prev: &Vertex, next: &Vertex) -> DVec3 {
+    pub fn bsdf(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> DVec3 {
         // TODO (2)
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.material().bsdf_f(wo, wi, Transport::Radiance, &self.h)
+        self.material().bsdf_f(wo, wi, mode, &self.h)
     }
 
     /// Converts solid angle `pdf` to area PDF
