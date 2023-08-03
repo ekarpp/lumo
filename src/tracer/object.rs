@@ -73,9 +73,9 @@ pub trait Sampleable: Object {
     /// Direction cos weighed on the hemisphere. Returns also normal at ray origin
     fn sample_leaving(&self, rand_sq0: DVec2, rand_sq1: DVec2) -> (Ray, Hit) {
         let ho = self.sample_on(rand_sq0);
-        let ng = ho.ng;
+        let ns = ho.ns;
         let xo = ho.p;
-        let uvw = Onb::new(ng);
+        let uvw = Onb::new(ns);
         let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
         let wi = uvw.to_world(wi_local);
         // pdf start = 1 / area
