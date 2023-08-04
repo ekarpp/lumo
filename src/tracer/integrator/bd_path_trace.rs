@@ -3,17 +3,12 @@ use crate::tracer::material::Material;
 
 /*
  * BUGS:
- * (1) MIS weight for polygon with transparent microfacet on low roughness delta
- * (2) Camera sampling raster coordinates
+ * (1) Cornell scene with MIS, glass ball
  */
-
 
 /*
  * TODO:
  * (2) store directions in vertex?
- * (4) PBRT has no geometry term but we need it?
- * (9) need to modify vertex PDFs? maybe forget RR?
- * + this needs proper refactoring and cleanup...
  */
 use vertex::Vertex;
 
