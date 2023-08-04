@@ -289,7 +289,7 @@ impl Camera {
                 let min_res = resolution.min_element();
 
                 let focus = ro.at(fl);
-                let focus_local = cfg.camera_basis.to_local(focus) - cfg.origin;
+                let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
                 let raster_xy = (focus_local.truncate() * min_res + resolution)
                     .as_ivec2() / 2;
 
