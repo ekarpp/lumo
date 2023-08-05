@@ -27,7 +27,9 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
-        samples.push(connect_light_path(scene, camera, &camera_path, &light_path, s));
+        if let Some(sample) = connect_light_path(scene, camera, &camera_path, &light_path, s) {
+            samples.push(sample);
+        }
     }
 
     for t in 2..=camera_path.len() {
@@ -51,31 +53,31 @@ fn connect_light_path(
     camera_path: &[Vertex],
     light_path: &[Vertex],
     s: usize
-) -> FilmSample {
+) -> Option<FilmSample> {
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
     if light_last.is_delta() {
-        return FilmSample::default();
+        return None;
     }
 
     let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
     let v = -ro.dir;
     if v.dot(light_last.h.ns) < 0.0 {
-        return FilmSample::default();
+        return None;
     }
 
     let xo = ro.origin;
     let xi = light_last.h.p;
     let pdf = camera.sample_towards_pdf(&ro, xi);
     if pdf <= 0.0 {
-        return FilmSample::default();
+        return None;
     }
 
     let vr = light_last.h.generate_ray(v);
     let t2 = xo.distance_squared(xi);
     if scene.hit(&vr).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
-        return FilmSample::default();
+        return None;
     }
 
     let light_scnd_last = &light_path[s - 2];
@@ -98,7 +100,7 @@ fn connect_light_path(
         * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
         * mis::mis_weight(light_path, s, camera_path, 1, sampled_vertex);
 
-    sample
+    Some(sample)
 }
 
 /// Connects a light subpath and a camera subpath.
