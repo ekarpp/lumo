@@ -55,23 +55,25 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
-
     if light_last.is_delta() {
         return FilmSample::default();
     }
 
     let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
+    let v = -ro.dir;
+    if v.dot(light_last.h.ns) < 0.0 {
+        return FilmSample::default();
+    }
+
     let xo = ro.origin;
     let xi = light_last.h.p;
     let pdf = camera.sample_towards_pdf(&ro, xi);
-
     if pdf <= 0.0 {
         return FilmSample::default();
     }
-    let v = -ro.dir;
+
     let vr = light_last.h.generate_ray(v);
     let t2 = xo.distance_squared(xi);
-
     if scene.hit(&vr).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
         return FilmSample::default();
     }
