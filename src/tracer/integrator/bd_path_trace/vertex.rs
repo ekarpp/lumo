@@ -36,7 +36,7 @@ impl<'a> Vertex<'a> {
             h,
             gathered,
             pdf_bck,
-            // this might cause issues later on...
+            // this might cause issues later on (if area is zero, point light?)...
             pdf_fwd: 1.0 / light.area(),
         }
     }
@@ -147,7 +147,7 @@ impl<'a> Vertex<'a> {
         let ri = Ray::new(xi, wi);
         // normalized
         let wi = ri.dir;
-        let sa = match ho.material.bsdf_pdf(ho, &ro) {
+        let sa = match self.material().bsdf_pdf(ho, &ro) {
             None => 0.0,
             Some(pdf) => pdf.value_for(&ri, false),
         };
