@@ -132,7 +132,7 @@ impl<'a> Vertex<'a> {
     }
 
     /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
-    pub fn pdf_area(&self, prev: &Vertex, next: &Vertex) -> f64 {
+    pub fn pdf_area(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> f64 {
         if self.is_delta() {
             return 0.0;
         }
@@ -149,7 +149,7 @@ impl<'a> Vertex<'a> {
         let wi = ri.dir;
         let sa = match self.material().bsdf_pdf(ho, &ro) {
             None => 0.0,
-            Some(pdf) => pdf.value_for(&ri, false),
+            Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance)),
         };
         let ng = next.h.ng;
 
