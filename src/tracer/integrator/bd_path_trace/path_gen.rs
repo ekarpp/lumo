@@ -108,6 +108,10 @@ fn walk<'a>(
                             vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
                         };
 
+                        if material.is_delta() {
+                            pdf_fwd = 0.0;
+                        }
+
                         // russian roulette
                         if depth > 3 {
                             let luminance = crate::rgb_to_luminance(gathered);

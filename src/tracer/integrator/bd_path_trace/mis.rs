@@ -137,8 +137,6 @@ pub fn mis_weight(
     #[cfg(debug_assertions)]
     if weight < 0.0 {
         println!("negative weight in BDPT MIS");
-        std::process::exit(0);
     }
-
     weight
 }
