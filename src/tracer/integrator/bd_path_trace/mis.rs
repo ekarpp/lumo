@@ -59,7 +59,9 @@ pub fn mis_weight(
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
-        sum_ri += ri;
+        if !ct.is_delta() && !(s == 0 || !sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]).is_delta()) {
+            sum_ri += ri;
+        }
     }
 
     // applies the updated PDF for camera t - 2 using the connection
@@ -88,13 +90,17 @@ pub fn mis_weight(
             ct.pdf_area(ls, ct_m, Transport::Importance)
         };
         ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
-        sum_ri += ri;
+        if !ct.is_delta() && !ct_m.is_delta() {
+            sum_ri += ri;
+        }
     }
 
     // vertices in camera path
     for i in (1..t.max(2) - 2).rev() {
         ri *= map0(camera_path[i].pdf_bck) / map0(camera_path[i].pdf_fwd);
-        sum_ri += ri;
+        if !camera_path[i].is_delta() && !camera_path[i - 1].is_delta() {
+            sum_ri += ri;
+        }
     }
 
     let mut ri = 1.0;
@@ -112,7 +118,9 @@ pub fn mis_weight(
             ct.pdf_area(ct_m, ls, Transport::Radiance)
         };
         ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
-        sum_ri += ri;
+        if !ls.is_delta() && !(t < 2 || camera_path[t - 1].is_delta()) {
+            sum_ri += ri;
+        }
     }
 
     // applies the updated PDF at light_last using the connection
@@ -124,13 +132,17 @@ pub fn mis_weight(
         let pdf_prev = ls.pdf_area(ct, ls_m, Transport::Radiance);
 
         ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
-        sum_ri += ri;
+        if !ls.is_delta() && !ls_m.is_delta() {
+            sum_ri += ri;
+        }
     }
 
     // vertices in light path
     for i in (0..s.max(2) - 2).rev() {
         ri *= map0(light_path[i].pdf_bck) / map0(light_path[i].pdf_fwd);
-        sum_ri += ri;
+        if !light_path[i].is_delta() && !light_path[(i - 1).max(0)].is_delta() {
+            sum_ri += ri;
+        }
     }
 
     let weight = 1.0 / (1.0 + sum_ri);
