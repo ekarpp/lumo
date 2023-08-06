@@ -211,7 +211,7 @@ impl MfDistribution {
 
     /// Probability that `wh` got sampled
     pub fn sample_normal_pdf(&self, wh: DVec3, v: DVec3, no: DVec3) -> f64 {
-        match self {
+        let pdf = match self {
             Self::Beckmann(..) => {
                 let wh_dot_no = wh.dot(no);
                 self.d(wh, no) * wh_dot_no
@@ -222,7 +222,9 @@ impl MfDistribution {
 
                 self.g1(v, no) * self.d(wh, no) * wh_dot_v / no_dot_v
             }
-        }
+        };
+
+        pdf.max(0.0)
     }
 
     /// Sampling microfacet normals per distribution for importance sampling.

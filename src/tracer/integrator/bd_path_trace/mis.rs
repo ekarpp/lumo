@@ -137,6 +137,7 @@ pub fn mis_weight(
     #[cfg(debug_assertions)]
     if weight < 0.0 {
         println!("negative weight in BDPT MIS");
+        std::process::exit(0);
     }
     /* this is a lazy fix. for transparent microfacets it should be checked
      * that sampled rays from camera can actually be refracted.
