@@ -106,6 +106,9 @@ impl<'a> Vertex<'a> {
 
     /// Converts solid angle `pdf` to area PDF
     pub fn solid_angle_to_area(&self, pdf: f64, next: &Vertex) -> f64 {
+        if pdf < 0.0 {
+            return 0.0;
+        }
         let xo = self.h.p;
         let xi = next.h.p;
         let wi = (xi - xo).normalize();
@@ -149,7 +152,7 @@ impl<'a> Vertex<'a> {
         let wi = ri.dir;
         let sa = match self.material().bsdf_pdf(ho, &ro) {
             None => 0.0,
-            Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance)),
+            Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance)).max(0.0),
         };
         let ng = next.h.ng;
 
