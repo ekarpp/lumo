@@ -128,10 +128,18 @@ pub fn mis_weight(
     }
 
     // vertices in light path
-    for i in (1..s.max(2) - 2).rev() {
+    for i in (0..s.max(2) - 2).rev() {
         ri *= map0(light_path[i].pdf_bck) / map0(light_path[i].pdf_fwd);
         sum_ri += ri;
     }
 
-    1.0 / (1.0 + sum_ri)
+    let weight = 1.0 / (1.0 + sum_ri);
+    #[cfg(debug_assertions)]
+    if weight < 0.0 {
+        println!("negative weight in BDPT MIS");
+    }
+    /* this is a lazy fix. for transparent microfacets it should be checked
+     * that sampled rays from camera can actually be refracted.
+     */
+    weight.max(0.0)
 }
