@@ -1,5 +1,6 @@
 #![allow(warnings)]
 use super::*;
+
 // this could use the scoped assignment from PBRT...
 /// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
 pub fn mis_weight(
@@ -20,12 +21,15 @@ pub fn mis_weight(
         if pdf == 0.0 { 1.0 } else { pdf }
     };
 
+    // max(1) is lazy... if s == 0 we never call ls anyways. TODO fix later
+    let ls = if s != 1 { &light_path[s.max(1) - 1] } else { sampled_vertex.as_ref().unwrap() };
+    let ct = if t != 1 { &camera_path[t - 1] } else { sampled_vertex.as_ref().unwrap() };
+
     let mut sum_ri = 0.0;
     let mut ri = 1.0;
 
     // applies the updated PDF for camera_last of the connection
     if t > 0 {
-        let ct = &camera_path[t - 1];
         let pdf_prev = if s == 0 {
             // assert!(ct.h.light.is_some());
             // probability for the origin. uniformly sampled on light surface
@@ -36,34 +40,29 @@ pub fn mis_weight(
             }
             // check camera and light path initializations. fix the mis weights to be like there. double check they are correct.
         } else if s == 1 {
-            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
-            match ls.h.light {
-                None => 0.0,
-                Some(light) => {
-                    let xo = ls.h.p;
-                    let xi = ct.h.p;
-                    let wi = xi - xo;
-                    let ri = Ray::new(xo, wi);
-                    // normalized
-                    let wi = ri.dir;
-                    let ng = ls.h.ng;
-                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                    let ng = ct.h.ng;
-                    // convert solid angle to area
-                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-                }
+            if let Some(light) = ls.h.light {
+                let xo = ls.h.p;
+                let xi = ct.h.p;
+                let wi = xi - xo;
+                let ri = Ray::new(xo, wi);
+                // normalized
+                let wi = ri.dir;
+                let ng = ls.h.ng;
+                let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
+                let ng = ct.h.ng;
+                // convert solid angle to area
+                pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
+            } else {
+                unreachable!();
+                0.0
             }
         } else {
-            let ls = &light_path[s - 1];
             let ls_m = &light_path[s - 2];
             ls.pdf_area(ls_m, ct, Transport::Importance)
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
-        let ls_is_delta = s == 0
-            // this is here incase s > 0 && t = 1 (sampled is from camera)
-            || (s != 1 && light_path[s - 1].is_delta())
-            || sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]).is_delta();
+        let ls_is_delta = s == 0 || ls.is_delta();
         if !ct.is_delta() && !ls_is_delta {
             sum_ri += ri;
         }
@@ -71,27 +70,24 @@ pub fn mis_weight(
 
     // applies the updated PDF for camera t - 2 using the connection
     if t > 1 {
-        let ct = &camera_path[t - 1];
         let ct_m = &camera_path[t - 2];
         let pdf_prev = if s == 0 {
-            match ct.h.light {
-                None => 0.0,
-                Some(light) => {
-                    let xo = ct.h.p;
-                    let xi = ct_m.h.p;
-                    let wi = xi - xo;
-                    let ri = Ray::new(xo, wi);
-                    // normalized
-                    let wi = ri.dir;
-                    let ng = ct.h.ng;
-                    let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                    let ng = ct_m.h.ng;
-                    // convert solid angle to area
-                    pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-                }
+            if let Some(light) = ct.h.light {
+                let xo = ct.h.p;
+                let xi = ct_m.h.p;
+                let wi = xi - xo;
+                let ri = Ray::new(xo, wi);
+                // normalized
+                let wi = ri.dir;
+                let ng = ct.h.ng;
+                let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
+                let ng = ct_m.h.ng;
+                // convert solid angle to area
+                pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
+            } else {
+                0.0
             }
         } else {
-            let ls = sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]);
             ct.pdf_area(ls, ct_m, Transport::Importance)
         };
         ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
@@ -112,13 +108,11 @@ pub fn mis_weight(
 
     // applies the updated PDF at light_last using the connection
     if s > 0 {
-        let ls = &light_path[s - 1];
-        let pdf_prev = if t < 2 {
+        let pdf_prev = if t == 1 {
             // probability that the direction got sampled from camera.
             // should be 1.0? yes.
             1.0
         } else {
-            let ct = &camera_path[t - 1];
             let ct_m = &camera_path[t - 2];
             ct.pdf_area(ct_m, ls, Transport::Radiance)
         };
@@ -130,10 +124,7 @@ pub fn mis_weight(
 
     // applies the updated PDF at light_last using the connection
     if s > 1 {
-        let ls = &light_path[s - 1];
         let ls_m = &light_path[s - 2];
-        let ct = sampled_vertex.as_ref().unwrap_or(&camera_path[t - 1]);
-
         let pdf_prev = ls.pdf_area(ct, ls_m, Transport::Radiance);
 
         ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
