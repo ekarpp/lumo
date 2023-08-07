@@ -1,6 +1,6 @@
 #![allow(warnings)]
 use super::*;
-
+// this could use the scoped assignment from PBRT...
 /// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
 pub fn mis_weight(
     light_path: &[Vertex],
@@ -27,6 +27,7 @@ pub fn mis_weight(
     if t > 0 {
         let ct = &camera_path[t - 1];
         let pdf_prev = if s == 0 {
+            // assert!(ct.h.light.is_some());
             // probability for the origin. uniformly sampled on light surface
             if ct.is_delta() {
                 0.0
@@ -59,7 +60,11 @@ pub fn mis_weight(
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
-        if !ct.is_delta() && !(s == 0 || !sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]).is_delta()) {
+        let ls_is_delta = s == 0
+            // this is here incase s > 0 && t = 1 (sampled is from camera)
+            || (s != 1 && light_path[s - 1].is_delta())
+            || sampled_vertex.as_ref().unwrap_or(&light_path[s - 1]).is_delta();
+        if !ct.is_delta() && !ls_is_delta {
             sum_ri += ri;
         }
     }
@@ -118,7 +123,7 @@ pub fn mis_weight(
             ct.pdf_area(ct_m, ls, Transport::Radiance)
         };
         ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
-        if !ls.is_delta() && !(t < 2 || camera_path[t - 1].is_delta()) {
+        if !ls.is_delta() && !(t == 1 || camera_path[t - 1].is_delta()) {
             sum_ri += ri;
         }
     }
