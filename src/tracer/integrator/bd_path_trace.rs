@@ -35,7 +35,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance += connect_paths(
-                scene,
+                scene, camera,
                 &light_path, s,
                 &camera_path, t,
             );
@@ -94,7 +94,7 @@ fn connect_light_path(
     sample.color *= light_last.gathered
         * shading_cosine
         * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
-        * mis::mis_weight(light_path, s, camera_path, 1, sampled_vertex);
+        * mis::mis_weight(camera, light_path, s, camera_path, 1, sampled_vertex);
 
     Some(sample)
 }
@@ -104,6 +104,7 @@ fn connect_light_path(
 /// Special logic if light path length 0 or 1.
 fn connect_paths(
     scene: &Scene,
+    camera: &Camera,
     light_path: &[Vertex],
     s: usize,
     camera_path: &[Vertex],
@@ -203,7 +204,7 @@ fn connect_paths(
     let weight = if radiance.length_squared() == 0.0 {
         0.0
     } else {
-        mis::mis_weight(light_path, s, camera_path, t, sampled_vertex)
+        mis::mis_weight(camera, light_path, s, camera_path, t, sampled_vertex)
     };
 
     radiance * weight

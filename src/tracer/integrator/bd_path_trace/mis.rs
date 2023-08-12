@@ -4,6 +4,7 @@ use super::*;
 // this could use the scoped assignment from PBRT...
 /// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
 pub fn mis_weight(
+    camera: &Camera,
     light_path: &[Vertex],
     s: usize,
     camera_path: &[Vertex],
@@ -45,10 +46,7 @@ pub fn mis_weight(
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
-        let ls_is_delta = s == 0 || ls.is_delta();
-        if !ct.is_delta() && !ls_is_delta {
-            sum_ri += ri;
-        }
+        sum_ri += ri;
     }
 
     // applies the updated PDF for camera t - 2 using the connection
@@ -60,7 +58,7 @@ pub fn mis_weight(
             ct.pdf_area(ls, ct_m, Transport::Importance)
         };
         ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
-        if !ct.is_delta() && !ct_m.is_delta() {
+        if !ct_m.is_delta() {
             sum_ri += ri;
         }
     }
@@ -78,16 +76,17 @@ pub fn mis_weight(
     // applies the updated PDF at light_last using the connection
     if s > 0 {
         let pdf_prev = if t == 1 {
-            // should call camera.pdf here
-            1.0
+            // move this to vertex
+            let xo = ct.h.p;
+            let xi = ls.h.p;
+            let wi = (xi - xo).normalize();
+            camera.pdf(wi)
         } else {
             let ct_m = &camera_path[t - 2];
             ct.pdf_area(ct_m, ls, Transport::Radiance)
         };
         ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
-        if !ls.is_delta() && !(t == 1 || camera_path[t - 1].is_delta()) {
-            sum_ri += ri;
-        }
+        sum_ri += ri;
     }
 
     // applies the updated PDF at light_last using the connection
@@ -96,7 +95,7 @@ pub fn mis_weight(
         let pdf_prev = ls.pdf_area(ct, ls_m, Transport::Radiance);
 
         ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
-        if !ls.is_delta() && !ls_m.is_delta() {
+        if !ls_m.is_delta() {
             sum_ri += ri;
         }
     }
