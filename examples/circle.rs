@@ -23,8 +23,8 @@ fn main() -> Result<(), std::io::Error> {
         90.0,
         0.0,
         0.0,
-        1000,
-        1000,
+        1024,
+        768,
     );
 
     let mut scene = Scene::default();
