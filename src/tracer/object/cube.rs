@@ -17,7 +17,7 @@ impl Cube {
     /// * `material` - Material of the cube
     pub fn new(material: Material) -> Box<Self> {
         let vertices = vec![
-            DVec3::X, DVec3::ZERO, DVec3::Y, DVec3::X + DVec3::Y,
+            DVec3::X, DVec3::ZERO,         DVec3::Y,   DVec3::X + DVec3::Y,
             DVec3::Z, DVec3::Z + DVec3::X, DVec3::ONE, DVec3::Z + DVec3::Y,
         ];
 
@@ -33,7 +33,7 @@ impl Cube {
             // xz, y = 0
             Face::new(vec![0, 5, 4, 1], vec![], vec![]),
             // xz, y = 1
-            Face::new(vec![6, 0, 1, 4], vec![], vec![]),
+            Face::new(vec![6, 3, 2, 7], vec![], vec![]),
         ];
 
         Box::new(Self {
