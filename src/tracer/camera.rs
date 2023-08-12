@@ -188,19 +188,21 @@ impl Camera {
     pub fn generate_ray(&self, raster_xy: DVec2) -> Ray {
         let resolution = self.get_resolution().as_dvec2();
         let min_res = resolution.min_element();
-        let image_xy = (2.0 * raster_xy - resolution) / min_res;
+        // raster to screen here
+        let screen_xy = (2.0 * raster_xy - resolution) / min_res;
 
         match self {
             Self::Perspective(cfg, vfov_half) => {
-                let wi_local = image_xy.extend(
+                // is this correct ???
+                let wi_local = screen_xy.extend(
                     resolution.y / (min_res * vfov_half.tan())
                 ).normalize();
 
                 Self::add_dof(DVec3::ZERO, wi_local, cfg)
             }
             Self::Orthographic(cfg, scale) => {
-                let image_xyz = image_xy.extend(0.0);
-                let xo_local = *scale * image_xyz;
+                let screen_xyz = screen_xy.extend(0.0);
+                let xo_local = *scale * screen_xyz;
 
                 Self::add_dof(xo_local, DVec3::Z, cfg)
             }
@@ -236,7 +238,7 @@ impl Camera {
         pdf.max(0.0)
     }
 
-    /// PDF for `wi` direction. Surface of the raster pixel over the whole image plane area?
+    /// PDF for `wi` direction.
     pub fn pdf(&self, wi: DVec3) -> f64 {
         let cfg = self.get_cfg();
         let wi_local = cfg.camera_basis.to_local(wi);
@@ -245,18 +247,12 @@ impl Camera {
         if cos_theta <= 0.0 {
             0.0
         } else {
-            let lens_area = if cfg.lens_radius == 0.0 {
-                1.0
-            } else {
-                cfg.lens_radius * cfg.lens_radius * PI
+            let area_coeff = {
+                let res = self.get_resolution().as_dvec2();
+                let min_res = res.min_element();
+                let screen_bounds = res / min_res;
+                screen_bounds.x * screen_bounds.y
             };
-
-            let resolution = self.get_resolution().as_dvec2();
-            let min_res = resolution.min_element();
-            let image_plane_area = 4.0 * resolution.x * resolution.y
-                / (min_res * min_res);
-
-            let area_coeff = lens_area * image_plane_area;
 
             1.0 / (area_coeff * cos_theta * cos_theta * cos_theta)
         }
