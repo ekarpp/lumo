@@ -21,9 +21,14 @@ pub fn mis_weight(
         if pdf == 0.0 { 1.0 } else { pdf }
     };
 
-    // max(1) is lazy... if s == 0 we never call ls anyways. TODO fix later
-    let ls = if s != 1 { &light_path[s.max(1) - 1] } else { sampled_vertex.as_ref().unwrap() };
-    let ct = if t != 1 { &camera_path[t - 1] } else { sampled_vertex.as_ref().unwrap() };
+    let (ls, ct) = if s == 1 {
+        (sampled_vertex.as_ref().unwrap(), &camera_path[t - 1])
+    } else if t == 1 {
+        (&light_path[s - 1], sampled_vertex.as_ref().unwrap())
+    } else {
+        // max(1) is lazy. if s == 0 ls wont get called anyways though
+        (&light_path[s.max(1) - 1], &camera_path[t - 1])
+    };
 
     let mut sum_ri = 0.0;
     let mut ri = 1.0;
