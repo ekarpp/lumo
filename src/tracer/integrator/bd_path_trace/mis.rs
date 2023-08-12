@@ -31,31 +31,9 @@ pub fn mis_weight(
     // applies the updated PDF for camera_last of the connection
     if t > 0 {
         let pdf_prev = if s == 0 {
-            // assert!(ct.h.light.is_some());
-            // probability for the origin. uniformly sampled on light surface
-            if ct.is_delta() {
-                0.0
-            } else {
-                ct.h.light.map_or(0.0, |light| 1.0 / light.area())
-            }
-            // check camera and light path initializations. fix the mis weights to be like there. double check they are correct.
+            ct.pdf_light_origin()
         } else if s == 1 {
-            if let Some(light) = ls.h.light {
-                let xo = ls.h.p;
-                let xi = ct.h.p;
-                let wi = xi - xo;
-                let ri = Ray::new(xo, wi);
-                // normalized
-                let wi = ri.dir;
-                let ng = ls.h.ng;
-                let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                let ng = ct.h.ng;
-                // convert solid angle to area
-                pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-            } else {
-                unreachable!();
-                0.0
-            }
+            ls.pdf_light_leaving(ct)
         } else {
             let ls_m = &light_path[s - 2];
             ls.pdf_area(ls_m, ct, Transport::Importance)
@@ -72,21 +50,7 @@ pub fn mis_weight(
     if t > 1 {
         let ct_m = &camera_path[t - 2];
         let pdf_prev = if s == 0 {
-            if let Some(light) = ct.h.light {
-                let xo = ct.h.p;
-                let xi = ct_m.h.p;
-                let wi = xi - xo;
-                let ri = Ray::new(xo, wi);
-                // normalized
-                let wi = ri.dir;
-                let ng = ct.h.ng;
-                let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-                let ng = ct_m.h.ng;
-                // convert solid angle to area
-                pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-            } else {
-                0.0
-            }
+            ct.pdf_light_leaving(ct_m)
         } else {
             ct.pdf_area(ls, ct_m, Transport::Importance)
         };
@@ -109,8 +73,7 @@ pub fn mis_weight(
     // applies the updated PDF at light_last using the connection
     if s > 0 {
         let pdf_prev = if t == 1 {
-            // probability that the direction got sampled from camera.
-            // should be 1.0? yes.
+            // should call camera.pdf here
             1.0
         } else {
             let ct_m = &camera_path[t - 2];

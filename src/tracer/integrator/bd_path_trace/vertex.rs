@@ -133,26 +133,50 @@ impl<'a> Vertex<'a> {
 
     /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
     pub fn pdf_area(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> f64 {
-        if self.is_delta() {
-            return 0.0;
-        }
-
         let ho = &self.h;
+        // prev
         let xo = prev.h.p;
+        // curr
         let xi = ho.p;
+        // prev -> curr
         let wo = xi - xo;
         let ro = Ray::new(xo, wo);
+        // next
         let xii = next.h.p;
+        // curr -> next
         let wi = xii - xi;
         let ri = Ray::new(xi, wi);
         // normalized
         let wi = ri.dir;
-        let sa = match self.material().bsdf_pdf(ho, &ro) {
+        let angle_pdf = match self.material().bsdf_pdf(ho, &ro) {
             None => 0.0,
             Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance))
         };
         let ng = next.h.ng;
 
-        sa * wi.dot(ng).abs() / xi.distance_squared(xii)
+        // convert solid angle to area at next
+        angle_pdf * wi.dot(ng).abs() / xi.distance_squared(xii)
+    }
+
+    pub fn pdf_light_origin(&self) -> f64 {
+        self.h.light.map_or(0.0, |light| 1.0 / light.area())
+    }
+
+    pub fn pdf_light_leaving(&self, next: &Vertex) -> f64 {
+        if let Some(ref light) = self.h.light {
+            let xo = self.h.p;
+            let xi = next.h.p;
+            let wi = xi - xo;
+            let ri = Ray::new(xo, wi);
+            // normalized
+            let wi = ri.dir;
+            let ng = self.h.ng;
+            let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
+            let ng = next.h.ng;
+            // convert solid angle to area
+            pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
+        } else {
+            0.0
+        }
     }
 }
