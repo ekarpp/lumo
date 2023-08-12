@@ -232,7 +232,8 @@ impl Camera {
             cfg.lens_radius * cfg.lens_radius * PI
         };
 
-        xi.distance_squared(xo) / (ng.dot(wi) * lens_area)
+        let pdf = xi.distance_squared(xo) / (ng.dot(wi) * lens_area);
+        pdf.max(0.0)
     }
 
     /// PDF for `wi` direction. Surface of the raster pixel over the whole image plane area?
@@ -241,7 +242,7 @@ impl Camera {
         let wi_local = cfg.camera_basis.to_local(wi);
         let cos_theta = wi_local.z;
 
-        if cos_theta < 0.0 {
+        if cos_theta <= 0.0 {
             0.0
         } else {
             let lens_area = if cfg.lens_radius == 0.0 {
@@ -257,9 +258,7 @@ impl Camera {
 
             let area_coeff = lens_area * image_plane_area;
 
-            let cos2_theta = cos_theta * cos_theta;
-
-            1.0 / (area_coeff * cos2_theta * cos2_theta)
+            1.0 / (area_coeff * cos_theta * cos_theta * cos_theta)
         }
     }
 
