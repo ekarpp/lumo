@@ -2,11 +2,6 @@ use super::*;
 use crate::tracer::material::Material;
 
 /*
- * BUGS:
- * (1) Cornell scene with MIS, glass ball
- */
-
-/*
  * TODO:
  * (2) store directions in vertex?
  */
