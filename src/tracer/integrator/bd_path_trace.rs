@@ -61,10 +61,10 @@ fn connect_light_path(
         return None;
     }
 
-    let ro = camera.sample_towards(light_last.h.p, rand_utils::unit_square());
     let xi = light_last.h.p;
+    let ro = camera.sample_towards(xi, rand_utils::unit_square());
     let pdf = camera.sample_towards_pdf(&ro, xi);
-    if pdf <= 0.0 {
+    if pdf == 0.0 {
         return None;
     }
 
