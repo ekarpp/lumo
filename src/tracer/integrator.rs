@@ -1,6 +1,8 @@
-use crate::rand_utils;
-use crate::samplers::JitteredSampler;
+use crate::{Transport, rand_utils};
+use crate::tracer::camera::Camera;
+use crate::tracer::film::FilmSample;
 use crate::tracer::hit::Hit;
+use crate::tracer::object::Sampleable;
 use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
@@ -11,10 +13,6 @@ mod bd_path_trace;
 mod direct_light;
 mod path_trace;
 
-/// How many shadow rays per vertex in path tracer? Preferably square for
-/// jittered sampler.
-const SHADOW_SPLITS: u32 = 1;
-
 /// Enum to choose which integrator to use
 pub enum Integrator {
     /// Implements the path tracing algorithm with
@@ -24,7 +22,7 @@ pub enum Integrator {
     PathTrace,
     /// Naive integrator that importance samples light once.
     DirectLight,
-    /// Bidirectional path tracing. Not implemented.
+    /// Bidirectional path tracing.
     BDPathTrace,
 }
 
@@ -40,11 +38,11 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, r: Ray) -> DVec3 {
+    pub fn integrate(&self, s: &Scene, c: &Camera, x: i32, y: i32, r: Ray) -> Vec<FilmSample> {
         match self {
-            Self::PathTrace => path_trace::integrate(s, r),
-            Self::DirectLight => direct_light::integrate(s, r),
-            Self::BDPathTrace => bd_path_trace::integrate(s, r),
+            Self::PathTrace => vec![path_trace::integrate(s, r, x, y)],
+            Self::DirectLight => vec![direct_light::integrate(s, r, x, y)],
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, x, y),
         }
     }
 }
@@ -57,44 +55,45 @@ fn shadow_ray(
     pdf_scatter: &dyn Pdf,
     rand_sq: DVec2
 ) -> DVec3 {
-    let material = ho.object.material();
+    let material = ho.material;
     let xo = ho.p;
     let wo = ro.dir;
     let ns = ho.ns;
 
     let light = scene.uniform_random_light();
 
-    let mut illuminance = DVec3::ZERO;
+    let mut radiance = DVec3::ZERO;
     let pdf_light = ObjectPdf::new(light, xo);
 
     // refactor these to separate function?
     // sample light first
-    illuminance += match pdf_light.sample_direction(rand_sq) {
+    radiance += match pdf_light.sample_direction(rand_sq) {
         None => DVec3::ZERO,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
                 Some(hi) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let p_light = pdf_light.value_for(&ri, false);
+                    let p_scatter = pdf_scatter.value_for(&ri, false);
                     let wi = ri.dir;
                     // check bad samples?
                     let weight = p_light * p_light
                         / (p_light * p_light + p_scatter * p_scatter);
 
-                    // assume that mediums get sampled perfectly
-                    // according to the BSDF and thus cancel out PDF
+                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, ho);
                     let bsdf = if ho.is_medium() {
-                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                        // assume that mediums get sampled perfectly
+                        // according to the BSDF and thus cancel out PDF
+                        bsdf * p_scatter
                     } else {
-                        material.bsdf_f(wo, wi, ho)
+                        bsdf
                     };
 
                     bsdf
                         * scene.transmittance(&hi)
-                        * light.material().emit(&hi)
-                        * ns.dot(wi).abs()
+                        * hi.material.emit(&hi)
+                        * material.shading_cosine(wi, ns)
                         * weight
                         / p_light
                 }
@@ -103,32 +102,33 @@ fn shadow_ray(
     };
 
     // then sample BSDF
-    illuminance += match pdf_scatter.sample_direction(rand_sq) {
+    radiance += match pdf_scatter.sample_direction(rand_sq) {
         None => DVec3::ZERO,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
             match scene.hit_light(&ri, light) {
                 None => DVec3::ZERO,
                 Some(hi) => {
-                    let p_light = pdf_light.value_for(&ri);
-                    let p_scatter = pdf_scatter.value_for(&ri);
+                    let p_light = pdf_light.value_for(&ri, false);
+                    let p_scatter = pdf_scatter.value_for(&ri, false);
                     let wi = ri.dir;
                     // check bad samples?
                     let weight = p_scatter * p_scatter
                         / (p_scatter * p_scatter + p_light * p_light);
 
-                    // assume that mediums get sampled perfectly
-                    // according to the BSDF and thus cancel out PDF
+                    let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, ho);
                     let bsdf = if ho.is_medium() {
-                        DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                        // assume that mediums get sampled perfectly
+                        // according to the BSDF and thus cancel out PDF
+                        bsdf * p_scatter
                     } else {
-                        material.bsdf_f(wo, wi, ho)
+                        bsdf
                     };
 
                     bsdf
                         * scene.transmittance(&hi)
-                        * light.material().emit(&hi)
-                        * ns.dot(wi).abs()
+                        * hi.material.emit(&hi)
+                        * material.shading_cosine(wi, ns)
                         * weight
                         / p_scatter
                 }
@@ -136,5 +136,5 @@ fn shadow_ray(
         }
     };
 
-    illuminance * scene.num_lights() as f64
+    radiance * scene.num_lights() as f64
 }

@@ -27,11 +27,36 @@ fn shoot_rays(mesh: Box<dyn Object>) {
 }
 
 #[test]
-fn intersect_teapot() {
-    let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+fn intersect_planar() {
+    let vertices = vec![
+        DVec3::NEG_X,
+        DVec3::X,
+        DVec3::X + DVec3::Y,
+        DVec3::NEG_X + DVec3::Y,
+    ];
+    let faces = vec![
+        Face::new(vec![0, 1, 2], vec![], vec![]),
+        Face::new(vec![0, 2, 3], vec![], vec![]),
+    ];
+
+    let mesh = TriangleMesh::new(
+        vertices,
+        faces,
+        vec![],
+        vec![],
         Material::Blank,
-    )
+    );
+
+    let r = Ray::new(0.5 * (DVec3::Y + DVec3::Z), DVec3::NEG_Z);
+    assert!(mesh.hit(&r, 0.0, INFINITY).is_some());
+}
+
+#[test]
+fn intersect_teapot() {
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
+        Material::Blank,
+    ).unwrap()
         .to_unit_size()
         .to_origin()
         .scale(0.8, 0.8, 0.8);
@@ -41,10 +66,10 @@ fn intersect_teapot() {
 
 #[test]
 fn intersect_sphere() {
-    let mesh = Mesh::new(
-        crate::obj::obj_from_url(SPHERE_URL).unwrap(),
+    let mesh = crate::parser::mesh_from_url(
+        SPHERE_URL,
         Material::Blank,
-    )
+    ).unwrap()
         .to_unit_size()
         .to_origin()
         .scale(0.5, 0.5, 0.5);
@@ -63,10 +88,10 @@ fn _aabb_contains_triangle(aabb: AaBoundingBox, triangle: &Triangle) -> bool {
 
 #[test]
 fn all_objects_correctly_split() {
-    let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
         Material::Blank,
-    );
+    ).unwrap();
 
     let mut stack = VecDeque::from([(mesh.root, mesh.boundary)]);
 
@@ -95,10 +120,10 @@ fn all_objects_correctly_split() {
 
 #[test]
 fn all_objects_in_tree() {
-    let mesh = Mesh::new(
-        crate::obj::obj_from_url(TEAPOT_URL).unwrap(),
+    let mesh = crate::parser::mesh_from_url(
+        TEAPOT_URL,
         Material::Blank,
-    );
+    ).unwrap();
 
     let mut found = HashSet::new();
     let mut stack = VecDeque::from([mesh.root]);

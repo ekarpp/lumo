@@ -1,9 +1,10 @@
 pub use camera::Camera;
+pub use film::{Film, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
-pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Mesh, Object};
+pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Object};
 pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
-pub use object::{Sampleable, Medium};
+pub use object::{Sampleable, Medium, TriangleMesh, Face, Mesh};
 pub use scene::Scene;
 pub use texture::Texture;
 
@@ -11,6 +12,8 @@ pub use texture::Texture;
 mod bxdfs;
 /// Abstraction for a camera
 mod camera;
+/// Film contains the image being rendered
+mod film;
 /// Abstraction for a hit between a ray and an object.
 mod hit;
 /// Integrator to estimate the irradiance at each point

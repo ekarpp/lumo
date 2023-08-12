@@ -3,11 +3,11 @@ use crate::cli::TracerCli;
 use std::time::Instant;
 use std::f64::INFINITY;
 
-#[cfg(test)]
-mod kdtree_tests;
-
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
+
+#[cfg(test)]
+mod kdtree_tests;
 
 /// A k dimensional tree used to accelerate ray intersection calculations.
 /// Implements a binary tree that splits a large mesh of objects to smaller
@@ -28,8 +28,10 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
-        println!("Creating kd-tree of {} triangles", objects.len());
         let start = Instant::now();
+        if objects.len() > 10_000 {
+            println!("Creating kd-tree of {} triangles", objects.len());
+        }
 
         let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects
@@ -46,7 +48,9 @@ impl<T: Bounded> KdTree<T> {
             .unwrap();
         let root = pool.install(|| KdNode::construct(&bounds, &boundary, indices));
 
-        println!("Created kd-tree in {:#?}", start.elapsed());
+        if objects.len() > 10_000 {
+            println!("Created kd-tree in {:#?}", start.elapsed());
+        }
 
         Self {
             root,
@@ -85,7 +89,7 @@ impl<T: Bounded> KdTree<T> {
                     tt = h.as_ref().map_or(tt, |hit| hit.t);
                 }
                 return h.map(|mut h| {
-                    h.object = self;
+                    h.material = &self.material;
                     h
                 });
             }
@@ -107,20 +111,20 @@ impl<T: Bounded> KdTree<T> {
 
         // PBR Figure 4.19 (a). we hit only the first aabb.
         if t_split > t_end || t_split <= 0.0 {
-            self.hit_subtree(node_first, r, t_start, t_end, &aabb_first)
+            self.hit_subtree(node_first, r, t_min, t_end, &aabb_first)
         // PBR Figure 4.19 (b). we hit only the second aabb.
         } else if t_split < t_start {
-            self.hit_subtree(node_second, r, t_start, t_end, &aabb_second)
+            self.hit_subtree(node_second, r, t_min, t_end, &aabb_second)
         } else {
             match self.hit_subtree(node_first, r, t_start, t_end, &aabb_first) {
-                None => self.hit_subtree(node_second, r, t_start, t_end, &aabb_second),
+                None => self.hit_subtree(node_second, r, t_min, t_end, &aabb_second),
                 Some(h1) => {
                     /* if we hit something in the first AABB before the split,
                      * there is no need to process the other subtree. */
                     if h1.t < t_split {
                         Some(h1)
                     } else {
-                        self.hit_subtree(node_second, r, t_start, h1.t, &aabb_second).or(Some(h1))
+                        self.hit_subtree(node_second, r, t_min, h1.t, &aabb_second).or(Some(h1))
                     }
                 }
             }
@@ -135,10 +139,6 @@ impl<T: Bounded> Bounded for KdTree<T> {
 }
 
 impl<T: Bounded> Object for KdTree<T> {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let (t_start, t_end) = self.boundary.intersect(r);
         let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
@@ -146,8 +146,22 @@ impl<T: Bounded> Object for KdTree<T> {
         if t_start > t_end {
             None
         } else {
-            self.hit_subtree(&self.root, r, t_start, t_end, &self.boundary)
+            self.hit_subtree(&self.root, r, t_min, t_end, &self.boundary)
         }
+    }
+}
+
+impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
+    fn area(&self) -> f64 {
+        // maybe sloooow for big ones
+        self.objects.iter().fold(0.0, |sum, obj| sum + obj.area())
+    }
+
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+        let n = rand_utils::rand_f64() * self.objects.len() as f64;
+        let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
+        ho.material = &self.material;
+        ho
     }
 }
 

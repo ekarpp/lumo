@@ -37,43 +37,54 @@ impl Bounded for Sphere {
 }
 
 impl Object for Sphere {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
-        let from_origin = xo - self.origin;
-        let radius2 = self.radius * self.radius;
+        let wi = r.dir;
 
-        let a = r.dir.length_squared();
-        let half_b = from_origin.dot(r.dir);
-        let c = from_origin.length_squared() - radius2;
-        let disc = half_b * half_b - a * c;
+        let dx = EFloat64::from(wi.x);
+        let dy = EFloat64::from(wi.y);
+        let dz = EFloat64::from(wi.z);
 
-        if disc < 0.0 {
+        let ox = EFloat64::from(xo.x) - EFloat64::from(self.origin.x);
+        let oy = EFloat64::from(xo.y) - EFloat64::from(self.origin.y);
+        let oz = EFloat64::from(xo.z) - EFloat64::from(self.origin.z);
+
+        let radius2 = EFloat64::from(self.radius) * EFloat64::from(self.radius);
+
+        let a = dx * dx + dy * dy + dz * dz;
+        let b = EFloat64::from(2.0) * (dx * ox + dy * oy + dz * oz);
+        let c = ox * ox + oy * oy + oz * oz - radius2;
+
+        let (t0, t1) = EFloat64::quadratic(a, b, c)?;
+
+        // sphere too far or behind
+        if t0.high >= t_max || t1.low <= t_min {
             return None;
         }
-        let disc_root = disc.sqrt();
-        let mut t = (-half_b - disc_root) / a;
-        if t < t_min + EPSILON || t > t_max {
-            t = (-half_b + disc_root) / a;
-            if t < t_min + EPSILON || t > t_max {
+
+        let t = if t0.low > t_min {
+            t0
+        } else {
+            if t1.high >= t_max {
                 return None;
             }
-        }
+            t1
+        };
 
-        let xi = r.at(t);
+        let xi = r.at(t.value);
         // reproject to sphere to reduce floating point error
-        let xi = xi * radius2 / xi.distance_squared(self.origin);
+        let xi = xi * radius2.value / xi.distance_squared(self.origin);
+        // in future move sphere origin to world origin and instance
+        let err = 50.0 * efloat::gamma(8) * xi.abs();
+
         let ni = (xi - self.origin) / self.radius;
 
         let u = ((-ni.z).atan2(ni.x) + PI) / (2.0 * PI);
         let v = (-ni.y).acos() / PI;
         let uv = DVec2::new(u, v);
 
-        Hit::new(t, self, xi, ni, ni, uv)
+        Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }
 }
 
@@ -83,13 +94,22 @@ impl Sampleable for Sphere {
     }
 
     /// Sample on unit sphere and scale
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
         let rand_sph = rand_utils::square_to_sphere(rand_sq);
 
         let xo = self.origin + self.radius * rand_sph;
         let ng = (xo - self.origin) / self.radius;
 
-        (xo, ng)
+        Hit::new(
+            0.0,
+            &self.material,
+            -ng,
+            xo,
+            DVec3::ZERO,
+            ng,
+            ng,
+            DVec2::ZERO,
+        ).unwrap()
     }
 
     /// Visible area from `xo` forms a cone. Sample a random point on the
@@ -101,7 +121,7 @@ impl Sampleable for Sphere {
 
         let xi = if dist_origin2 < radius2 {
             // if inside sphere, just sample on the surface
-            let (xi, _) = self.sample_on(rand_sq);
+            let xi = self.sample_on(rand_sq).p;
             xi
         } else {
             /* uvw-orthonormal basis,

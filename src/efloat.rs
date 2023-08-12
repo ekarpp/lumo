@@ -1,12 +1,13 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// Used for error estimation in manually propagated floating point errors
-pub fn gamma(n: f64) -> f64 {
+pub fn gamma(n: i32) -> f64 {
+    let n = n as f64;
     (n * f64::EPSILON) / (1.0 - n * f64::EPSILON)
 }
 
 /// Makes the smallest increment possible to `v`
-fn _next_double(v: f64) -> f64 {
+pub fn next_double(v: f64) -> f64 {
     if v.is_infinite() && v > 0.0 {
         v
     } else {
@@ -21,7 +22,7 @@ fn _next_double(v: f64) -> f64 {
 }
 
 /// Makes the smalles decrement possible to `v`
-fn _previous_double(v: f64) -> f64 {
+pub fn previous_double(v: f64) -> f64 {
     if v.is_infinite() && v < 0.0 {
         v
     } else {
@@ -36,13 +37,14 @@ fn _previous_double(v: f64) -> f64 {
 }
 
 /// `f64` with running floating point error tracking
+#[derive(Copy, Clone)]
 pub struct EFloat64 {
     /// Actual `f64` value
-    value: f64,
+    pub value: f64,
     /// Lower bound of error interval
-    low: f64,
+    pub low: f64,
     /// Higher bound of error interval
-    high: f64,
+    pub high: f64,
 }
 
 impl EFloat64 {
@@ -54,12 +56,35 @@ impl EFloat64 {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn sqrt(self) -> Self {
+    pub fn sqrt(&self) -> Self {
         Self::new(
             self.value.sqrt(),
-            _previous_double(self.low.sqrt()),
-            _next_double(self.high.sqrt()),
+            previous_double(self.low.sqrt()),
+            next_double(self.high.sqrt()),
+        )
+    }
+
+    pub fn quadratic(a: EFloat64, b: EFloat64, c: EFloat64) -> Option<(EFloat64, EFloat64)> {
+        let disc = b.value * b.value - 4.0 * a.value * c.value;
+        if disc < 0.0 {
+            return None;
+        }
+        let disc_root = EFloat64::from(disc).sqrt();
+
+        let mut t0 = (-b - disc_root) / (EFloat64::from(2.0) * a);
+        let mut t1 = (-b + disc_root) / (EFloat64::from(2.0) * a);
+
+        if t0.value > t1.value {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+
+        // t0 always lower value
+        Some((t0, t1))
+    }
+
+    pub fn abs_error(&self) -> f64 {
+        next_double(
+            (self.high - self.value).abs().max((self.value - self.low).abs())
         )
     }
 }
@@ -92,8 +117,8 @@ impl Add for EFloat64 {
     fn add(self, other: Self) -> Self {
         Self::new(
             self.value + other.value,
-            _previous_double(self.low + other.low),
-            _next_double(self.high + other.high),
+            previous_double(self.low + other.low),
+            next_double(self.high + other.high),
         )
     }
 }
@@ -104,8 +129,8 @@ impl Sub for EFloat64 {
     fn sub(self, other: Self) -> Self {
         Self::new(
             self.value - other.value,
-            _previous_double(self.low - other.high),
-            _next_double(self.high - other.low),
+            previous_double(self.low - other.high),
+            next_double(self.high - other.low),
         )
     }
 }
@@ -133,8 +158,8 @@ impl Mul for EFloat64 {
 
         Self::new(
             self.value * other.value,
-            _previous_double(min),
-            _next_double(max),
+            previous_double(min),
+            next_double(max),
         )
     }
 }
@@ -170,8 +195,8 @@ impl Div for EFloat64 {
 
             Self::new(
                 self.value / other.value,
-                _previous_double(min),
-                _next_double(max),
+                previous_double(min),
+                next_double(max),
             )
         }
     }

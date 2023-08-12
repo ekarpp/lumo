@@ -82,14 +82,21 @@ impl<T: Object> Object for Instance<T> {
         self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
             h.ns = (self.normal_transform * h.ns).normalize();
             h.ng = (self.normal_transform * h.ng).normalize();
-            h.p = r.at(h.t);
-            h.object = self;
+
+            let err = efloat::gamma(3) * DVec3::new(
+                (self.transform.matrix3.row(0) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.x.abs(),
+                (self.transform.matrix3.row(1) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.y.abs(),
+                (self.transform.matrix3.row(2) * h.p)
+                    .abs().dot(DVec3::ONE) + self.transform.translation.z.abs(),
+            );
+
+            h.p = self.transform.transform_point3(h.p);
+            // TODO: just add them for now...
+            h.fp_error += err;
             h
         })
-    }
-
-    fn material(&self) -> &Material {
-        self.object.material()
     }
 }
 
@@ -99,13 +106,14 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         todo!()
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> (DVec3, DVec3) {
-        let (sample_local, ng_local) = self.object.sample_on(rand_sq);
+    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+        let mut ho = self.object.sample_on(rand_sq);
 
-        let sampled = self.transform.transform_point3(sample_local);
-        let normal = self.normal_transform * ng_local;
+        ho.ng = self.normal_transform * ho.ng;
+        ho.ns = self.normal_transform * ho.ns;
+        ho.p = self.transform.transform_point3(ho.p);
 
-        (sampled, normal)
+        ho
     }
 
     fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {

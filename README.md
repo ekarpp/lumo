@@ -3,16 +3,15 @@
 [![docs.rs](https://img.shields.io/docsrs/lumo)](https://docs.rs/lumo)
 [![Coverage](https://img.shields.io/coverallsCoverage/github/ekarpp/lumo)](https://coveralls.io/github/ekarpp/lumo)
 
-Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :) The renderer is designed to be as modular as possible such that adding new features or algorithms is straightforward.
+Lumo is a CPU based multithreaded rendering engine. Made with the goal of learning Rust and physically based rendering :)
 
 ### Features
 * Area light sampling
-* Path tracing with next event estimation
+* Path tracing and bidirectional path tracing with [MIS](http://iliyan.com/publications/ImplementingVCM)
 * [Cook-Torrance microfacet BSDF](https://doi.org/10.1145/357290.357293) with [Beckmann and GGX](http://dx.doi.org/10.2312/EGWR/EGSR07/195-206) normal distribution functions
 * [Multiple importance sampling from VNDF for GGX](https://jcgt.org/published/0007/04/01/)
-* [Disney diffuse BRDF](https://disneyanimation.com/publications/physically-based-shading-at-disney/) with [energy normalization used in Frostbite engine](https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf)
 * .OBJ file parsing
-* Surface area hierarchy based kD-trees
+* [Surface area hierarchy based kD-trees](https://www.irisa.fr/prive/kadi/Sujets_CTR/kadi/Kadi_sujet2_article_Kdtree.pdf)
 
 ### Usage
 Once the repository is cloned, the `examples/` folder contains scenes. To run the `hello_sphere.rs` example execute the command:
@@ -21,7 +20,7 @@ Once the repository is cloned, the `examples/` folder contains scenes. To run th
 cargo run --example hello_sphere
 ```
 
-The renderer can be configured either through its setter methods or partially through the CLI:
+The renderer can be configured either through its setter methods in the examples or partially through the CLI:
 
 ```
 Usage: hello_sphere [-s <samples>] [-t <threads>] [-d] [-b]
@@ -84,7 +83,7 @@ fn main() -> Result<(), png::EncodingError> {
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
 ### Gallery
-![Bust of Nefertiti](https://i.imgur.com/eQ0iaE1.png)
-![Cornell box](https://i.imgur.com/JfGOyIT.png)
-![Stanford dragon](https://i.imgur.com/4Wj2Fgy.png)
+![Bust of Nefertiti](https://i.imgur.com/mF1qa0C.png)
+![Cornell box](https://i.imgur.com/uM7eQe8.png)
+![Stanford dragon](https://i.imgur.com/XE1OLp8.png)
 ![Circle of spheres](https://i.imgur.com/zraIbaH.png)

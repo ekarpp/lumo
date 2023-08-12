@@ -42,15 +42,16 @@ pub fn square_to_disk(rand_sq: DVec2) -> DVec2 {
     if offset.x == 0.0 && offset.y == 0.0 {
         DVec2::ZERO
     } else {
-        let r = if offset.x.abs() > offset.y.abs() {
-            offset.x
+        let (r, theta) = if offset.x.abs() > offset.y.abs() {
+            (
+                offset.x,
+                PI * (offset.y / offset.x) / 4.0
+            )
         } else {
-            offset.y
-        };
-        let theta = if offset.x.abs() > offset.y.abs() {
-            PI * (offset.y / offset.x) / 4.0
-        } else {
-            2.0 * PI - PI * (offset.x / offset.y) / 4.0
+            (
+                offset.y,
+                PI * (0.5 - (offset.x / offset.y) / 4.0)
+            )
         };
 
         r * DVec2::new(theta.cos(), theta.sin())

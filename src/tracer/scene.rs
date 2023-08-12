@@ -1,7 +1,6 @@
 use crate::rand_utils;
 use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Medium, Object, Plane, Rectangle, Sampleable};
-use crate::EPSILON;
+use crate::tracer::{Medium, Object, Rectangle, Sampleable};
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
 
@@ -25,15 +24,13 @@ pub struct Scene {
 impl Scene {
     /// Add a non-light object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
-        assert!(!matches!(obj.material(), Material::Light(_)));
-
+        // how to check material is not light?
         self.objects.push(obj);
     }
 
     /// Adds a light to the scene
     pub fn add_light(&mut self, light: Box<dyn Sampleable>) {
-        assert!(matches!(light.material(), Material::Light(_)));
-
+        // how to check material is light?
         self.lights.push(light);
     }
 
@@ -84,9 +81,11 @@ impl Scene {
         // lazy, something better should be done.
         // use enum wrapper? have issues with instances..
         for light in &self.lights {
-            h = light.hit(r, 0.0, t_max).or(h);
-            // update distance to closest found so far
-            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
+            h = light.hit(r, 0.0, t_max).map(|mut hit| {
+                t_max = hit.t;
+                hit.light = Some(light.as_ref());
+                hit
+            }).or(h);
         }
 
         h
@@ -99,7 +98,7 @@ impl Scene {
             Some(hi) => hi,
         };
         // consider also checking medium
-        let t_max = light_hit.t - EPSILON;
+        let t_max = light_hit.t - crate::EPSILON;
 
         for object in &self.objects {
             if object.hit(r, 0.0, t_max).is_some() {

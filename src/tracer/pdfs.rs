@@ -22,7 +22,37 @@ pub trait Pdf {
     ///
     /// # Arguments
     /// * `ri` - Ray to compute probability for
-    fn value_for(&self, ri: &Ray) -> f64;
+    /// * `swap_dir` - Do we swap `wi` and `v`.
+    /// Only makes a difference in non-symmetric PDFs (MFD refraction).
+    fn value_for(&self, ri: &Ray, swap_dir: bool) -> f64;
+}
+
+/// Cosine weighed hemisphere sampling
+pub struct CosPdf {
+    uvw: Onb,
+}
+
+impl CosPdf {
+    pub fn new(ns: DVec3) -> Self {
+        let uvw = Onb::new(ns);
+        Self { uvw }
+    }
+}
+
+impl Pdf for CosPdf {
+    fn sample_direction(&self, rand_sq: DVec2) -> Option<DVec3> {
+        Some(self.uvw.to_world(rand_utils::square_to_cos_hemisphere(rand_sq)))
+    }
+
+    fn value_for(&self, ri: &Ray, _swap_dir: bool) -> f64 {
+        let wi = ri.dir;
+        let cos_theta = self.uvw.w.dot(wi);
+        if cos_theta > 0.0 {
+            cos_theta / PI
+        } else {
+            0.0
+        }
+    }
 }
 
 /// Randomly samples a direction towards a point on the object that is visible
@@ -44,7 +74,7 @@ impl Pdf for ObjectPdf<'_> {
         Some( self.object.sample_towards(self.xo, rand_sq) )
     }
 
-    fn value_for(&self, ri: &Ray) -> f64 {
+    fn value_for(&self, ri: &Ray, _swap_dir: bool) -> f64 {
         let (p, hi) = self.object.sample_towards_pdf(ri);
         if let Some(hi) = hi {
             // convert area measure to solid angle measure
@@ -75,7 +105,8 @@ impl Pdf for DeltaPdf {
         Some( self.wi )
     }
 
-    fn value_for(&self, ri: &Ray) -> f64 {
+    // symmetric
+    fn value_for(&self, ri: &Ray, _swap_dir: bool) -> f64 {
         let wi = ri.dir;
         if wi.dot(self.wi) >= 1.0 - EPSILON {
             1.0
@@ -125,7 +156,8 @@ impl Pdf for VolumetricPdf {
         Some( wi )
     }
 
-    fn value_for(&self, ri: &Ray) -> f64 {
+    // symmetric
+    fn value_for(&self, ri: &Ray, _swap_dir: bool) -> f64 {
         let wi = ri.dir;
         let cos_theta = wi.dot(self.uvw.w);
 
@@ -140,7 +172,9 @@ impl Pdf for VolumetricPdf {
 pub struct MfdPdf {
     /// Direction from point of impact to viewer
     v: DVec3,
-    /// Macrosurface geometric normal. Same hemisphere as `v`.
+    /// Macrosurface shading normal. Same hemisphere as `v`.
+    ns: DVec3,
+    /// Macrosurface geometric normal. Points outside of surface.
     ng: DVec3,
     /// Probability to sample ray from NDF
     ndf_sample_prob: f64,
@@ -153,18 +187,20 @@ pub struct MfdPdf {
 impl MfdPdf {
     pub fn new(
         v: DVec3,
+        ns: DVec3,
         ng: DVec3,
         albedo: DVec3,
         mfd: MfDistribution
     ) -> Self {
         // refraction needs v and wh to be in same hemisphere so we do this
-        let w = if v.dot(ng) < 0.0 { -ng } else { ng };
-        let uvw = Onb::new(w);
+        let ns = if v.dot(ng) < 0.0 { -ns } else { ns };
+        let uvw = Onb::new(ns);
 
         Self {
             v,
             uvw,
             ndf_sample_prob: mfd.probability_ndf_sample(albedo),
+            ns,
             ng,
             mfd,
         }
@@ -193,16 +229,16 @@ impl MfdPdf {
 
     /// Samples a random microfacet normal and refracts direction around it
     fn sample_ndf_refract(&self, rand_sq: DVec2) -> Option<DVec3> {
+        let local_v = self.uvw.to_local(self.v);
+        let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
+        let wh = self.uvw.to_world(local_wh).normalize();
+
         let inside = self.ng.dot(self.v) < 0.0;
         let eta_ratio = if inside {
             self.mfd.get_rfrct_idx()
         } else {
             1.0 / self.mfd.get_rfrct_idx()
         };
-        let local_v = self.uvw.to_local(self.v);
-        let local_wh = self.mfd.sample_normal(local_v, rand_sq).normalize();
-
-        let wh = self.uvw.to_world(local_wh).normalize();
 
         Some( bxdfs::refract(eta_ratio, self.v, wh) )
     }
@@ -210,17 +246,17 @@ impl MfdPdf {
     /// PDF for NDF scattering
     fn sample_ndf_scatter_pdf(&self, wh: DVec3) -> f64 {
         let wh_dot_v = self.v.dot(wh);
-        // wh and v always same hemisphere. need to make sure ng is there too
-        let ng = if self.ng.dot(self.v) < 0.0 { -self.ng } else { self.ng };
-        // probability to sample wh w.r.t. to v
-        self.mfd.sample_normal_pdf(wh, self.v, ng)
+
+        // probability to sample wh w.r.t. to v.
+        // wh and v always same hemisphere. ns flipped to same in constructor.
+        self.mfd.sample_normal_pdf(wh, self.v, self.ns)
             // jacobian
             / (4.0 * wh_dot_v)
     }
 
     /// PDF for hemisphere cos sampling
     fn sample_cos_hemisphere_pdf(&self, wi: DVec3) -> f64 {
-        let cos_theta = self.ng.dot(wi);
+        let cos_theta = self.ns.dot(wi);
         if cos_theta > 0.0 {
             cos_theta / PI
         } else {
@@ -228,22 +264,22 @@ impl MfdPdf {
         }
     }
 
-    /// PDF for NDF refraction
-    fn sample_ndf_refract_pdf(&self, wi: DVec3) -> f64 {
-        let ng_dot_wi = self.ng.dot(wi);
-        let ng_dot_v = self.ng.dot(self.v);
-        let v_inside = ng_dot_v < 0.0;
-        let wi_inside = ng_dot_wi < 0.0;
+    /// PDF for NDF refraction. Non-symmetric
+    fn sample_ndf_refract_pdf(&self, wi: DVec3, swap_dir: bool) -> f64 {
+        let (v, wi) = if swap_dir { (wi, self.v) } else { (self.v, wi) };
+
+        let v_inside = self.ng.dot(v) < 0.0;
+        let wi_inside = self.ng.dot(wi) < 0.0;
 
         if v_inside == wi_inside {
-            let wh = (self.v + wi).normalize();
-            let wh_dot_v = wh.dot(self.v);
+            let wh = (v + wi).normalize();
+            let wh_dot_v = wh.dot(v);
             let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
             let sin2_ti = sin2_to * self.mfd.get_rfrct_idx().powi(2);
 
             if v_inside && sin2_ti > 1.0 {
-                let wh_dot_v = wh.dot(self.v);
-                self.mfd.sample_normal_pdf(wh, self.v, -self.ng)
+                let wh_dot_v = wh.dot(v);
+                self.mfd.sample_normal_pdf(wh, v, self.ns)
                     / (4.0 * wh_dot_v)
             } else {
                 // wi and v same hemisphere but not total internal reflection.
@@ -256,17 +292,18 @@ impl MfdPdf {
             } else {
                 self.mfd.get_rfrct_idx()
             };
-            let wh = -(self.v + wi * eta_ratio).normalize();
+            let wh = -(v + wi * eta_ratio).normalize();
             let wh_dot_wi = wi.dot(wh);
-            let wh_dot_v = wh.dot(self.v);
+            let wh_dot_v = wh.dot(v);
 
             if wh_dot_wi * wh_dot_v > 0.0 {
                 // same hemisphere w.r.t wh, zero probability for refraction
                 0.0
             } else {
-                // wh and ng need to be in same hemisphere, hemisphere of v makes
+                // wh and ns need to be in same hemisphere, hemisphere of v makes
                 // no difference.
-                self.mfd.sample_normal_pdf(wh, self.v, self.ng)
+                let wh = if self.ns.dot(wh) < 0.0 { -wh } else { wh };
+                self.mfd.sample_normal_pdf(wh, v, self.ns)
                     // jacobian
                     * (eta_ratio * eta_ratio * wh_dot_wi).abs()
                     / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
@@ -292,9 +329,7 @@ impl Pdf for MfdPdf {
         }
     }
 
-    /// Read it directly from the NFD and do change of variables
-    /// from `wh` to `wi`.
-    fn value_for(&self, ri: &Ray) -> f64 {
+    fn value_for(&self, ri: &Ray, swap_dir: bool) -> f64 {
         let wi = ri.dir;
         let wh = (self.v + wi).normalize();
 
@@ -305,7 +340,7 @@ impl Pdf for MfdPdf {
         let hr_pdf = if !self.mfd.is_transparent() {
             self.sample_cos_hemisphere_pdf(wi)
         } else {
-            self.sample_ndf_refract_pdf(wi)
+            self.sample_ndf_refract_pdf(wi, swap_dir)
         };
 
         self.ndf_sample_prob * ndf_pdf

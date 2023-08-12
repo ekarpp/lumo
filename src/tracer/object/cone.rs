@@ -1,11 +1,10 @@
 use super::*;
 
-/// Cone defined by its tip, height, axis and radius
+#[cfg(test)]
+mod cone_tests;
+
+/// Cone aligned with the `y` axis and base disk at `y=0`
 pub struct Cone {
-    /// Tip of the cone
-    tip: DVec3,
-    /// Axis or direction of the cone. Normalized in constructor.
-    axis: DVec3,
     /// Height of the cone
     height: f64,
     /// Radius of the circle at the bottom of the cone
@@ -15,11 +14,12 @@ pub struct Cone {
 }
 
 impl Cone {
-    /// Constructs a cone from the given parameters
-    pub fn new(tip: DVec3, axis: DVec3, height: f64, radius: f64, material: Material) -> Box<Self> {
+    /// Constructs a cone from the given `height` and `radius`
+    pub fn new(height: f64, radius: f64, material: Material) -> Box<Self> {
+        assert!(height > 0.0);
+        assert!(radius > 0.0);
+
         Box::new(Self {
-            tip,
-            axis: axis.normalize(),
             height,
             radius,
             material,
@@ -28,59 +28,64 @@ impl Cone {
 }
 
 impl Object for Cone {
-    fn material(&self) -> &Material {
-        &self.material
-    }
-
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let xo = r.origin;
-        let tip_to_xo = xo - self.tip;
+        let wi = r.dir;
 
-        let wo = r.dir;
-        let wo_dot_wo = wo.dot(wo);
-        let wo_dot_axis = wo.dot(self.axis);
-        let wo_dot_txo = wo.dot(tip_to_xo);
-        let txo_dot_axis = tip_to_xo.dot(self.axis);
-        let txo_dot_txo = tip_to_xo.dot(tip_to_xo);
+        let dx = EFloat64::from(wi.x); let dy = EFloat64::from(wi.y);
+        let dz = EFloat64::from(wi.z); let ox = EFloat64::from(xo.x);
+        let oy = EFloat64::from(xo.y); let oz = EFloat64::from(xo.z);
 
-        let tmp = 1.0 + self.radius * self.radius / (self.height * self.height);
+        let tan_theta = EFloat64::from(self.radius) / EFloat64::from(self.height);
+        let tan2_theta = tan_theta * tan_theta;
+        let oy_height = oy - EFloat64::from(self.height);
 
-        let a = wo_dot_wo - wo_dot_axis.powi(2) * tmp;
-        let b = 2.0 * (wo_dot_txo - wo_dot_axis * txo_dot_axis * tmp);
-        let c = txo_dot_txo - txo_dot_axis.powi(2) * tmp;
+        let a = dx * dx - tan2_theta * dy * dy + dz * dz;
+        let b = EFloat64::from(2.0) * (dx * ox - tan2_theta * dy * oy_height + dz * oz);
+        let c = ox * ox - tan2_theta * oy_height * oy_height + oz * oz;
 
-        let disc = b * b - 4.0 * a * c;
+        let (t0, t1) = EFloat64::quadratic(a, b, c)?;
 
-        if disc < 0.0 {
+        // cone behind or too far
+        if t0.high >= t_max || t1.low <= t_min {
             return None;
         }
 
-        let disc_root = disc.sqrt();
-        let mut t = (-b - disc_root) / (2.0 * a);
-        if t < t_min + EPSILON || t > t_max {
-            t = (-b + disc_root) / (2.0 * a);
-            if t < t_min + EPSILON || t > t_max {
+        let mut t = if t0.low > t_min {
+            t0
+        } else {
+            if t1.high >= t_max {
+                return None;
+            }
+            t1
+        };
+        let mut xi = r.at(t.value);
+
+        // check both hits against cone height
+        if xi.y < 0.0 || xi.y > self.height {
+            t = t1;
+            xi = r.at(t.value);
+
+            if t.high >= t_max || xi.y < 0.0 || xi.y > self.height {
                 return None;
             }
         }
 
-        let xi = r.at(t);
-        let tip_to_xi = xi - self.tip;
-        let txi_dot_axis = tip_to_xi.dot(self.axis);
+        // TODO: propagate errors from transformation
+        let err = DVec3::new(
+            50.0 * (ox + dx * t).abs_error(),
+            50.0 * (oy + dy * t).abs_error(),
+            50.0 * (oz + dz * t).abs_error(),
+        );
 
-        if txi_dot_axis < 0.0 || txi_dot_axis > self.height {
-            return None;
-        }
+        let u = ((-xi.z).atan2(xi.x) + PI) / (2.0 * PI);
+        let v = xi.y / self.height;
+        let uv = DVec2::new(u, v);
 
-        let cos_theta = self.height
-            / (self.height * self.height + self.radius * self.radius).sqrt();
+        let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
+        let ni = DVec3::new(xi.x, radius * tan_theta.value, xi.z);
+        let ni = ni.normalize();
 
-        let a = self.tip + self.axis * tip_to_xi.length() / cos_theta;
-        let ni = (xi - a).normalize();
-
-        let (u, _) = self.axis.any_orthonormal_pair();
-        let uv = DVec2::new(u.dot(xi), txi_dot_axis / self.height);
-
-        Hit::new(t, self, xi, ni, ni, uv)
+        Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }
 }

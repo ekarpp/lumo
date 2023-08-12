@@ -1,5 +1,4 @@
 use super::*;
-use crate::{Axis, efloat};
 
 /// Axis aligned bounding box
 #[derive(Copy, Clone)]
@@ -40,7 +39,7 @@ impl AaBoundingBox {
         let t_start = t_start.max_element();
         let t_end = t_end.min_element();
 
-        (t_start, t_end * (1.0 + 2.0 * efloat::gamma(2.0)))
+        (t_start, t_end * (1.0 + 2.0 * efloat::gamma(3)))
     }
 
     /// Combine self and other to a new bigger AABB

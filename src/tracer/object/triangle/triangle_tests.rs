@@ -1,59 +1,44 @@
 use super::*;
-use crate::tracer::texture::Texture;
 
 const NUM_RAYS: usize = 10000;
 
-fn get_mat() -> Material {
-    Material::diffuse(Texture::Solid(DVec3::ONE))
-}
-
-#[test]
-fn point_order_irrelevant() {
-    let pts = vec![
-        DVec3::new(-0.3, -0.3, -1.0),
-        DVec3::new(0.3, -0.3, -1.0),
-        DVec3::new(0.0, 0.0, -1.0),
-    ];
-
-    let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 0.0, -1.0));
-
-    (0..6).for_each(|i| {
-        let a = i / 2;
-        let b = i % 2;
-
-        let t = Triangle::new(
-            /* permutations */
-            DMat3::from_cols(pts[a], pts[(a + b + 1) % 3], pts[2 - (i % 3)]),
-            None,
-            None,
-            get_mat(),
-        );
-        assert!(t.hit(&r, 0.0, INFINITY).is_some());
-    });
-}
-
 #[test]
 fn no_self_intersect() {
-    let abc = DMat3::from_cols(
-        DVec3::new(-5.0, 0.0, -3.0),
-        DVec3::new(5.0, 0.0, -3.0),
-        DVec3::new(5.0, 0.0, 3.0),
-    );
+    let mesh = TriangleMesh {
+        vertices: vec![DVec3::ZERO, DVec3::X, DVec3::X + DVec3::NEG_Z],
+        normals: vec![],
+        uvs: vec![],
+    };
 
-    let t = Triangle::new(abc, None, None, get_mat());
+    let t = Triangle::new(Arc::new(mesh), (0, 1, 2), None, None);
 
-    let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 0.0, -1.0));
+    let r = Ray::new(DVec3::new(0.5, 0.0, -0.25), DVec3::Y);
+    assert!(t.hit(&r, 0.0, INFINITY).is_none());
+}
+
+#[test]
+fn no_hit_behind() {
+    let mesh = TriangleMesh {
+        vertices: vec![DVec3::ZERO, DVec3::X, DVec3::X + DVec3::NEG_Z],
+        normals: vec![],
+        uvs: vec![],
+    };
+
+    let t = Triangle::new(Arc::new(mesh), (0, 1, 2), None, None);
+
+    let r = Ray::new(DVec3::new(0.5, 0.1, -0.25), DVec3::Y);
     assert!(t.hit(&r, 0.0, INFINITY).is_none());
 }
 
 #[test]
 fn sampled_rays_hit() {
-    let abc = DMat3::from_cols(
-        DVec3::ZERO,
-        DVec3::X,
-        DVec3::X + DVec3::Y,
-    );
-    let tri = Triangle::new(abc, None, None, get_mat());
+    let mesh = TriangleMesh {
+        vertices: vec![DVec3::ZERO, DVec3::X, DVec3::X + DVec3::Y],
+        normals: vec![],
+        uvs: vec![],
+    };
+
+    let tri = Triangle::new(Arc::new(mesh), (0, 1, 2), None, None);
 
     let xo = 5.0 * DVec3::Z;
 

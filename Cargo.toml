@@ -1,8 +1,9 @@
 [package]
 name = "lumo"
-version = "0.2.6"
+version = "0.3.0"
 description = "CPU based rendering engine"
 license = "MIT"
+rust-version = "1.70"
 repository = "https://github.com/ekarpp/lumo"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
 keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
@@ -22,6 +23,11 @@ opt-level = 2
 [profile.test]
 opt-level = 2
 
+[profile.gdb]
+inherits = "dev"
+opt-level = 0
+debug = true
+
 [dependencies]
 argh = "0.1.10"
 glam = "0.23.0"
@@ -29,6 +35,7 @@ itertools = "0.10.5"
 png = "0.17.7"
 rand = "0.8.5"
 rayon = "1.7.0"
+regex = "1.8.1"
 tempfile = "3.4.0"
 ureq = "2.6.2"
 zip = "0.6.4"

@@ -1,6 +1,8 @@
 use super::*;
 use crate::srgb_to_linear;
 
+const LIGHT_EPS: f64 = 0.01;
+
 impl Scene {
     /// Constructs an empty "Cornell box". Middle of the box is at
     /// `(0.0, 0.0, -1.0)` and it has dimensions `2x2x2`.
@@ -15,64 +17,79 @@ impl Scene {
         mat_left: Material,
         mat_right: Material,
     ) -> Self {
-        // aka Y of ground, negate for roof
-        let ground = -1.0;
+        // aka Y of ground
+        let ground = -0.8;
+        let ceiling = -ground;
         // aka X of right wall, negate for left wall
         let right = 1.0;
-        // aka Z of front wall, negate for background
+        let left = -right;
+        // aka Z of front wall
         let front = -2.0;
+        let back = 0.0;
+
         // 0.5x of sidelength of area light
-        let light_dim = 0.4;
+        let l_dim = 0.1;
 
         let mut scene = Self::default();
 
         /* rectangular area light */
         scene.add_light(Rectangle::new(
             DMat3::from_cols(
-                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front + light_dim),
-                DVec3::new(-light_dim, -ground - EPSILON, 0.5 * front - light_dim),
-                DVec3::new(light_dim, -ground - EPSILON, 0.5 * front - light_dim),
+                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front + l_dim),
+                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
+                DVec3::new(l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+            Material::Light(Texture::Solid(6.0 * srgb_to_linear(255, 255, 255))),
         ));
 
         /* left wall */
-        scene.add(
-            Plane::new(DVec3::NEG_X * right, DVec3::X, mat_left),
-        );
+        scene.add(Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(left, ground, back),
+                DVec3::new(left, ground, front),
+                DVec3::new(left, ceiling, front),
+            ),
+            mat_left,
+        ));
 
         /* right wall */
-        scene.add(
-            Plane::new(DVec3::X * right, DVec3::NEG_X, mat_right),
-        );
+        scene.add(Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(right, ground, front),
+                DVec3::new(right, ground, back),
+                DVec3::new(right, ceiling, back),
+            ),
+            mat_right,
+        ));
 
         /* floor */
-        scene.add(Plane::new(
-            DVec3::Y * ground,
-            DVec3::Y,
+        scene.add(Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(left, ground, back),
+                DVec3::new(right, ground, back),
+                DVec3::new(right, ground, front),
+            ),
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
         /* roof */
-        scene.add(Plane::new(
-            DVec3::NEG_Y * ground,
-            DVec3::NEG_Y,
+        scene.add(Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(left, ceiling, front),
+                DVec3::new(right, ceiling, front),
+                DVec3::new(right, ceiling, back),
+            ),
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
         /* front wall */
-        scene.add(Plane::new(
-            DVec3::Z * front,
-            DVec3::Z,
+        scene.add(Rectangle::new(
+            DMat3::from_cols(
+                DVec3::new(left, ground, front),
+                DVec3::new(right, ground, front),
+                DVec3::new(right, ceiling, front),
+            ),
             Material::diffuse(Texture::Solid(def_color)),
-        ));
-
-        /* background */
-        scene.add(Plane::new(
-            DVec3::NEG_Z * front,
-            DVec3::NEG_Z,
-            // make blank?
-            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 0))),
         ));
 
         scene

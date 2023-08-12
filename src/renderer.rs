@@ -1,11 +1,12 @@
 use crate::cli::TracerCli;
-use crate::image::Image;
 use crate::samplers::JitteredSampler;
 use crate::tone_mapping::ToneMap;
 use crate::tracer::Camera;
+use crate::tracer::Film;
+use crate::tracer::FilmSample;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
-use glam::{DVec2, IVec2, DVec3};
+use glam::{DVec2, IVec2};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::time::Instant;
 
@@ -59,7 +60,7 @@ impl Renderer {
     }
 
     /// Starts the rendering process and returns the rendered image
-    pub fn render(&self) -> Image {
+    pub fn render(&self) -> Film {
         println!(
             "Rendering scene as a {} x {} image \
                   with {} thread(s) and {} sample(s) per pixel using {}",
@@ -71,34 +72,38 @@ impl Renderer {
         );
 
         let start = Instant::now();
-        let buffer: Vec<DVec3> = (0..self.resolution.y)
+        let samples: Vec<FilmSample> = (0..self.resolution.y)
             .into_par_iter()
-            .flat_map(|y: i32| {
+            .map(|y: i32| {
                 (0..self.resolution.x)
-                    .map(|x: i32| self.get_color(x, y))
-                    .collect::<Vec<DVec3>>()
+                    .flat_map(move |x: i32| self.get_samples(x, y))
             })
+            .flatten_iter()
             .collect();
 
+        let mut film = Film::new(self.resolution.x, self.resolution.y);
+        film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
-
-        Image::new(buffer, self.resolution.x, self.resolution.y)
+        film
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
-    fn get_color(&self, x: i32, y: i32) -> DVec3 {
+    fn get_samples(&self, x: i32, y: i32) -> Vec<FilmSample> {
         let xy = DVec2::new(x as f64, y as f64);
 
         PxSampler::new(self.num_samples)
-            .map(|rand_sq: DVec2| {
-                let rgb = self.integrator.integrate(
+            .flat_map(|rand_sq: DVec2| {
+                self.integrator.integrate(
                     &self.scene,
+                    &self.camera,
+                    x, y,
                     self.camera.generate_ray(xy + rand_sq)
-                );
-
-                self.tone_map.map(rgb)
+                )
             })
-            .fold(DVec3::ZERO, |acc, c| acc + c)
-            / self.num_samples as f64
+            .map(|mut sample: FilmSample| {
+                sample.color = self.tone_map.map(sample.color);
+                sample
+            })
+            .collect()
     }
 }

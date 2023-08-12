@@ -1,36 +1,33 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
+pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
     let mut last_specular = true;
-    let mut illuminance = DVec3::ZERO;
+    let mut radiance = DVec3::ZERO;
     let mut gathered = DVec3::ONE;
     let mut depth = 0;
 
     while let Some(ho) = scene.hit(&ro) {
-        let material = ho.object.material();
+        let material = ho.material;
         gathered *= scene.transmittance(&ho);
 
         match material.bsdf_pdf(&ho, &ro) {
             None => {
                 if last_specular {
-                    illuminance += gathered * material.emit(&ho)
+                    radiance += gathered * material.emit(&ho)
                 }
                 break;
             }
             Some(scatter_pdf) => {
                 if !material.is_delta() {
-                    illuminance += gathered * JitteredSampler::new(SHADOW_SPLITS)
-                        .fold(DVec3::ZERO, |sum, rand_sq| {
-                            sum + shadow_ray(
-                                scene,
-                                &ro,
-                                &ho,
-                                scatter_pdf.as_ref(),
-                                rand_sq
-                            )
-                        })
-                        / SHADOW_SPLITS as f64;
-                };
+                    radiance += gathered
+                        * shadow_ray(
+                            scene,
+                            &ro,
+                            &ho,
+                            scatter_pdf.as_ref(),
+                            rand_utils::unit_square()
+                        );
+                }
 
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
                     None => {
@@ -40,7 +37,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
                         let ri = ho.generate_ray(wi);
                         let wo = ro.dir;
                         let wi = ri.dir;
-                        let p_scatter = scatter_pdf.value_for(&ri);
+                        let p_scatter = scatter_pdf.value_for(&ri, false);
 
                         // resample bad sample?
                         if p_scatter <= 0.0 {
@@ -49,15 +46,17 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
 
                         let ns = ho.ns;
 
-                        // assume that mediums get sampled perfectly
-                        // according to the BSDF and thus cancel out PDF
+                        let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, &ho);
                         let bsdf = if ho.is_medium() {
-                            DVec3::ONE * p_scatter / ns.dot(wi).abs()
+                            // assume that mediums get sampled perfectly
+                            // according to the BSDF and thus cancel out PDF
+                            bsdf * p_scatter
                         } else {
-                            material.bsdf_f(wo, wi, &ho)
+                            bsdf
                         };
 
-                        gathered *= bsdf * ns.dot(wi).abs() / p_scatter;
+                        gathered *= bsdf * material.shading_cosine(wi, ns)
+                            / p_scatter;
 
                         // russian roulette
                         if depth > 3 {
@@ -78,5 +77,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray) -> DVec3 {
         }
     }
 
-    illuminance
+    FilmSample::new(radiance, x, y, false)
 }

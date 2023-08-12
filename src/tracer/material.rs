@@ -1,46 +1,62 @@
+use crate::Transport;
 use crate::tracer::bxdfs;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::Pdf;
+use crate::tracer::pdfs::{Pdf, CosPdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
 use glam::DVec3;
+use std::f64::consts::PI;
 
 /// Describes which material an object is made out of
 pub enum Material {
     /// Glossy
     Microfacet(Texture, MfDistribution),
+    /// Lambertian diffuse material. Mostly for debugging
+    Lambertian(Texture),
     /// Emits light
     Light(Texture),
     /// Perfect reflection
     Mirror,
     /// Perfect refraction with refraction index as argument
     Glass(f64),
-    /// Volumetric material for mediums
-    Volumetric(f64),
+    /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
+    Volumetric(f64, DVec3, DVec3),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
 
 impl Material {
+    /// Helper function to create a microfacet material
+    pub fn microfacet(
+        texture: Texture,
+        roughness: f64,
+        refraction_idx: f64,
+        metallicity: f64,
+        transparent: bool
+    ) -> Self {
+        let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
+        Self::Microfacet(texture, mfd)
+    }
+
     /// Metallic microfacet material
-    pub fn metal(texture: Texture, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::metallic(roughness))
+    pub fn metallic(texture: Texture, roughness: f64) -> Self {
+        Self::microfacet(texture, roughness, 1.5, 1.0, false)
     }
 
     /// Specular microfacet material
     pub fn specular(texture: Texture, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::specular(roughness))
+        Self::microfacet(texture, roughness, 1.5, 0.0, false)
     }
 
     /// Diffuse material
     pub fn diffuse(texture: Texture) -> Self {
-        Self::Microfacet(texture, MfDistribution::diffuse())
+        Self::microfacet(texture, 1.0, 1.5, 0.0, false)
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, rfrct_idx: f64, roughness: f64) -> Self {
-        Self::Microfacet(texture, MfDistribution::transparent(rfrct_idx, roughness))
+    pub fn transparent(texture: Texture, roughness: f64, refraction_idx: f64) -> Self {
+        Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
     }
 
     /// Perfect reflection
@@ -66,31 +82,67 @@ impl Material {
     /// Does the material scattering follow delta distribution?
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
-        matches!(self, Self::Mirror | Self::Glass(_))
+        match self {
+            Self::Lambertian(_) => false,
+            Self::Microfacet(_, mfd) => mfd.is_delta(),
+            _ => true,
+        }
     }
 
 
     /// How much light emitted at `h`?
     pub fn emit(&self, h: &Hit) -> DVec3 {
         match self {
-            Self::Light(t) => t.albedo_at(h),
+            Self::Light(t) => if h.backface {
+                DVec3::ZERO
+            } else {
+                t.albedo_at(h)
+            },
             _ => DVec3::ZERO,
         }
     }
 
     /// What is the color at `h`?
-    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, h: &Hit) -> DVec3 {
+    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> DVec3 {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            // cancel the applied shading cosine for mirror and glass
-            Self::Mirror | Self::Glass(..) => DVec3::ONE / ns.dot(wi).abs(),
-            // volumetric BSDF handled in integrator to cancel out PDF
-            Self::Volumetric(..) => unreachable!(),
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(wo, wi, ng, t.albedo_at(h), mfd)
+            Self::Mirror => DVec3::ONE,
+            Self::Glass(eta) => {
+                match mode {
+                    Transport::Importance => DVec3::ONE,
+                    Transport::Radiance => {
+                        let inside = wi.dot(ng) > 0.0;
+                        if inside {
+                            DVec3::splat(1.0 / (eta * eta))
+                        } else {
+                            DVec3::splat(eta * eta)
+                        }
+                    }
+                }
             }
+            // volumetric BSDF handled in integrator to cancel out PDF
+            Self::Volumetric(_, sigma_t, sigma_s) => {
+                let transmittance = (-*sigma_t * h.t).exp();
+                // cancel out the transmittance pdf taken from scene transmitance
+                let pdf = (transmittance * *sigma_t).dot(DVec3::ONE)
+                    / transmittance.dot(DVec3::ONE);
+
+                if pdf == 0.0 { DVec3::ONE } else { *sigma_s / pdf }
+            }
+            Self::Microfacet(t, mfd) => {
+                bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
+            }
+            Self::Lambertian(t) => t.albedo_at(h) / PI,
             _ => DVec3::ZERO,
+        }
+    }
+
+    /// Computes the shading cosine coefficient per material
+    pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
+        match self {
+            Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
+            _ => 1.0
         }
     }
 
@@ -99,11 +151,12 @@ impl Material {
         match self {
             Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
             Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric(g) => bxdfs::brdf_volumetric_pdf(ro, *g),
+            Self::Volumetric(g, ..) => bxdfs::brdf_volumetric_pdf(ro, *g),
+            Self::Lambertian(_) => Some(Box::new(CosPdf::new(ho.ns))),
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
             }
-            _ => None,
+            Self::Light(_) | Self::Blank => None,
         }
     }
 }

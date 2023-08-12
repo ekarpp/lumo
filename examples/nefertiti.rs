@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::metal(
+        Cube::new(Material::metallic(
             Texture::Solid(srgb_to_linear(61, 45, 36)),
             0.0,
         ))
@@ -66,7 +66,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
 	scene.add(
             Cylinder::new(
-		0.0,
 		0.6,
 		0.1,
 		Material::diffuse(Texture::Solid(srgb_to_linear(255, 0, 0))))
@@ -74,13 +73,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	);
     } else {
 	scene.add(
-            Mesh::new(
-		obj::obj_from_url(NEFE_URL)?,
+	    parser::mesh_from_url(
+                NEFE_URL,
 		Material::specular(
-                    Texture::Image(obj::texture_from_url(NEFE_URL, TEX_FILE)?),
+                    Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
                     0.8
                 )
-            )
+            )?
 		.to_unit_size()
 		.to_origin()
 		.scale(0.5, 0.5, 0.5)
@@ -157,6 +156,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	    DVec3::NEG_Z,
 	    DVec3::Y,
 	    90.0,
+            0.0,
+            0.0,
 	    1000,
 	    1000
 	)
@@ -166,17 +167,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             DVec3::new(0.0, -0.26, -1.45),
             DVec3::Y,
             0.2,
+            0.0,
+            0.0,
             683,
             1000,
 	)
     };
 
-    let mut renderer = Renderer::new(scene, camera);
-    if cfg!(debug_assertions) {
-	renderer.set_samples(9);
-    } else {
-        renderer.set_tone_map(ToneMap::HableFilmic);
-    }
+    let renderer = Renderer::new(scene, camera);
     renderer.render().save("nefe.png")?;
 
     Ok(())

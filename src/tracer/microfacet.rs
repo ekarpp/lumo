@@ -41,29 +41,8 @@ pub enum MfDistribution {
 }
 
 impl MfDistribution {
-    /// Metallic material
-    pub fn metallic(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 1.0, false))
-    }
-
-    /// Specular material
-    pub fn specular(roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, 1.5, 0.0, false))
-    }
-
-    /// Diffuse material
-    pub fn diffuse() -> Self {
-        Self::Ggx(MicrofacetConfig::new(1.0, 1.5, 0.0, false))
-    }
-
-    /// Transparent material f.ex. glass
-    pub fn transparent(refraction_idx: f64, roughness: f64) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, 0.0, true))
-    }
-
-    /// might need tuning, send ratio that emittance is multiplied with?
-    pub fn is_specular(&self) -> bool {
-        self.is_transparent() || self.get_config().roughness < 0.01
+    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64, transparent: bool) -> Self {
+        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, metallicity, transparent))
     }
 
     /// Is the material transparent?
@@ -71,11 +50,22 @@ impl MfDistribution {
         self.get_config().transparent
     }
 
+    /// might need tuning, send ratio that emittance is multiplied with?
+    pub fn is_specular(&self) -> bool {
+        self.is_transparent() || self.get_config().roughness < 0.01
+    }
+
+    /// Does the material have delta scattering distribution?
+    pub fn is_delta(&self) -> bool {
+        self.get_config().roughness < 1e-2
+    }
+
     /// Gets the refraction index
     pub fn get_rfrct_idx(&self) -> f64 {
         self.get_config().refraction_idx
     }
 
+    /// Get roughness from config
     pub fn get_roughness(&self) -> f64 {
         self.get_config().roughness
     }
@@ -115,6 +105,7 @@ impl MfDistribution {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = wh.dot(no).powi(2);
+
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
@@ -125,11 +116,12 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let roughness2 = cfg.roughness * cfg.roughness;
                 let cos2_theta = wh.dot(no).powi(2);
+
                 if cos2_theta == 0.0 {
                     0.0
                 } else {
+                    let roughness2 = cfg.roughness * cfg.roughness;
                     let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
 
                     (-tan2_theta / roughness2).exp()
@@ -219,7 +211,7 @@ impl MfDistribution {
 
     /// Probability that `wh` got sampled
     pub fn sample_normal_pdf(&self, wh: DVec3, v: DVec3, no: DVec3) -> f64 {
-        match self {
+        let pdf = match self {
             Self::Beckmann(..) => {
                 let wh_dot_no = wh.dot(no);
                 self.d(wh, no) * wh_dot_no
@@ -230,7 +222,9 @@ impl MfDistribution {
 
                 self.g1(v, no) * self.d(wh, no) * wh_dot_v / no_dot_v
             }
-        }
+        };
+
+        pdf.max(0.0)
     }
 
     /// Sampling microfacet normals per distribution for importance sampling.
