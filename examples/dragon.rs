@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_origin()
         .rotate_y(5.0 * PI / 8.0)
         .scale(1.3, 1.3, 1.3)
-        .translate(0.0, -0.3, -1.4)
+        .translate(0.0, -0.35, -1.4)
     );
 
     let renderer = Renderer::new(scene, camera);
