@@ -9,7 +9,7 @@ fn scene(m: Material) -> Scene {
     scene.add_light(Sphere::new(
         DVec3::new(0.0, 2.0, 0.0),
         EPSILON,
-        Material::Light(Texture::Solid(DVec3::ONE)),
+        Material::Light(Texture::Solid(Color::WHITE))
     ));
 
     scene.add(Plane::new(

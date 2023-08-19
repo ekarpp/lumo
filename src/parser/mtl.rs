@@ -1,13 +1,14 @@
 use super::*;
+use crate::tracer::Color;
 
 /// Holds the properties of a microfacet material
 pub struct MtlConfig {
     /// Base color of the material
-    pub diffuse_color: DVec3,
+    pub diffuse_color: Color,
     /// Specular color of the material. Currently material color = kd + ks
-    pub specular_color: DVec3,
+    pub specular_color: Color,
     /// Emittance of the material. If not zero vector, then createas a light
-    pub emission_color: DVec3,
+    pub emission_color: Color,
     /// How much each light channel passes on transmission. Unused ATM
     pub transmission_filter: DVec3,
     /// Refraction index of the material
@@ -22,9 +23,9 @@ pub struct MtlConfig {
 impl Default for MtlConfig {
     fn default() -> Self {
         Self {
-            diffuse_color: DVec3::ZERO,
-            specular_color: DVec3::ZERO,
-            emission_color: DVec3::ZERO,
+            diffuse_color: Color::BLACK,
+            specular_color: Color::BLACK,
+            emission_color: Color::BLACK,
             transmission_filter: DVec3::ZERO,
             refraction_idx: 1.5,
             roughness: 1.0,
@@ -35,7 +36,7 @@ impl Default for MtlConfig {
 
 impl MtlConfig {
     pub fn build_material(&self) -> Material {
-        if self.emission_color.length_squared() != 0.0 {
+        if self.emission_color.is_black() {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
             let texture = Texture::Solid(self.diffuse_color + self.specular_color);
@@ -77,15 +78,15 @@ pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Resu
             }
             "Kd" => {
                 let kd = parse_vec3(&tokens)?;
-                mtl.diffuse_color = kd;
+                mtl.diffuse_color = Color::from(kd);
             }
             "Ke" => {
                 let ke = parse_vec3(&tokens)?;
-                mtl.emission_color = ke;
+                mtl.emission_color = Color::from(ke);
             }
             "Ks" => {
                 let ks = parse_vec3(&tokens)?;
-                mtl.specular_color = ks;
+                mtl.specular_color = Color::from(ks);
             }
             "Tf" => {
                 let tf = parse_vec3(&tokens)?;

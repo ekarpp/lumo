@@ -1,6 +1,6 @@
 use crate::Image;
 use crate::perlin::Perlin;
-use crate::tracer::hit::Hit;
+use crate::tracer::{Color, hit::Hit};
 use glam::DVec3;
 
 /// Scale of points in perlin. bigger = more noticeable effect
@@ -17,7 +17,7 @@ const MARBLE_GAIN: f64 = 0.5;
 /// Defines a texture to choose a colour of material at each point.
 pub enum Texture {
     /// Solid colour.
-    Solid(DVec3),
+    Solid(Color),
     /* box avoids having to define lifetime all the way to objects.
      * should texture be a struct instead? */
     /// Checkerboard of textures. Float defines scale,
@@ -25,14 +25,14 @@ pub enum Texture {
     Checkerboard(Box<Texture>, Box<Texture>, f64),
     /// Marble like texture generated from Perlin noise.
     /// Underlying color as argument.
-    Marble(Perlin, DVec3),
+    Marble(Perlin, Color),
     /// Image texture loaded from a .png
     Image(Image),
 }
 
 impl Texture {
     /// Colour at hit `h`
-    pub fn albedo_at(&self, h: &Hit) -> DVec3 {
+    pub fn albedo_at(&self, h: &Hit) -> Color {
         match self {
             Texture::Solid(c) => *c,
             Texture::Marble(pn, c) => {

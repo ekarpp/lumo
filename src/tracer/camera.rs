@@ -2,6 +2,7 @@ use crate::rand_utils;
 use crate::tracer::film::FilmSample;
 use crate::tracer::ray::Ray;
 use crate::tracer::onb::Onb;
+use crate::tracer::Color;
 use glam::{DVec2, DVec3, IVec2};
 use std::f64::consts::PI;
 
@@ -272,7 +273,7 @@ impl Camera {
 
                 let pdf = self.pdf(wi);
 
-                let color = DVec3::splat(pdf);
+                let color = Color::splat(pdf);
 
                 let fl = if cfg.lens_radius == 0.0 {
                     1.0 / cos_theta

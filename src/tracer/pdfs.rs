@@ -4,6 +4,7 @@ use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::object::Sampleable;
 use crate::tracer::onb::Onb;
 use crate::tracer::ray::Ray;
+use crate::tracer::Color;
 use crate::EPSILON;
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
@@ -189,7 +190,7 @@ impl MfdPdf {
         v: DVec3,
         ns: DVec3,
         ng: DVec3,
-        albedo: DVec3,
+        albedo: Color,
         mfd: MfDistribution
     ) -> Self {
         // refraction needs v and wh to be in same hemisphere so we do this

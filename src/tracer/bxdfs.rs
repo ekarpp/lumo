@@ -1,4 +1,5 @@
 use crate::Transport;
+use crate::tracer::color::Color;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
@@ -21,9 +22,9 @@ pub fn bsdf_microfacet(
     ng: DVec3,
     ns: DVec3,
     mode: Transport,
-    albedo: DVec3,
+    albedo: Color,
     mfd: &MfDistribution
-) -> DVec3 {
+) -> Color {
     let v = -wo;
     // abs these, for refraction it makes no difference
     // for reflection they might cause negative values when grazing ng
@@ -45,7 +46,7 @@ pub fn bsdf_microfacet(
 
             if sin2_ti > 1.0 {
                 // total internal reflection
-                DVec3::ONE
+                Color::WHITE
             } else {
                 mfd.f(v, wh, albedo)
             }
@@ -69,7 +70,7 @@ pub fn bsdf_microfacet(
             specular
         } else {
             let ns_dot_wh = ns.dot(wh);
-            let diffuse = (DVec3::ONE - f) * albedo
+            let diffuse = (Color::WHITE - f) * albedo
                 * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / PI;
 
             diffuse + specular
@@ -100,7 +101,7 @@ pub fn bsdf_microfacet(
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
         scale * (wh_dot_wi * wh_dot_v / (ns_dot_wi * ns_dot_v)).abs()
-            * albedo * d * (DVec3::ONE - f) * g
+            * albedo * d * (Color::WHITE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
 }
@@ -114,7 +115,7 @@ pub fn bsdf_microfacet(
 pub fn bsdf_microfacet_pdf(
     ho: &Hit,
     ro: &Ray,
-    albedo: DVec3,
+    albedo: Color,
     mfd: &MfDistribution,
 ) -> Option<Box<dyn Pdf>> {
     let ns = ho.ns;

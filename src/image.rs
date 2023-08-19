@@ -1,11 +1,11 @@
-use glam::DVec3;
 use png::{BitDepth, ColorType, Decoder, DecodingError};
 use std::fs::File;
+use crate::tracer::Color;
 
 /// Loaded texture images stored in a Rust vector
 pub struct Image {
-    /// Image buffer storing RGB-channels in range \[0,1\].
-    pub buffer: Vec<DVec3>,
+    /// Image buffer storing color values
+    pub buffer: Vec<Color>,
     /// Width of rendered image.
     pub width: u32,
     /// Height of rendered image.
@@ -31,12 +31,7 @@ impl Image {
 
         let buffer = bytes[..info.buffer_size()]
             .chunks(3)
-            .map(|rgb| {
-                let r = rgb[0];
-                let g = rgb[1];
-                let b = rgb[2];
-                crate::srgb_to_linear(r, g, b)
-            })
+            .map(|rgb| Color::new(rgb[0], rgb[1], rgb[2]))
             .collect();
 
         let width = info.width;

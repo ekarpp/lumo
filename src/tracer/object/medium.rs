@@ -1,4 +1,5 @@
 use super::*;
+use crate::tracer::Color;
 
 #[cfg(test)]
 mod medium_test;
@@ -30,7 +31,7 @@ impl Medium {
         assert!(absorption.max_element() <= 1.0
                 && absorption.min_element() >= 0.0);
 
-        let sigma_s = scattering;
+        let sigma_s = Color::from(scattering);
         let sigma_t = scattering + absorption;
 
         Self {
@@ -40,7 +41,7 @@ impl Medium {
     }
 
     /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
-    pub fn transmittance(&self, h: &Hit) -> DVec3 {
+    pub fn transmittance(&self, h: &Hit) -> Color {
         // need to move some of the stuff to bsdf?
         // can this be infinity?
         let t_delta = h.t;
@@ -50,9 +51,9 @@ impl Medium {
 
         if pdf == 0.0 {
             // this medium does not do much...
-            DVec3::ONE
+            Color::WHITE
         } else {
-            transmittance / pdf
+            Color::from(transmittance / pdf)
         }
     }
 }

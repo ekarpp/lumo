@@ -3,14 +3,14 @@ use super::*;
 /// Abstraction of a vertex in the paths
 pub struct Vertex<'a> {
     pub h: Hit<'a>,
-    pub gathered: DVec3,
+    pub gathered: Color,
     pub pdf_fwd: f64,
     pub pdf_bck: f64,
 }
 
 impl<'a> Vertex<'a> {
     /// Camera vertex
-    pub fn camera(xo: DVec3, gathered: DVec3) -> Self {
+    pub fn camera(xo: DVec3, gathered: Color) -> Self {
         let h = Hit::new(
             0.0,
             &Material::Blank,
@@ -30,7 +30,7 @@ impl<'a> Vertex<'a> {
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: DVec3, pdf_bck: f64) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: Color, pdf_bck: f64) -> Self {
         h.light = Some(light);
         Self {
             h,
@@ -44,7 +44,7 @@ impl<'a> Vertex<'a> {
     /// Surface vertex
     pub fn surface(
         h: Hit<'a>,
-        gathered: DVec3,
+        gathered: Color,
         pdf_fwd: f64,
         prev: &Vertex,
     ) -> Self {
@@ -86,7 +86,7 @@ impl<'a> Vertex<'a> {
     }
 
     /// Helper to get emittance at hit
-    pub fn emittance(&self) -> DVec3 {
+    pub fn emittance(&self) -> Color {
         self.material().emit(&self.h)
     }
 
@@ -96,7 +96,7 @@ impl<'a> Vertex<'a> {
     }
 
     /// Computes BSDF at hit of `self`
-    pub fn bsdf(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> DVec3 {
+    pub fn bsdf(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> Color {
         // TODO (2)
         let wo = (self.h.p - prev.h.p).normalize();
         let wi = (next.h.p - self.h.p).normalize();

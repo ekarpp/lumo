@@ -1,5 +1,6 @@
 use crate::Transport;
 use crate::tracer::bxdfs;
+use crate::tracer::color::Color;
 use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{Pdf, CosPdf};
@@ -21,7 +22,7 @@ pub enum Material {
     /// Perfect refraction with refraction index as argument
     Glass(f64),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
-    Volumetric(f64, DVec3, DVec3),
+    Volumetric(f64, DVec3, Color),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -91,32 +92,32 @@ impl Material {
 
 
     /// How much light emitted at `h`?
-    pub fn emit(&self, h: &Hit) -> DVec3 {
+    pub fn emit(&self, h: &Hit) -> Color {
         match self {
             Self::Light(t) => if h.backface {
-                DVec3::ZERO
+                Color::BLACK
             } else {
                 t.albedo_at(h)
             },
-            _ => DVec3::ZERO,
+            _ => Color::BLACK
         }
     }
 
     /// What is the color at `h`?
-    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> DVec3 {
+    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> Color {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            Self::Mirror => DVec3::ONE,
+            Self::Mirror => Color::WHITE,
             Self::Glass(eta) => {
                 match mode {
-                    Transport::Importance => DVec3::ONE,
+                    Transport::Importance => Color::WHITE,
                     Transport::Radiance => {
                         let inside = wi.dot(ng) > 0.0;
                         if inside {
-                            DVec3::splat(1.0 / (eta * eta))
+                            Color::splat(1.0 / (eta * eta))
                         } else {
-                            DVec3::splat(eta * eta)
+                            Color::splat(eta * eta)
                         }
                     }
                 }
@@ -128,13 +129,13 @@ impl Material {
                 let pdf = (transmittance * *sigma_t).dot(DVec3::ONE)
                     / transmittance.dot(DVec3::ONE);
 
-                if pdf == 0.0 { DVec3::ONE } else { *sigma_s / pdf }
+                if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
             }
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
             }
             Self::Lambertian(t) => t.albedo_at(h) / PI,
-            _ => DVec3::ZERO,
+            _ => Color::BLACK,
         }
     }
 

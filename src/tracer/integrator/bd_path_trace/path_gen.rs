@@ -2,7 +2,7 @@ use super::*;
 
 /// Generates a ray path starting from the camera
 pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vertex<'a>> {
-    let gathered = DVec3::ONE;
+    let gathered = Color::WHITE;
     let root = Vertex::camera(r.origin, gathered);
     let wi = r.dir;
     let pdf_fwd = camera.pdf(wi);
@@ -35,7 +35,7 @@ fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
     root: Vertex<'a>,
-    mut gathered: DVec3,
+    mut gathered: Color,
     pdf_dir: f64,
     mode: Transport,
 ) -> Vec<Vertex<'a>> {
@@ -94,7 +94,7 @@ fn walk<'a>(
                         };
 
                         let bsdf = if ho.is_medium() {
-                            DVec3::ONE * pdf_fwd
+                            Color::WHITE * pdf_fwd
                         } else {
                             material.bsdf_f(wo, wi, mode, ho)
                         };
@@ -114,7 +114,7 @@ fn walk<'a>(
 
                         // russian roulette
                         if depth > 3 {
-                            let luminance = crate::rgb_to_luminance(gathered);
+                            let luminance = gathered.luminance();
                             let rr_prob = (1.0 - luminance).max(0.05);
                             if rand_utils::rand_f64() < rr_prob {
                                 break;

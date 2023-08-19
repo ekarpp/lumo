@@ -1,6 +1,7 @@
 use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 use crate::tracer::onb::Onb;
+use crate::tracer::color::Color;
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
@@ -148,15 +149,15 @@ impl MfDistribution {
     }
 
     /// Fresnel term with Schlick's approximation
-    pub fn f(&self, wo: DVec3, wh: DVec3, color: DVec3) -> DVec3 {
+    pub fn f(&self, wo: DVec3, wh: DVec3, color: Color) -> Color {
         let eta = self.get_config().refraction_idx;
         let metallicity = self.get_config().metallicity;
 
         let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = DVec3::splat(f0 * f0).lerp(color, metallicity);
+        let f0 = Color::splat(f0 * f0).lerp(color, metallicity);
 
         let wo_dot_wh = wo.dot(wh).abs();
-        f0 + (DVec3::ONE - f0) * (1.0 - wo_dot_wh).powi(5)
+        f0 + (Color::WHITE - f0) * (1.0 - wo_dot_wh).powi(5)
     }
 
     /// Lambda function used in the definition of the shadow-masking term.
@@ -199,14 +200,13 @@ impl MfDistribution {
 
     /// Probability to do importance sampling from NDF. Estimate based on
     /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: DVec3) -> f64 {
+    pub fn probability_ndf_sample(&self, albedo: Color) -> f64 {
         let cfg = self.get_config();
 
         let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
         let f0 = f0 * f0;
-        let albedo_mean = (albedo.x + albedo.y + albedo.z) / 3.0;
 
-        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo_mean
+        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo.mean()
     }
 
     /// Probability that `wh` got sampled

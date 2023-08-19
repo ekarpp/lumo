@@ -1,4 +1,5 @@
 pub use camera::Camera;
+pub use color::Color;
 pub use film::{Film, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
@@ -12,6 +13,8 @@ pub use texture::Texture;
 mod bxdfs;
 /// Abstraction for a camera
 mod camera;
+/// Color struct
+mod color;
 /// Film contains the image being rendered
 mod film;
 /// Abstraction for a hit between a ray and an object.

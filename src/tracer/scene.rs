@@ -1,5 +1,5 @@
 use crate::rand_utils;
-use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
+use crate::tracer::{hit::Hit, ray::Ray, Material, Texture, Color};
 use crate::tracer::{Medium, Object, Rectangle, Sampleable};
 use glam::{DMat3, DVec3};
 use std::f64::INFINITY;
@@ -52,9 +52,9 @@ impl Scene {
     }
 
     /// Returns the transmittance due to volumetric medium
-    pub fn transmittance(&self, h: &Hit) -> DVec3 {
+    pub fn transmittance(&self, h: &Hit) -> Color {
         match &self.medium {
-            None => DVec3::ONE,
+            None => Color::WHITE,
             Some(medium) => medium.transmittance(h),
         }
     }

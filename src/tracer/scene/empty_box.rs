@@ -1,5 +1,5 @@
 use super::*;
-use crate::srgb_to_linear;
+use crate::tracer::color::Color;
 
 const LIGHT_EPS: f64 = 0.01;
 
@@ -13,7 +13,7 @@ impl Scene {
     /// * `mat_left` - Material of the left wall
     /// * `mat_right` - Material of the right wall
     pub fn empty_box(
-        def_color: DVec3,
+        def_color: Color,
         mat_left: Material,
         mat_right: Material,
     ) -> Self {
@@ -39,7 +39,7 @@ impl Scene {
                 DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
                 DVec3::new(l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(6.0 * srgb_to_linear(255, 255, 255))),
+            Material::Light(Texture::Solid(6.0 * Color::WHITE))
         ));
 
         /* left wall */

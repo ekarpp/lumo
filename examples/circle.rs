@@ -4,7 +4,7 @@ use lumo::*;
 use std::f64::consts::PI;
 
 // s = v = 1.0. h in radians
-fn hsv_to_rgb(h: f64) -> DVec3 {
+fn hsv_to_rgb(h: f64) -> Color {
     let f = |n: f64| {
         let k = (n + h / (PI / 3.0)) % 6.0;
         1.0 - k.min(4.0 - k).min(1.0).max(0.0)
@@ -12,7 +12,7 @@ fn hsv_to_rgb(h: f64) -> DVec3 {
 
     let rgb = DVec3::new(f(5.0), f(3.0), f(1.0)) * 255.0;
 
-    srgb_to_linear(rgb.x as u8, rgb.y as u8, rgb.z as u8)
+    Color::new(rgb.x as u8, rgb.y as u8, rgb.z as u8)
 }
 
 fn main() -> Result<(), std::io::Error> {
@@ -34,14 +34,14 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Plane::new(
         ground * DVec3::Y,
         DVec3::Y,
-        Material::metallic(Texture::Solid(srgb_to_linear(150, 40, 39)), 0.009999),
+        Material::metallic(Texture::Solid(Color::new(150, 40, 39)), 0.009999),
     ));
 
     let r = 0.2;
     scene.add_light(Sphere::new(
         DVec3::new(0.0, ground + r + 0.1, 0.0),
         r,
-        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+        Material::Light(Texture::Solid(Color::WHITE)),
     ));
 
     let circle_s = 8;

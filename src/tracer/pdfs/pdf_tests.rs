@@ -7,7 +7,7 @@ fn mfd_pdf() -> MfdPdf {
         DVec3::Z,
         DVec3::Z,
         DVec3::Z,
-        DVec3::ONE,
+        Color::WHITE,
         MfDistribution::new(1.0, 1.5, 0.0, false),
     )
 }
