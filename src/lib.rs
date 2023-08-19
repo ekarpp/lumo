@@ -32,6 +32,12 @@ mod samplers;
 /// Tone mapping functions
 mod tone_mapping;
 
+type Transform = glam::DAffine3;
+type Normal = glam::DVec3;
+type Direction = Normal;
+type Point = Direction;
+type Float = f64;
+
 /// Enum to determine from which direction we are tracing rays
 #[derive(Copy, Clone)]
 pub enum Transport {

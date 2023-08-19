@@ -1,4 +1,4 @@
-use crate::Transport;
+use crate::{Normal, Direction, Point, Transport, Float};
 use crate::tracer::bxdfs;
 use crate::tracer::color::Color;
 use crate::tracer::hit::Hit;
@@ -20,9 +20,9 @@ pub enum Material {
     /// Perfect reflection
     Mirror,
     /// Perfect refraction with refraction index as argument
-    Glass(f64),
+    Glass(Float),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
-    Volumetric(f64, DVec3, Color),
+    Volumetric(Float, DVec3, Color),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -31,9 +31,9 @@ impl Material {
     /// Helper function to create a microfacet material
     pub fn microfacet(
         texture: Texture,
-        roughness: f64,
-        refraction_idx: f64,
-        metallicity: f64,
+        roughness: Float,
+        refraction_idx: Float,
+        metallicity: Float,
         transparent: bool
     ) -> Self {
         let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
@@ -41,12 +41,12 @@ impl Material {
     }
 
     /// Metallic microfacet material
-    pub fn metallic(texture: Texture, roughness: f64) -> Self {
+    pub fn metallic(texture: Texture, roughness: Float) -> Self {
         Self::microfacet(texture, roughness, 1.5, 1.0, false)
     }
 
     /// Specular microfacet material
-    pub fn specular(texture: Texture, roughness: f64) -> Self {
+    pub fn specular(texture: Texture, roughness: Float) -> Self {
         Self::microfacet(texture, roughness, 1.5, 0.0, false)
     }
 
@@ -56,7 +56,7 @@ impl Material {
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, roughness: f64, refraction_idx: f64) -> Self {
+    pub fn transparent(texture: Texture, roughness: Float, refraction_idx: Float) -> Self {
         Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
     }
 
@@ -66,7 +66,7 @@ impl Material {
     }
 
     /// Perfect refraction
-    pub fn glass(refraction_index: f64) -> Self {
+    pub fn glass(refraction_index: Float) -> Self {
         assert!(refraction_index >= 1.0);
         Self::Glass(refraction_index)
     }
@@ -104,7 +104,13 @@ impl Material {
     }
 
     /// What is the color at `h`?
-    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> Color {
+    pub fn bsdf_f(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        mode: Transport,
+        h: &Hit
+    ) -> Color {
         let ns = h.ns;
         let ng = h.ng;
         match self {
@@ -140,7 +146,7 @@ impl Material {
     }
 
     /// Computes the shading cosine coefficient per material
-    pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
+    pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
         match self {
             Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
             _ => 1.0

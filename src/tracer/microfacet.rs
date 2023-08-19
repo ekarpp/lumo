@@ -2,22 +2,28 @@ use glam::{DVec2, DVec3};
 use std::f64::consts::PI;
 use crate::tracer::onb::Onb;
 use crate::tracer::color::Color;
+use crate::{Point, Normal, Direction, Float};
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
 pub struct MicrofacetConfig {
     /// Roughness of the surface (α) [0,1]
-    pub roughness: f64,
+    pub roughness: Float,
     /// Refraction index of the material >= 1.0
-    pub refraction_idx: f64,
+    pub refraction_idx: Float,
     /// Ratio of how metallic the material is [0,1]
-    pub metallicity: f64,
+    pub metallicity: Float,
     /// Transparency of the material
     pub transparent: bool,
 }
 
 impl MicrofacetConfig {
-    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64, transparent: bool) -> Self {
+    pub fn new(
+        roughness: Float,
+        refraction_idx: Float,
+        metallicity: Float,
+        transparent: bool
+    ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
         assert!((0.0..=1.0).contains(&metallicity));
         assert!(refraction_idx >= 1.0);
@@ -42,7 +48,12 @@ pub enum MfDistribution {
 }
 
 impl MfDistribution {
-    pub fn new(roughness: f64, refraction_idx: f64, metallicity: f64, transparent: bool) -> Self {
+    pub fn new(
+        roughness: Float,
+        refraction_idx: Float,
+        metallicity: Float,
+        transparent: bool
+    ) -> Self {
         Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, metallicity, transparent))
     }
 
@@ -62,12 +73,12 @@ impl MfDistribution {
     }
 
     /// Gets the refraction index
-    pub fn get_rfrct_idx(&self) -> f64 {
+    pub fn get_rfrct_idx(&self) -> Float {
         self.get_config().refraction_idx
     }
 
     /// Get roughness from config
-    pub fn get_roughness(&self) -> f64 {
+    pub fn get_roughness(&self) -> Float {
         self.get_config().roughness
     }
 
@@ -80,7 +91,12 @@ impl MfDistribution {
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
     /// as done in Frostbite (Lagarde et al. 2014)
-    pub fn disney_diffuse(&self, no_dot_v: f64, no_dot_wh: f64, no_dot_wi: f64) -> f64 {
+    pub fn disney_diffuse(
+        &self,
+        no_dot_v: Float,
+        no_dot_wh: Float,
+        no_dot_wi: Float
+    ) -> Float {
         let roughness2 = self.get_config().roughness.powi(2);
         let energy_bias = 0.5 * roughness2;
         let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
@@ -102,7 +118,7 @@ impl MfDistribution {
     /// # Arguments
     /// * `wh` - The half vector of `wo` and `wi`
     /// * `no` - Surface normal at the point of impact
-    pub fn d(&self, wh: DVec3, no: DVec3) -> f64 {
+    pub fn d(&self, wh: Normal, no: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = wh.dot(no).powi(2);
@@ -140,16 +156,16 @@ impl MfDistribution {
     /// * `wo` - Direction of ray towards the point of impact
     /// * `wi` - Direction of ray away from the point of impact
     /// * `no` - Surface normal at the point of impact
-    pub fn g(&self, wo: DVec3, wi: DVec3, no: DVec3) -> f64 {
+    pub fn g(&self, wo: Direction, wi: Direction, no: Normal) -> Float {
         1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
     }
 
-    pub fn g1(&self, v: DVec3, no: DVec3) -> f64 {
+    pub fn g1(&self, v: Direction, no: Normal) -> Float {
         1.0 / (1.0 + self.lambda(v, no))
     }
 
     /// Fresnel term with Schlick's approximation
-    pub fn f(&self, wo: DVec3, wh: DVec3, color: Color) -> Color {
+    pub fn f(&self, wo: Direction, wh: Normal, color: Color) -> Color {
         let eta = self.get_config().refraction_idx;
         let metallicity = self.get_config().metallicity;
 
@@ -166,7 +182,7 @@ impl MfDistribution {
     /// # Arguments
     /// * `w` - Direction to consider
     /// * `no` - Macrosurface normal
-    fn lambda(&self, w: DVec3, no: DVec3) -> f64 {
+    fn lambda(&self, w: Direction, no: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = w.dot(no).powi(2);
@@ -200,7 +216,7 @@ impl MfDistribution {
 
     /// Probability to do importance sampling from NDF. Estimate based on
     /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: Color) -> f64 {
+    pub fn probability_ndf_sample(&self, albedo: Color) -> Float {
         let cfg = self.get_config();
 
         let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
@@ -210,7 +226,12 @@ impl MfDistribution {
     }
 
     /// Probability that `wh` got sampled
-    pub fn sample_normal_pdf(&self, wh: DVec3, v: DVec3, no: DVec3) -> f64 {
+    pub fn sample_normal_pdf(
+        &self,
+        wh: Normal,
+        v: Direction,
+        no: Normal
+    ) -> Float {
         let pdf = match self {
             Self::Beckmann(..) => {
                 let wh_dot_no = wh.dot(no);
@@ -229,7 +250,7 @@ impl MfDistribution {
 
     /// Sampling microfacet normals per distribution for importance sampling.
     /// `v` in shading space.
-    pub fn sample_normal(&self, v: DVec3, rand_sq: DVec2) -> DVec3 {
+    pub fn sample_normal(&self, v: Direction, rand_sq: DVec2) -> DVec3 {
         match self {
             Self::Ggx(cfg) => {
                 // Heitz 2018 or
@@ -237,7 +258,7 @@ impl MfDistribution {
 
                 let roughness = cfg.roughness;
                 // Map the GGX ellipsoid to a hemisphere
-                let v_stretch = DVec3::new(
+                let v_stretch = Direction::new(
                     v.x * roughness,
                     v.y * roughness,
                     v.z
@@ -263,7 +284,7 @@ impl MfDistribution {
                 };
 
                 // compute normal in hemisphere configuration
-                let wm = DVec3::new(
+                let wm = Normal::new(
                     x,
                     y,
                     (1.0 - x*x - y*y).max(0.0).sqrt(),
@@ -271,7 +292,7 @@ impl MfDistribution {
                 let wm = hemi_basis.to_world(wm);
 
                 // move back to ellipsoid
-                DVec3::new(
+                Normal::new(
                     roughness * wm.x,
                     roughness * wm.y,
                     wm.z.max(0.0)
@@ -282,7 +303,7 @@ impl MfDistribution {
                 let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
                 let phi = 2.0 * PI * rand_sq.x;
 
-                DVec3::new(
+                Normal::new(
                     theta.sin() * phi.cos(),
                     theta.sin() * phi.sin(),
                     theta.cos(),

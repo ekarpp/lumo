@@ -1,4 +1,4 @@
-use crate::efloat;
+use crate::{Point, Float, Direction, Normal, efloat};
 use crate::tracer::material::Material;
 use crate::tracer::object::Sampleable;
 use crate::tracer::ray::Ray;
@@ -7,19 +7,19 @@ use glam::{DVec2, DVec3};
 /// Stores information about a hit between a ray and an object
 pub struct Hit<'a> {
     /// The `t` value of ray at which the hit occurred
-    pub t: f64,
+    pub t: Float,
     /// Material of the object which got hit
     pub material: &'a Material,
     /// 3D point where object was hit
-    pub p: DVec3,
+    pub p: Point,
     /// Optional reference to light if we hit one
     pub light: Option<&'a dyn Sampleable>,
     /// Floating point error bounds of the impact point
     pub fp_error: DVec3,
     /// Normal of the surface used for shading calculations
-    pub ns: DVec3,
+    pub ns: Normal,
     /// Geometric normal of the surface
-    pub ng: DVec3,
+    pub ng: Normal,
     /// Texture coordinates in `\[0,1\]^2`
     pub uv: DVec2,
     /// Are we on the backface?
@@ -41,11 +41,11 @@ impl<'a> Hit<'a> {
     pub fn new(
         t: f64,
         material: &'a Material,
-        wo: DVec3,
-        xi: DVec3,
+        wo: Direction,
+        xi: Point,
         fp_error: DVec3,
-        ns: DVec3,
-        ng: DVec3,
+        ns: Normal,
+        ng: Normal,
         uv: DVec2,
     ) -> Option<Self> {
         let backface = wo.dot(ng) > 0.0;

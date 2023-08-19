@@ -4,7 +4,7 @@ use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
 use crate::tracer::ray::Ray;
-use glam::DVec3;
+use crate::{Point, Direction, Normal, Float};
 use std::f64::consts::PI;
 
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
@@ -17,10 +17,10 @@ use std::f64::consts::PI;
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
-    wo: DVec3,
-    wi: DVec3,
-    ng: DVec3,
-    ns: DVec3,
+    wo: Direction,
+    wi: Direction,
+    ng: Normal,
+    ns: Normal,
     mode: Transport,
     albedo: Color,
     mfd: &MfDistribution
@@ -132,12 +132,12 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     Some( Box::new(DeltaPdf::new(wi)) )
 }
 
-pub fn brdf_volumetric_pdf(ro: &Ray, g: f64) -> Option<Box<dyn Pdf>> {
+pub fn brdf_volumetric_pdf(ro: &Ray, g: Float) -> Option<Box<dyn Pdf>> {
     let v = -ro.dir;
     Some( Box::new(VolumetricPdf::new(v, g)) )
 }
 
-pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
+pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: Float) -> Option<Box<dyn Pdf>> {
     let ng = ho.ng;
     let v = -ro.dir;
     let inside = ng.dot(v) < 0.0;
@@ -154,7 +154,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>
 /// # Arguments
 /// * `v` - Normalized? direction from reflection point to viewer
 /// * `no` - Surface normal
-pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
+pub fn reflect(v: Direction, no: Normal) -> Direction {
     2.0 * v.project_onto(no) - v
 }
 
@@ -164,7 +164,7 @@ pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
 /// * `eta_ratio` - Ratio of refraction indices. `from / to`
 /// * `v` - Normalized direction from refraction point to viewer
 /// * `no` - Surface normal, pointing to same hemisphere as `v`
-pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
+pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
     /* Snell-Descartes law */
     let cos_to = no.dot(v);
     let sin2_to = 1.0 - cos_to * cos_to;
