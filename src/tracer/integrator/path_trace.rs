@@ -60,7 +60,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
                         if depth > 3 {
                             let luminance = gathered.luminance();
                             let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_f64() < rr_prob {
+                            if rand_utils::rand_float() < rr_prob {
                                 break;
                             }
                             gathered /= 1.0 - rr_prob;

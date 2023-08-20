@@ -37,11 +37,11 @@ impl Triangle {
         }
     }
 
-    fn a(&self) -> DVec3 { self.mesh.vertices[self.vidx.0] }
-    fn b(&self) -> DVec3 { self.mesh.vertices[self.vidx.1] }
-    fn c(&self) -> DVec3 { self.mesh.vertices[self.vidx.2] }
+    fn a(&self) -> Point { self.mesh.vertices[self.vidx.0] }
+    fn b(&self) -> Point { self.mesh.vertices[self.vidx.1] }
+    fn c(&self) -> Point { self.mesh.vertices[self.vidx.2] }
 
-    fn shading_normal(&self, barycentrics: DVec3, ng: DVec3) -> DVec3 {
+    fn shading_normal(&self, barycentrics: Vec3, ng: Normal) -> Normal {
         match self.nidx {
             None => ng,
             Some(nidx) => {
@@ -67,7 +67,7 @@ impl Bounded for Triangle {
 
 impl Object for Triangle {
     /// Watertight intersection due to Woop et. al. 2013
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         let xo = r.origin;
 
         let wi_abs = r.dir.abs();
@@ -80,10 +80,10 @@ impl Object for Triangle {
             2
         };
 
-        let permute = |vec: DVec3| {
+        let permute = |vec: Vec3| {
             match kz {
-                0 => DVec3::new(vec.y, vec.z, vec.x),
-                1 => DVec3::new(vec.z, vec.x, vec.y),
+                0 => Vec3::new(vec.y, vec.z, vec.x),
+                1 => Vec3::new(vec.z, vec.x, vec.y),
                 _ => vec,
 
             }
@@ -95,13 +95,13 @@ impl Object for Triangle {
         let mut bt = permute(self.b() - xo);
         let mut ct = permute(self.c() - xo);
 
-        let shear = DVec3::new(-wi.x, -wi.y, 0.0) / wi.z;
+        let shear = Vec3::new(-wi.x, -wi.y, 0.0) / wi.z;
 
         at += shear * at.z;
         bt += shear * bt.z;
         ct += shear * ct.z;
 
-        let edges = DVec3::new(
+        let edges = Vec3::new(
             bt.x * ct.y - bt.y * ct.x,
             ct.x * at.y - ct.y * at.x,
             at.x * bt.y - at.y * bt.x,
@@ -111,7 +111,7 @@ impl Object for Triangle {
             return None;
         }
 
-        let det = edges.dot(DVec3::ONE);
+        let det = edges.dot(Vec3::ONE);
 
         // ray coplanar to triangle
         if det == 0.0 {
@@ -119,7 +119,7 @@ impl Object for Triangle {
         }
 
         // divide by wi.z here due to the way we apply shear
-        let t_scaled = edges.dot(DVec3::new(at.z, bt.z, ct.z)) / wi.z;
+        let t_scaled = edges.dot(Vec3::new(at.z, bt.z, ct.z)) / wi.z;
 
         // check that hit is within bounds
         let b1 = det < 0.0 &&
@@ -170,18 +170,18 @@ impl Object for Triangle {
             let tc = self.mesh.uvs[tidx.2];
             (ta, tb, tc)
         } else {
-            (DVec2::ZERO, DVec2::X, DVec2::ONE)
+            (Vec2::ZERO, Vec2::X, Vec2::ONE)
         };
 
         let uv = alpha * ta + beta * tb + gamma * tc;
 
-        let err = efloat::gamma(7) * DVec3::new(
-            (barycentrics * DVec3::new(self.a().x, self.b().x, self.c().x))
-             .abs().dot(DVec3::ONE),
-            (barycentrics * DVec3::new(self.a().y, self.b().y, self.c().y))
-             .abs().dot(DVec3::ONE),
-            (barycentrics * DVec3::new(self.a().z, self.b().z, self.c().z))
-             .abs().dot(DVec3::ONE),
+        let err = efloat::gamma(7) * Vec3::new(
+            (barycentrics * Vec3::new(self.a().x, self.b().x, self.c().x))
+             .abs().dot(Vec3::ONE),
+            (barycentrics * Vec3::new(self.a().y, self.b().y, self.c().y))
+             .abs().dot(Vec3::ONE),
+            (barycentrics * Vec3::new(self.a().z, self.b().z, self.c().z))
+             .abs().dot(Vec3::ONE),
         );
 
         // material will be set by parent object
@@ -190,16 +190,16 @@ impl Object for Triangle {
 }
 
 impl Sampleable for Triangle {
-    fn area(&self) -> f64 {
+    fn area(&self) -> Float {
         (self.b() - self.a()).cross(self.c() - self.a()).length() / 2.0
     }
 
     /// Random point with barycentrics.
-    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+    fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let gamma = 1.0 - (1.0 - rand_sq.x).sqrt();
         let beta = rand_sq.y * (1.0 - gamma);
         let alpha = 1.0 - gamma - beta;
-        let barycentrics = DVec3::new(alpha, beta, gamma);
+        let barycentrics = Vec3::new(alpha, beta, gamma);
 
         let b_m_a = self.b() - self.a();
         let c_m_a = self.c() - self.a();
@@ -214,10 +214,10 @@ impl Sampleable for Triangle {
             &Material::Blank,
             -ng,
             xo,
-            DVec3::ZERO,
+            Vec3::ZERO,
             ns,
             ng,
-            DVec2::ZERO,
+            Vec2::ZERO,
         ).unwrap()
     }
 }

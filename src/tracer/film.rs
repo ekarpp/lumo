@@ -1,4 +1,5 @@
 use crate::tracer::Color;
+use crate::{Float};
 use png::{BitDepth, ColorType, Encoder, EncodingError};
 use std::fs::File;
 use std::io::BufWriter;
@@ -84,7 +85,7 @@ impl Film {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx] / self.num_samples[idx] as f64;
+                let px = self.samples[idx] / self.num_samples[idx] as Float;
                 let (r, g, b) = px.gamma_enc();
                 img.push(r);
                 img.push(g);

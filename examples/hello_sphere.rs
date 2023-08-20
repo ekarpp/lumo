@@ -1,4 +1,3 @@
-use glam::DVec3;
 use lumo::tracer::*;
 use lumo::*;
 
@@ -7,20 +6,20 @@ fn main() -> Result<(), png::EncodingError> {
     let mut scene = Scene::default();
 
     scene.add(Plane::new(
-        DVec3::NEG_Y,
-        DVec3::Y,
+        Vec3::NEG_Y,
+        Vec3::Y,
         Material::diffuse(Texture::Solid(Color::new(190, 200, 210))),
     ));
 
     scene.add_light(Sphere::new(
-        8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
+        8.0 * Vec3::Y + 1.5 * Vec3::NEG_Z,
         4.0,
         Material::Light(Texture::Solid(Color::new(255, 255, 255))),
     ));
 
     scene.add(
         Sphere::new(
-            DVec3::ZERO,
+            Vec3::ZERO,
             1.0,
             Material::diffuse(Texture::Solid(Color::new(0, 0, 255))),
         )

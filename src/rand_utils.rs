@@ -1,8 +1,7 @@
-use glam::{DVec2, DVec3};
+use crate::{Vec2, Vec3, Float};
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
 use rand::Rng;
-use std::f64::consts::PI;
 
 type MyRng = ThreadRng;
 fn _get_rng() -> MyRng {
@@ -12,13 +11,13 @@ fn _get_rng() -> MyRng {
 /* should figure better way to rng creation??
  * (thread_rng() always creates new?) */
 
-/// Random f64
-pub fn rand_f64() -> f64 {
+/// Random Float
+pub fn rand_float() -> Float {
     _get_rng().gen()
 }
 
-/// return `n` normalized random DVec3s in a vector
-pub fn rand_vec_dvec3(n: usize) -> Vec<DVec3> {
+/// return `n` normalized random Vec3s in a vector
+pub fn rand_vec_vec3(n: usize) -> Vec<Vec3> {
     (0..n).map(|_| square_to_sphere(unit_square())).collect()
 }
 
@@ -30,37 +29,37 @@ pub fn perm_n(n: usize) -> Vec<usize> {
 }
 
 /// Point uniformly at random in unit square
-pub fn unit_square() -> DVec2 {
-    DVec2::new(rand_f64(), rand_f64())
+pub fn unit_square() -> Vec2 {
+    Vec2::new(rand_float(), rand_float())
 }
 
 /// Concentric map of unit square to unit disk. Shirley & Chiu 97
-pub fn square_to_disk(rand_sq: DVec2) -> DVec2 {
+pub fn square_to_disk(rand_sq: Vec2) -> Vec2 {
     /* map [0,1]^2 to [-1,1]^2 */
-    let offset = 2.0 * rand_sq - DVec2::ONE;
+    let offset = 2.0 * rand_sq - Vec2::ONE;
 
     if offset.x == 0.0 && offset.y == 0.0 {
-        DVec2::ZERO
+        Vec2::ZERO
     } else {
         let (r, theta) = if offset.x.abs() > offset.y.abs() {
             (
                 offset.x,
-                PI * (offset.y / offset.x) / 4.0
+                crate::PI * (offset.y / offset.x) / 4.0
             )
         } else {
             (
                 offset.y,
-                PI * (0.5 - (offset.x / offset.y) / 4.0)
+                crate::PI * (0.5 - (offset.x / offset.y) / 4.0)
             )
         };
 
-        r * DVec2::new(theta.cos(), theta.sin())
+        r * Vec2::new(theta.cos(), theta.sin())
     }
 }
 
 /// Cosine weighed random point ON hemisphere pointing towards +z.
 /// Malley's method i.e. lift unit disk to 3D
-pub fn square_to_cos_hemisphere(rand_sq: DVec2) -> DVec3 {
+pub fn square_to_cos_hemisphere(rand_sq: Vec2) -> Vec3 {
     let rand_disk = square_to_disk(rand_sq);
     let z = (1.0 - rand_disk.x * rand_disk.x - rand_disk.y * rand_disk.y)
         .max(0.0)
@@ -70,10 +69,10 @@ pub fn square_to_cos_hemisphere(rand_sq: DVec2) -> DVec3 {
 }
 
 /// Uniform random point IN unit sphere
-pub fn square_to_sphere(rand_sq: DVec2) -> DVec3 {
+pub fn square_to_sphere(rand_sq: Vec2) -> Vec3 {
     let z = 1.0 - 2.0 * rand_sq.y;
     let r = (1.0 - z * z).sqrt();
-    let phi = 2.0 * PI * rand_sq.x;
+    let phi = 2.0 * crate::PI * rand_sq.x;
 
-    DVec3::new(r * phi.cos(), r * phi.sin(), z)
+    Vec3::new(r * phi.cos(), r * phi.sin(), z)
 }

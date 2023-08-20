@@ -1,5 +1,4 @@
-use crate::rand_utils;
-use glam::{DVec3, UVec3};
+use crate::{Float, Vec3, rand_utils};
 use itertools::Itertools;
 
 /// Number of points in the perlin noise lattice
@@ -15,7 +14,7 @@ struct PermutationXyz {
 /// Perlin noise generator.
 pub struct Perlin {
     /// Random normals of the Perlin lattice
-    lattice: Vec<DVec3>,
+    lattice: Vec<Vec3>,
     /// Permutation directions
     perm: PermutationXyz,
 }
@@ -23,7 +22,7 @@ pub struct Perlin {
 impl Default for Perlin {
     fn default() -> Self {
         Self {
-            lattice: rand_utils::rand_vec_dvec3(PERLIN_POINTS),
+            lattice: rand_utils::rand_vec_vec3(PERLIN_POINTS),
             perm: PermutationXyz {
                 x: rand_utils::perm_n(PERLIN_POINTS),
                 y: rand_utils::perm_n(PERLIN_POINTS),
@@ -35,7 +34,7 @@ impl Default for Perlin {
 
 impl Perlin {
     /// Computes Perlin noise at point `p`
-    pub fn noise_at(&self, p: DVec3) -> f64 {
+    pub fn noise_at(&self, p: Vec3) -> Float {
         let weight = p.fract();
         let floor = p.floor();
 
@@ -62,12 +61,12 @@ impl Perlin {
     }
 
     /// Smoothing for weights
-    fn _hermite_cubic(&self, x: DVec3) -> DVec3 {
+    fn _hermite_cubic(&self, x: Vec3) -> Vec3 {
         (3.0 - 2.0 * x) * x * x
     }
 
     /// Smoothing for weights
-    fn _smootherstep(&self, x: DVec3) -> DVec3 {
+    fn _smootherstep(&self, x: Vec3) -> Vec3 {
         ((6.0 * x - 15.0) * x + 10.0) * x * x * x
     }
 
@@ -76,14 +75,18 @@ impl Perlin {
     /// # Arguments
     /// * `normals` - Normals to perform interpolation with
     /// * `w` - Fractional part of the point. Gives distances to each normal.
-    fn interp(&self, normals: Vec<DVec3>, w: DVec3) -> f64 {
+    fn interp(&self, normals: Vec<Vec3>, w: Vec3) -> Float {
         (0..2)
             .cartesian_product(0..2)
             .cartesian_product(0..2)
             .zip(normals)
             .map(|(((x, y), z), norm)| {
-                let idx = UVec3::new(x, y, z).as_dvec3();
-                let widx = 2.0 * w * idx + DVec3::ONE - w - idx;
+                let idx = Vec3::new(
+                    x as Float,
+                    y as Float,
+                    z as Float,
+                );
+                let widx = 2.0 * w * idx + Vec3::ONE - w - idx;
 
                 widx.x * widx.y * widx.z * norm.dot(w - idx)
             })

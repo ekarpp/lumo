@@ -1,6 +1,4 @@
-use crate::{Normal, Direction, Point, Float, Transform};
-use glam::{DAffine3, DVec3};
-use crate::Axis;
+use crate::{Axis, Direction, Point, Float, Transform};
 
 /// Ray abstraction
 pub struct Ray {

@@ -6,7 +6,8 @@ use crate::tracer::Film;
 use crate::tracer::FilmSample;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
-use glam::{DVec2, IVec2};
+use glam::IVec2;
+use crate::{Vec2, Float};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::time::Instant;
 
@@ -89,10 +90,10 @@ impl Renderer {
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_samples(&self, x: i32, y: i32) -> Vec<FilmSample> {
-        let xy = DVec2::new(x as f64, y as f64);
+        let xy = Vec2::new(x as Float, y as Float);
 
         PxSampler::new(self.num_samples)
-            .flat_map(|rand_sq: DVec2| {
+            .flat_map(|rand_sq: Vec2| {
                 self.integrator.integrate(
                     &self.scene,
                     &self.camera,

@@ -1,4 +1,4 @@
-use crate::{Normal, Direction, Point, Transport, Float};
+use crate::{Normal, Direction, Transport, Float, Vec3};
 use crate::tracer::bxdfs;
 use crate::tracer::color::Color;
 use crate::tracer::hit::Hit;
@@ -6,8 +6,6 @@ use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{Pdf, CosPdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::texture::Texture;
-use glam::DVec3;
-use std::f64::consts::PI;
 
 /// Describes which material an object is made out of
 pub enum Material {
@@ -22,7 +20,7 @@ pub enum Material {
     /// Perfect refraction with refraction index as argument
     Glass(Float),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
-    Volumetric(Float, DVec3, Color),
+    Volumetric(Float, Vec3, Color),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -132,15 +130,15 @@ impl Material {
             Self::Volumetric(_, sigma_t, sigma_s) => {
                 let transmittance = (-*sigma_t * h.t).exp();
                 // cancel out the transmittance pdf taken from scene transmitance
-                let pdf = (transmittance * *sigma_t).dot(DVec3::ONE)
-                    / transmittance.dot(DVec3::ONE);
+                let pdf = (transmittance * *sigma_t).dot(Vec3::ONE)
+                    / transmittance.dot(Vec3::ONE);
 
                 if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
             }
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
             }
-            Self::Lambertian(t) => t.albedo_at(h) / PI,
+            Self::Lambertian(t) => t.albedo_at(h) / crate::PI,
             _ => Color::BLACK,
         }
     }

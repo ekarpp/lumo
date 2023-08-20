@@ -1,13 +1,14 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
+use crate::Float;
 
 /// Used for error estimation in manually propagated floating point errors
-pub fn gamma(n: i32) -> f64 {
-    let n = n as f64;
-    (n * f64::EPSILON) / (1.0 - n * f64::EPSILON)
+pub fn gamma(n: i32) -> Float {
+    let n = n as Float;
+    (n * Float::EPSILON) / (1.0 - n * Float::EPSILON)
 }
 
 /// Makes the smallest increment possible to `v`
-pub fn next_double(v: f64) -> f64 {
+pub fn next_double(v: Float) -> Float {
     if v.is_infinite() && v > 0.0 {
         v
     } else {
@@ -17,12 +18,12 @@ pub fn next_double(v: f64) -> f64 {
         } else {
             v.to_bits() - 1
         };
-        f64::from_bits(bits)
+        Float::from_bits(bits)
     }
 }
 
 /// Makes the smalles decrement possible to `v`
-pub fn previous_double(v: f64) -> f64 {
+pub fn previous_double(v: Float) -> Float {
     if v.is_infinite() && v < 0.0 {
         v
     } else {
@@ -32,23 +33,23 @@ pub fn previous_double(v: f64) -> f64 {
         } else {
             v.to_bits() + 1
         };
-        f64::from_bits(bits)
+        Float::from_bits(bits)
     }
 }
 
-/// `f64` with running floating point error tracking
+/// `Float` with running floating point error tracking
 #[derive(Copy, Clone)]
-pub struct EFloat64 {
-    /// Actual `f64` value
-    pub value: f64,
+pub struct EFloat {
+    /// Actual `Float` value
+    pub value: Float,
     /// Lower bound of error interval
-    pub low: f64,
+    pub low: Float,
     /// Higher bound of error interval
-    pub high: f64,
+    pub high: Float,
 }
 
-impl EFloat64 {
-    fn new(value: f64, low: f64, high: f64) -> Self {
+impl EFloat {
+    fn new(value: Float, low: Float, high: Float) -> Self {
         Self {
             value,
             low,
@@ -64,15 +65,15 @@ impl EFloat64 {
         )
     }
 
-    pub fn quadratic(a: EFloat64, b: EFloat64, c: EFloat64) -> Option<(EFloat64, EFloat64)> {
+    pub fn quadratic(a: Self, b: Self, c: Self) -> Option<(Self, Self)> {
         let disc = b.value * b.value - 4.0 * a.value * c.value;
         if disc < 0.0 {
             return None;
         }
-        let disc_root = EFloat64::from(disc).sqrt();
+        let disc_root = Self::from(disc).sqrt();
 
-        let mut t0 = (-b - disc_root) / (EFloat64::from(2.0) * a);
-        let mut t1 = (-b + disc_root) / (EFloat64::from(2.0) * a);
+        let mut t0 = (-b - disc_root) / (Self::from(2.0) * a);
+        let mut t1 = (-b + disc_root) / (Self::from(2.0) * a);
 
         if t0.value > t1.value {
             std::mem::swap(&mut t0, &mut t1);
@@ -82,15 +83,15 @@ impl EFloat64 {
         Some((t0, t1))
     }
 
-    pub fn abs_error(&self) -> f64 {
+    pub fn abs_error(&self) -> Float {
         next_double(
             (self.high - self.value).abs().max((self.value - self.low).abs())
         )
     }
 }
 
-impl From<f64> for EFloat64 {
-    fn from(value: f64) -> Self {
+impl From<Float> for EFloat {
+    fn from(value: Float) -> Self {
         Self::new(
             value,
             value,
@@ -99,7 +100,7 @@ impl From<f64> for EFloat64 {
     }
 }
 
-impl Neg for EFloat64 {
+impl Neg for EFloat {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -111,7 +112,7 @@ impl Neg for EFloat64 {
     }
 }
 
-impl Add for EFloat64 {
+impl Add for EFloat {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -123,7 +124,7 @@ impl Add for EFloat64 {
     }
 }
 
-impl Sub for EFloat64 {
+impl Sub for EFloat {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -135,7 +136,7 @@ impl Sub for EFloat64 {
     }
 }
 
-impl Mul for EFloat64 {
+impl Mul for EFloat {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
@@ -164,7 +165,7 @@ impl Mul for EFloat64 {
     }
 }
 
-impl Div for EFloat64 {
+impl Div for EFloat {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
@@ -172,8 +173,8 @@ impl Div for EFloat64 {
             // possible division by zero. just make interval everything..
             Self::new(
                 self.value / other.value,
-                f64::NEG_INFINITY,
-                f64::INFINITY,
+                crate::NEG_INF,
+                crate::INF,
             )
         } else {
             let div_bounds = [

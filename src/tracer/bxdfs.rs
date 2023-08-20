@@ -4,8 +4,7 @@ use crate::tracer::hit::Hit;
 use crate::tracer::microfacet::MfDistribution;
 use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
 use crate::tracer::ray::Ray;
-use crate::{Point, Direction, Normal, Float};
-use std::f64::consts::PI;
+use crate::{Direction, Normal, Float};
 
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 ///
@@ -71,7 +70,7 @@ pub fn bsdf_microfacet(
         } else {
             let ns_dot_wh = ns.dot(wh);
             let diffuse = (Color::WHITE - f) * albedo
-                * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / PI;
+                * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / crate::PI;
 
             diffuse + specular
         }

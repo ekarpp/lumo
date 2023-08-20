@@ -3,9 +3,9 @@ use super::*;
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
 pub fn load_file(file: File, material: Material) -> Result<Mesh> {
-    let mut vertices: Vec<DVec3> = Vec::new();
-    let mut normals: Vec<DVec3> = Vec::new();
-    let mut uvs: Vec<DVec2> = Vec::new();
+    let mut vertices: Vec<Point> = Vec::new();
+    let mut normals: Vec<Normal> = Vec::new();
+    let mut uvs: Vec<Vec2> = Vec::new();
     let mut faces: Vec<Face> = Vec::new();
 
     let reader = BufReader::new(file);
@@ -32,9 +32,9 @@ pub fn load_file(file: File, material: Material) -> Result<Mesh> {
 
 pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<Scene> {
     let mut scene = Scene::default();
-    let mut vertices: Vec<DVec3> = Vec::new();
-    let mut normals: Vec<DVec3> = Vec::new();
-    let mut uvs: Vec<DVec2> = Vec::new();
+    let mut vertices: Vec<Point> = Vec::new();
+    let mut normals: Vec<Normal> = Vec::new();
+    let mut uvs: Vec<Vec2> = Vec::new();
     let mut faces: Vec<Face> = Vec::new();
     let mut meshes: Vec<(Vec<Face>, Material)> = Vec::new();
     let mut material = Material::Blank;
@@ -105,9 +105,9 @@ pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<S
 
 fn parse_tokens(
     tokens: Vec<&str>,
-    vertices: &mut Vec<DVec3>,
-    normals: &mut Vec<DVec3>,
-    uvs: &mut Vec<DVec2>,
+    vertices: &mut Vec<Point>,
+    normals: &mut Vec<Normal>,
+    uvs: &mut Vec<Vec2>,
     faces: &mut Vec<Face>,
 ) -> Result<()> {
     match tokens[0] {
@@ -135,9 +135,9 @@ fn parse_tokens(
 /// Parses a face from a .obj file
 fn parse_face(
     tokens: &[&str],
-    vertices: &[DVec3],
-    normals: &[DVec3],
-    uvs: &[DVec2],
+    vertices: &[Point],
+    normals: &[Normal],
+    uvs: &[Vec2],
 ) -> Result<Vec<Face>> {
     let mut vidxs: Vec<usize> = Vec::new();
     let mut nidxs: Vec<usize> = Vec::new();

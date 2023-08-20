@@ -24,11 +24,11 @@ impl Face {
 /// Mesh of triangles accelerated with a kdtree
 pub struct TriangleMesh {
     /// All vertices of the mesh
-    pub vertices: Vec<DVec3>,
+    pub vertices: Vec<Point>,
     /// All shading normals of the mesh
-    pub normals: Vec<DVec3>,
+    pub normals: Vec<Normal>,
     /// All texture coordinates of the mesh
-    pub uvs: Vec<DVec2>,
+    pub uvs: Vec<Vec2>,
 }
 
 impl TriangleMesh {
@@ -36,10 +36,10 @@ impl TriangleMesh {
     /// `normals` and/or `uvs` may be empty.
     #[allow(clippy::new_ret_no_self)]
     pub fn new(
-        vertices: Vec<DVec3>,
+        vertices: Vec<Point>,
         faces: Vec<Face>,
-        normals: Vec<DVec3>,
-        uvs: Vec<DVec2>,
+        normals: Vec<Normal>,
+        uvs: Vec<Vec2>,
         material: Material,
     ) -> Mesh {
         let mesh = Arc::new(Self {
@@ -88,7 +88,7 @@ impl TriangleMesh {
         KdTree::new(triangles, material)
     }
 
-    fn degenerate_triangle(a: DVec3, b: DVec3, c: DVec3) -> bool {
+    fn degenerate_triangle(a: Point, b: Point, c: Point) -> bool {
         let ng = (b - a).cross(c - a);
         ng.length() == 0.0
     }

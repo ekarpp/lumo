@@ -1,4 +1,4 @@
-use crate::{Transport, rand_utils};
+use crate::{Transport, rand_utils, Vec2, Float, Normal, Point, Direction, Vec3};
 use crate::tracer::camera::Camera;
 use crate::tracer::film::FilmSample;
 use crate::tracer::hit::Hit;
@@ -7,7 +7,6 @@ use crate::tracer::pdfs::{ObjectPdf, Pdf};
 use crate::tracer::ray::Ray;
 use crate::tracer::scene::Scene;
 use crate::tracer::Color;
-use glam::{DVec2, DVec3};
 use std::fmt;
 
 mod bd_path_trace;
@@ -54,7 +53,7 @@ fn shadow_ray(
     ro: &Ray,
     ho: &Hit,
     pdf_scatter: &dyn Pdf,
-    rand_sq: DVec2
+    rand_sq: Vec2
 ) -> Color {
     let material = ho.material;
     let xo = ho.p;
@@ -137,5 +136,5 @@ fn shadow_ray(
         }
     };
 
-    radiance * scene.num_lights() as f64
+    radiance * scene.num_lights() as Float
 }

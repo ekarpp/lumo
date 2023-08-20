@@ -6,13 +6,13 @@ mod disk_tests;
 /// A two dimensional disk
 pub struct Disk {
     /// Origin of the disk
-    origin: DVec3,
+    origin: Point,
     /// Normal direction of the disk
-    normal: DVec3,
+    normal: Normal,
     /// Radius of the disk
-    radius: f64,
+    radius: Float,
     /// `p.dot(-norm)`, used to determine if ray hits the plane of the disk
-    d: EFloat64,
+    d: EFloat,
     /// Material of the disk
     material: Material,
     /// ONB for normal, used for sampling points on the disk
@@ -21,12 +21,17 @@ pub struct Disk {
 
 impl Disk {
     /// Creates a disk of `radius` at `origin` with normal towards `normal_dir`
-    pub fn new(origin: DVec3, normal_dir: DVec3, radius: f64, material: Material) -> Box<Self> {
+    pub fn new(
+        origin: Point,
+        normal_dir: Direction,
+        radius: Float,
+        material: Material
+    ) -> Box<Self> {
         assert!(normal_dir.dot(normal_dir) != 0.0);
         let normal = normal_dir.normalize();
-        let nx = EFloat64::from(normal.x); let ny = EFloat64::from(normal.y);
-        let nz = EFloat64::from(normal.z); let ox = EFloat64::from(origin.x);
-        let oy = EFloat64::from(origin.y); let oz = EFloat64::from(origin.z);
+        let nx = EFloat::from(normal.x); let ny = EFloat::from(normal.y);
+        let nz = EFloat::from(normal.z); let ox = EFloat::from(origin.x);
+        let oy = EFloat::from(origin.y); let oz = EFloat::from(origin.z);
 
         // origin.dot(-normal)
         let d = ox * (-nx) + oy * (-ny) + oz * (-nz);
@@ -43,22 +48,22 @@ impl Disk {
 }
 
 impl Object for Disk {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         let xo = r.origin;
         let wi = r.dir;
 
         // co planar to disk
-        if self.normal.dot(wi).abs() < EPSILON {
+        if self.normal.dot(wi).abs() < crate::EPSILON {
             return None;
         }
 
-        let dx = EFloat64::from(wi.x); let dy = EFloat64::from(wi.y);
-        let dz = EFloat64::from(wi.z); let ox = EFloat64::from(xo.x);
-        let oy = EFloat64::from(xo.y); let oz = EFloat64::from(xo.z);
+        let dx = EFloat::from(wi.x); let dy = EFloat::from(wi.y);
+        let dz = EFloat::from(wi.z); let ox = EFloat::from(xo.x);
+        let oy = EFloat::from(xo.y); let oz = EFloat::from(xo.z);
 
-        let nx = EFloat64::from(self.normal.x);
-        let ny = EFloat64::from(self.normal.y);
-        let nz = EFloat64::from(self.normal.z);
+        let nx = EFloat::from(self.normal.x);
+        let ny = EFloat::from(self.normal.y);
+        let nz = EFloat::from(self.normal.z);
 
         let t = -(self.d + nx * ox + ny * oy + nz * oz)
             / (nx * dx + ny * dy + nz * dz);
@@ -72,7 +77,7 @@ impl Object for Disk {
         if xi.distance_squared(self.origin) > self.radius * self.radius {
             None
         } else {
-            let err = DVec3::new(
+            let err = Vec3::new(
                 (ox + dx * t).abs_error(),
                 (oy + dy * t).abs_error(),
                 (oz + dz * t).abs_error(),
@@ -81,7 +86,7 @@ impl Object for Disk {
             let xi_local = (xi - self.origin) / self.radius;
             let u = self.uvw.u.dot(xi_local);
             let v = self.uvw.v.dot(xi_local);
-            let uv = (DVec2::new(u, v) + DVec2::ONE) / 2.0;
+            let uv = (Vec2::new(u, v) + Vec2::ONE) / 2.0;
             Hit::new(
                 t.value,
                 &self.material,
@@ -97,14 +102,14 @@ impl Object for Disk {
 }
 
 impl Sampleable for Disk {
-    fn area(&self) -> f64 {
-        PI * self.radius * self.radius
+    fn area(&self) -> Float {
+        crate::PI * self.radius * self.radius
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+    fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let rand_disk = rand_utils::square_to_disk(rand_sq);
 
-        let xo = self.origin + self.uvw.to_world(DVec3::new(
+        let xo = self.origin + self.uvw.to_world(Point::new(
             rand_disk.x * self.radius,
             rand_disk.y * self.radius,
             0.0,
@@ -115,23 +120,23 @@ impl Sampleable for Disk {
             &self.material,
             -self.normal,
             xo,
-            DVec3::ZERO,
+            Vec3::ZERO,
             self.normal,
             self.normal,
-            DVec2::ZERO,
+            Vec2::ZERO,
         ).unwrap()
     }
 
-    fn sample_towards(&self, xo: DVec3, rand_sq: DVec2) -> DVec3 {
+    fn sample_towards(&self, xo: Point, rand_sq: Vec2) -> Direction {
         let xi = self.sample_on(rand_sq).p;
         xi - xo
     }
 
-    fn sample_towards_pdf(&self, ri: &Ray) -> (f64, Option<Hit>) {
-        match self.hit(ri, 0.0, INFINITY) {
+    fn sample_towards_pdf(&self, ri: &Ray) -> (Float, Option<Hit>) {
+        match self.hit(ri, 0.0, crate::INF) {
             None => (0.0, None),
             Some(hi) => {
-                let p = 1.0 / (PI * self.radius * self.radius);
+                let p = 1.0 / (crate::PI * self.radius * self.radius);
 
                 (p, Some(hi))
             }

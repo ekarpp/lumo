@@ -13,7 +13,7 @@ pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vert
 /// Generates a ray path strating from a light
 pub fn light_path(scene: &Scene) -> Vec<Vertex> {
     let light = scene.uniform_random_light();
-    let pdf_light = 1.0 / scene.num_lights() as f64;
+    let pdf_light = 1.0 / scene.num_lights() as Float;
     let (ro, ho) = light.sample_leaving(
         rand_utils::unit_square(),
         rand_utils::unit_square()
@@ -36,7 +36,7 @@ fn walk<'a>(
     mut ro: Ray,
     root: Vertex<'a>,
     mut gathered: Color,
-    pdf_dir: f64,
+    pdf_dir: Float,
     mode: Transport,
 ) -> Vec<Vertex<'a>> {
     let mut depth = 0;
@@ -116,7 +116,7 @@ fn walk<'a>(
                         if depth > 3 {
                             let luminance = gathered.luminance();
                             let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_f64() < rr_prob {
+                            if rand_utils::rand_float() < rr_prob {
                                 break;
                             }
 

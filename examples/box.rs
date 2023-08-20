@@ -1,4 +1,3 @@
-use glam::DVec3;
 use lumo::tracer::*;
 use lumo::*;
 
@@ -14,7 +13,7 @@ fn main() -> Result<(), std::io::Error> {
     );
 
     scene.add(Sphere::new(
-        DVec3::new(-0.45, -0.5, -1.5),
+        Vec3::new(-0.45, -0.5, -1.5),
         0.25,
         Material::metallic(
             Texture::Solid(Color::WHITE),
@@ -23,7 +22,7 @@ fn main() -> Result<(), std::io::Error> {
     ));
 
     scene.add(Sphere::new(
-        DVec3::new(0.45, -0.5, -1.3),
+        Vec3::new(0.45, -0.5, -1.3),
         0.25,
         Material::transparent(
             Texture::Solid(Color::WHITE),

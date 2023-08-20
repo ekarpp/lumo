@@ -10,6 +10,9 @@ keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
 
+[features]
+double = []
+
 [profile.release]
 codegen-units = 1
 lto = true
@@ -30,6 +33,7 @@ debug = true
 
 [dependencies]
 argh = "0.1.10"
+cfg-if = "1.0.0"
 glam = "0.23.0"
 itertools = "0.10.5"
 png = "0.17.7"

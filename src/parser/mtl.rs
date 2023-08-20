@@ -10,11 +10,11 @@ pub struct MtlConfig {
     /// Emittance of the material. If not zero vector, then createas a light
     pub emission_color: Color,
     /// How much each light channel passes on transmission. Unused ATM
-    pub transmission_filter: DVec3,
+    pub transmission_filter: Vec3,
     /// Refraction index of the material
-    pub refraction_idx: f64,
+    pub refraction_idx: Float,
     /// Roughness of the material
-    pub roughness: f64,
+    pub roughness: Float,
     /// Illumination model, see docs.
     /// If 6 or 7 makes transparent, if 5 makes metal, otherwise unused.
     pub illumination_model: usize,
@@ -26,7 +26,7 @@ impl Default for MtlConfig {
             diffuse_color: Color::BLACK,
             specular_color: Color::BLACK,
             emission_color: Color::BLACK,
-            transmission_filter: DVec3::ZERO,
+            transmission_filter: Vec3::ZERO,
             refraction_idx: 1.5,
             roughness: 1.0,
             illumination_model: 0,

@@ -1,10 +1,9 @@
-use crate::{Normal, Point, Direction, Float, rand_utils};
+use crate::{Point, Direction, Float, Vec2, rand_utils};
 use crate::tracer::film::FilmSample;
 use crate::tracer::ray::Ray;
 use crate::tracer::onb::Onb;
 use crate::tracer::Color;
-use glam::{DVec2, DVec3, IVec2};
-use std::f64::consts::PI;
+use glam::IVec2;
 
 /// Common configuration for cameras
 pub struct CameraConfig {
@@ -186,8 +185,12 @@ impl Camera {
     }
 
     /// Generates a ray given a point in raster space `\[0,width\] x \[0,height\]`
-    pub fn generate_ray(&self, raster_xy: DVec2) -> Ray {
-        let resolution = self.get_resolution().as_dvec2();
+    pub fn generate_ray(&self, raster_xy: Vec2) -> Ray {
+        let resolution = self.get_resolution();
+        let resolution = Vec2::new(
+            resolution.x as Float,
+            resolution.y as Float,
+        );
         let min_res = resolution.min_element();
         // raster to screen here
         let screen_xy = (2.0 * raster_xy - resolution) / min_res;
@@ -211,7 +214,7 @@ impl Camera {
     }
 
     /// Samples a ray leaving from the lens of the camera towards `xi`
-    pub fn sample_towards(&self, xi: Point, rand_sq: DVec2) -> Ray {
+    pub fn sample_towards(&self, xi: Point, rand_sq: Vec2) -> Ray {
         let cfg = self.get_cfg();
         let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
             * cfg.lens_radius;
@@ -232,7 +235,7 @@ impl Camera {
         let lens_area = if cfg.lens_radius == 0.0 {
             1.0
         } else {
-            cfg.lens_radius * cfg.lens_radius * PI
+            cfg.lens_radius * cfg.lens_radius * crate::PI
         };
 
         let pdf = xi.distance_squared(xo) / (ng.dot(wi) * lens_area);
@@ -249,7 +252,11 @@ impl Camera {
             0.0
         } else {
             let area_coeff = {
-                let res = self.get_resolution().as_dvec2();
+                let res = self.get_resolution();
+                let res = Vec2::new(
+                    res.x as Float,
+                    res.y as Float,
+                );
                 let min_res = res.min_element();
                 let screen_bounds = res / min_res;
                 screen_bounds.x * screen_bounds.y
@@ -281,7 +288,11 @@ impl Camera {
                     cfg.focal_length / cos_theta
                 };
 
-                let resolution = self.get_resolution().as_dvec2();
+                let resolution = self.get_resolution();
+                let resolution = Vec2::new(
+                    resolution.x as Float,
+                    resolution.y as Float,
+                );
                 let min_res = resolution.min_element();
 
                 let focus = ro.at(fl);

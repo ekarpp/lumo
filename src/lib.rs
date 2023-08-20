@@ -1,9 +1,6 @@
 //! Just a path tracer :)
 #![warn(missing_docs)]
 
-/// Epsilon to avoid self intersection of objects
-const EPSILON: f64 = 1e-10;
-
 pub use cli::TracerCli;
 pub use image::Image;
 pub use perlin::Perlin;
@@ -17,7 +14,7 @@ pub mod tracer;
 
 /// Command line interface
 mod cli;
-/// `f64` with built in tracking of floating point error
+/// `Float` with built in tracking of floating point error
 mod efloat;
 /// Wrapper for writing image buffer to file.
 mod image;
@@ -32,11 +29,36 @@ mod samplers;
 /// Tone mapping functions
 mod tone_mapping;
 
-type Transform = glam::DAffine3;
-type Normal = glam::DVec3;
-type Direction = Normal;
-type Point = Direction;
-type Float = f64;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "double")] {
+        type Transform = glam::DAffine3;
+        type Vec2 = glam::DVec2;
+        pub type Mat3 = glam::DMat3;
+        pub type Vec3 = glam::DVec3;
+        pub type Float = f64;
+
+        pub const PI: Float = std::f64::consts::PI;
+        const INF: Float = f64::INFINITY;
+        const NEG_INF: Float = f64::NEG_INFINITY;
+        const EPSILON: Float = 1e-10;
+    } else {
+        type Transform = glam::Affine3A;
+        type Vec2 = glam::Vec2;
+        pub type Mat3 = glam::Mat3;
+        pub type Vec3 = glam::Vec3;
+        pub type Float = f32;
+
+        pub const PI: Float = std::f32::consts::PI;
+        const INF: Float = f32::INFINITY;
+        const NEG_INF: Float = f32::NEG_INFINITY;
+        const EPSILON: Float = 1e-6;
+    }
+}
+
+type Normal = Vec3;
+type Direction = Vec3;
+type Point = Vec3;
+
 
 /// Enum to determine from which direction we are tracing rays
 #[derive(Copy, Clone)]

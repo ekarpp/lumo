@@ -1,8 +1,6 @@
-use glam::{DVec2, DVec3};
-use std::f64::consts::PI;
 use crate::tracer::onb::Onb;
 use crate::tracer::color::Color;
-use crate::{Point, Normal, Direction, Float};
+use crate::{Normal, Direction, Float, Vec2};
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
@@ -37,7 +35,7 @@ impl MicrofacetConfig {
     }
 }
 
-/// Defines a distribution of normals for a microfacet. `f64` parameter is the
+/// Defines a distribution of normals for a microfacet. `Float` parameter is the
 /// roughness (α) of the surface.
 #[derive(Copy, Clone)]
 pub enum MfDistribution {
@@ -129,7 +127,7 @@ impl MfDistribution {
                     let roughness2 = cfg.roughness * cfg.roughness;
 
                     roughness2
-                        / (PI * (1.0 - cos2_theta * (1.0 - roughness2)).powi(2))
+                        / (crate::PI * (1.0 - cos2_theta * (1.0 - roughness2)).powi(2))
                 }
             }
             Self::Beckmann(cfg) => {
@@ -142,7 +140,7 @@ impl MfDistribution {
                     let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
 
                     (-tan2_theta / roughness2).exp()
-                        / (PI * roughness2 * cos2_theta.powi(2))
+                        / (crate::PI * roughness2 * cos2_theta.powi(2))
                 }
             }
         }
@@ -250,7 +248,7 @@ impl MfDistribution {
 
     /// Sampling microfacet normals per distribution for importance sampling.
     /// `v` in shading space.
-    pub fn sample_normal(&self, v: Direction, rand_sq: DVec2) -> DVec3 {
+    pub fn sample_normal(&self, v: Direction, rand_sq: Vec2) -> Normal {
         match self {
             Self::Ggx(cfg) => {
                 // Heitz 2018 or
@@ -271,9 +269,9 @@ impl MfDistribution {
                 let a = 1.0 / (1.0 + v_stretch.z);
                 let r = rand_sq.x.sqrt();
                 let phi = if rand_sq.y < a {
-                    PI * rand_sq.y / a
+                    crate::PI * rand_sq.y / a
                 } else {
-                    PI + PI * (rand_sq.y - a) / (1.0 - a)
+                    crate::PI + crate::PI * (rand_sq.y - a) / (1.0 - a)
                 };
 
                 let x = r * phi.cos();
@@ -301,7 +299,7 @@ impl MfDistribution {
             Self::Beckmann(cfg) => {
                 let roughness2 = cfg.roughness * cfg.roughness;
                 let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
-                let phi = 2.0 * PI * rand_sq.x;
+                let phi = 2.0 * crate::PI * rand_sq.x;
 
                 Normal::new(
                     theta.sin() * phi.cos(),
