@@ -163,7 +163,7 @@ impl<'a> Vertex<'a> {
     }
 
     pub fn pdf_light_leaving(&self, next: &Vertex) -> Float {
-        if let Some(ref light) = self.h.light {
+        if let Some(light) = self.h.light {
             let xo = self.h.p;
             let xi = next.h.p;
             let wi = xi - xo;
