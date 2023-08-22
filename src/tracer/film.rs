@@ -1,5 +1,6 @@
 use crate::tracer::{filter::Filter, Color};
 use crate::{Float, Vec2};
+use glam::IVec2;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
 use std::fs::File;
 use std::io::BufWriter;
@@ -34,10 +35,21 @@ impl FilmSample {
     }
 }
 
+#[derive(Clone)]
+struct Pixel {
+    pub color: Color,
+    pub filter_weight_sum: Float,
+}
+
+impl Default for Pixel {
+    fn default() -> Self {
+        Pixel { color: Color::BLACK, filter_weight_sum: 0.0 }
+    }
+}
+
 /// Film that contains the image being rendered
 pub struct Film {
-    samples: Vec<Color>,
-    num_samples: Vec<u32>,
+    samples: Vec<Pixel>,
     filter: Box<dyn Filter>,
     /// Width of the image
     pub width: i32,
@@ -50,8 +62,7 @@ impl Film {
     pub fn new(width: i32, height: i32, filter: Box<dyn Filter>) -> Self {
         let n = width * height;
         Self {
-            samples: vec![Color::BLACK; n as usize],
-            num_samples: vec![0; n as usize],
+            samples: vec![Pixel::default(); n as usize],
             filter,
             width,
             height,
@@ -61,14 +72,28 @@ impl Film {
     /// Adds a sample to the film
     pub fn add_sample(&mut self, sample: FilmSample) {
         let raster = sample.raster_xy.floor().as_ivec2();
-        if !(0..self.width).contains(&raster.x)
-            || !(0..self.height).contains(&raster.y) {
+        if !(0..self.width).contains(&raster.x) || !(0..self.height).contains(&raster.y) {
             return;
         }
-        let idx = (raster.x + self.width * raster.y) as usize;
-        self.samples[idx] += sample.color;
-        if !sample.splat {
-            self.num_samples[idx] += 1;
+
+        let px = sample.raster_xy - 0.5;
+        let p0 = (px - self.filter.radius()).ceil()
+            .as_ivec2().max(IVec2::ZERO);
+        let p1 = ((px + self.filter.radius()).floor()
+            .as_ivec2() + 1).min(IVec2::new(self.width, self.height));
+
+        for y in p0.y..p1.y {
+            for x in p0.x..p1.x {
+                let idx = (x + self.width * y) as usize;
+                if sample.splat {
+                    self.samples[idx].color += sample.color;
+                } else {
+                    let pn = Vec2::new(x as Float, y as Float);
+                    let weight = self.filter.eval(pn - px);
+                    self.samples[idx].filter_weight_sum += weight;
+                    self.samples[idx].color += sample.color * weight;
+                }
+            }
         }
     }
 
@@ -85,7 +110,8 @@ impl Film {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx] / self.num_samples[idx] as Float;
+                let px = self.samples[idx].color
+                    / self.samples[idx].filter_weight_sum;
                 let (r, g, b) = px.gamma_enc();
                 img.push(r);
                 img.push(g);
