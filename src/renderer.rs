@@ -86,7 +86,7 @@ impl Renderer {
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
-            Box::new(BoxFilter::new()),
+            Box::new(BoxFilter::new(1)),
         );
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());

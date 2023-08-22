@@ -80,7 +80,7 @@ impl Film {
         let p0 = (px - self.filter.radius()).ceil()
             .as_ivec2().max(IVec2::ZERO);
         let p1 = ((px + self.filter.radius()).floor()
-            .as_ivec2() + 1).min(IVec2::new(self.width, self.height));
+            .as_ivec2()).min(IVec2::new(self.width, self.height));
 
         for y in p0.y..p1.y {
             for x in p0.x..p1.x {
