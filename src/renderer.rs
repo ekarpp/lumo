@@ -91,14 +91,14 @@ impl Renderer {
     /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_samples(&self, x: i32, y: i32) -> Vec<FilmSample> {
         let xy = Vec2::new(x as Float, y as Float);
-
         PxSampler::new(self.num_samples)
             .flat_map(|rand_sq: Vec2| {
+                let raster_xy = xy + rand_sq;
                 self.integrator.integrate(
                     &self.scene,
                     &self.camera,
-                    x, y,
-                    self.camera.generate_ray(xy + rand_sq)
+                    raster_xy,
+                    self.camera.generate_ray(raster_xy),
                 )
             })
             .map(|mut sample: FilmSample| {

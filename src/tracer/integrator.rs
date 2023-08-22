@@ -38,11 +38,11 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, c: &Camera, x: i32, y: i32, r: Ray) -> Vec<FilmSample> {
+    pub fn integrate(&self, s: &Scene, c: &Camera, raster_xy: Vec2, r: Ray) -> Vec<FilmSample> {
         match self {
-            Self::PathTrace => vec![path_trace::integrate(s, r, x, y)],
-            Self::DirectLight => vec![direct_light::integrate(s, r, x, y)],
-            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, x, y),
+            Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
+            Self::DirectLight => vec![direct_light::integrate(s, r, raster_xy)],
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
         }
     }
 }

@@ -14,7 +14,7 @@ mod path_gen;
 /// Multiple improtance sampling weights
 mod mis;
 
-pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
+pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);
     let camera_path = path_gen::camera_path(scene, camera, r);
 
@@ -37,7 +37,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
         }
     }
 
-    samples.push(FilmSample::new(radiance, x, y, false));
+    samples.push(FilmSample::new(radiance, raster_xy, false));
     samples
 }
 

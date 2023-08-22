@@ -37,3 +37,5 @@ mod ray;
 mod scene;
 /// Textures that can be given to some materials
 mod texture;
+/// Filters for film samples
+mod filter;

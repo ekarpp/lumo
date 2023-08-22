@@ -297,10 +297,9 @@ impl Camera {
 
                 let focus = ro.at(fl);
                 let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
-                let raster_xy = (focus_local.truncate() * min_res + resolution)
-                    .as_ivec2() / 2;
+                let raster_xy = (focus_local.truncate() * min_res + resolution) / 2.0;
 
-                FilmSample::new(color, raster_xy.x, raster_xy.y, true)
+                FilmSample::new(color, raster_xy, true)
             }
         }
     }

@@ -1,5 +1,5 @@
-use crate::tracer::Color;
-use crate::{Float};
+use crate::tracer::{filter::Filter, Color};
+use crate::{Float, Vec2};
 use png::{BitDepth, ColorType, Encoder, EncodingError};
 use std::fs::File;
 use std::io::BufWriter;
@@ -8,9 +8,7 @@ use std::path::Path;
 /// Sample for the film
 pub struct FilmSample {
     /// Raster coordinate `x` of the sample
-    pub x: i32,
-    /// Raster coordinate `y` of the sample
-    pub y: i32,
+    pub raster_xy: Vec2,
     /// Color of the sample
     pub color: Color,
     /// "Splat" sample i.e. from sampling camera
@@ -20,8 +18,7 @@ pub struct FilmSample {
 impl Default for FilmSample {
     fn default() -> Self {
         Self {
-            x: -1,
-            y: -1,
+            raster_xy: Vec2::NEG_ONE,
             color: Color::BLACK,
             splat: true,
         }
@@ -30,9 +27,9 @@ impl Default for FilmSample {
 
 impl FilmSample {
     /// Creates a sample of `color` at raster `(x,y)`
-    pub fn new(color: Color, x: i32, y: i32, splat: bool) -> Self {
+    pub fn new(color: Color, raster_xy: Vec2, splat: bool) -> Self {
         Self {
-            x, y, color, splat,
+            raster_xy, color, splat,
         }
     }
 }
@@ -61,11 +58,12 @@ impl Film {
 
     /// Adds a sample to the film
     pub fn add_sample(&mut self, sample: FilmSample) {
-        if !(0..self.width).contains(&sample.x)
-            || !(0..self.height).contains(&sample.y) {
+        let raster = sample.raster_xy.floor().as_ivec2();
+        if !(0..self.width).contains(&raster.x)
+            || !(0..self.height).contains(&raster.y) {
             return;
         }
-        let idx = (sample.x + self.width * sample.y) as usize;
+        let idx = (raster.x + self.width * raster.y) as usize;
         self.samples[idx] += sample.color;
         if !sample.splat {
             self.num_samples[idx] += 1;

@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
+pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
     let mut last_specular = true;
     let mut radiance = Color::BLACK;
     let mut gathered = Color::WHITE;
@@ -75,5 +75,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
         }
     }
 
-    FilmSample::new(radiance, x, y, false)
+    FilmSample::new(radiance, raster_xy, false)
 }
