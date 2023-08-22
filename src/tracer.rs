@@ -8,7 +8,7 @@ pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
 pub use object::{Sampleable, Medium, TriangleMesh, Face, Mesh};
 pub use scene::Scene;
 pub use texture::Texture;
-pub use filter::BoxFilter;
+pub use filter::{TriangleFilter, BoxFilter};
 
 /// Different BSDFs.
 mod bxdfs;
