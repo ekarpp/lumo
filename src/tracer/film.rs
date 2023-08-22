@@ -38,6 +38,7 @@ impl FilmSample {
 pub struct Film {
     samples: Vec<Color>,
     num_samples: Vec<u32>,
+    filter: Box<dyn Filter>,
     /// Width of the image
     pub width: i32,
     /// Height of the image
@@ -46,11 +47,12 @@ pub struct Film {
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new(width: i32, height: i32, filter: Box<dyn Filter>) -> Self {
         let n = width * height;
         Self {
             samples: vec![Color::BLACK; n as usize],
             num_samples: vec![0; n as usize],
+            filter,
             width,
             height,
         }

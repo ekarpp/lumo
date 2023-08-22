@@ -6,6 +6,7 @@ use crate::tracer::Film;
 use crate::tracer::FilmSample;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
+use crate::tracer::BoxFilter;
 use glam::IVec2;
 use crate::{Vec2, Float};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -82,7 +83,11 @@ impl Renderer {
             .flatten_iter()
             .collect();
 
-        let mut film = Film::new(self.resolution.x, self.resolution.y);
+        let mut film = Film::new(
+            self.resolution.x,
+            self.resolution.y,
+            Box::new(BoxFilter::new()),
+        );
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
         film
