@@ -1,6 +1,5 @@
 use crate::tracer::{filter::Filter, Color};
 use crate::{Float, Vec2};
-use glam::IVec2;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
 use std::fs::File;
 use std::io::BufWriter;
@@ -50,7 +49,7 @@ impl Default for Pixel {
 /// Film that contains the image being rendered
 pub struct Film {
     samples: Vec<Pixel>,
-    filter: Box<dyn Filter>,
+    filter: Filter,
     /// Width of the image
     pub width: i32,
     /// Height of the image
@@ -59,7 +58,7 @@ pub struct Film {
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32, filter: Box<dyn Filter>) -> Self {
+    pub fn new(width: i32, height: i32, filter: Filter) -> Self {
         let n = width * height;
         Self {
             samples: vec![Pixel::default(); n as usize],
@@ -76,24 +75,15 @@ impl Film {
             return;
         }
 
-        let px = sample.raster_xy - 0.5;
-        let p0 = (px - self.filter.radius()).ceil()
-            .as_ivec2().max(IVec2::ZERO);
-        let p1 = ((px + self.filter.radius()).floor()
-            .as_ivec2() + 1).min(IVec2::new(self.width, self.height));
-
-        for y in p0.y..p1.y {
-            for x in p0.x..p1.x {
-                let idx = (x + self.width * y) as usize;
-                if sample.splat {
-                    self.samples[idx].color += sample.color;
-                } else {
-                    let pn = Vec2::new(x as Float, y as Float);
-                    let weight = self.filter.eval(pn - px);
-                    self.samples[idx].filter_weight_sum += weight;
-                    self.samples[idx].color += sample.color * weight;
-                }
-            }
+        let idx = (raster.x + self.width * raster.y) as usize;
+        if sample.splat {
+            self.samples[idx].color += sample.color;
+        } else {
+            let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
+            let offset = mid - sample.raster_xy;
+            let weight = self.filter.eval(2.0 * offset);
+            self.samples[idx].filter_weight_sum += weight;
+            self.samples[idx].color += sample.color * weight;
         }
     }
 
