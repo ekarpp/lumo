@@ -42,3 +42,34 @@ impl Filter for TriangleFilter {
         offset.x * offset.y
     }
 }
+
+/// Gaussian filter
+pub struct GaussianFilter {
+    radius: Float,
+    alpha: Float,
+    exp: Float,
+}
+
+impl GaussianFilter {
+    /// New Gaussian filter with `radius` and falloff coefficient `alpha`
+    pub fn new(radius: i32, alpha: Float) -> Self {
+        let radius = radius as Float;
+        let exp = (-alpha * radius * radius).exp();
+        Self {
+            radius,
+            alpha,
+            exp,
+        }
+    }
+
+    fn gaussian(&self, x: Float) -> Float {
+        ((-self.alpha * x * x).exp() - self.exp).max(0.0)
+    }
+}
+
+impl Filter for GaussianFilter {
+    fn radius(&self) -> Float { self.radius }
+    fn eval(&self, px: Vec2) -> Float {
+        self.gaussian(px.x) * self.gaussian(px.y)
+    }
+}

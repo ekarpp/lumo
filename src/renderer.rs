@@ -6,7 +6,7 @@ use crate::tracer::Film;
 use crate::tracer::FilmSample;
 use crate::tracer::Integrator;
 use crate::tracer::Scene;
-use crate::tracer::{TriangleFilter, BoxFilter};
+use crate::tracer::{TriangleFilter, GaussianFilter, BoxFilter};
 use glam::IVec2;
 use crate::{Vec2, Float};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -86,7 +86,8 @@ impl Renderer {
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
-            Box::new(TriangleFilter::new(1)),
+            Box::new(BoxFilter::new(1)),
+            //Box::new(GaussianFilter::new(1, 50.0)),
         );
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
