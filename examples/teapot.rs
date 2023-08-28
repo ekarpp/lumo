@@ -15,13 +15,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(
         parser::mesh_from_url(
             TEAPOT_URL,
-            Material::diffuse(
-                Texture::Marble(Perlin::default(), Color::WHITE)
+            Material::transparent(
+                Texture::Marble(Perlin::default(), Color::new(255, 245, 255)),
+                0.0,
+                1.5,
             ),
         )?
-        .to_unit_size()
-        .to_origin()
-        .translate(0.0, -0.25, -1.5),
+            .to_unit_size()
+            .to_origin()
+            .rotate_y(PI / 4.0)
+            .translate(-0.3, -0.5, -1.3),
     );
 
     let renderer = Renderer::new(scene, camera);
