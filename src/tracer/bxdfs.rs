@@ -1,10 +1,12 @@
-use crate::Transport;
-use crate::tracer::color::Color;
-use crate::tracer::hit::Hit;
-use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
-use crate::tracer::ray::Ray;
-use crate::{Direction, Normal, Float};
+use crate::{Direction, Normal, Float, Transport};
+use crate::tracer::{
+    color::Color, hit::Hit, ray::Ray,
+    microfacet::MfDistribution,
+    pdfs::{
+        DeltaPdf, MfdPdf,
+        Pdf, VolumetricPdf
+    }
+};
 
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 ///

@@ -1,14 +1,12 @@
-use crate::cli::TracerCli;
-use crate::samplers::JitteredSampler;
-use crate::tone_mapping::ToneMap;
-use crate::tracer::Camera;
-use crate::tracer::Film;
-use crate::tracer::FilmSample;
-use crate::tracer::Integrator;
-use crate::tracer::Scene;
-use crate::tracer::Filter;
+use crate::{
+    Vec2, Float, TracerCli,
+    samplers::JitteredSampler, ToneMap
+};
+use crate::tracer::{
+    Camera, Film, FilmSample,
+    Integrator, Scene, Filter
+};
 use glam::IVec2;
-use crate::{Vec2, Float};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::time::Instant;
 

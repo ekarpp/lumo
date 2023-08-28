@@ -1,11 +1,9 @@
-use crate::{Normal, Direction, Transport, Float, Vec3};
-use crate::tracer::bxdfs;
-use crate::tracer::color::Color;
-use crate::tracer::hit::Hit;
-use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{Pdf, CosPdf};
-use crate::tracer::ray::Ray;
-use crate::tracer::texture::Texture;
+use crate::{ Normal, Direction, Transport, Float, Vec3 };
+use crate::tracer::{
+    bxdfs, Color, hit::Hit, ray::Ray,
+    microfacet::MfDistribution,
+    texture::Texture, pdfs::{Pdf, CosPdf}
+};
 
 /// Describes which material an object is made out of
 pub enum Material {

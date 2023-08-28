@@ -1,4 +1,4 @@
-use crate::{Axis, Direction, Point, Float, Transform};
+use crate::{ Axis, Direction, Point, Float, Transform };
 
 /// Ray abstraction
 pub struct Ray {

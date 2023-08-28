@@ -1,12 +1,12 @@
-use crate::{Transport, rand_utils, Vec2, Float, Normal, Point, Direction, Vec3};
-use crate::tracer::camera::Camera;
-use crate::tracer::film::FilmSample;
-use crate::tracer::hit::Hit;
-use crate::tracer::object::Sampleable;
-use crate::tracer::pdfs::{ObjectPdf, Pdf};
-use crate::tracer::ray::Ray;
-use crate::tracer::scene::Scene;
-use crate::tracer::Color;
+use crate::{
+    Transport, rand_utils, Vec2, Float,
+    Normal, Point, Direction, Vec3
+};
+use crate::tracer::{
+    camera::Camera, film::FilmSample, hit::Hit,
+    object::Sampleable, pdfs::{ObjectPdf, Pdf},
+    ray::Ray, scene::Scene, Color
+};
 use std::fmt;
 
 mod bd_path_trace;

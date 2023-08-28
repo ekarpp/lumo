@@ -1,9 +1,14 @@
 use crate::{Vec2, Vec3, Image, Float, Normal, Point};
-use crate::tracer::{Scene, Material, Texture, TriangleMesh, Face, Mesh};
+use crate::tracer::{
+    Scene, Material, Texture,
+    TriangleMesh, Face, Mesh
+};
 use std::fs::File;
 use std::sync::Arc;
-use std::io::{self, BufRead, BufReader, Result};
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::{
+    self, BufRead, BufReader, Result,
+    Cursor, Read, Seek, Write
+};
 use std::collections::HashMap;
 use zip::ZipArchive;
 use regex::Regex;

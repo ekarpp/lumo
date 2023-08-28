@@ -1,6 +1,6 @@
 use super::*;
-use crate::{Mat3, Point};
-use crate::tracer::color::Color;
+use crate::{ Mat3, Point };
+use crate::tracer::Color;
 
 impl Scene {
     const LIGHT_EPS: crate::Float = 0.01;

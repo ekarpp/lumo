@@ -1,4 +1,3 @@
-#![allow(warnings)]
 use super::*;
 
 // this could use the scoped assignment from PBRT...

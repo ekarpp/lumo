@@ -1,10 +1,12 @@
-use crate::rand_utils;
-use crate::{Axis, efloat::{self, EFloat}};
-use crate::{Point, Normal, Direction, Float, Vec3, Vec2, Transform, Mat3};
-use crate::tracer::hit::Hit;
-use crate::tracer::material::Material;
-use crate::tracer::onb::Onb;
-use crate::tracer::ray::Ray;
+use crate::{
+    rand_utils, Axis, efloat::{self, EFloat},
+    Point, Normal, Direction, Float,
+    Vec3, Vec2, Transform, Mat3
+};
+use crate::tracer::{
+    hit::Hit, material::Material,
+    onb::Onb, ray::Ray
+};
 use std::sync::Arc;
 
 pub use aabb::AaBoundingBox;

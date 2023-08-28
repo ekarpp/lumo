@@ -1,11 +1,11 @@
-use crate::rand_utils;
-use crate::{Normal, Direction, Point, Float, Vec2};
-use crate::tracer::bxdfs;
-use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::object::Sampleable;
-use crate::tracer::onb::Onb;
-use crate::tracer::ray::Ray;
-use crate::tracer::Color;
+use crate::{
+    Normal, Direction, Point,
+    Float, Vec2, rand_utils
+};
+use crate::tracer::{
+    bxdfs, microfacet::MfDistribution, Color,
+    object::Sampleable, onb::Onb, ray::Ray
+};
 
 #[cfg(test)]
 mod pdf_tests;

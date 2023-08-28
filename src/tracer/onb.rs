@@ -1,4 +1,4 @@
-use crate::{Normal, Direction};
+use crate::{ Normal, Direction };
 
 /// Small utility struct for orthonormal basis
 pub struct Onb {

@@ -1,9 +1,9 @@
 use crate::{Point, Direction, Float, Vec2, rand_utils};
-use crate::tracer::film::FilmSample;
-use crate::tracer::ray::Ray;
-use crate::tracer::onb::Onb;
-use crate::tracer::Color;
 use glam::IVec2;
+use crate::tracer::{
+    film::FilmSample, ray::Ray,
+    onb::Onb, Color
+};
 
 /// Common configuration for cameras
 pub struct CameraConfig {

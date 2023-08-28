@@ -1,5 +1,4 @@
-use crate::{Float, Image, Point};
-use crate::perlin::Perlin;
+use crate::{ Float, Image, Point, perlin::Perlin };
 use crate::tracer::{Color, hit::Hit};
 
 /// Scale of points in perlin. bigger = more noticeable effect

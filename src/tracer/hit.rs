@@ -1,7 +1,5 @@
-use crate::{Point, Float, Direction, Normal, efloat, Vec2, Vec3};
-use crate::tracer::material::Material;
-use crate::tracer::object::Sampleable;
-use crate::tracer::ray::Ray;
+use crate::{ Point, Float, Direction, Normal, efloat, Vec2, Vec3 };
+use crate::tracer::{ material::Material, object::Sampleable, ray::Ray };
 
 /// Stores information about a hit between a ray and an object
 pub struct Hit<'a> {

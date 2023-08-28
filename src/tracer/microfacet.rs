@@ -1,6 +1,5 @@
-use crate::tracer::onb::Onb;
-use crate::tracer::color::Color;
-use crate::{Normal, Direction, Float, Vec2};
+use crate::tracer::{ onb::Onb, Color };
+use crate::{ Normal, Direction, Float, Vec2 };
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]

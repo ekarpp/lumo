@@ -1,6 +1,8 @@
-use crate::{Float, rand_utils};
-use crate::tracer::{hit::Hit, ray::Ray, Material, Texture, Color};
-use crate::tracer::{Medium, Object, Rectangle, Sampleable};
+use crate::{ Float, rand_utils };
+use crate::tracer::{
+    hit::Hit, ray::Ray, Material, Texture, Color,
+    Medium, Object, Rectangle, Sampleable
+};
 
 #[cfg(test)]
 mod scene_tests;

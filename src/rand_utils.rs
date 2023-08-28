@@ -1,7 +1,8 @@
 use crate::{Vec2, Vec3, Float};
-use rand::prelude::SliceRandom;
-use rand::rngs::ThreadRng;
-use rand::Rng;
+use rand::{
+    prelude::SliceRandom,
+    rngs::ThreadRng, Rng
+};
 
 type MyRng = ThreadRng;
 fn _get_rng() -> MyRng {

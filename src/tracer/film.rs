@@ -1,9 +1,7 @@
 use crate::tracer::{filter::Filter, Color};
 use crate::{Float, Vec2};
 use png::{BitDepth, ColorType, Encoder, EncodingError};
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
+use std::{fs::File, io::BufWriter, path::Path};
 
 /// Sample for the film
 pub struct FilmSample {
