@@ -86,17 +86,23 @@ fn walk<'a>(
                         let shading_cosine = match mode {
                             Transport::Radiance => material.shading_cosine(wi, ns),
                             Transport::Importance => {
-                                let xp = vertices[prev].h.p;
-                                let v = (xp - xo).normalize();
-                                wi.dot(ng).abs() * material.shading_cosine(v, ns)
-                                    / v.dot(ng).abs()
+                                if ho.is_medium() {
+                                    1.0
+                                } else {
+                                    let xp = vertices[prev].h.p;
+                                    let v = (xp - xo).normalize();
+                                    wi.dot(ng).abs()
+                                        * material.shading_cosine(v, ns)
+                                        / v.dot(ng).abs()
+                                }
                             }
                         };
 
+                        let bsdf = material.bsdf_f(wo, wi, mode, ho);
                         let bsdf = if ho.is_medium() {
-                            Color::WHITE * pdf_fwd
+                            bsdf * pdf_fwd
                         } else {
-                            material.bsdf_f(wo, wi, mode, ho)
+                            bsdf
                         };
 
                         gathered *= bsdf * shading_cosine / pdf_fwd;
