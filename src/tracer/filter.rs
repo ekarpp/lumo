@@ -1,6 +1,7 @@
 use crate::{Vec2, Float};
 
 /// Filters used to construct a pixel from samples
+#[derive(Clone, Copy)]
 pub enum Filter {
     /// Constant box filter
     Box,

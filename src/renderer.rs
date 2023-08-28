@@ -22,6 +22,7 @@ pub struct Renderer {
     num_samples: u32,
     integrator: Integrator,
     tone_map: ToneMap,
+    filter: Filter,
 }
 
 impl Renderer {
@@ -40,6 +41,7 @@ impl Renderer {
             scene,
             camera,
             resolution,
+            filter: Filter::Box,
             num_samples: cli_args.samples,
             integrator: cli_args.get_integrator(),
             tone_map: ToneMap::NoMap,
@@ -49,6 +51,11 @@ impl Renderer {
     /// Sets the tone mapping algorithm used
     pub fn set_tone_map(&mut self, tone_map: ToneMap) {
         self.tone_map = tone_map;
+    }
+
+    /// Sets the pixel filter
+    pub fn set_filter(&mut self, filter: Filter) {
+        self.filter = filter;
     }
 
     /// Sets number of samples per pixel
@@ -86,7 +93,7 @@ impl Renderer {
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
-            Filter::Box,
+            self.filter,
         );
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
