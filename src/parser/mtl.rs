@@ -36,7 +36,7 @@ impl Default for MtlConfig {
 
 impl MtlConfig {
     pub fn build_material(&self) -> Material {
-        if self.emission_color.is_black() {
+        if !self.emission_color.is_black() {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
             let texture = Texture::Solid(self.diffuse_color + self.specular_color);
