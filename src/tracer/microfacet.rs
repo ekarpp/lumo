@@ -113,14 +113,14 @@ impl MfDistribution {
     /// * GGX - α^2 / (π * (cos^4(θ) * (α^2 - 1.0) + 1.0)^2)
     ///
     /// # Arguments
-    /// * `wh` - The half vector of `wo` and `wi`
-    /// * `no` - Surface normal at the point of impact
+    /// * `wh` - Microsurface normal
+    /// * `no` - Macrosurface normal
     pub fn d(&self, wh: Normal, no: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = wh.dot(no).powi(2);
 
-                if cos2_theta == 0.0 {
+                if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
                     let roughness2 = cfg.roughness * cfg.roughness;
@@ -132,7 +132,7 @@ impl MfDistribution {
             Self::Beckmann(cfg) => {
                 let cos2_theta = wh.dot(no).powi(2);
 
-                if cos2_theta == 0.0 {
+                if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
                     let roughness2 = cfg.roughness * cfg.roughness;
@@ -143,22 +143,6 @@ impl MfDistribution {
                 }
             }
         }
-    }
-
-    /// Shadow-masking term. Used to make sure that only microfacets that are
-    /// visible from `wo` direction are considered. Uses the method described
-    /// in Chapter 8.4.3 of PBR due to Heitz et al. 2013.
-    ///
-    /// # Arguments
-    /// * `wo` - Direction of ray towards the point of impact
-    /// * `wi` - Direction of ray away from the point of impact
-    /// * `no` - Surface normal at the point of impact
-    pub fn g(&self, wo: Direction, wi: Direction, no: Normal) -> Float {
-        1.0 / (1.0 + self.lambda(wo, no) + self.lambda(wi, no))
-    }
-
-    pub fn g1(&self, v: Direction, no: Normal) -> Float {
-        1.0 / (1.0 + self.lambda(v, no))
     }
 
     /// Fresnel term with Schlick's approximation
@@ -173,6 +157,28 @@ impl MfDistribution {
         f0 + (Color::WHITE - f0) * (1.0 - wo_dot_wh).powi(5)
     }
 
+    /// Shadow-masking term. Used to make sure that only microfacets that are
+    /// visible from `v` direction are considered. Uses the method described
+    /// in Chapter 8.4.3 of PBR due to Heitz et al. 2013.
+    ///
+    /// # Arguments
+    /// * `v` - View direction
+    /// * `wi` - Direction of ray away from the point of impact
+    /// * `wh` - Microsurface normal
+    /// * `no` - Macrosurface normal
+    pub fn g(&self, v: Direction, wi: Direction, wh: Normal, no: Normal) -> Float {
+        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
+        if chi < crate::EPSILON {
+            0.0
+        } else {
+            1.0 / (1.0 + self.lambda(v, no) + self.lambda(wi, no))
+        }
+    }
+
+    pub fn g1(&self, v: Direction, no: Normal) -> Float {
+        1.0 / (1.0 + self.lambda(v, no))
+    }
+
     /// Lambda function used in the definition of the shadow-masking term.
     /// Beckmann with polynomial approximation and GGX exactly. PBR Chapter 8.4.3
     ///
@@ -183,7 +189,7 @@ impl MfDistribution {
         match self {
             Self::Ggx(cfg) => {
                 let cos2_theta = w.dot(no).powi(2);
-                if cos2_theta == 0.0 {
+                if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
                     let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
@@ -194,7 +200,7 @@ impl MfDistribution {
             }
             Self::Beckmann(cfg) => {
                 let cos2_theta = w.dot(no).powi(2);
-                if cos2_theta == 0.0 {
+                if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
                     let tan2_theta = ((1.0 - cos2_theta) / cos2_theta).abs();

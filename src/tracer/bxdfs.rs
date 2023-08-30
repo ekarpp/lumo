@@ -54,7 +54,7 @@ pub fn bsdf_microfacet(
         } else {
             mfd.f(v, wh, albedo)
         };
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, wh, ns);
 
         // BRDF: specular + diffuse, where
         // specular = D(wh) * F(v, wh) * G(v, wi) / (4.0 * (no • v) * (no • wi))
@@ -95,7 +95,7 @@ pub fn bsdf_microfacet(
 
         let d = mfd.d(wh, ns);
         let f = mfd.f(v, wh, albedo);
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, wh, ns);
 
         // BTDF:
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
