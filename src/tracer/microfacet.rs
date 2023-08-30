@@ -167,6 +167,7 @@ impl MfDistribution {
     /// * `wh` - Microsurface normal
     /// * `no` - Macrosurface normal
     pub fn g(&self, v: Direction, wi: Direction, wh: Normal, no: Normal) -> Float {
+        // signum to fix refraction
         let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
         if chi < crate::EPSILON {
             0.0
