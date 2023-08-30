@@ -176,8 +176,14 @@ impl MfDistribution {
         }
     }
 
-    pub fn g1(&self, v: Direction, no: Normal) -> Float {
-        1.0 / (1.0 + self.lambda(v, no))
+    pub fn g1(&self, v: Direction, wh: Normal, no: Normal) -> Float {
+        // signum to fix refraction
+        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
+        if chi < crate::EPSILON {
+            0.0
+        } else {
+            1.0 / (1.0 + self.lambda(v, no))
+        }
     }
 
     /// Lambda function used in the definition of the shadow-masking term.
@@ -245,7 +251,7 @@ impl MfDistribution {
                 let wh_dot_v = wh.dot(v);
                 let no_dot_v = no.dot(v);
 
-                self.g1(v, no) * self.d(wh, no) * wh_dot_v / no_dot_v
+                self.g1(v, wh, no) * self.d(wh, no) * wh_dot_v / no_dot_v
             }
         };
 
