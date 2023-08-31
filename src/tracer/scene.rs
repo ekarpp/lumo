@@ -1,8 +1,8 @@
-use crate::rand_utils;
-use crate::tracer::{hit::Hit, ray::Ray, Material, Texture};
-use crate::tracer::{Medium, Object, Rectangle, Sampleable};
-use glam::{DMat3, DVec3};
-use std::f64::INFINITY;
+use crate::{ Float, rand_utils };
+use crate::tracer::{
+    hit::Hit, ray::Ray, Material, Texture, Color,
+    Medium, Object, Rectangle, Sampleable
+};
 
 #[cfg(test)]
 mod scene_tests;
@@ -46,22 +46,22 @@ impl Scene {
 
     /// Choose one of the lights uniformly at random. Crash if no lights.
     pub fn uniform_random_light(&self) -> &dyn Sampleable {
-        let rnd = rand_utils::rand_f64();
-        let idx = (rnd * self.lights.len() as f64).floor() as usize;
+        let rnd = rand_utils::rand_float();
+        let idx = (rnd * self.lights.len() as Float).floor() as usize;
         self.lights[idx].as_ref()
     }
 
     /// Returns the transmittance due to volumetric medium
-    pub fn transmittance(&self, h: &Hit) -> DVec3 {
+    pub fn transmittance(&self, h: &Hit) -> Color {
         match &self.medium {
-            None => DVec3::ONE,
+            None => Color::WHITE,
             Some(medium) => medium.transmittance(h),
         }
     }
 
     /// Returns the closest object `r` hits and `None` if no hits
     pub fn hit(&self, r: &Ray) -> Option<Hit> {
-        let mut t_max = INFINITY;
+        let mut t_max = crate::INF;
         let mut h = None;
 
         if let Some(medium) = &self.medium {
@@ -93,7 +93,7 @@ impl Scene {
 
     /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit> {
-        let light_hit = match light.hit(r, 0.0, INFINITY) {
+        let light_hit = match light.hit(r, 0.0, crate::INF) {
             None => return None,
             Some(hi) => hi,
         };

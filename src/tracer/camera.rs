@@ -1,32 +1,32 @@
-use crate::rand_utils;
-use crate::tracer::film::FilmSample;
-use crate::tracer::ray::Ray;
-use crate::tracer::onb::Onb;
-use glam::{DVec2, DVec3, IVec2};
-use std::f64::consts::PI;
+use crate::{Point, Direction, Float, Vec2, rand_utils};
+use glam::IVec2;
+use crate::tracer::{
+    film::FilmSample, ray::Ray,
+    onb::Onb, Color
+};
 
 /// Common configuration for cameras
 pub struct CameraConfig {
     /// Camera position in world space
-    pub origin: DVec3,
+    pub origin: Point,
     /// Basis of camera space
     pub camera_basis: Onb,
     /// Image resolution
     pub resolution: IVec2,
     /// Focal length i.e. distance to focal point behind camera
-    pub focal_length: f64,
+    pub focal_length: Float,
     /// Radius of the camera lens
-    pub lens_radius: f64,
+    pub lens_radius: Float,
 }
 
 impl CameraConfig {
     /// Creates a new config with the given arguments
     pub fn new(
-        origin: DVec3,
-        towards: DVec3,
-        up: DVec3,
-        lens_radius: f64,
-        focal_length: f64,
+        origin: Point,
+        towards: Point,
+        up: Direction,
+        lens_radius: Float,
+        focal_length: Float,
         resolution: (i32, i32)
     ) -> Self {
         assert!(resolution.0 > 0 && resolution.1 > 0);
@@ -55,9 +55,9 @@ impl CameraConfig {
 /// Camera abstraction
 pub enum Camera {
     /// Perspective camera with configurable vertical field-of-view
-    Perspective(CameraConfig, f64),
+    Perspective(CameraConfig, Float),
     /// Orthographic camera that preserves angles with configurable image plane scale
-    Orthographic(CameraConfig, f64),
+    Orthographic(CameraConfig, Float),
 }
 
 impl Camera {
@@ -75,12 +75,12 @@ impl Camera {
     /// * `height` - Height of the rendered image
     #[allow(clippy::too_many_arguments)]
     pub fn orthographic(
-        origin: DVec3,
-        towards: DVec3,
-        up: DVec3,
-        image_plane_scale: f64,
-        lens_radius: f64,
-        focal_length: f64,
+        origin: Point,
+        towards: Point,
+        up: Direction,
+        image_plane_scale: Float,
+        lens_radius: Float,
+        focal_length: Float,
         width: i32,
         height: i32,
     ) -> Self {
@@ -113,12 +113,12 @@ impl Camera {
     /// * `height` - Height of the rendered image
     #[allow(clippy::too_many_arguments)]
     pub fn perspective(
-        origin: DVec3,
-        towards: DVec3,
-        up: DVec3,
-        vfov: f64,
-        lens_radius: f64,
-        focal_length: f64,
+        origin: Point,
+        towards: Point,
+        up: Direction,
+        vfov: Float,
+        lens_radius: Float,
+        focal_length: Float,
         width: i32,
         height: i32,
     ) -> Self {
@@ -141,9 +141,9 @@ impl Camera {
     /// pointing towards `-z` with `y` as up and vfov at 90° with no DOF
     pub fn default(width: i32, height: i32) -> Self {
         Self::perspective(
-            DVec3::ZERO,
-            DVec3::NEG_Z,
-            DVec3::Y,
+            Point::ZERO,
+            Point::NEG_Z,
+            Direction::Y,
             90.0,
             0.0,
             0.0,
@@ -164,7 +164,7 @@ impl Camera {
     }
 
     /// Adds depth of field to camera space ray and transform to world space ray
-    fn add_dof(xo_local: DVec3, wi_local: DVec3, cfg: &CameraConfig) -> Ray {
+    fn add_dof(xo_local: Point, wi_local: Direction, cfg: &CameraConfig) -> Ray {
         let (xo_local, wi_local) = if cfg.lens_radius == 0.0 {
             (xo_local, wi_local)
         } else {
@@ -185,8 +185,12 @@ impl Camera {
     }
 
     /// Generates a ray given a point in raster space `\[0,width\] x \[0,height\]`
-    pub fn generate_ray(&self, raster_xy: DVec2) -> Ray {
-        let resolution = self.get_resolution().as_dvec2();
+    pub fn generate_ray(&self, raster_xy: Vec2) -> Ray {
+        let resolution = self.get_resolution();
+        let resolution = Vec2::new(
+            resolution.x as Float,
+            resolution.y as Float,
+        );
         let min_res = resolution.min_element();
         // raster to screen here
         let screen_xy = (2.0 * raster_xy - resolution) / min_res;
@@ -198,19 +202,19 @@ impl Camera {
                     resolution.y / (min_res * vfov_half.tan())
                 ).normalize();
 
-                Self::add_dof(DVec3::ZERO, wi_local, cfg)
+                Self::add_dof(Point::ZERO, wi_local, cfg)
             }
             Self::Orthographic(cfg, scale) => {
                 let screen_xyz = screen_xy.extend(0.0);
                 let xo_local = *scale * screen_xyz;
 
-                Self::add_dof(xo_local, DVec3::Z, cfg)
+                Self::add_dof(xo_local, Direction::Z, cfg)
             }
         }
     }
 
     /// Samples a ray leaving from the lens of the camera towards `xi`
-    pub fn sample_towards(&self, xi: DVec3, rand_sq: DVec2) -> Ray {
+    pub fn sample_towards(&self, xi: Point, rand_sq: Vec2) -> Ray {
         let cfg = self.get_cfg();
         let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
             * cfg.lens_radius;
@@ -222,16 +226,16 @@ impl Camera {
     }
 
     /// Probability that `ro` towards `xi` got sampled
-    pub fn sample_towards_pdf(&self, ro: &Ray, xi: DVec3) -> f64 {
+    pub fn sample_towards_pdf(&self, ro: &Ray, xi: Point) -> Float {
         let cfg = self.get_cfg();
         let xo = ro.origin;
         let wi = ro.dir;
-        let ng = cfg.camera_basis.to_world(DVec3::Z);
+        let ng = cfg.camera_basis.to_world(Direction::Z);
 
         let lens_area = if cfg.lens_radius == 0.0 {
             1.0
         } else {
-            cfg.lens_radius * cfg.lens_radius * PI
+            cfg.lens_radius * cfg.lens_radius * crate::PI
         };
 
         let pdf = xi.distance_squared(xo) / (ng.dot(wi) * lens_area);
@@ -239,7 +243,7 @@ impl Camera {
     }
 
     /// PDF for `wi` direction.
-    pub fn pdf(&self, wi: DVec3) -> f64 {
+    pub fn pdf(&self, wi: Direction) -> Float {
         let cfg = self.get_cfg();
         let wi_local = cfg.camera_basis.to_local(wi);
         let cos_theta = wi_local.z;
@@ -248,7 +252,11 @@ impl Camera {
             0.0
         } else {
             let area_coeff = {
-                let res = self.get_resolution().as_dvec2();
+                let res = self.get_resolution();
+                let res = Vec2::new(
+                    res.x as Float,
+                    res.y as Float,
+                );
                 let min_res = res.min_element();
                 let screen_bounds = res / min_res;
                 screen_bounds.x * screen_bounds.y
@@ -272,7 +280,7 @@ impl Camera {
 
                 let pdf = self.pdf(wi);
 
-                let color = DVec3::splat(pdf);
+                let color = Color::splat(pdf);
 
                 let fl = if cfg.lens_radius == 0.0 {
                     1.0 / cos_theta
@@ -280,15 +288,18 @@ impl Camera {
                     cfg.focal_length / cos_theta
                 };
 
-                let resolution = self.get_resolution().as_dvec2();
+                let resolution = self.get_resolution();
+                let resolution = Vec2::new(
+                    resolution.x as Float,
+                    resolution.y as Float,
+                );
                 let min_res = resolution.min_element();
 
                 let focus = ro.at(fl);
                 let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
-                let raster_xy = (focus_local.truncate() * min_res + resolution)
-                    .as_ivec2() / 2;
+                let raster_xy = (focus_local.truncate() * min_res + resolution) / 2.0;
 
-                FilmSample::new(color, raster_xy.x, raster_xy.y, true)
+                FilmSample::new(color, raster_xy, true)
             }
         }
     }

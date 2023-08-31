@@ -1,20 +1,20 @@
 use super::*;
 use crate::tracer::{Plane, Sphere};
-use crate::EPSILON;
+use crate::{Point, Direction};
 
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {
     let mut scene = Scene::default();
 
     scene.add_light(Sphere::new(
-        DVec3::new(0.0, 2.0, 0.0),
-        EPSILON,
-        Material::Light(Texture::Solid(DVec3::ONE)),
+        Point::new(0.0, 2.0, 0.0),
+        crate::EPSILON,
+        Material::Light(Texture::Solid(Color::WHITE))
     ));
 
     scene.add(Plane::new(
-        DVec3::new(0.0, 1.0, 0.0),
-        DVec3::new(0.0, -1.0, 0.0),
+        Point::new(0.0, 1.0, 0.0),
+        Point::new(0.0, -1.0, 0.0),
         m,
     ));
 
@@ -24,14 +24,14 @@ fn scene(m: Material) -> Scene {
 #[test]
 fn light_no_pass() {
     let s = scene(Material::Mirror);
-    let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 1.0, 0.0));
+    let r = Ray::new(Point::ZERO, Direction::Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_none());
 }
 
 #[test]
 fn object_behind_light() {
     let s = scene(Material::Mirror);
-    let r = Ray::new(DVec3::new(0.0, 3.0, 0.0), DVec3::new(0.0, -1.0, 0.0));
+    let r = Ray::new(3.0 * Point::Y, Direction::NEG_Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_some());
 }
 
@@ -40,18 +40,18 @@ fn hits_closest() {
     let mut s = Scene::default();
 
     s.add(Plane::new(
-        DVec3::new(0.0, 1.0, 0.0),
-        DVec3::new(0.0, -1.0, 0.0),
+        Point::Y,
+        Point::NEG_Y,
         Material::Blank,
     ));
 
     s.add(Plane::new(
-        DVec3::new(0.0, 2.0, 0.0),
-        DVec3::new(0.0, -1.0, 0.0),
+        2.0 * Point::Y,
+        Point::NEG_Y,
         Material::Mirror,
     ));
 
-    let r = Ray::new(DVec3::ZERO, DVec3::new(0.0, 1.0, 0.0));
+    let r = Ray::new(Point::ZERO, Point::Y);
     let is_blank = |h: &Hit| -> bool { matches!(h.material, Material::Blank) };
     assert!(s.hit(&r).filter(is_blank).is_some());
 }

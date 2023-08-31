@@ -6,16 +6,16 @@ mod cylinder_tests;
 /// Cylinder aligned with the `y` axis with base at `y=0`
 pub struct Cylinder {
     /// Radius of the cylinder
-    radius: f64,
+    radius: Float,
     /// Height of the cylinder
-    height: f64,
+    height: Float,
     /// Material of the cylinder
     material: Material,
 }
 
 impl Cylinder {
     /// Cylinder constructor
-    pub fn new(height: f64, radius: f64, material: Material) -> Box<Self> {
+    pub fn new(height: Float, radius: Float, material: Material) -> Box<Self> {
         assert!(height > 0.0);
         assert!(radius > 0.0);
 
@@ -28,7 +28,7 @@ impl Cylinder {
 }
 
 impl Object for Cylinder {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         let xo = r.origin;
         let wi = r.dir;
 
@@ -37,16 +37,16 @@ impl Object for Cylinder {
             return None;
         }
 
-        let dx = EFloat64::from(wi.x); let dz = EFloat64::from(wi.z);
-        let ox = EFloat64::from(xo.x); let oz = EFloat64::from(xo.z);
+        let dx = EFloat::from(wi.x); let dz = EFloat::from(wi.z);
+        let ox = EFloat::from(xo.x); let oz = EFloat::from(xo.z);
 
-        let radius2 = EFloat64::from(self.radius) * EFloat64::from(self.radius);
+        let radius2 = EFloat::from(self.radius) * EFloat::from(self.radius);
 
         let a = dx * dx + dz * dz;
-        let b = EFloat64::from(2.0) * (dx * ox + dz * oz);
+        let b = EFloat::from(2.0) * (dx * ox + dz * oz);
         let c = ox * ox + oz * oz - radius2;
 
-        let (t0, t1) = EFloat64::quadratic(a, b, c)?;
+        let (t0, t1) = EFloat::quadratic(a, b, c)?;
 
         // cylinder behind or too far
         if t0.high >= t_max || t1.low <= t_min {
@@ -75,19 +75,19 @@ impl Object for Cylinder {
 
         // reproject x and z
         let hit_radius2 = xi.x * xi.x + xi.z * xi.z;
-        let xi = DVec3::new(
+        let xi = Point::new(
             xi.x * radius2.value / hit_radius2,
             xi.y,
             xi.z * radius2.value / hit_radius2,
         );
 
-        let ni = DVec3::new(xi.x, 0.0, xi.z) / self.radius;
+        let ni = Normal::new(xi.x, 0.0, xi.z) / self.radius;
 
-        let u = ((-xi.z).atan2(xi.x) + PI) / (2.0 * PI);
+        let u = ((-xi.z).atan2(xi.x) + crate::PI) / (2.0 * crate::PI);
         let v = xi.y / self.height;
-        let uv = DVec2::new(u, v);
+        let uv = Vec2::new(u, v);
 
-        let err = efloat::gamma(3) * DVec3::new(xi.x, 0.0, xi.z).abs();
+        let err = efloat::gamma(3) * Vec3::new(xi.x, 0.0, xi.z).abs();
 
         Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }

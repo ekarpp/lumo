@@ -1,9 +1,9 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
+pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
     let mut last_specular = true;
-    let mut radiance = DVec3::ZERO;
-    let mut gathered = DVec3::ONE;
+    let mut radiance = Color::BLACK;
+    let mut gathered = Color::WHITE;
     let mut depth = 0;
 
     while let Some(ho) = scene.hit(&ro) {
@@ -30,9 +30,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
                 }
 
                 match scatter_pdf.sample_direction(rand_utils::unit_square()) {
-                    None => {
-                        break;
-                    }
+                    None => break,
                     Some(wi) => {
                         let ri = ho.generate_ray(wi);
                         let wo = ro.dir;
@@ -60,9 +58,9 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
 
                         // russian roulette
                         if depth > 3 {
-                            let luminance = crate::rgb_to_luminance(gathered);
+                            let luminance = gathered.luminance();
                             let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_f64() < rr_prob {
+                            if rand_utils::rand_float() < rr_prob {
                                 break;
                             }
                             gathered /= 1.0 - rr_prob;
@@ -77,5 +75,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray, x: i32, y: i32) -> FilmSample {
         }
     }
 
-    FilmSample::new(radiance, x, y, false)
+    FilmSample::new(radiance, raster_xy, false)
 }

@@ -1,4 +1,4 @@
-use glam::DVec3;
+use crate::tracer::Color;
 
 /// Enum for different tone mappers
 pub enum ToneMap {
@@ -16,29 +16,26 @@ pub enum ToneMap {
 
 impl ToneMap {
     /// Tone maps the `rgb` sample with channels in `\[0,∞\]`
-    pub fn map(&self, rgb: DVec3) -> DVec3 {
+    pub fn map(&self, rgb: Color) -> Color {
         #[cfg(debug_assertions)]
-        if rgb.is_nan() {
+        if rgb.rgb.is_nan() {
             println!("Found NaN during tone mapping.");
-            return crate::srgb_to_linear(0, 255, 0);
+            return Color::new(0, 255, 0);
         }
         #[cfg(debug_assertions)]
-        if rgb.is_negative_bitmask() > 0 {
+        if rgb.rgb.is_negative_bitmask() > 0 {
             println!("Found negative value during tone mapping.");
-            return crate::srgb_to_linear(255, 0, 0);
+            return Color::new(255, 0, 0);
         }
         match self {
             Self::NoMap => rgb,
-            Self::Clamp => rgb.clamp(DVec3::ZERO, DVec3::ONE),
-            Self::Reinhard => {
-                let l_in = crate::rgb_to_luminance(rgb);
-                rgb / (1.0 + l_in)
-            }
+            Self::Clamp => rgb.clamp(0.0, 1.0),
+            Self::Reinhard => rgb / (1.0 + rgb.luminance()),
             Self::HableFilmic => {
                 let exposure = 2.0;
                 let curr = Self::hable_partial(rgb * exposure);
-                let white = DVec3::splat(11.2);
-                let white_scale = DVec3::ONE / Self::hable_partial(white);
+                let white = Color::splat(11.2);
+                let white_scale = Color::WHITE / Self::hable_partial(white);
                 curr * white_scale
             }
             Self::ACES => {
@@ -48,12 +45,13 @@ impl ToneMap {
                 let c = 2.43;
                 let d = 0.59;
                 let e = 0.14;
-                ((rgb * (a * rgb + b)) / (rgb * (c * rgb + d) + e)).clamp(DVec3::ZERO, DVec3::ONE)
+                ((rgb * (rgb * a + b)) / (rgb * (rgb * c + d) + e))
+                    .clamp(0.0, 1.0)
             }
         }
     }
 
-    fn hable_partial(rgb: DVec3) -> DVec3 {
+    fn hable_partial(rgb: Color) -> Color {
         let a = 0.15;
         let b = 0.50;
         let c = 0.10;
@@ -61,6 +59,6 @@ impl ToneMap {
         let e = 0.02;
         let f = 0.30;
 
-        (rgb * (a * rgb + c * b) + d * e) / (rgb * (a * rgb + b) + d * f) - e / f
+        (rgb * (rgb * a + c * b) + d * e) / (rgb * (rgb * a + b) + d * f) - e / f
     }
 }

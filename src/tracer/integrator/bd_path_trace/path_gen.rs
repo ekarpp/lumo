@@ -2,7 +2,7 @@ use super::*;
 
 /// Generates a ray path starting from the camera
 pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vertex<'a>> {
-    let gathered = DVec3::ONE;
+    let gathered = Color::WHITE;
     let root = Vertex::camera(r.origin, gathered);
     let wi = r.dir;
     let pdf_fwd = camera.pdf(wi);
@@ -13,7 +13,7 @@ pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vert
 /// Generates a ray path strating from a light
 pub fn light_path(scene: &Scene) -> Vec<Vertex> {
     let light = scene.uniform_random_light();
-    let pdf_light = 1.0 / scene.num_lights() as f64;
+    let pdf_light = 1.0 / scene.num_lights() as Float;
     let (ro, ho) = light.sample_leaving(
         rand_utils::unit_square(),
         rand_utils::unit_square()
@@ -35,8 +35,8 @@ fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
     root: Vertex<'a>,
-    mut gathered: DVec3,
-    pdf_dir: f64,
+    mut gathered: Color,
+    pdf_dir: Float,
     mode: Transport,
 ) -> Vec<Vertex<'a>> {
     let mut depth = 0;
@@ -86,17 +86,23 @@ fn walk<'a>(
                         let shading_cosine = match mode {
                             Transport::Radiance => material.shading_cosine(wi, ns),
                             Transport::Importance => {
-                                let xp = vertices[prev].h.p;
-                                let v = (xp - xo).normalize();
-                                wi.dot(ng).abs() * material.shading_cosine(v, ns)
-                                    / v.dot(ng).abs()
+                                if ho.is_medium() {
+                                    1.0
+                                } else {
+                                    let xp = vertices[prev].h.p;
+                                    let v = (xp - xo).normalize();
+                                    wi.dot(ng).abs()
+                                        * material.shading_cosine(v, ns)
+                                        / v.dot(ng).abs()
+                                }
                             }
                         };
 
+                        let bsdf = material.bsdf_f(wo, wi, mode, ho);
                         let bsdf = if ho.is_medium() {
-                            DVec3::ONE * pdf_fwd
+                            bsdf * pdf_fwd
                         } else {
-                            material.bsdf_f(wo, wi, mode, ho)
+                            bsdf
                         };
 
                         gathered *= bsdf * shading_cosine / pdf_fwd;
@@ -114,9 +120,9 @@ fn walk<'a>(
 
                         // russian roulette
                         if depth > 3 {
-                            let luminance = crate::rgb_to_luminance(gathered);
+                            let luminance = gathered.luminance();
                             let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_f64() < rr_prob {
+                            if rand_utils::rand_float() < rr_prob {
                                 break;
                             }
 

@@ -1,15 +1,15 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, ro: Ray, x: i32, y: i32) -> FilmSample {
+pub fn integrate(scene: &Scene, ro: Ray, raster_xy: Vec2) -> FilmSample {
     let radiance = _integrate(scene, ro, 0);
-    FilmSample::new(radiance, x, y, false)
+    FilmSample::new(radiance, raster_xy, false)
 }
 
 const MAX_RECURSION: usize = 50;
 
-fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
+fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> Color {
     match scene.hit(&ro) {
-        None => DVec3::new(0.0, 0.0, 0.0),
+        None => Color::BLACK,
         Some(ho) => {
             let material = ho.material;
             match material.bsdf_pdf(&ho, &ro) {
@@ -17,11 +17,11 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
                 Some(scatter_pdf) => {
                     if material.is_specular() {
                         if depth > MAX_RECURSION {
-                            return DVec3::ZERO;
+                            return Color::BLACK;
                         }
 
                         match scatter_pdf.sample_direction(rand_utils::unit_square()) {
-                            None => DVec3::ZERO,
+                            None => Color::BLACK,
                             Some(wi) => {
                                 let ri = ho.generate_ray(wi);
                                 let wi = ri.dir;
@@ -31,7 +31,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> DVec3 {
 
                                 if p_scatter <= 0.0 {
                                     // return something better?
-                                    return DVec3::ZERO;
+                                    return Color::BLACK;
                                 }
 
                                 let ns = ho.ns;

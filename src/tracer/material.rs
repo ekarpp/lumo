@@ -1,12 +1,9 @@
-use crate::Transport;
-use crate::tracer::bxdfs;
-use crate::tracer::hit::Hit;
-use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{Pdf, CosPdf};
-use crate::tracer::ray::Ray;
-use crate::tracer::texture::Texture;
-use glam::DVec3;
-use std::f64::consts::PI;
+use crate::{ Normal, Direction, Transport, Float, Vec3 };
+use crate::tracer::{
+    bxdfs, Color, hit::Hit, ray::Ray,
+    microfacet::MfDistribution,
+    texture::Texture, pdfs::{Pdf, CosPdf}
+};
 
 /// Describes which material an object is made out of
 pub enum Material {
@@ -19,9 +16,9 @@ pub enum Material {
     /// Perfect reflection
     Mirror,
     /// Perfect refraction with refraction index as argument
-    Glass(f64),
+    Glass(Float),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
-    Volumetric(f64, DVec3, DVec3),
+    Volumetric(Float, Vec3, Color),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
@@ -30,9 +27,9 @@ impl Material {
     /// Helper function to create a microfacet material
     pub fn microfacet(
         texture: Texture,
-        roughness: f64,
-        refraction_idx: f64,
-        metallicity: f64,
+        roughness: Float,
+        refraction_idx: Float,
+        metallicity: Float,
         transparent: bool
     ) -> Self {
         let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
@@ -40,12 +37,12 @@ impl Material {
     }
 
     /// Metallic microfacet material
-    pub fn metallic(texture: Texture, roughness: f64) -> Self {
+    pub fn metallic(texture: Texture, roughness: Float) -> Self {
         Self::microfacet(texture, roughness, 1.5, 1.0, false)
     }
 
     /// Specular microfacet material
-    pub fn specular(texture: Texture, roughness: f64) -> Self {
+    pub fn specular(texture: Texture, roughness: Float) -> Self {
         Self::microfacet(texture, roughness, 1.5, 0.0, false)
     }
 
@@ -55,7 +52,7 @@ impl Material {
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, roughness: f64, refraction_idx: f64) -> Self {
+    pub fn transparent(texture: Texture, roughness: Float, refraction_idx: Float) -> Self {
         Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
     }
 
@@ -65,7 +62,7 @@ impl Material {
     }
 
     /// Perfect refraction
-    pub fn glass(refraction_index: f64) -> Self {
+    pub fn glass(refraction_index: Float) -> Self {
         assert!(refraction_index >= 1.0);
         Self::Glass(refraction_index)
     }
@@ -91,32 +88,38 @@ impl Material {
 
 
     /// How much light emitted at `h`?
-    pub fn emit(&self, h: &Hit) -> DVec3 {
+    pub fn emit(&self, h: &Hit) -> Color {
         match self {
             Self::Light(t) => if h.backface {
-                DVec3::ZERO
+                Color::BLACK
             } else {
                 t.albedo_at(h)
             },
-            _ => DVec3::ZERO,
+            _ => Color::BLACK
         }
     }
 
     /// What is the color at `h`?
-    pub fn bsdf_f(&self, wo: DVec3, wi: DVec3, mode: Transport, h: &Hit) -> DVec3 {
+    pub fn bsdf_f(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        mode: Transport,
+        h: &Hit
+    ) -> Color {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            Self::Mirror => DVec3::ONE,
+            Self::Mirror => Color::WHITE,
             Self::Glass(eta) => {
                 match mode {
-                    Transport::Importance => DVec3::ONE,
+                    Transport::Importance => Color::WHITE,
                     Transport::Radiance => {
                         let inside = wi.dot(ng) > 0.0;
                         if inside {
-                            DVec3::splat(1.0 / (eta * eta))
+                            Color::splat(1.0 / (eta * eta))
                         } else {
-                            DVec3::splat(eta * eta)
+                            Color::splat(eta * eta)
                         }
                     }
                 }
@@ -125,21 +128,21 @@ impl Material {
             Self::Volumetric(_, sigma_t, sigma_s) => {
                 let transmittance = (-*sigma_t * h.t).exp();
                 // cancel out the transmittance pdf taken from scene transmitance
-                let pdf = (transmittance * *sigma_t).dot(DVec3::ONE)
-                    / transmittance.dot(DVec3::ONE);
+                let pdf = (transmittance * *sigma_t).dot(Vec3::ONE)
+                    / transmittance.dot(Vec3::ONE);
 
-                if pdf == 0.0 { DVec3::ONE } else { *sigma_s / pdf }
+                if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
             }
             Self::Microfacet(t, mfd) => {
                 bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
             }
-            Self::Lambertian(t) => t.albedo_at(h) / PI,
-            _ => DVec3::ZERO,
+            Self::Lambertian(t) => t.albedo_at(h) / crate::PI,
+            _ => Color::BLACK,
         }
     }
 
     /// Computes the shading cosine coefficient per material
-    pub fn shading_cosine(&self, wi: DVec3, ns: DVec3) -> f64 {
+    pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
         match self {
             Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
             _ => 1.0

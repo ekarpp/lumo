@@ -1,4 +1,3 @@
-#![allow(warnings)]
 use super::*;
 
 // this could use the scoped assignment from PBRT...
@@ -10,7 +9,7 @@ pub fn mis_weight(
     camera_path: &[Vertex],
     t: usize,
     sampled_vertex: Option<Vertex>,
-) -> f64 {
+) -> Float {
     // assert!(t != 0)
     // if `sampled_vertex.is_some()` then t == 1 XOR s == 1
 
@@ -18,7 +17,7 @@ pub fn mis_weight(
         return 1.0;
     }
 
-    let map0 = |pdf: f64| {
+    let map0 = |pdf: Float| {
         if pdf == 0.0 { 1.0 } else { pdf }
     };
 

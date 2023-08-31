@@ -1,10 +1,12 @@
-use crate::Transport;
-use crate::tracer::hit::Hit;
-use crate::tracer::microfacet::MfDistribution;
-use crate::tracer::pdfs::{DeltaPdf, MfdPdf, Pdf, VolumetricPdf};
-use crate::tracer::ray::Ray;
-use glam::DVec3;
-use std::f64::consts::PI;
+use crate::{Direction, Normal, Float, Transport};
+use crate::tracer::{
+    color::Color, hit::Hit, ray::Ray,
+    microfacet::MfDistribution,
+    pdfs::{
+        DeltaPdf, MfdPdf,
+        Pdf, VolumetricPdf
+    }
+};
 
 /// BSDF for microfacet. Works for transparent and non-transparent materials.
 ///
@@ -16,14 +18,14 @@ use std::f64::consts::PI;
 /// * `albedo` - Albedo of the material at the point of impact
 /// * `mfd` - Microfacet distribution of the material
 pub fn bsdf_microfacet(
-    wo: DVec3,
-    wi: DVec3,
-    ng: DVec3,
-    ns: DVec3,
+    wo: Direction,
+    wi: Direction,
+    ng: Normal,
+    ns: Normal,
     mode: Transport,
-    albedo: DVec3,
+    albedo: Color,
     mfd: &MfDistribution
-) -> DVec3 {
+) -> Color {
     let v = -wo;
     // abs these, for refraction it makes no difference
     // for reflection they might cause negative values when grazing ng
@@ -45,14 +47,14 @@ pub fn bsdf_microfacet(
 
             if sin2_ti > 1.0 {
                 // total internal reflection
-                DVec3::ONE
+                Color::WHITE
             } else {
                 mfd.f(v, wh, albedo)
             }
         } else {
             mfd.f(v, wh, albedo)
         };
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, wh, ns);
 
         // BRDF: specular + diffuse, where
         // specular = D(wh) * F(v, wh) * G(v, wi) / (4.0 * (no • v) * (no • wi))
@@ -69,8 +71,8 @@ pub fn bsdf_microfacet(
             specular
         } else {
             let ns_dot_wh = ns.dot(wh);
-            let diffuse = (DVec3::ONE - f) * albedo
-                * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / PI;
+            let diffuse = (Color::WHITE - f) * albedo
+                * mfd.disney_diffuse(ns_dot_v, ns_dot_wh, ns_dot_wi) / crate::PI;
 
             diffuse + specular
         }
@@ -93,14 +95,14 @@ pub fn bsdf_microfacet(
 
         let d = mfd.d(wh, ns);
         let f = mfd.f(v, wh, albedo);
-        let g = mfd.g(v, wi, ns);
+        let g = mfd.g(v, wi, wh, ns);
 
         // BTDF:
         // albedo * abs[(wh • wi) * (wh • v)/((no • wi) * (no • v))]
         // * D(wh) * (1 - F(v, wh)) * G(v, wi) /  (η_r * (wh • wi) + (wh • v))^2
 
         scale * (wh_dot_wi * wh_dot_v / (ns_dot_wi * ns_dot_v)).abs()
-            * albedo * d * (DVec3::ONE - f) * g
+            * albedo * d * (Color::WHITE - f) * g
             / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
     }
 }
@@ -114,7 +116,7 @@ pub fn bsdf_microfacet(
 pub fn bsdf_microfacet_pdf(
     ho: &Hit,
     ro: &Ray,
-    albedo: DVec3,
+    albedo: Color,
     mfd: &MfDistribution,
 ) -> Option<Box<dyn Pdf>> {
     let ns = ho.ns;
@@ -131,12 +133,12 @@ pub fn brdf_mirror_pdf(ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
     Some( Box::new(DeltaPdf::new(wi)) )
 }
 
-pub fn brdf_volumetric_pdf(ro: &Ray, g: f64) -> Option<Box<dyn Pdf>> {
+pub fn brdf_volumetric_pdf(ro: &Ray, g: Float) -> Option<Box<dyn Pdf>> {
     let v = -ro.dir;
     Some( Box::new(VolumetricPdf::new(v, g)) )
 }
 
-pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>> {
+pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: Float) -> Option<Box<dyn Pdf>> {
     let ng = ho.ng;
     let v = -ro.dir;
     let inside = ng.dot(v) < 0.0;
@@ -153,7 +155,7 @@ pub fn btdf_glass_pdf(ho: &Hit, ro: &Ray, rfrct_idx: f64) -> Option<Box<dyn Pdf>
 /// # Arguments
 /// * `v` - Normalized? direction from reflection point to viewer
 /// * `no` - Surface normal
-pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
+pub fn reflect(v: Direction, no: Normal) -> Direction {
     2.0 * v.project_onto(no) - v
 }
 
@@ -163,7 +165,7 @@ pub fn reflect(v: DVec3, no: DVec3) -> DVec3 {
 /// * `eta_ratio` - Ratio of refraction indices. `from / to`
 /// * `v` - Normalized direction from refraction point to viewer
 /// * `no` - Surface normal, pointing to same hemisphere as `v`
-pub fn refract(eta_ratio: f64, v: DVec3, no: DVec3) -> DVec3 {
+pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
     /* Snell-Descartes law */
     let cos_to = no.dot(v);
     let sin2_to = 1.0 - cos_to * cos_to;

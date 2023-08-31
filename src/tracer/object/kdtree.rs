@@ -1,7 +1,6 @@
 use super::*;
 use crate::cli::TracerCli;
 use std::time::Instant;
-use std::f64::INFINITY;
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
@@ -74,8 +73,8 @@ impl<T: Bounded> KdTree<T> {
         &self,
         node: &KdNode,
         r: &Ray,
-        t_min: f64,
-        t_max: f64,
+        t_min: Float,
+        t_max: Float,
         aabb: &AaBoundingBox,
     ) -> Option<Hit> {
         // extract split info or check for hit at leaf node
@@ -139,7 +138,7 @@ impl<T: Bounded> Bounded for KdTree<T> {
 }
 
 impl<T: Bounded> Object for KdTree<T> {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         let (t_start, t_end) = self.boundary.intersect(r);
         let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
         // box missed / is behind
@@ -152,27 +151,27 @@ impl<T: Bounded> Object for KdTree<T> {
 }
 
 impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
-    fn area(&self) -> f64 {
+    fn area(&self) -> Float {
         // maybe sloooow for big ones
         self.objects.iter().fold(0.0, |sum, obj| sum + obj.area())
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> Hit {
-        let n = rand_utils::rand_f64() * self.objects.len() as f64;
+    fn sample_on(&self, rand_sq: Vec2) -> Hit {
+        let n = rand_utils::rand_float() * self.objects.len() as Float;
         let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
         ho.material = &self.material;
         ho
     }
 }
 
-const COST_TRAVERSE: f64 = 15.0;
-const COST_INTERSECT: f64 = 20.0;
-const EMPTY_BONUS: f64 = 0.2;
+const COST_TRAVERSE: Float = 15.0;
+const COST_INTERSECT: Float = 20.0;
+const EMPTY_BONUS: Float = 0.2;
 
 /// A node in the kD-tree. Can be either a plane split or a leaf node.
 pub enum KdNode {
     /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
-    Split(Axis, f64, Box<KdNode>, Box<KdNode>),
+    Split(Axis, Float, Box<KdNode>, Box<KdNode>),
     /// Stores indices to the object vector in the kD-tree
     Leaf(Vec<usize>),
 }
@@ -182,18 +181,18 @@ impl KdNode {
     fn cost(
         boundary: &AaBoundingBox,
         axis: Axis,
-        point: f64,
+        point: Float,
         num_left: usize,
         num_right: usize,
-    ) -> f64 {
+    ) -> Float {
         if !boundary.cuts(axis, point) {
-            INFINITY
+            crate::INF
         } else {
             let (left, right) = boundary.split(axis, point);
 
             let cost = COST_TRAVERSE + COST_INTERSECT *
-                (num_left as f64 * left.area() / boundary.area()
-                 + num_right as f64 * right.area() / boundary.area());
+                (num_left as Float * left.area() / boundary.area()
+                 + num_right as Float * right.area() / boundary.area());
 
             if num_left == 0 || num_right == 0 {
                 (1.0 - EMPTY_BONUS) * cost
@@ -204,22 +203,22 @@ impl KdNode {
     }
 
     /// Finds the best split according to SAH.
-    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (Axis, f64, f64) {
-        let mut best_cost = INFINITY;
-        let mut best_point = INFINITY;
+    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (Axis, Float, Float) {
+        let mut best_cost = crate::INF;
+        let mut best_point = crate::INF;
         let mut best_axis = Axis::X;
 
         for axis in [Axis::X, Axis::Y, Axis::Z] {
-            let mut mins: Vec<f64> = Vec::with_capacity(aabbs.len());
-            let mut maxs: Vec<f64> = Vec::with_capacity(aabbs.len());
+            let mut mins: Vec<Float> = Vec::with_capacity(aabbs.len());
+            let mut maxs: Vec<Float> = Vec::with_capacity(aabbs.len());
 
             aabbs.iter().for_each(|aabb| {
                 mins.push(aabb.min(axis));
                 maxs.push(aabb.max(axis));
             });
 
-            mins.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
-            maxs.sort_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
+            mins.sort_by(|a: &Float, b: &Float| a.partial_cmp(b).unwrap());
+            maxs.sort_by(|a: &Float, b: &Float| a.partial_cmp(b).unwrap());
 
             let mut num_left = 0;
             let mut num_right = aabbs.len();
@@ -230,11 +229,11 @@ impl KdNode {
             let mut max_idx = 0;
 
             // add infinity to end as "null"
-            mins.push(INFINITY);
-            maxs.push(INFINITY);
+            mins.push(crate::INF);
+            maxs.push(crate::INF);
 
             // do quasi merge
-            while mins[min_idx] < INFINITY || maxs[max_idx] < INFINITY {
+            while mins[min_idx] < crate::INF || maxs[max_idx] < crate::INF {
                 let is_min = mins[min_idx] <= maxs[max_idx];
                 let point = mins[min_idx].min(maxs[max_idx]);
 
@@ -262,7 +261,7 @@ impl KdNode {
         aabbs: &[&AaBoundingBox],
         indices: Vec<usize>,
         axis: Axis,
-        point: f64,
+        point: Float,
     ) -> (Vec<usize>, Vec<usize>) {
         let mut left: Vec<usize> = Vec::with_capacity(aabbs.len());
         let mut right: Vec<usize> = Vec::with_capacity(aabbs.len());
@@ -289,7 +288,7 @@ impl KdNode {
             .map(|idx| &bounds[*idx]).collect();
         let (axis, point, cost) = Self::find_best_split(&aabbs, boundary);
         // cut not worth it, make a leaf
-        if cost > COST_INTERSECT * indices.len() as f64 {
+        if cost > COST_INTERSECT * indices.len() as Float {
             Box::new(Self::Leaf(indices))
         } else {
             let (left_idx, right_idx) = Self::partition(&aabbs, indices, axis, point);

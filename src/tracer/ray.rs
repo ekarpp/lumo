@@ -1,17 +1,16 @@
-use glam::{DAffine3, DVec3};
-use crate::Axis;
+use crate::{ Axis, Direction, Point, Float, Transform };
 
 /// Ray abstraction
 pub struct Ray {
     /// Point of origin of the ray
-    pub origin: DVec3,
+    pub origin: Point,
     /// Direction of the ray. Normalized.
-    pub dir: DVec3,
+    pub dir: Direction,
 }
 
 impl Ray {
     /// Constructs a ray. Normalize direction?
-    pub fn new(origin: DVec3, dir: DVec3) -> Self {
+    pub fn new(origin: Point, dir: Direction) -> Self {
         Self {
             origin,
             dir: dir.normalize(),
@@ -20,7 +19,7 @@ impl Ray {
 
     /// Applies `transformation` to `self`. Direction unnormalized to guarantee
     /// correct computations in Instance.
-    pub fn transform(&self, transformation: DAffine3) -> Self {
+    pub fn transform(&self, transformation: Transform) -> Self {
         Self {
             origin: transformation.transform_point3(self.origin),
             dir: transformation.transform_vector3(self.dir),
@@ -28,12 +27,12 @@ impl Ray {
     }
 
     /// Position of the ray at time `t`
-    pub fn at(&self, t: f64) -> DVec3 {
+    pub fn at(&self, t: Float) -> Point {
         self.origin + t * self.dir
     }
 
     /// Coordinate of origin along axis
-    pub fn o(&self, axis: Axis) -> f64 {
+    pub fn o(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.origin.x,
             Axis::Y => self.origin.y,
@@ -42,7 +41,7 @@ impl Ray {
     }
 
     /// Coordinate of direction along axis
-    pub fn d(&self, axis: Axis) -> f64 {
+    pub fn d(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.dir.x,
             Axis::Y => self.dir.y,

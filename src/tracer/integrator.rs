@@ -1,12 +1,12 @@
-use crate::{Transport, rand_utils};
-use crate::tracer::camera::Camera;
-use crate::tracer::film::FilmSample;
-use crate::tracer::hit::Hit;
-use crate::tracer::object::Sampleable;
-use crate::tracer::pdfs::{ObjectPdf, Pdf};
-use crate::tracer::ray::Ray;
-use crate::tracer::scene::Scene;
-use glam::{DVec2, DVec3};
+use crate::{
+    Transport, rand_utils, Vec2, Float,
+    Normal, Point, Direction, Vec3
+};
+use crate::tracer::{
+    camera::Camera, film::FilmSample, hit::Hit,
+    object::Sampleable, pdfs::{ObjectPdf, Pdf},
+    ray::Ray, scene::Scene, Color
+};
 use std::fmt;
 
 mod bd_path_trace;
@@ -38,11 +38,11 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, c: &Camera, x: i32, y: i32, r: Ray) -> Vec<FilmSample> {
+    pub fn integrate(&self, s: &Scene, c: &Camera, raster_xy: Vec2, r: Ray) -> Vec<FilmSample> {
         match self {
-            Self::PathTrace => vec![path_trace::integrate(s, r, x, y)],
-            Self::DirectLight => vec![direct_light::integrate(s, r, x, y)],
-            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, x, y),
+            Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
+            Self::DirectLight => vec![direct_light::integrate(s, r, raster_xy)],
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
         }
     }
 }
@@ -53,8 +53,8 @@ fn shadow_ray(
     ro: &Ray,
     ho: &Hit,
     pdf_scatter: &dyn Pdf,
-    rand_sq: DVec2
-) -> DVec3 {
+    rand_sq: Vec2
+) -> Color {
     let material = ho.material;
     let xo = ho.p;
     let wo = ro.dir;
@@ -62,17 +62,17 @@ fn shadow_ray(
 
     let light = scene.uniform_random_light();
 
-    let mut radiance = DVec3::ZERO;
+    let mut radiance = Color::BLACK;
     let pdf_light = ObjectPdf::new(light, xo);
 
     // refactor these to separate function?
     // sample light first
     radiance += match pdf_light.sample_direction(rand_sq) {
-        None => DVec3::ZERO,
+        None => Color::BLACK,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
             match scene.hit_light(&ri, light) {
-                None => DVec3::ZERO,
+                None => Color::BLACK,
                 Some(hi) => {
                     let p_light = pdf_light.value_for(&ri, false);
                     let p_scatter = pdf_scatter.value_for(&ri, false);
@@ -103,11 +103,11 @@ fn shadow_ray(
 
     // then sample BSDF
     radiance += match pdf_scatter.sample_direction(rand_sq) {
-        None => DVec3::ZERO,
+        None => Color::BLACK,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
             match scene.hit_light(&ri, light) {
-                None => DVec3::ZERO,
+                None => Color::BLACK,
                 Some(hi) => {
                     let p_light = pdf_light.value_for(&ri, false);
                     let p_scatter = pdf_scatter.value_for(&ri, false);
@@ -136,5 +136,5 @@ fn shadow_ray(
         }
     };
 
-    radiance * scene.num_lights() as f64
+    radiance * scene.num_lights() as Float
 }

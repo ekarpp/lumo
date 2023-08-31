@@ -17,8 +17,8 @@ impl Cube {
     /// * `material` - Material of the cube
     pub fn new(material: Material) -> Box<Self> {
         let vertices = vec![
-            DVec3::X, DVec3::ZERO,         DVec3::Y,   DVec3::X + DVec3::Y,
-            DVec3::Z, DVec3::Z + DVec3::X, DVec3::ONE, DVec3::Z + DVec3::Y,
+            Point::X, Point::ZERO,         Point::Y,   Point::X + Point::Y,
+            Point::Z, Point::Z + Point::X, Point::ONE, Point::Z + Point::Y,
         ];
 
         let faces = vec![
@@ -45,22 +45,22 @@ impl Cube {
 impl Bounded for Cube {
     fn bounding_box(&self) -> AaBoundingBox {
         // we only support unit cubes, so... let instances do the job.
-        AaBoundingBox::new(DVec3::ZERO, DVec3::ONE)
+        AaBoundingBox::new(Point::ZERO, Point::ONE)
     }
 }
 
 impl Object for Cube {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         self.mesh.hit(r, t_min, t_max)
     }
 }
 
 impl Sampleable for Cube {
-    fn area(&self) -> f64 {
+    fn area(&self) -> Float {
         self.mesh.area()
     }
 
-    fn sample_on(&self, rand_sq: DVec2) -> Hit {
+    fn sample_on(&self, rand_sq: Vec2) -> Hit {
         self.mesh.sample_on(rand_sq)
     }
 }

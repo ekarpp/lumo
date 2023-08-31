@@ -4,15 +4,15 @@ const NUM_SAMPLES: usize = 10000;
 
 #[test]
 fn sampling_equals_plain_object() {
-    let ref_sphere = Sphere::new(DVec3::Z, 1.0, Material::Blank);
-    let sphere = Sphere::new(DVec3::ZERO, 0.1, Material::Blank)
-        .rotate_x(PI)
+    let ref_sphere = Sphere::new(Point::Z, 1.0, Material::Blank);
+    let sphere = Sphere::new(Point::ZERO, 0.1, Material::Blank)
+        .rotate_x(crate::PI)
         .scale(10.0, 10.0, 10.0)
-        .rotate_y(PI)
-        .rotate_z(PI)
+        .rotate_y(crate::PI)
+        .rotate_z(crate::PI)
         .translate(0.0, 0.0, 1.0);
 
-    let xo = DVec3::NEG_Z;
+    let xo = Point::NEG_Z;
 
     for _ in 0..NUM_SAMPLES {
         let wi = sphere.sample_towards(xo, rand_utils::unit_square());
@@ -26,13 +26,12 @@ fn sampling_equals_plain_object() {
 
 #[test]
 fn sampled_direction_hits() {
-    let sphere = Sphere::new(DVec3::ZERO, 0.1, Material::Blank)
+    let sphere = Sphere::new(Point::ZERO, 0.1, Material::Blank)
         .translate(0.123, 0.456, 0.789)
         .scale(2.0, 2.0, 2.0)
-        .rotate_x(PI);
+        .rotate_x(crate::PI);
 
-
-    let xo = DVec3::NEG_Z;
+    let xo = Point::NEG_Z;
 
     for _ in 0..NUM_SAMPLES {
         let wi = sphere.sample_towards(xo, rand_utils::unit_square());

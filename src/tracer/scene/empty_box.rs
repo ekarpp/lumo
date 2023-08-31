@@ -1,9 +1,9 @@
 use super::*;
-use crate::srgb_to_linear;
-
-const LIGHT_EPS: f64 = 0.01;
+use crate::{ Mat3, Point };
+use crate::tracer::Color;
 
 impl Scene {
+    const LIGHT_EPS: crate::Float = 0.01;
     /// Constructs an empty "Cornell box". Middle of the box is at
     /// `(0.0, 0.0, -1.0)` and it has dimensions `2x2x2`.
     /// Perfect for the default camera.
@@ -13,7 +13,7 @@ impl Scene {
     /// * `mat_left` - Material of the left wall
     /// * `mat_right` - Material of the right wall
     pub fn empty_box(
-        def_color: DVec3,
+        def_color: Color,
         mat_left: Material,
         mat_right: Material,
     ) -> Self {
@@ -34,60 +34,60 @@ impl Scene {
 
         /* rectangular area light */
         scene.add_light(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front + l_dim),
-                DVec3::new(-l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
-                DVec3::new(l_dim, ceiling - LIGHT_EPS, 0.6 * front - l_dim),
+            Mat3::from_cols(
+                Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front + l_dim),
+                Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
+                Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(6.0 * srgb_to_linear(255, 255, 255))),
+            Material::Light(Texture::Solid(18.0 * Color::WHITE))
         ));
 
         /* left wall */
         scene.add(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(left, ground, back),
-                DVec3::new(left, ground, front),
-                DVec3::new(left, ceiling, front),
+            Mat3::from_cols(
+                Point::new(left, ground, back),
+                Point::new(left, ground, front),
+                Point::new(left, ceiling, front),
             ),
             mat_left,
         ));
 
         /* right wall */
         scene.add(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(right, ground, front),
-                DVec3::new(right, ground, back),
-                DVec3::new(right, ceiling, back),
+            Mat3::from_cols(
+                Point::new(right, ground, front),
+                Point::new(right, ground, back),
+                Point::new(right, ceiling, back),
             ),
             mat_right,
         ));
 
         /* floor */
         scene.add(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(left, ground, back),
-                DVec3::new(right, ground, back),
-                DVec3::new(right, ground, front),
+            Mat3::from_cols(
+                Point::new(left, ground, back),
+                Point::new(right, ground, back),
+                Point::new(right, ground, front),
             ),
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
         /* roof */
         scene.add(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(left, ceiling, front),
-                DVec3::new(right, ceiling, front),
-                DVec3::new(right, ceiling, back),
+            Mat3::from_cols(
+                Point::new(left, ceiling, front),
+                Point::new(right, ceiling, front),
+                Point::new(right, ceiling, back),
             ),
             Material::diffuse(Texture::Solid(def_color)),
         ));
 
         /* front wall */
         scene.add(Rectangle::new(
-            DMat3::from_cols(
-                DVec3::new(left, ground, front),
-                DVec3::new(right, ground, front),
-                DVec3::new(right, ceiling, front),
+            Mat3::from_cols(
+                Point::new(left, ground, front),
+                Point::new(right, ground, front),
+                Point::new(right, ceiling, front),
             ),
             Material::diffuse(Texture::Solid(def_color)),
         ));

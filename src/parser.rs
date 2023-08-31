@@ -1,10 +1,14 @@
-use crate::Image;
-use crate::tracer::{Scene, Material, Texture, TriangleMesh, Face, Mesh};
-use glam::{DVec2, DVec3};
+use crate::{Vec2, Vec3, Image, Float, Normal, Point};
+use crate::tracer::{
+    Scene, Material, Texture,
+    TriangleMesh, Face, Mesh
+};
 use std::fs::File;
 use std::sync::Arc;
-use std::io::{self, BufRead, BufReader, Result};
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::{
+    self, BufRead, BufReader, Result,
+    Cursor, Read, Seek, Write
+};
 use std::collections::HashMap;
 use zip::ZipArchive;
 use regex::Regex;
@@ -21,23 +25,23 @@ fn obj_error(message: &str) -> io::Error {
 }
 
 /// For .obj and .mtl parsers
-fn parse_double(token: &str) -> Result<f64> {
+fn parse_double(token: &str) -> Result<Float> {
     token
         .parse()
         .map_err(|_| obj_error("Could not parse double in file"))
 }
 
 /// For .obj and .mtl parsers
-fn parse_vec2(tokens: &[&str]) -> Result<DVec2> {
-    Ok(DVec2::new(
+fn parse_vec2(tokens: &[&str]) -> Result<Vec2> {
+    Ok(Vec2::new(
         parse_double(tokens[1])?,
         parse_double(tokens[2])?,
     ))
 }
 
 /// For .obj and .mtl parsers
-fn parse_vec3(tokens: &[&str]) -> Result<DVec3> {
-    Ok(DVec3::new(
+fn parse_vec3(tokens: &[&str]) -> Result<Vec3> {
+    Ok(Vec3::new(
         parse_double(tokens[1])?,
         parse_double(tokens[2])?,
         parse_double(tokens[3])?,

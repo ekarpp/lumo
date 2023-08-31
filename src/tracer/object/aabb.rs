@@ -4,16 +4,16 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct AaBoundingBox {
     /// Minimum values along each axis
-    pub ax_min: DVec3,
+    pub ax_min: Point,
     /// Maximum values along each axis
-    pub ax_max: DVec3,
+    pub ax_max: Point,
 }
 
 impl Default for AaBoundingBox {
     fn default() -> Self {
         Self {
-            ax_min: DVec3::splat(INFINITY),
-            ax_max: DVec3::splat(-INFINITY),
+            ax_min: Point::splat(crate::INF),
+            ax_max: Point::splat(-crate::INF),
         }
     }
 }
@@ -24,12 +24,12 @@ impl AaBoundingBox {
     /// # Arguments
     /// * `ax_min` - The minimum values in each dimension
     /// * `ax_max` - The maxiumum values in each dimension
-    pub fn new(ax_min: DVec3, ax_max: DVec3) -> Self {
+    pub fn new(ax_min: Point, ax_max: Point) -> Self {
         Self { ax_min, ax_max }
     }
 
     /// Find `t_start` and `t_end` for ray intersection
-    pub fn intersect(&self, r: &Ray) -> (f64, f64) {
+    pub fn intersect(&self, r: &Ray) -> (Float, Float) {
         let ro_min = (self.ax_min - r.origin) / r.dir;
         let ro_max = (self.ax_max - r.origin) / r.dir;
 
@@ -48,14 +48,14 @@ impl AaBoundingBox {
     }
 
     /// Returns the surface area of the AABB
-    pub fn area(&self) -> f64 {
+    pub fn area(&self) -> Float {
         let bb_dim = self.ax_max - self.ax_min;
 
         2.0 * (bb_dim.x * bb_dim.y + bb_dim.x * bb_dim.z + bb_dim.y * bb_dim.z)
     }
 
     /// Does `point` along `axis` cut `self`?
-    pub fn cuts(&self, axis: Axis, point: f64) -> bool {
+    pub fn cuts(&self, axis: Axis, point: Float) -> bool {
         match axis {
             Axis::X => self.ax_min.x < point && point < self.ax_max.x,
             Axis::Y => self.ax_min.y < point && point < self.ax_max.y,
@@ -64,7 +64,7 @@ impl AaBoundingBox {
     }
 
     /// Maximum value along `axis`
-    pub fn max(&self, axis: Axis) -> f64 {
+    pub fn max(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.ax_max.x,
             Axis::Y => self.ax_max.y,
@@ -73,7 +73,7 @@ impl AaBoundingBox {
     }
 
     /// Minimum value along `axis`
-    pub fn min(&self, axis: Axis) -> f64 {
+    pub fn min(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.ax_min.x,
             Axis::Y => self.ax_min.y,
@@ -82,7 +82,7 @@ impl AaBoundingBox {
     }
 
     /// Split `self` along `axis` at `value`. Returns (left, right)
-    pub fn split(&self, axis: Axis, value: f64) -> (Self, Self) {
+    pub fn split(&self, axis: Axis, value: Float) -> (Self, Self) {
         let mut ax_mid_max = self.ax_max;
         let mut ax_mid_min = self.ax_min;
         match axis {

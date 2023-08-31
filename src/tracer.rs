@@ -1,17 +1,23 @@
 pub use camera::Camera;
+pub use color::Color;
 pub use film::{Film, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
-pub use object::{Bounded, Disk, Instance, Instanceable, KdTree, Object};
-pub use object::{Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle};
-pub use object::{Sampleable, Medium, TriangleMesh, Face, Mesh};
+pub use object::{
+    Bounded, Disk, Instance, Instanceable, KdTree, Object,
+    Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle,
+    Sampleable, Medium, TriangleMesh, Face, Mesh
+};
 pub use scene::Scene;
 pub use texture::Texture;
+pub use filter::Filter;
 
 /// Different BSDFs.
 mod bxdfs;
 /// Abstraction for a camera
 mod camera;
+/// Color struct
+mod color;
 /// Film contains the image being rendered
 mod film;
 /// Abstraction for a hit between a ray and an object.
@@ -34,3 +40,5 @@ mod ray;
 mod scene;
 /// Textures that can be given to some materials
 mod texture;
+/// Filters for film samples
+mod filter;

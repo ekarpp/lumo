@@ -14,11 +14,11 @@ mod path_gen;
 /// Multiple improtance sampling weights
 mod mis;
 
-pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<FilmSample> {
+pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);
     let camera_path = path_gen::camera_path(scene, camera, r);
 
-    let mut radiance = DVec3::ZERO;
+    let mut radiance = Color::BLACK;
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
@@ -37,7 +37,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, x: i32, y: i32) -> Vec<
         }
     }
 
-    samples.push(FilmSample::new(radiance, x, y, false));
+    samples.push(FilmSample::new(radiance, raster_xy, false));
     samples
 }
 
@@ -104,12 +104,12 @@ fn connect_paths(
     s: usize,
     camera_path: &[Vertex],
     t: usize,
-) -> DVec3 {
+) -> Color {
     // assert!(t >= 2);
 
     // camera path ends on a light, but light path not empty
     if s != 0 && camera_path[t - 1].is_light() {
-        return DVec3::ZERO;
+        return Color::BLACK;
     }
 
     let mut sampled_vertex: Option<Vertex> = None;
@@ -118,7 +118,7 @@ fn connect_paths(
         // all vertices on camera path. check if last vertex is ON a light.
         let camera_last = &camera_path[t - 1];
         if !camera_last.is_light() {
-            DVec3::ZERO
+            Color::BLACK
         } else {
             camera_last.gathered * camera_last.emittance()
         }
@@ -128,7 +128,7 @@ fn connect_paths(
         let camera_last = &camera_path[t - 1];
         // can't sample from delta and light as last exited early
         if camera_last.is_delta() {
-            DVec3::ZERO
+            Color::BLACK
         } else {
             // .unwrap() not nice :(
             // just sample any random light?
@@ -138,11 +138,11 @@ fn connect_paths(
             let pdf_light = ObjectPdf::new(light, xo);
 
             match pdf_light.sample_direction(rand_utils::unit_square()) {
-                None => DVec3::ZERO,
+                None => Color::BLACK,
                 Some(wi) => {
                     let ri = camera_last.h.generate_ray(wi);
                     match scene.hit_light(&ri, light) {
-                        None => DVec3::ZERO,
+                        None => Color::BLACK,
                         Some(hi) => {
                             let ns = hi.ns;
                             let emittance = hi.material.emit(&hi)
@@ -177,7 +177,7 @@ fn connect_paths(
         if camera_last.is_delta()
             || light_last.is_delta()
             || !visible(scene, &light_last.h, &camera_last.h) {
-                DVec3::ZERO
+                Color::BLACK
             } else {
                 let light_bsdf = light_last.bsdf(
                     &light_path[s - 2],
@@ -196,7 +196,7 @@ fn connect_paths(
         }
     };
 
-    let weight = if radiance.length_squared() == 0.0 {
+    let weight = if radiance.is_black() {
         0.0
     } else {
         mis::mis_weight(camera, light_path, s, camera_path, t, sampled_vertex)

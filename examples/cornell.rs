@@ -1,15 +1,14 @@
 use lumo::tracer::*;
 use lumo::*;
-use glam::DVec3;
 
 const SCENE_URL: &str = "https://casual-effects.com/g3d/data10/common/model/CornellBox/CornellBox.zip";
 const SCENE_NAME: &str = "CornellBox-Sphere.obj";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::perspective(
-        0.8 * DVec3::Y + 1.7 * DVec3::Z,
-        0.8 * DVec3::Y + 1.7 * DVec3::NEG_Z,
-        DVec3::Y,
+        0.8 * Vec3::Y + 1.7 * Vec3::Z,
+        0.8 * Vec3::Y + 1.7 * Vec3::NEG_Z,
+        Vec3::Y,
         90.0,
         0.0,
         1.0,

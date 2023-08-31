@@ -1,4 +1,5 @@
 use super::*;
+use crate::tracer::Color;
 
 #[cfg(test)]
 mod medium_test;
@@ -10,7 +11,7 @@ pub struct Medium {
     /// Transmittance of the medium, defined as `sigma_a + sigma_s`, where
     /// `sigma_a` tells how much each RGB channel gets absorbed while
     /// traversing the medium
-    sigma_t: DVec3,
+    sigma_t: Vec3,
     /// Material of the medium
     material: Material,
 }
@@ -24,13 +25,13 @@ impl Medium {
     /// * `scattering` - How much of each RGB channel gets scattered on hit
     /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in
     /// `(-1,1)`
-    pub fn new(absorption: DVec3, scattering: DVec3, scatter_param: f64) -> Self {
+    pub fn new(absorption: Vec3, scattering: Vec3, scatter_param: Float) -> Self {
         assert!(-1.0 < scatter_param && scatter_param < 1.0);
         assert!(scattering.min_element() >= 0.0);
         assert!(absorption.max_element() <= 1.0
                 && absorption.min_element() >= 0.0);
 
-        let sigma_s = scattering;
+        let sigma_s = Color::from(scattering);
         let sigma_t = scattering + absorption;
 
         Self {
@@ -40,27 +41,27 @@ impl Medium {
     }
 
     /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
-    pub fn transmittance(&self, h: &Hit) -> DVec3 {
+    pub fn transmittance(&self, h: &Hit) -> Color {
         // need to move some of the stuff to bsdf?
         // can this be infinity?
         let t_delta = h.t;
         let transmittance = (-self.sigma_t * t_delta).exp();
 
-        let pdf = transmittance.dot(DVec3::ONE) / 3.0;
+        let pdf = transmittance.dot(Vec3::ONE) / 3.0;
 
         if pdf == 0.0 {
             // this medium does not do much...
-            DVec3::ONE
+            Color::WHITE
         } else {
-            transmittance / pdf
+            Color::from(transmittance / pdf)
         }
     }
 }
 
 impl Object for Medium {
-    fn hit(&self, ro: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
+    fn hit(&self, ro: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         // choose a random color channel from density
-        let density = match 3.0 * rand_utils::rand_f64() {
+        let density = match 3.0 * rand_utils::rand_float() {
             f if f < 1.0 => self.sigma_t.x,
             f if f < 2.0 => self.sigma_t.y,
             _ => self.sigma_t.z,
@@ -74,7 +75,7 @@ impl Object for Medium {
         let ray_length = ro.dir.length();
         let inside_dist = (t_max - t_min) * ray_length;
 
-        let hit_dist = -(1.0 - rand_utils::rand_f64()).ln() / density;
+        let hit_dist = -(1.0 - rand_utils::rand_float()).ln() / density;
         // this way, the scale of the world matters.
         // doubt there are alternative ways?
         if hit_dist > inside_dist {
@@ -83,10 +84,10 @@ impl Object for Medium {
             let t = t_min + hit_dist / ray_length;
             let xi = ro.at(t);
             // need shading normal to cancel out the dot product in integrator.
-            let ns = DVec3::X;
-            let ng = DVec3::ZERO;
-            let uv = DVec2::ZERO;
-            let err = DVec3::ZERO;
+            let ns = Normal::X;
+            let ng = Normal::ZERO;
+            let uv = Vec2::ZERO;
+            let err = Vec3::ZERO;
 
             Hit::new(t, &self.material, -ng, xi, err, ns, ng, uv)
         }

@@ -1,12 +1,12 @@
-use crate::cli::TracerCli;
-use crate::samplers::JitteredSampler;
-use crate::tone_mapping::ToneMap;
-use crate::tracer::Camera;
-use crate::tracer::Film;
-use crate::tracer::FilmSample;
-use crate::tracer::Integrator;
-use crate::tracer::Scene;
-use glam::{DVec2, IVec2};
+use crate::{
+    Vec2, Float, TracerCli,
+    samplers::JitteredSampler, ToneMap
+};
+use crate::tracer::{
+    Camera, Film, FilmSample,
+    Integrator, Scene, Filter
+};
+use glam::IVec2;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::time::Instant;
 
@@ -20,6 +20,7 @@ pub struct Renderer {
     num_samples: u32,
     integrator: Integrator,
     tone_map: ToneMap,
+    filter: Filter,
 }
 
 impl Renderer {
@@ -38,6 +39,7 @@ impl Renderer {
             scene,
             camera,
             resolution,
+            filter: Filter::Box,
             num_samples: cli_args.samples,
             integrator: cli_args.get_integrator(),
             tone_map: ToneMap::NoMap,
@@ -47,6 +49,11 @@ impl Renderer {
     /// Sets the tone mapping algorithm used
     pub fn set_tone_map(&mut self, tone_map: ToneMap) {
         self.tone_map = tone_map;
+    }
+
+    /// Sets the pixel filter
+    pub fn set_filter(&mut self, filter: Filter) {
+        self.filter = filter;
     }
 
     /// Sets number of samples per pixel
@@ -80,8 +87,12 @@ impl Renderer {
             })
             .flatten_iter()
             .collect();
-
-        let mut film = Film::new(self.resolution.x, self.resolution.y);
+        /* this needs rewriting :^) */
+        let mut film = Film::new(
+            self.resolution.x,
+            self.resolution.y,
+            self.filter,
+        );
         film.add_samples(samples);
         println!("Finished rendering in {:#?}", start.elapsed());
         film
@@ -89,15 +100,15 @@ impl Renderer {
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_samples(&self, x: i32, y: i32) -> Vec<FilmSample> {
-        let xy = DVec2::new(x as f64, y as f64);
-
+        let xy = Vec2::new(x as Float, y as Float);
         PxSampler::new(self.num_samples)
-            .flat_map(|rand_sq: DVec2| {
+            .flat_map(|rand_sq: Vec2| {
+                let raster_xy = xy + rand_sq;
                 self.integrator.integrate(
                     &self.scene,
                     &self.camera,
-                    x, y,
-                    self.camera.generate_ray(xy + rand_sq)
+                    raster_xy,
+                    self.camera.generate_ray(raster_xy),
                 )
             })
             .map(|mut sample: FilmSample| {

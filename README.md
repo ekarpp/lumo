@@ -39,7 +39,6 @@ Options:
 The `hello_sphere.rs` example is written as follows:
 
 ```rust
-use glam::DVec3;
 use lumo::tracer::*;
 use lumo::*;
 
@@ -48,22 +47,22 @@ fn main() -> Result<(), png::EncodingError> {
     let mut scene = Scene::default();
 
     scene.add(Plane::new(
-        DVec3::NEG_Y,
-        DVec3::Y,
-        Material::diffuse(Texture::Solid(srgb_to_linear(190, 200, 210))),
+        Vec3::NEG_Y,
+        Vec3::Y,
+        Material::diffuse(Texture::Solid(Color::new(190, 200, 210))),
     ));
 
     scene.add_light(Sphere::new(
-        8.0 * DVec3::Y + 1.5 * DVec3::NEG_Z,
+        8.0 * Vec3::Y + 1.5 * Vec3::NEG_Z,
         4.0,
-        Material::Light(Texture::Solid(srgb_to_linear(255, 255, 255))),
+        Material::Light(Texture::Solid(Color::WHITE)),
     ));
 
     scene.add(
         Sphere::new(
-            DVec3::ZERO,
+            Vec3::ZERO,
             1.0,
-            Material::diffuse(Texture::Solid(srgb_to_linear(0, 0, 255))),
+            Material::diffuse(Texture::Solid(Color::new(0, 0, 255))),
         )
         .scale(0.3, 0.3, 0.3)
         .translate(0.0, -0.7, -1.5),
@@ -83,7 +82,6 @@ fn main() -> Result<(), png::EncodingError> {
 * [ekhzang/rpt](https://github.com/ekzhang/rpt)
 
 ### Gallery
-![Bust of Nefertiti](https://i.imgur.com/mF1qa0C.png)
-![Cornell box](https://i.imgur.com/uM7eQe8.png)
-![Stanford dragon](https://i.imgur.com/XE1OLp8.png)
+![Bust of Nefertiti](https://i.imgur.com/XuLT7Wy.png)
+![Cornell box](https://i.imgur.com/0EozvDq.png)
 ![Circle of spheres](https://i.imgur.com/zraIbaH.png)

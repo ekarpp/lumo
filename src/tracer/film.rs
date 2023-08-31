@@ -1,17 +1,14 @@
-use glam::DVec3;
+use crate::tracer::{filter::Filter, Color};
+use crate::{Float, Vec2};
 use png::{BitDepth, ColorType, Encoder, EncodingError};
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
+use std::{fs::File, io::BufWriter, path::Path};
 
 /// Sample for the film
 pub struct FilmSample {
     /// Raster coordinate `x` of the sample
-    pub x: i32,
-    /// Raster coordinate `y` of the sample
-    pub y: i32,
+    pub raster_xy: Vec2,
     /// Color of the sample
-    pub color: DVec3,
+    pub color: Color,
     /// "Splat" sample i.e. from sampling camera
     pub splat: bool,
 }
@@ -19,9 +16,8 @@ pub struct FilmSample {
 impl Default for FilmSample {
     fn default() -> Self {
         Self {
-            x: -1,
-            y: -1,
-            color: DVec3::ZERO,
+            raster_xy: Vec2::NEG_ONE,
+            color: Color::BLACK,
             splat: true,
         }
     }
@@ -29,17 +25,29 @@ impl Default for FilmSample {
 
 impl FilmSample {
     /// Creates a sample of `color` at raster `(x,y)`
-    pub fn new(color: DVec3, x: i32, y: i32, splat: bool) -> Self {
+    pub fn new(color: Color, raster_xy: Vec2, splat: bool) -> Self {
         Self {
-            x, y, color, splat,
+            raster_xy, color, splat,
         }
+    }
+}
+
+#[derive(Clone)]
+struct Pixel {
+    pub color: Color,
+    pub filter_weight_sum: Float,
+}
+
+impl Default for Pixel {
+    fn default() -> Self {
+        Pixel { color: Color::BLACK, filter_weight_sum: 0.0 }
     }
 }
 
 /// Film that contains the image being rendered
 pub struct Film {
-    samples: Vec<DVec3>,
-    num_samples: Vec<u32>,
+    samples: Vec<Pixel>,
+    filter: Filter,
     /// Width of the image
     pub width: i32,
     /// Height of the image
@@ -48,11 +56,11 @@ pub struct Film {
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new(width: i32, height: i32, filter: Filter) -> Self {
         let n = width * height;
         Self {
-            samples: vec![DVec3::ZERO; n as usize],
-            num_samples: vec![0; n as usize],
+            samples: vec![Pixel::default(); n as usize],
+            filter,
             width,
             height,
         }
@@ -60,14 +68,20 @@ impl Film {
 
     /// Adds a sample to the film
     pub fn add_sample(&mut self, sample: FilmSample) {
-        if !(0..self.width).contains(&sample.x)
-            || !(0..self.height).contains(&sample.y) {
+        let raster = sample.raster_xy.floor().as_ivec2();
+        if !(0..self.width).contains(&raster.x) || !(0..self.height).contains(&raster.y) {
             return;
         }
-        let idx = (sample.x + self.width * sample.y) as usize;
-        self.samples[idx] += sample.color;
-        if !sample.splat {
-            self.num_samples[idx] += 1;
+
+        let idx = (raster.x + self.width * raster.y) as usize;
+        if sample.splat {
+            self.samples[idx].color += sample.color;
+        } else {
+            let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
+            let offset = mid - sample.raster_xy;
+            let weight = self.filter.eval(2.0 * offset);
+            self.samples[idx].filter_weight_sum += weight;
+            self.samples[idx].color += sample.color * weight;
         }
     }
 
@@ -84,20 +98,16 @@ impl Film {
         for y in 0..self.height {
             for x in 0..self.width {
                 let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx] / self.num_samples[idx] as f64;
-
-                img.push(self.lin_to_srgb(px.x));
-                img.push(self.lin_to_srgb(px.y));
-                img.push(self.lin_to_srgb(px.z));
+                let px = self.samples[idx].color
+                    / self.samples[idx].filter_weight_sum;
+                let (r, g, b) = px.gamma_enc();
+                img.push(r);
+                img.push(g);
+                img.push(b);
             }
         }
 
         img
-    }
-
-    /// 2.2 Gamma encodes the linear RGB channel
-    fn lin_to_srgb(&self, c: f64) -> u8 {
-        (c.powf(1.0 / 2.2) * 255.0) as u8
     }
 
     /// Saves the film to a .png file

@@ -1,11 +1,6 @@
 //! Just a path tracer :)
 #![warn(missing_docs)]
 
-use glam::DVec3;
-
-/// Epsilon to avoid self intersection of objects
-const EPSILON: f64 = 1e-10;
-
 pub use cli::TracerCli;
 pub use image::Image;
 pub use perlin::Perlin;
@@ -19,7 +14,7 @@ pub mod tracer;
 
 /// Command line interface
 mod cli;
-/// `f64` with built in tracking of floating point error
+/// `Float` with built in tracking of floating point error
 mod efloat;
 /// Wrapper for writing image buffer to file.
 mod image;
@@ -34,19 +29,25 @@ mod samplers;
 /// Tone mapping functions
 mod tone_mapping;
 
-/// Decodes 8-bit sRGB encoded `r`, `g`, and `b` channels to linear RGB.
-pub fn srgb_to_linear(r: u8, g: u8, b: u8) -> DVec3 {
-    DVec3::new(
-        (r as f64 / 255.0).powf(2.2),
-        (g as f64 / 255.0).powf(2.2),
-        (b as f64 / 255.0).powf(2.2),
-    )
-}
+type Transform = glam::DAffine3;
+type Vec2 = glam::DVec2;
+/// 3x3 matrix type alias
+pub type Mat3 = glam::DMat3;
+/// 3 element vector type alias
+pub type Vec3 = glam::DVec3;
+/// Float type alias
+pub type Float = f64;
 
-/// Maps linear RGB value to luminance
-pub fn rgb_to_luminance(rgb: DVec3) -> f64 {
-    rgb.dot(DVec3::new(0.2126, 0.7152, 0.0722))
-}
+/// easy as ...
+pub const PI: Float = std::f64::consts::PI;
+const INF: Float = f64::INFINITY;
+const NEG_INF: Float = f64::NEG_INFINITY;
+const EPSILON: Float = 1e-10;
+
+type Normal = Vec3;
+type Direction = Vec3;
+type Point = Vec3;
+
 
 /// Enum to determine from which direction we are tracing rays
 #[derive(Copy, Clone)]

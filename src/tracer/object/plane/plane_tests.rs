@@ -1,33 +1,33 @@
 use super::*;
 
 fn plane() -> Box<Plane> {
-    Plane::new(DVec3::ZERO, DVec3::Z, Material::Blank)
+    Plane::new(Point::ZERO, Point::Z, Material::Blank)
 }
 
 #[test]
 fn no_self_intersect() {
-    let r = Ray::new(DVec3::ZERO, DVec3::Z);
-    assert!(plane().hit(&r, 0.0, INFINITY).is_none());
+    let r = Ray::new(Point::ZERO, Direction::Z);
+    assert!(plane().hit(&r, 0.0, crate::INF).is_none());
 }
 
 #[test]
 fn no_intersect_behind() {
-    let r = Ray::new(DVec3::ONE, DVec3::Z);
-    assert!(plane().hit(&r, 0.0, INFINITY).is_none());
+    let r = Ray::new(Point::ONE, Direction::Z);
+    assert!(plane().hit(&r, 0.0, crate::INF).is_none());
 }
 
 #[test]
 fn intersects() {
-    let r = Ray::new(DVec3::NEG_ONE, DVec3::Z);
-    assert!(plane().hit(&r, 0.0, INFINITY).is_some());
+    let r = Ray::new(Point::NEG_ONE, Direction::Z);
+    assert!(plane().hit(&r, 0.0, crate::INF).is_some());
 }
 
 #[test]
 fn no_hit_crash_parallel() {
     let p = plane();
     let r = Ray::new(
-        DVec3::NEG_ONE,
-        DVec3::X,
+        Point::NEG_ONE,
+        Point::X,
     );
-    assert!(p.hit(&r, 0.0, INFINITY).is_none());
+    assert!(p.hit(&r, 0.0, crate::INF).is_none());
 }

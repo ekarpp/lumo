@@ -17,7 +17,7 @@ fn shoot_rays(mesh: Box<dyn Object>) {
             // ..that is bigger than the unit cube. (exact value sqrt(3))
             * 2.0;
         let ray = Ray::new(ray_origin, ray_dir);
-        let hit = mesh.hit(&ray, 0.0, INFINITY);
+        let hit = mesh.hit(&ray, 0.0, crate::INF);
         // make sure we hit the object
         assert!(hit.is_some());
         let hit = hit.unwrap();
@@ -29,10 +29,10 @@ fn shoot_rays(mesh: Box<dyn Object>) {
 #[test]
 fn intersect_planar() {
     let vertices = vec![
-        DVec3::NEG_X,
-        DVec3::X,
-        DVec3::X + DVec3::Y,
-        DVec3::NEG_X + DVec3::Y,
+        Point::NEG_X,
+        Point::X,
+        Point::X + Point::Y,
+        Point::NEG_X + Point::Y,
     ];
     let faces = vec![
         Face::new(vec![0, 1, 2], vec![], vec![]),
@@ -47,8 +47,8 @@ fn intersect_planar() {
         Material::Blank,
     );
 
-    let r = Ray::new(0.5 * (DVec3::Y + DVec3::Z), DVec3::NEG_Z);
-    assert!(mesh.hit(&r, 0.0, INFINITY).is_some());
+    let r = Ray::new(0.5 * (Point::Y + Point::Z), Point::NEG_Z);
+    assert!(mesh.hit(&r, 0.0, crate::INF).is_some());
 }
 
 #[test]

@@ -1,27 +1,24 @@
-use crate::efloat;
-use crate::tracer::material::Material;
-use crate::tracer::object::Sampleable;
-use crate::tracer::ray::Ray;
-use glam::{DVec2, DVec3};
+use crate::{ Point, Float, Direction, Normal, efloat, Vec2, Vec3 };
+use crate::tracer::{ material::Material, object::Sampleable, ray::Ray };
 
 /// Stores information about a hit between a ray and an object
 pub struct Hit<'a> {
     /// The `t` value of ray at which the hit occurred
-    pub t: f64,
+    pub t: Float,
     /// Material of the object which got hit
     pub material: &'a Material,
     /// 3D point where object was hit
-    pub p: DVec3,
+    pub p: Point,
     /// Optional reference to light if we hit one
     pub light: Option<&'a dyn Sampleable>,
     /// Floating point error bounds of the impact point
-    pub fp_error: DVec3,
+    pub fp_error: Vec3,
     /// Normal of the surface used for shading calculations
-    pub ns: DVec3,
+    pub ns: Normal,
     /// Geometric normal of the surface
-    pub ng: DVec3,
+    pub ng: Normal,
     /// Texture coordinates in `\[0,1\]^2`
-    pub uv: DVec2,
+    pub uv: Vec2,
     /// Are we on the backface?
     pub backface: bool,
 }
@@ -39,14 +36,14 @@ impl<'a> Hit<'a> {
     /// * `uv` - Texture coordinates in `\[0,1\]^2`
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        t: f64,
+        t: Float,
         material: &'a Material,
-        wo: DVec3,
-        xi: DVec3,
-        fp_error: DVec3,
-        ns: DVec3,
-        ng: DVec3,
-        uv: DVec2,
+        wo: Direction,
+        xi: Point,
+        fp_error: Vec3,
+        ns: Normal,
+        ng: Normal,
+        uv: Vec2,
     ) -> Option<Self> {
         let backface = wo.dot(ng) > 0.0;
         Some(Self {
@@ -64,7 +61,7 @@ impl<'a> Hit<'a> {
 
     /// Generates a ray at point of impact. Would be better to use accurate
     /// error bounds instead of `EPSILON`.
-    pub fn generate_ray(&self, wi: DVec3) -> Ray {
+    pub fn generate_ray(&self, wi: Direction) -> Ray {
         let scaled_err = self.fp_error.dot(self.ns.abs());
 
         let offset = if wi.dot(self.ng) >= 0.0 {
@@ -75,7 +72,7 @@ impl<'a> Hit<'a> {
 
         let xi = self.p + offset;
 
-        let move_double = |v: f64, n: f64| {
+        let move_double = |v: Float, n: Float| {
             if n > 0.0 {
                 efloat::next_double(v)
             } else if n < 0.0 {
@@ -85,7 +82,7 @@ impl<'a> Hit<'a> {
             }
         };
 
-        let xi = DVec3::new(
+        let xi = Point::new(
             move_double(xi.x, offset.x),
             move_double(xi.y, offset.y),
             move_double(xi.z, offset.z),
