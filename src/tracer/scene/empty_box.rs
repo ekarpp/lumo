@@ -39,7 +39,7 @@ impl Scene {
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
                 Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(8.0 * Color::WHITE))
+            Material::Light(Texture::Solid(18.0 * Color::WHITE))
         ));
 
         /* left wall */
