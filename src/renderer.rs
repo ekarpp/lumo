@@ -87,7 +87,7 @@ impl Renderer {
             })
             .flatten_iter()
             .collect();
-
+        /* this needs rewriting :^) */
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,

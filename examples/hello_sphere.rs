@@ -14,7 +14,7 @@ fn main() -> Result<(), png::EncodingError> {
     scene.add_light(Sphere::new(
         8.0 * Vec3::Y + 1.5 * Vec3::NEG_Z,
         4.0,
-        Material::Light(Texture::Solid(Color::new(255, 255, 255))),
+        Material::Light(Texture::Solid(Color::WHITE)),
     ));
 
     scene.add(
