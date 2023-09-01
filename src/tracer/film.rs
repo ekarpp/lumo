@@ -97,25 +97,19 @@ impl FilmTile {
 /// Film that contains the image being rendered
 pub struct Film {
     pixels: Vec<Pixel>,
-    filter: Filter,
     /// Image resolution
     pub resolution: IVec2,
 }
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32, filter: Filter) -> Self {
+    pub fn new(width: i32, height: i32) -> Self {
         let n = width * height;
         let resolution = IVec2::new(width, height);
         Self {
             pixels: vec![Pixel::default(); n as usize],
-            filter,
             resolution,
         }
-    }
-
-    pub fn get_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
-        FilmTile::new(px_min, px_max.min(self.resolution), self.filter)
     }
 
     pub fn add_tile(&mut self, tile: FilmTile) {

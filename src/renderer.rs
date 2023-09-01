@@ -8,7 +8,7 @@ use crate::tracer::{
 };
 use glam::IVec2;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{sync::{Mutex, Arc}, time::Instant};
+use std::{sync::Mutex, time::Instant};
 
 type PxSampler = JitteredSampler;
 
@@ -84,7 +84,6 @@ impl Renderer {
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
-            self.filter,
         );
 
         let mutex = Mutex::new(&mut film);
@@ -96,7 +95,7 @@ impl Renderer {
                 (0..tiles_x).for_each(|x: i32| {
                     let px_min = IVec2::new(x, y) * TILE_SIZE;
                     let px_max = px_min + TILE_SIZE;
-                    let mut tile = mutex.lock().unwrap().get_tile(px_min, px_max);
+                    let mut tile = self.get_tile(px_min, px_max);
                     for y in tile.px_min.y..tile.px_max.y {
                         for x in tile.px_min.x..tile.px_max.x {
                             self.get_samples(&mut tile, x, y)
@@ -107,6 +106,10 @@ impl Renderer {
             });
         println!("Finished rendering in {:#?}", start.elapsed());
         film
+    }
+
+    fn get_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
+        FilmTile::new(px_min, px_max.min(self.resolution), self.filter)
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
