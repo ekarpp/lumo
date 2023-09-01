@@ -17,7 +17,7 @@ fn zero_medium_has_no_effect() {
         Normal::X,
         Vec2::X,
     ).unwrap();
-    assert!(m.transmittance(&h).mean() == 1.0);
+    assert!(m.transmittance(h.t).mean() == 1.0);
 }
 
 #[test]
