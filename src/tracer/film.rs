@@ -1,7 +1,8 @@
 use crate::tracer::{filter::Filter, Color};
 use crate::{Float, Vec2};
+use glam::IVec2;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
-use std::{fs::File, io::BufWriter, path::Path};
+use std::{fs::File, io::BufWriter, path::Path, ops::AddAssign};
 
 /// Sample for the film
 pub struct FilmSample {
@@ -44,62 +45,100 @@ impl Default for Pixel {
     }
 }
 
-/// Film that contains the image being rendered
-pub struct Film {
-    samples: Vec<Pixel>,
-    filter: Filter,
-    /// Width of the image
-    pub width: i32,
-    /// Height of the image
-    pub height: i32,
+impl AddAssign<&Pixel> for Pixel {
+    fn add_assign(&mut self, rhs: &Self) {
+        self.color += rhs.color;
+        self.filter_weight_sum += rhs.filter_weight_sum;
+    }
 }
 
-impl Film {
-    /// Creates a new empty film
-    pub fn new(width: i32, height: i32, filter: Filter) -> Self {
-        let n = width * height;
+pub struct FilmTile {
+    pub px_min: IVec2,
+    pub px_max: IVec2,
+    pub width: i32,
+    pixels: Vec<Pixel>,
+    filter: Filter,
+}
+
+impl FilmTile {
+    pub fn new(px_min: IVec2, px_max: IVec2, filter: Filter) -> Self {
+        let pxs = px_max - px_min;
+        let width = pxs.x;
         Self {
-            samples: vec![Pixel::default(); n as usize],
+            px_min,
+            px_max,
             filter,
             width,
-            height,
+            pixels: vec![Pixel::default(); (pxs.x * pxs.y) as usize],
         }
     }
 
     /// Adds a sample to the film
     pub fn add_sample(&mut self, sample: FilmSample) {
         let raster = sample.raster_xy.floor().as_ivec2();
-        if !(0..self.width).contains(&raster.x) || !(0..self.height).contains(&raster.y) {
+        if !(self.px_min.x..self.px_max.x).contains(&raster.x) {
+            return;
+        }
+        if !(self.px_min.y..self.px_max.y).contains(&raster.y) {
             return;
         }
 
+        let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
+        let offset = mid - sample.raster_xy;
+        let weight = self.filter.eval(2.0 * offset);
+
+        let raster = raster - self.px_min;
         let idx = (raster.x + self.width * raster.y) as usize;
-        if sample.splat {
-            self.samples[idx].color += sample.color;
-        } else {
-            let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
-            let offset = mid - sample.raster_xy;
-            let weight = self.filter.eval(2.0 * offset);
-            self.samples[idx].filter_weight_sum += weight;
-            self.samples[idx].color += sample.color * weight;
+        self.pixels[idx].filter_weight_sum += weight;
+        self.pixels[idx].color += sample.color * weight;
+    }
+}
+
+/// Film that contains the image being rendered
+pub struct Film {
+    pixels: Vec<Pixel>,
+    filter: Filter,
+    /// Image resolution
+    pub resolution: IVec2,
+}
+
+impl Film {
+    /// Creates a new empty film
+    pub fn new(width: i32, height: i32, filter: Filter) -> Self {
+        let n = width * height;
+        let resolution = IVec2::new(width, height);
+        Self {
+            pixels: vec![Pixel::default(); n as usize],
+            filter,
+            resolution,
         }
     }
 
-    /// Empties the vector and adds each sample to film
-    pub fn add_samples(&mut self, mut samples: Vec<FilmSample>) {
-        while let Some(sample) = samples.pop() {
-            self.add_sample(sample);
+    pub fn get_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
+        FilmTile::new(px_min, px_max.min(self.resolution), self.filter)
+    }
+
+    pub fn add_tile(&mut self, tile: FilmTile) {
+        let px_offset = tile.px_max - tile.px_min;
+        for y in 0..px_offset.y {
+            for x in 0..px_offset.x {
+                let px = IVec2::new(x, y);
+                let idx_tile = (px.x + px.y * tile.width) as usize;
+                let raster = px + tile.px_min;
+                let idx_film = (raster.x + raster.y * self.resolution.x) as usize;
+                self.pixels[idx_film] += &tile.pixels[idx_tile];
+            }
         }
     }
 
     fn rgb_image(&self) -> Vec<u8> {
         let mut img = Vec::new();
 
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let idx = (x + y * self.width) as usize;
-                let px = self.samples[idx].color
-                    / self.samples[idx].filter_weight_sum;
+        for y in 0..self.resolution.y {
+            for x in 0..self.resolution.x {
+                let idx = (x + y * self.resolution.x) as usize;
+                let px = self.pixels[idx].color
+                    / self.pixels[idx].filter_weight_sum;
                 let (r, g, b) = px.gamma_enc();
                 img.push(r);
                 img.push(g);
@@ -118,8 +157,8 @@ impl Film {
         let mut binding = BufWriter::new(File::create(path)?);
         let mut encoder = Encoder::new(
             &mut binding,
-            self.width as u32,
-            self.height as u32,
+            self.resolution.x as u32,
+            self.resolution.y as u32,
         );
         encoder.set_color(ColorType::Rgb);
         encoder.set_depth(BitDepth::Eight);

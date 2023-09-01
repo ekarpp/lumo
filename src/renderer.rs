@@ -4,11 +4,11 @@ use crate::{
 };
 use crate::tracer::{
     Camera, Film, FilmSample,
-    Integrator, Scene, Filter
+    Integrator, Scene, Filter, FilmTile
 };
 use glam::IVec2;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::time::Instant;
+use std::{sync::{Mutex, Arc}, time::Instant};
 
 type PxSampler = JitteredSampler;
 
@@ -79,27 +79,37 @@ impl Renderer {
         );
 
         let start = Instant::now();
-        let samples: Vec<FilmSample> = (0..self.resolution.y)
-            .into_par_iter()
-            .map(|y: i32| {
-                (0..self.resolution.x)
-                    .flat_map(move |x: i32| self.get_samples(x, y))
-            })
-            .flatten_iter()
-            .collect();
-        /* this needs rewriting :^) */
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
             self.filter,
         );
-        film.add_samples(samples);
+
+        let mutex = Mutex::new(&mut film);
+
+        let tile_size = 16;
+        let tiles_x = (self.resolution.x + tile_size - 1) / tile_size;
+        let tiles_y = (self.resolution.y + tile_size - 1) / tile_size;
+        (0..tiles_y).into_par_iter()
+            .for_each(|y: i32| {
+                (0..tiles_x).for_each(|x: i32| {
+                    let px_min = IVec2::new(x, y) * tile_size;
+                    let px_max = px_min + tile_size;
+                    let mut tile = mutex.lock().unwrap().get_tile(px_min, px_max);
+                    for y in tile.px_min.y..tile.px_max.y {
+                        for x in tile.px_min.x..tile.px_max.x {
+                            self.get_samples(&mut tile, x, y)
+                        }
+                    }
+                    mutex.lock().unwrap().add_tile(tile);
+                })
+            });
         println!("Finished rendering in {:#?}", start.elapsed());
         film
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
-    fn get_samples(&self, x: i32, y: i32) -> Vec<FilmSample> {
+    fn get_samples(&self, tile: &mut FilmTile, x: i32, y: i32) {
         let xy = Vec2::new(x as Float, y as Float);
         PxSampler::new(self.num_samples)
             .flat_map(|rand_sq: Vec2| {
@@ -111,10 +121,9 @@ impl Renderer {
                     self.camera.generate_ray(raster_xy),
                 )
             })
-            .map(|mut sample: FilmSample| {
+            .for_each(|mut sample: FilmSample| {
                 sample.color = self.tone_map.map(sample.color);
-                sample
+                tile.add_sample(sample)
             })
-            .collect()
     }
 }
