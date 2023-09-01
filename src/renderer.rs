@@ -12,6 +12,8 @@ use std::{sync::{Mutex, Arc}, time::Instant};
 
 type PxSampler = JitteredSampler;
 
+const TILE_SIZE: i32 = 16;
+
 /// Configures the image to be rendered
 pub struct Renderer {
     scene: Scene,
@@ -87,14 +89,13 @@ impl Renderer {
 
         let mutex = Mutex::new(&mut film);
 
-        let tile_size = 16;
-        let tiles_x = (self.resolution.x + tile_size - 1) / tile_size;
-        let tiles_y = (self.resolution.y + tile_size - 1) / tile_size;
+        let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
+        let tiles_y = (self.resolution.y + TILE_SIZE - 1) / TILE_SIZE;
         (0..tiles_y).into_par_iter()
             .for_each(|y: i32| {
                 (0..tiles_x).for_each(|x: i32| {
-                    let px_min = IVec2::new(x, y) * tile_size;
-                    let px_max = px_min + tile_size;
+                    let px_min = IVec2::new(x, y) * TILE_SIZE;
+                    let px_max = px_min + TILE_SIZE;
                     let mut tile = mutex.lock().unwrap().get_tile(px_min, px_max);
                     for y in tile.px_min.y..tile.px_max.y {
                         for x in tile.px_min.x..tile.px_max.x {
