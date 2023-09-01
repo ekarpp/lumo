@@ -82,8 +82,11 @@ impl FilmTile {
         }
     }
 
-    /// Adds a sample to the film
+    /// Adds a sample to the tile
     pub fn add_sample(&mut self, sample: FilmSample) {
+        if sample.splat {
+            return self.splats.push(sample);
+        }
         let raster = sample.raster_xy.floor().as_ivec2();
         if !(self.px_min.x..self.px_max.x).contains(&raster.x) {
             return;
@@ -100,11 +103,6 @@ impl FilmTile {
         let idx = (raster.x + self.width * raster.y) as usize;
         self.pixels[idx].filter_weight_sum += weight;
         self.pixels[idx].color += sample.color * weight;
-    }
-
-    /// Add a splat sample
-    pub fn add_splat(&mut self, sample: FilmSample) {
-        self.splats.push(sample)
     }
 }
 
