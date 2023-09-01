@@ -113,15 +113,17 @@ pub struct Film {
     pixels: Vec<Pixel>,
     /// Image resolution
     pub resolution: IVec2,
+    splat_scale: Float,
 }
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new(width: i32, height: i32, samples: u32) -> Self {
         let n = width * height;
         let resolution = IVec2::new(width, height);
         Self {
             pixels: vec![Pixel::default(); n as usize],
+            splat_scale: 1.0 / samples as Float,
             resolution,
         }
     }
@@ -159,8 +161,9 @@ impl Film {
         for y in 0..self.resolution.y {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
-                let col = self.pixels[idx].splat + self.pixels[idx].color
-                    / self.pixels[idx].filter_weight_sum;
+                let col = self.pixels[idx].splat * self.splat_scale +
+                    self.pixels[idx].color / self.pixels[idx].filter_weight_sum;
+
                 let (r, g, b) = col.gamma_enc();
                 img.push(r);
                 img.push(g);

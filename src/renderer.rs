@@ -84,6 +84,7 @@ impl Renderer {
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
+            self.num_samples,
         );
 
         let mutex = Mutex::new(&mut film);
