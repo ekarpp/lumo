@@ -84,15 +84,16 @@ impl FilmTile {
 
     /// Adds a sample to the tile
     pub fn add_sample(&mut self, sample: FilmSample) {
-        if sample.splat {
-            return self.splats.push(sample);
-        }
         let raster = sample.raster_xy.floor().as_ivec2();
         if !(self.px_min.x..self.px_max.x).contains(&raster.x) {
             return;
         }
         if !(self.px_min.y..self.px_max.y).contains(&raster.y) {
             return;
+        }
+
+        if sample.splat {
+            return self.splats.push(sample);
         }
 
         let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
