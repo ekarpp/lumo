@@ -79,6 +79,13 @@ impl Renderer {
             self.num_samples,
             self.integrator,
         );
+        let samples_root = (self.num_samples as Float).sqrt();
+        if samples_root % 1.0 != 0.0 {
+            println!(
+                "Should use a square as number of samples, rounding to {}",
+                samples_root.floor().powi(2) as u32
+            );
+        }
 
         let start = Instant::now();
         let mut film = Film::new(
