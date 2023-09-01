@@ -8,7 +8,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
-        gathered *= scene.transmittance(&ho);
+        gathered *= scene.transmittance(ho.t);
 
         match material.bsdf_pdf(&ho, &ro) {
             None => {

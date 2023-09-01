@@ -52,10 +52,10 @@ impl Scene {
     }
 
     /// Returns the transmittance due to volumetric medium
-    pub fn transmittance(&self, h: &Hit) -> Color {
+    pub fn transmittance(&self, t: Float) -> Color {
         match &self.medium {
             None => Color::WHITE,
-            Some(medium) => medium.transmittance(h),
+            Some(medium) => medium.transmittance(t),
         }
     }
 
