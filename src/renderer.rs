@@ -13,13 +13,14 @@ use std::{sync::Mutex, time::Instant};
 type PxSampler = JitteredSampler;
 
 const TILE_SIZE: i32 = 16;
+const SAMPLES_INCREMENT: i32 = 256;
 
 /// Configures the image to be rendered
 pub struct Renderer {
     scene: Scene,
     camera: Camera,
     resolution: IVec2,
-    num_samples: u32,
+    num_samples: i32,
     integrator: Integrator,
     tone_map: ToneMap,
     filter: Filter,
@@ -59,7 +60,7 @@ impl Renderer {
     }
 
     /// Sets number of samples per pixel
-    pub fn set_samples(&mut self, samples: u32) {
+    pub fn set_samples(&mut self, samples: i32) {
         self.num_samples = samples;
     }
 
@@ -79,13 +80,6 @@ impl Renderer {
             self.num_samples,
             self.integrator,
         );
-        let samples_root = (self.num_samples as Float).sqrt();
-        if samples_root % 1.0 != 0.0 {
-            println!(
-                "Should use a square as number of samples, rounding to {}",
-                samples_root.floor().powi(2) as u32
-            );
-        }
 
         let start = Instant::now();
         let mut film = Film::new(
@@ -98,20 +92,30 @@ impl Renderer {
 
         let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
         let tiles_y = (self.resolution.y + TILE_SIZE - 1) / TILE_SIZE;
-        (0..tiles_y).into_par_iter()
-            .for_each(|y: i32| {
-                (0..tiles_x).for_each(|x: i32| {
-                    let px_min = IVec2::new(x, y) * TILE_SIZE;
-                    let px_max = px_min + TILE_SIZE;
-                    let mut tile = self.get_tile(px_min, px_max);
-                    for y in tile.px_min.y..tile.px_max.y {
-                        for x in tile.px_min.x..tile.px_max.x {
-                            self.get_samples(&mut tile, x, y)
+        let mut samples_taken = 0;
+        while samples_taken < self.num_samples {
+            let prev = samples_taken;
+            samples_taken += SAMPLES_INCREMENT;
+            samples_taken = samples_taken.min(self.num_samples);
+            let samples = samples_taken - prev;
+
+            (0..tiles_y).into_par_iter()
+                .for_each(|y: i32| {
+                    (0..tiles_x).for_each(|x: i32| {
+                        let px_min = IVec2::new(x, y) * TILE_SIZE;
+                        let px_max = px_min + TILE_SIZE;
+                        let mut tile = self.get_tile(px_min, px_max);
+
+                        for y in tile.px_min.y..tile.px_max.y {
+                            for x in tile.px_min.x..tile.px_max.x {
+                                self.get_samples(&mut tile, samples, x, y)
+                            }
                         }
-                    }
-                    mutex.lock().unwrap().add_tile(tile);
-                })
-            });
+
+                        mutex.lock().unwrap().add_tile(tile);
+                    })
+                });
+        }
         println!("Finished rendering in {:#?}", start.elapsed());
         film
     }
@@ -121,9 +125,9 @@ impl Renderer {
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
-    fn get_samples(&self, tile: &mut FilmTile, x: i32, y: i32) {
+    fn get_samples(&self, tile: &mut FilmTile, num_samples: i32, x: i32, y: i32) {
         let xy = Vec2::new(x as Float, y as Float);
-        PxSampler::new(self.num_samples)
+        PxSampler::new(num_samples)
             .flat_map(|rand_sq: Vec2| {
                 let raster_xy = xy + rand_sq;
                 self.integrator.integrate(

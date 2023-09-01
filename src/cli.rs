@@ -5,7 +5,7 @@ use crate::tracer::Integrator;
 pub struct TracerCli {
     /// number of samples per pixel (defaults to 1)
     #[argh(option, short = 's', default = "1")]
-    pub samples: u32,
+    pub samples: i32,
 
     /// number of threads used (defaults to all)
     #[argh(option, short = 't')]

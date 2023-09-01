@@ -118,7 +118,7 @@ pub struct Film {
 
 impl Film {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32, samples: u32) -> Self {
+    pub fn new(width: i32, height: i32, samples: i32) -> Self {
         let n = width * height;
         let resolution = IVec2::new(width, height);
         Self {
