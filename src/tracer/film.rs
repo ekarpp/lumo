@@ -50,6 +50,7 @@ impl Default for Pixel {
 impl AddAssign<&Pixel> for Pixel {
     fn add_assign(&mut self, rhs: &Self) {
         self.color += rhs.color;
+        self.splat += rhs.splat;
         self.filter_weight_sum += rhs.filter_weight_sum;
     }
 }
@@ -84,16 +85,16 @@ impl FilmTile {
 
     /// Adds a sample to the tile
     pub fn add_sample(&mut self, sample: FilmSample) {
+        if sample.splat {
+            return self.splats.push(sample);
+        }
+
         let raster = sample.raster_xy.floor().as_ivec2();
         if !(self.px_min.x..self.px_max.x).contains(&raster.x) {
             return;
         }
         if !(self.px_min.y..self.px_max.y).contains(&raster.y) {
             return;
-        }
-
-        if sample.splat {
-            return self.splats.push(sample);
         }
 
         let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
@@ -140,6 +141,13 @@ impl Film {
 
         for splat in tile.splats {
             let raster = splat.raster_xy.floor().as_ivec2();
+            if !(0..self.resolution.x).contains(&raster.x) {
+                continue;
+            }
+            if !(0..self.resolution.y).contains(&raster.y) {
+                continue;
+            }
+
             let idx = (raster.x + raster.y * self.resolution.x) as usize;
             self.pixels[idx].splat += splat.color;
         }
@@ -151,9 +159,9 @@ impl Film {
         for y in 0..self.resolution.y {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
-                let px = self.pixels[idx].splat +
-                    self.pixels[idx].color / self.pixels[idx].filter_weight_sum;
-                let (r, g, b) = px.gamma_enc();
+                let col = self.pixels[idx].splat + self.pixels[idx].color
+                    / self.pixels[idx].filter_weight_sum;
+                let (r, g, b) = col.gamma_enc();
                 img.push(r);
                 img.push(g);
                 img.push(b);
