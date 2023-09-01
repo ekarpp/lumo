@@ -127,7 +127,11 @@ impl Renderer {
             })
             .for_each(|mut sample: FilmSample| {
                 sample.color = self.tone_map.map(sample.color);
-                tile.add_sample(sample)
+                if sample.splat {
+                    tile.add_splat(sample)
+                } else {
+                    tile.add_sample(sample)
+                }
             })
     }
 }

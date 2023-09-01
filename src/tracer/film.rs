@@ -33,15 +33,17 @@ impl FilmSample {
     }
 }
 
+// TODO: some memory saving available by making separate tile pixel (w.o. splat)
 #[derive(Clone)]
 struct Pixel {
     pub color: Color,
+    pub splat: Color,
     pub filter_weight_sum: Float,
 }
 
 impl Default for Pixel {
     fn default() -> Self {
-        Pixel { color: Color::BLACK, filter_weight_sum: 0.0 }
+        Pixel { color: Color::BLACK, splat: Color::BLACK, filter_weight_sum: 0.0 }
     }
 }
 
@@ -61,6 +63,7 @@ pub struct FilmTile {
     /// Width of the tile
     pub width: i32,
     pixels: Vec<Pixel>,
+    splats: Vec<FilmSample>,
     filter: Filter,
 }
 
@@ -75,6 +78,7 @@ impl FilmTile {
             filter,
             width,
             pixels: vec![Pixel::default(); (pxs.x * pxs.y) as usize],
+            splats: vec![],
         }
     }
 
@@ -96,6 +100,11 @@ impl FilmTile {
         let idx = (raster.x + self.width * raster.y) as usize;
         self.pixels[idx].filter_weight_sum += weight;
         self.pixels[idx].color += sample.color * weight;
+    }
+
+    /// Add a splat sample
+    pub fn add_splat(&mut self, sample: FilmSample) {
+        self.splats.push(sample)
     }
 }
 
@@ -129,6 +138,12 @@ impl Film {
                 self.pixels[idx_film] += &tile.pixels[idx_tile];
             }
         }
+
+        for splat in tile.splats {
+            let raster = splat.raster_xy.floor().as_ivec2();
+            let idx = (raster.x + raster.y * self.resolution.x) as usize;
+            self.pixels[idx].splat += splat.color;
+        }
     }
 
     fn rgb_image(&self) -> Vec<u8> {
@@ -137,8 +152,8 @@ impl Film {
         for y in 0..self.resolution.y {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
-                let px = self.pixels[idx].color
-                    / self.pixels[idx].filter_weight_sum;
+                let px = self.pixels[idx].splat +
+                    self.pixels[idx].color / self.pixels[idx].filter_weight_sum;
                 let (r, g, b) = px.gamma_enc();
                 img.push(r);
                 img.push(g);
