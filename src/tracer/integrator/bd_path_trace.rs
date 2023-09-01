@@ -52,10 +52,6 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
-    if light_last.is_delta() {
-        return None;
-    }
-
     let xi = light_last.h.p;
     let ro = camera.sample_towards(xi, rand_utils::unit_square());
     let pdf = camera.sample_towards_pdf(&ro, xi);
@@ -77,6 +73,7 @@ fn connect_light_path(
     let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
     let camera_last = sampled_vertex.as_ref().unwrap();
 
+    /* MB: medium bug. missing trace too */
     let shading_cosine = {
         let xn = light_scnd_last.h.p;
         let wi = (xn - xi).normalize();
@@ -159,7 +156,7 @@ fn connect_paths(
                                 light_last,
                                 Transport::Radiance,
                             );
-
+                            /* MB: medium bug. missing trace too */
                             camera_last.gathered * bsdf * light_last.gathered
                                 * camera_last.shading_cosine(wi, ns)
                         }
@@ -189,7 +186,7 @@ fn connect_paths(
                     light_last,
                     Transport::Radiance,
                 );
-
+                /* MB: medium bug. missing trace too */
                 light_last.gathered * light_bsdf
                     * camera_bsdf * camera_last.gathered
                     * light_last.g(camera_last)
