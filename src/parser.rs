@@ -19,6 +19,10 @@ mod obj;
 /// .mtl parser
 mod mtl;
 
+/*
+ * BEWARE WHO ENTERS! HERE BE DRAGONS!
+ */
+
 /// Function to create io::Error
 fn obj_error(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
@@ -77,6 +81,7 @@ fn _get_url(url: &str) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
+/// Extracts file matching `re` from zip file in `bytes`
 fn _extract_zip(bytes: Vec<u8>, re: Regex) -> Result<Vec<u8>> {
     println!("Reading .zip");
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
@@ -99,6 +104,7 @@ fn _extract_zip(bytes: Vec<u8>, re: Regex) -> Result<Vec<u8>> {
     }
 }
 
+/// Maps `Vec<u8>` to `File`
 fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
     let mut tmp_file = tempfile::tempfile()?;
 
@@ -106,6 +112,16 @@ fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
     tmp_file.rewind()?;
 
     Ok(tmp_file)
+}
+
+/// Loads `tex_name` from `zip` to an `Image`
+fn _img_from_zip(zip: Vec<u8>, tex_name: &str) -> Result<Image> {
+    let file_bytes = _extract_zip(zip, Regex::new(tex_name).unwrap())?;
+    let file = _bytes_to_file(file_bytes)?;
+
+    println!("Decoding texture");
+    Image::from_file(file)
+        .map_err(|decode_error| obj_error(&decode_error.to_string()))
 }
 
 /// Loads a .OBJ file at the given path
@@ -146,13 +162,7 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
 
     let resp = _get_url(url)?;
 
-    let file_bytes = _extract_zip(resp, Regex::new(tex_name).unwrap())?;
-
-    let file = _bytes_to_file(file_bytes)?;
-
-    println!("Decoding texture");
-    Image::from_file(file)
-        .map_err(|decode_error| obj_error(&decode_error.to_string()))
+    _img_from_zip(resp, tex_name)
 }
 
 /// Parses a whole scene from a .obj file specified by `name`
@@ -190,7 +200,7 @@ pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
                 let mtl_bytes = _extract_zip(resp.clone(), Regex::new(mtllib_name).unwrap())?;
                 let mtl_file = _bytes_to_file(mtl_bytes)?;
 
-                mtl::load_file(mtl_file, &mut materials)?;
+                mtl::load_file(mtl_file, Some(resp.clone()), &mut materials)?;
             }
             _ => (),
         }

@@ -11,11 +11,11 @@ pub struct TracerCli {
     #[argh(option, short = 't')]
     pub threads: Option<usize>,
 
-    /// use direct light integrator instead of path tracing.
+    /// use direct light integrator instead of path tracing
     #[argh(switch, short = 'd', long = "direct")]
     pub direct_light: bool,
 
-    /// use bidirectional path tracing instead of path tracing.
+    /// use bidirectional path tracing instead of path tracing
     #[argh(switch, short = 'b', long = "bdpt")]
     pub bd_path_trace: bool,
 }

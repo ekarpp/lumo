@@ -16,7 +16,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         768,
     );
 
-    let scene = parser::scene_from_url(SCENE_URL, SCENE_NAME)?;
+    let mut scene = parser::scene_from_url(SCENE_URL, SCENE_NAME)?;
+
+    scene.add_light(Sphere::new(
+        Vec3::new(2.0, 1.5, -2.0),
+        0.3,
+        Material::Light(Texture::Solid(Color::WHITE)),
+    ));
 
     let renderer = Renderer::new(scene, camera);
     renderer.render().save("fireplace.png")?;
