@@ -168,8 +168,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             0.2,
             0.0,
             0.0,
-            683,
-            1000,
+            641,
+            939,
 	)
     };
 

@@ -1,6 +1,6 @@
 pub use camera::Camera;
 pub use color::Color;
-pub use film::{Film, FilmSample};
+pub use film::{Film, FilmTile, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
 pub use object::{

@@ -52,10 +52,6 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
-    if light_last.is_delta() {
-        return None;
-    }
-
     let xi = light_last.h.p;
     let ro = camera.sample_towards(xi, rand_utils::unit_square());
     let pdf = camera.sample_towards_pdf(&ro, xi);
@@ -77,7 +73,10 @@ fn connect_light_path(
     let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
     let camera_last = sampled_vertex.as_ref().unwrap();
 
-    let shading_cosine = {
+    let shading_cosine = if !light_last.is_surface() {
+        // we have to be a medium
+        1.0
+    } else {
         let xn = light_scnd_last.h.p;
         let wi = (xn - xi).normalize();
         let ns = light_last.h.ns;
@@ -87,6 +86,7 @@ fn connect_light_path(
     };
 
     sample.color *= light_last.gathered
+        * scene.transmittance(t2.sqrt())
         * shading_cosine
         * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
         * mis::mis_weight(camera, light_path, s, camera_path, 1, sampled_vertex);
@@ -159,9 +159,12 @@ fn connect_paths(
                                 light_last,
                                 Transport::Radiance,
                             );
-
-                            camera_last.gathered * bsdf * light_last.gathered
+                            /* MB: medium bug. missing trace too */
+                            camera_last.gathered
+                                * bsdf
+                                * light_last.gathered
                                 * camera_last.shading_cosine(wi, ns)
+                                * scene.transmittance(light_last.h.t)
                         }
                     }
                 }
@@ -190,9 +193,12 @@ fn connect_paths(
                     Transport::Radiance,
                 );
 
-                light_last.gathered * light_bsdf
-                    * camera_bsdf * camera_last.gathered
-                    * light_last.g(camera_last)
+                light_last.gathered
+                    * light_bsdf
+                    * camera_bsdf
+                    * camera_last.gathered
+                    * light_last.g(camera_last, scene)
+                    // transmittance baked in to G
         }
     };
 

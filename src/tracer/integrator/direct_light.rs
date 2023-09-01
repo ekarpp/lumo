@@ -51,14 +51,14 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> Color {
                                 };
 
                                 bsdf
-                                    * scene.transmittance(&ho)
+                                    * scene.transmittance(ho.t)
                                     * material.shading_cosine(wi, ns)
                                     * _integrate(scene, ri, depth + 1)
                                     / p_scatter
                             }
                         }
                     } else {
-                        scene.transmittance(&ho)
+                        scene.transmittance(ho.t)
                             * shadow_ray(
                                 scene,
                                 &ro,

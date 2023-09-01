@@ -91,7 +91,7 @@ fn shadow_ray(
                     };
 
                     bsdf
-                        * scene.transmittance(&hi)
+                        * scene.transmittance(hi.t)
                         * hi.material.emit(&hi)
                         * material.shading_cosine(wi, ns)
                         * weight
@@ -126,7 +126,7 @@ fn shadow_ray(
                     };
 
                     bsdf
-                        * scene.transmittance(&hi)
+                        * scene.transmittance(hi.t)
                         * hi.material.emit(&hi)
                         * material.shading_cosine(wi, ns)
                         * weight

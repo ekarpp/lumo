@@ -3,6 +3,7 @@ use std::fs::File;
 use crate::tracer::Color;
 
 /// Loaded texture images stored in a Rust vector
+#[derive(Clone)]
 pub struct Image {
     /// Image buffer storing color values
     pub buffer: Vec<Color>,
@@ -26,19 +27,30 @@ impl Image {
         let mut bytes = vec![0; reader.output_buffer_size()];
         let info = reader.next_frame(&mut bytes)?;
 
-        assert!(info.color_type == ColorType::Rgb);
         assert!(info.bit_depth == BitDepth::Eight);
 
-        let buffer = bytes[..info.buffer_size()]
-            .chunks(3)
-            .map(|rgb| Color::new(rgb[0], rgb[1], rgb[2]))
-            .collect();
+        let buffer = match info.color_type {
+            ColorType::Rgb => {
+                bytes[..info.buffer_size()]
+                    .chunks(3)
+                    .map(|rgb| Color::new(rgb[0], rgb[1], rgb[2]))
+                    .collect()
+            }
+            ColorType::Rgba => {
+                bytes[..info.buffer_size()]
+                    .chunks(4)
+                    .map(|rgba| Color::new(rgba[0], rgba[1], rgba[2]))
+                    .collect()
+            }
+            _ => panic!("unsupported image type {:?}", info.color_type),
+        };
 
         let width = info.width;
         let height = info.height;
 
         // maybe not correct for textures, but we do it anyway
-        assert!(width == height);
+        // assert!(width == height);
+        // not correct for textures!
         println!("Decoded succesfully");
         Ok(Self {
             buffer,

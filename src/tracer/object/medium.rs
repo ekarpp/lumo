@@ -40,11 +40,9 @@ impl Medium {
         }
     }
 
-    /// Computes the transmittance for the hit `h`. Checks if we hit the medium.
-    pub fn transmittance(&self, h: &Hit) -> Color {
+    /// Computes the transmittance for the distance `t`.
+    pub fn transmittance(&self, t_delta: Float) -> Color {
         // need to move some of the stuff to bsdf?
-        // can this be infinity?
-        let t_delta = h.t;
         let transmittance = (-self.sigma_t * t_delta).exp();
 
         let pdf = transmittance.dot(Vec3::ONE) / 3.0;

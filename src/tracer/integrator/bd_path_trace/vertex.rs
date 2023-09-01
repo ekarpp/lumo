@@ -72,7 +72,7 @@ impl<'a> Vertex<'a> {
 
     /// Are we a surface/light vertex?
     pub fn is_surface(&self) -> bool {
-        !matches!(self.material(), Material::Blank)
+        !matches!(self.material(), Material::Blank | Material::Volumetric(..))
     }
 
     /// Are we on a light?
@@ -92,7 +92,11 @@ impl<'a> Vertex<'a> {
 
     /// Helper to get shading cosine at hit
     pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
-        self.material().shading_cosine(wi, ns)
+        if self.is_surface() {
+            self.material().shading_cosine(wi, ns)
+        } else {
+            1.0
+        }
     }
 
     /// Computes BSDF at hit of `self`
@@ -120,15 +124,23 @@ impl<'a> Vertex<'a> {
 
     /// Geometry term btwn `self` and `v` ... ...
     /// it is symmetric??
-    pub fn g(&self, v: &Vertex) -> Float {
+    pub fn g(&self, v: &Vertex, scene: &Scene) -> Color {
         let xo = self.h.p;
         let xi = v.h.p;
         let no = self.h.ns;
         let ni = v.h.ns;
 
         let wi = (xi - xo).normalize();
+        let mut g = 1.0 / xo.distance_squared(xi);
 
-        no.dot(wi).abs() * ni.dot(wi).abs() / xo.distance_squared(xi)
+        if self.is_surface() {
+            g *= no.dot(wi).abs();
+        }
+        if v.is_surface() {
+            g *= ni.dot(wi).abs();
+        }
+
+        g * scene.transmittance(xo.distance(xi))
     }
 
     /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure

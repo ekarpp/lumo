@@ -45,7 +45,7 @@ fn walk<'a>(
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
-        gathered *= scene.transmittance(&ho);
+        gathered *= scene.transmittance(ho.t);
 
         let prev = depth;
         let curr = depth + 1;

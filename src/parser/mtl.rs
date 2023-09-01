@@ -18,6 +18,8 @@ pub struct MtlConfig {
     /// Illumination model, see docs.
     /// If 6 or 7 makes transparent, if 5 makes metal, otherwise unused.
     pub illumination_model: usize,
+    /// Texture map
+    pub map_kd: Option<Image>,
 }
 
 impl Default for MtlConfig {
@@ -30,6 +32,7 @@ impl Default for MtlConfig {
             refraction_idx: 1.5,
             roughness: 1.0,
             illumination_model: 0,
+            map_kd: None,
         }
     }
 }
@@ -39,11 +42,16 @@ impl MtlConfig {
         if !self.emission_color.is_black() {
             Material::Light(Texture::Solid(self.emission_color))
         } else {
-            let texture = Texture::Solid(self.diffuse_color + self.specular_color);
+            let texture = if let Some(img) = &self.map_kd {
+                Texture::Image(img.clone())
+            } else {
+                Texture::Solid(self.diffuse_color + self.specular_color)
+            };
 
             let metallicity = if self.illumination_model == 5 { 1.0 } else { 0.0 };
             let is_transparent = self.illumination_model == 6
                 || self.illumination_model == 7;
+
             Material::microfacet(
                 texture,
                 self.roughness,
@@ -55,7 +63,11 @@ impl MtlConfig {
     }
 }
 
-pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Result<()> {
+pub fn load_file(
+    file: File,
+    zip_file: Option<Vec<u8>>,
+    materials: &mut HashMap<String, MtlConfig>,
+) -> Result<()> {
     let reader = BufReader::new(file);
 
     let mut mtl = MtlConfig::default();
@@ -76,26 +88,40 @@ pub fn load_file(file: File, materials: &mut HashMap<String, MtlConfig>) -> Resu
                 mtl = MtlConfig::default();
                 mtl_name = tokens[1].to_string();
             }
+            /* diffuse color */
             "Kd" => {
                 let kd = parse_vec3(&tokens)?;
                 mtl.diffuse_color = Color::from(kd);
             }
+            /* texture map */
+            "map_Kd" => {
+                if let Some(ref zip) = zip_file {
+                    let tex_name = tokens[1].replace("\\", "/");
+                    let img = super::_img_from_zip(zip.clone(), &tex_name)?;
+                    mtl.map_kd = Some(img);
+                }
+            }
+            /* emission color */
             "Ke" => {
                 let ke = parse_vec3(&tokens)?;
                 mtl.emission_color = Color::from(ke);
             }
+            /* specular color */
             "Ks" => {
                 let ks = parse_vec3(&tokens)?;
                 mtl.specular_color = Color::from(ks);
             }
+            /* transmission filter */
             "Tf" => {
                 let tf = parse_vec3(&tokens)?;
                 mtl.transmission_filter = tf;
             }
+            /* refraction index */
             "Ni" => {
                 let ni = parse_double(tokens[1])?;
                 mtl.refraction_idx = ni;
             }
+            /* roughness */
             "Ns" => {
                 let ns = parse_double(tokens[1])?;
                 // blender uses this mapping

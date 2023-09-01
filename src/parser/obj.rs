@@ -17,13 +17,6 @@ pub fn load_file(file: File, material: Material) -> Result<Mesh> {
         let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
 
         parse_tokens(tokens, &mut vertices, &mut normals, &mut uvs, &mut faces)?;
-
-                /*
-                if !triangles.is_empty() {
-                    meshes.push(triangles);
-                    triangles = Vec::new();
-                }
-                 */
     }
 
     Ok(TriangleMesh::new(vertices, faces, normals, uvs, material))
@@ -48,7 +41,7 @@ pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<S
         let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
 
         match tokens[0] {
-            "g" => {
+            "g" | "o" => {
                 if !faces.is_empty() {
                     meshes.push((faces, material));
                     faces = Vec::new();
@@ -57,12 +50,12 @@ pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<S
             }
             "usemtl" => {
                 match materials.get(tokens[1]) {
+                    Some(mtl_cfg) => material = mtl_cfg.build_material(),
                     None => {
                         return Err(obj_error(
                             &format!("Could not find material {}", tokens[1])
                         ));
                     }
-                    Some(mtl_cfg) => material = mtl_cfg.build_material(),
                 }
             }
             _ => {
