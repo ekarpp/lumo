@@ -52,15 +52,20 @@ impl AddAssign<&Pixel> for Pixel {
     }
 }
 
+/// FilmTile given to a thread to avoid synchronization issues
 pub struct FilmTile {
+    /// Minimum coordinates of tile in raster space
     pub px_min: IVec2,
+    /// Maximum coordinates of tile in raster space
     pub px_max: IVec2,
+    /// Width of the tile
     pub width: i32,
     pixels: Vec<Pixel>,
     filter: Filter,
 }
 
 impl FilmTile {
+    /// Creates a new tile `px_min` x `px_max` with `filter`
     pub fn new(px_min: IVec2, px_max: IVec2, filter: Filter) -> Self {
         let pxs = px_max - px_min;
         let width = pxs.x;
@@ -112,6 +117,7 @@ impl Film {
         }
     }
 
+    /// Add samples from `tile` to self
     pub fn add_tile(&mut self, tile: FilmTile) {
         let px_offset = tile.px_max - tile.px_min;
         for y in 0..px_offset.y {
