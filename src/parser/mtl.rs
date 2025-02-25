@@ -2,62 +2,68 @@ use super::*;
 use crate::tracer::Color;
 
 /// Holds the properties of a microfacet material
+#[allow(non_snake_case)]
 pub struct MtlConfig {
-    /// Base color of the material
-    pub diffuse_color: Color,
-    /// Specular color of the material. Currently material color = kd + ks
-    pub specular_color: Color,
+    /// Diffuse color of the material
+    pub Kd: Color,
+    /// Specular color of the material
+    pub Ks: Color,
     /// Emittance of the material. If not zero vector, then createas a light
-    pub emission_color: Color,
-    /// How much each light channel passes on transmission. Unused ATM
-    pub transmission_filter: Vec3,
+    pub Ke: Color,
+    /// How much each light channel passes on transmission. Unused.
+    pub Tf: Color,
     /// Refraction index of the material
-    pub refraction_idx: Float,
+    pub Ni: Float,
     /// Roughness of the material
-    pub roughness: Float,
+    pub Ns: Float,
     /// Illumination model, see docs.
     /// If 6 or 7 makes transparent, if 5 makes metal, otherwise unused.
-    pub illumination_model: usize,
+    pub illum: usize,
     /// Texture map
-    pub map_kd: Option<Image>,
+    pub map_Kd: Option<Image>,
 }
 
 impl Default for MtlConfig {
     fn default() -> Self {
         Self {
-            diffuse_color: Color::BLACK,
-            specular_color: Color::BLACK,
-            emission_color: Color::BLACK,
-            transmission_filter: Vec3::ZERO,
-            refraction_idx: 1.5,
-            roughness: 1.0,
-            illumination_model: 0,
-            map_kd: None,
+            Kd: Color::BLACK,
+            Ks: Color::BLACK,
+            Ke: Color::BLACK,
+            Tf: Color::BLACK,
+            Ni: 1.5,
+            Ns: 0.0,
+            illum: 0,
+            map_Kd: None,
         }
     }
 }
 
 impl MtlConfig {
     pub fn build_material(&self) -> Material {
-        if !self.emission_color.is_black() {
-            Material::Light(Texture::Solid(self.emission_color))
+        if !self.Ke.is_black() {
+            Material::Light(Texture::from(self.Ke))
         } else {
-            let texture = if let Some(img) = &self.map_kd {
+            let fresnel_enabled = self.illum == 5 || self.illum == 7;
+            let is_transparent = self.illum == 6 || self.illum == 7;
+
+            let kd = if let Some(img) = &self.map_Kd {
                 Texture::Image(img.clone())
             } else {
-                Texture::Solid(self.diffuse_color + self.specular_color)
+                Texture::from(self.Kd)
             };
+            let ks = Texture::from(self.Ks);
+            let tf = Texture::from(self.Tf);
 
-            let metallicity = if self.illumination_model == 5 { 1.0 } else { 0.0 };
-            let is_transparent = self.illumination_model == 6
-                || self.illumination_model == 7;
+            // blender uses this mapping
+            let roughness = 1.0 - self.Ns.min(900.0).sqrt() / 30.0;
 
             Material::microfacet(
-                texture,
-                self.roughness,
-                self.refraction_idx,
-                metallicity,
+                roughness,
+                self.Ni,
+                0.0,
                 is_transparent,
+                fresnel_enabled,
+                kd, ks, tf
             )
         }
     }
@@ -91,46 +97,45 @@ pub fn load_file(
             /* diffuse color */
             "Kd" => {
                 let kd = parse_vec3(&tokens)?;
-                mtl.diffuse_color = Color::from(kd);
+                mtl.Kd = Color::from(kd);
             }
             /* texture map */
             "map_Kd" => {
                 if let Some(ref zip) = zip_file {
-                    let tex_name = tokens[1].replace("\\", "/");
+                    let tex_name = tokens[1].replace('\\', "/");
                     let img = super::_img_from_zip(zip.clone(), &tex_name)?;
-                    mtl.map_kd = Some(img);
+                    mtl.map_Kd = Some(img);
                 }
             }
             /* emission color */
             "Ke" => {
                 let ke = parse_vec3(&tokens)?;
-                mtl.emission_color = Color::from(ke);
+                mtl.Ke = Color::from(ke);
             }
             /* specular color */
             "Ks" => {
                 let ks = parse_vec3(&tokens)?;
-                mtl.specular_color = Color::from(ks);
+                mtl.Ks = Color::from(ks);
             }
             /* transmission filter */
             "Tf" => {
                 let tf = parse_vec3(&tokens)?;
-                mtl.transmission_filter = tf;
+                mtl.Tf = Color::from(tf);
             }
             /* refraction index */
             "Ni" => {
                 let ni = parse_double(tokens[1])?;
-                mtl.refraction_idx = ni;
+                mtl.Ni = ni;
             }
             /* roughness */
             "Ns" => {
                 let ns = parse_double(tokens[1])?;
-                // blender uses this mapping
-                let roughness = 1.0 - ns.min(900.0).sqrt() / 30.0;
-                mtl.roughness = roughness;
+                mtl.Ns = ns;
             }
+            /* illumination model */
             "illum" => {
                 let illum = parse_double(tokens[1])?;
-                mtl.illumination_model = illum as usize;
+                mtl.illum = illum as usize;
             }
             _ => (),
         }

@@ -71,20 +71,25 @@ impl Object for Cone {
             }
         }
 
-        // TODO: propagate errors from transformation
+        let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
+        let ni = Normal::new(xi.x, radius * tan_theta.value, xi.z);
+        let ni = ni.normalize();
+
+        if ni.dot(wi) >= 0.0 /* && !r.is_light_ray() */ {
+            // backface, make it see through
+            // TODO: handle shadows
+            return None;
+        }
+
         let err = Vec3::new(
-            50.0 * (ox + dx * t).abs_error(),
-            50.0 * (oy + dy * t).abs_error(),
-            50.0 * (oz + dz * t).abs_error(),
+            (ox + dx * t).abs_error(),
+            (oy + dy * t).abs_error(),
+            (oz + dz * t).abs_error(),
         );
 
         let u = ((-xi.z).atan2(xi.x) + crate::PI) / (2.0 * crate::PI);
         let v = xi.y / self.height;
         let uv = Vec2::new(u, v);
-
-        let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
-        let ni = Normal::new(xi.x, radius * tan_theta.value, xi.z);
-        let ni = ni.normalize();
 
         Hit::new(t.value, &self.material, wi, xi, err, ni, ni, uv)
     }

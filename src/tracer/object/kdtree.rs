@@ -40,7 +40,7 @@ impl<T: Bounded> KdTree<T> {
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
 
-        let threads = argh::from_env::<TracerCli>().threads.unwrap_or(0);
+        let threads = argh::from_env::<TracerCli>().threads;
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(threads)
             .build()
@@ -66,7 +66,7 @@ impl<T: Bounded> KdTree<T> {
 
         let bb_dim = ax_max - ax_min;
         let s = 1.0 / bb_dim.max_element();
-        self.scale(s, s, s)
+        self.scale_uniform(s)
     }
 
     fn hit_subtree(
@@ -203,7 +203,7 @@ impl KdNode {
     }
 
     /// Finds the best split according to SAH.
-    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (Axis, Float, Float) {
+    fn find_best_split(aabbs: &[&AaBoundingBox], boundary: &AaBoundingBox) -> (Axis, Float, Float) {
         let mut best_cost = crate::INF;
         let mut best_point = crate::INF;
         let mut best_axis = Axis::X;

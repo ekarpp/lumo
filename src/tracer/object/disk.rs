@@ -126,20 +126,4 @@ impl Sampleable for Disk {
             Vec2::ZERO,
         ).unwrap()
     }
-
-    fn sample_towards(&self, xo: Point, rand_sq: Vec2) -> Direction {
-        let xi = self.sample_on(rand_sq).p;
-        xi - xo
-    }
-
-    fn sample_towards_pdf(&self, ri: &Ray) -> (Float, Option<Hit>) {
-        match self.hit(ri, 0.0, crate::INF) {
-            None => (0.0, None),
-            Some(hi) => {
-                let p = 1.0 / (crate::PI * self.radius * self.radius);
-
-                (p, Some(hi))
-            }
-        }
-    }
 }

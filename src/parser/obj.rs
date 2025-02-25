@@ -49,6 +49,10 @@ pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<S
                 }
             }
             "usemtl" => {
+                if !faces.is_empty() {
+                    meshes.push((faces, material));
+                    faces = Vec::new();
+                }
                 match materials.get(tokens[1]) {
                     Some(mtl_cfg) => material = mtl_cfg.build_material(),
                     None => {
@@ -71,6 +75,8 @@ pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<S
     }
 
     meshes.push((faces, material));
+
+    normalize_uvs(&mut uvs);
 
     let triangle_mesh = Arc::new(TriangleMesh {
         vertices,
@@ -175,4 +181,28 @@ fn parse_face(
     }
 
     Ok(faces)
+}
+
+/// Normalize `uvs` to [0, 1]
+fn normalize_uvs(uvs: &mut [Vec2]) {
+    let mut mx = Vec2::splat(-crate::INF);
+    let mut mi = Vec2::splat(crate::INF);
+
+    for i in 0..uvs.len() {
+        mx = mx.max(uvs[i]);
+        mi = mi.min(uvs[i]);
+    }
+
+    if mi.min_element() < 0.0 {
+        // assume if one is negative both are
+        for i in 0..uvs.len() {
+            uvs[i] -= mi;
+        }
+    }
+    let d = mx - mi;
+    if d.max_element() > 1.0 {
+        for i in 0..uvs.len() {
+            uvs[i] /= d;
+        }
+    }
 }

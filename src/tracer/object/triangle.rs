@@ -208,13 +208,16 @@ impl Sampleable for Triangle {
 
         let xo = self.a() + beta * b_m_a + gamma * c_m_a;
 
+        let xo_abs = self.a().abs() + (beta * b_m_a).abs() + (gamma * c_m_a).abs();
+        let err = efloat::gamma(6) * xo_abs;
+
         Hit::new(
             0.0,
             // set by parent
             &Material::Blank,
             -ng,
             xo,
-            Vec3::ZERO,
+            err,
             ns,
             ng,
             Vec2::ZERO,

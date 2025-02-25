@@ -3,9 +3,9 @@ use crate::{ Mat3, Point };
 use crate::tracer::Color;
 
 impl Scene {
-    const LIGHT_EPS: crate::Float = 0.01;
+    const LIGHT_EPS: crate::Float = 0.001;
     /// Constructs an empty "Cornell box". Middle of the box is at
-    /// `(0.0, 0.0, -1.0)` and it has dimensions `2x2x2`.
+    /// `(0.0, 0.0, -1.0)` and it has dimensions `2x1.6x2`.
     /// Perfect for the default camera.
     ///
     /// # Arguments
@@ -39,7 +39,7 @@ impl Scene {
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
                 Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::Solid(20.0 * Color::WHITE))
+            Material::Light(Texture::from(32.0 * Color::new(252, 201, 138)))
         ));
 
         /* left wall */
@@ -69,7 +69,7 @@ impl Scene {
                 Point::new(right, ground, back),
                 Point::new(right, ground, front),
             ),
-            Material::diffuse(Texture::Solid(def_color)),
+            Material::diffuse(Texture::from(def_color)),
         ));
 
         /* roof */
@@ -79,7 +79,7 @@ impl Scene {
                 Point::new(right, ceiling, front),
                 Point::new(right, ceiling, back),
             ),
-            Material::diffuse(Texture::Solid(def_color)),
+            Material::diffuse(Texture::from(def_color)),
         ));
 
         /* front wall */
@@ -89,7 +89,7 @@ impl Scene {
                 Point::new(right, ground, front),
                 Point::new(right, ceiling, front),
             ),
-            Material::diffuse(Texture::Solid(def_color)),
+            Material::diffuse(Texture::from(def_color)),
         ));
 
         scene

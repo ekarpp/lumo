@@ -74,14 +74,13 @@ pub trait Sampleable: Object {
     fn sample_leaving(&self, rand_sq0: Vec2, rand_sq1: Vec2) -> (Ray, Hit) {
         let ho = self.sample_on(rand_sq0);
         let ns = ho.ns;
-        let xo = ho.p;
         let uvw = Onb::new(ns);
         let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
         let wi = uvw.to_world(wi_local);
         // pdf start = 1 / area
         // pdf dir = cos hemisphere
         // prob want to make sample_leaving_pdf function
-        (Ray::new(xo, wi), ho)
+        (ho.generate_ray(wi), ho)
     }
 
     /// Returns PDF for sampled ray (i) origin and (ii) direction
@@ -106,23 +105,21 @@ pub trait Sampleable: Object {
     /// * `rand_sq` - Uniformly random point on unit square
     fn sample_towards(&self, xo: Point, rand_sq: Vec2) -> Direction {
         let xi = self.sample_on(rand_sq).p;
-        xi - xo
+        (xi - xo).normalize()
     }
 
     /// PDF for sampling points on the surface uniformly at random. Returns PDF
-    /// with respect to area and hit to self, if found.
+    /// with respect to SA, not guaranteed to check that `ri` hits `self`
     ///
     /// # Arguments
     /// * `ri` - Sampled ray from `xo` to `xi`
-    fn sample_towards_pdf(&self, ri: &Ray) -> (Float, Option<Hit>) {
-        match self.hit(ri, 0.0, crate::INF) {
-            None => (0.0, None),
-            Some(hi) => {
-                // might not work for solids, cause might be multiple hits
-                let p = 1.0 / self.area();
+    /// * `xi` - Point on `self`
+    fn sample_towards_pdf(&self, ri: &Ray, xi: Point, ng: Normal) -> Float {
+        let p_area = 1.0 / self.area();
 
-                (p, Some(hi))
-            }
-        }
+        let xo = ri.origin;
+        let wi = ri.dir;
+
+        p_area * xo.distance_squared(xi) / ng.dot(wi).abs()
     }
 }

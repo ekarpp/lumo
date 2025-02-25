@@ -1,24 +1,21 @@
 use lumo::tracer::*;
 use lumo::*;
 
-const SCENE_URL: &str = "https://casual-effects.com/g3d/data10/common/model/CornellBox/CornellBox.zip";
-const SCENE_NAME: &str = "CornellBox-Sphere.obj";
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let camera = Camera::perspective(
-        0.8 * Vec3::Y + 1.7 * Vec3::Z,
-        0.8 * Vec3::Y + 1.7 * Vec3::NEG_Z,
-        Vec3::Y,
-        90.0,
-        0.0,
-        1.0,
-        1024,
-        768,
-    );
+    let camera = CameraBuilder::new()
+        .origin(Vec3::new(278.0, 273.0, -800.0))
+        .towards(Vec3::new(278.0, 273.0, 0.0))
+        .zoom(2.8)
+        .focal_length(0.035)
+        .resolution((512, 512))
+        .build();
 
-    let scene = parser::scene_from_url(SCENE_URL, SCENE_NAME)?;
+    let scene = Scene::cornell_box();
 
-    let renderer = Renderer::new(scene, camera);
-    renderer.render().save("cornell.png")?;
+    Renderer::new(scene, camera)
+        .set_integrator(Integrator::PathTrace)
+        .set_samples(1024)
+        .render()
+        .save("cornell.png")?;
     Ok(())
 }

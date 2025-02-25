@@ -9,8 +9,7 @@ mod medium_test;
 /// Examples of real life mediums include smoke, fog, and clouds.
 pub struct Medium {
     /// Transmittance of the medium, defined as `sigma_a + sigma_s`, where
-    /// `sigma_a` tells how much each RGB channel gets absorbed while
-    /// traversing the medium
+    /// `sigma_a` tells how much each RGB channel gets absorbed while traversing the medium
     sigma_t: Vec3,
     /// Material of the medium
     material: Material,
@@ -21,10 +20,9 @@ impl Medium {
     ///
     /// # Arguments
     /// * `absorption` - How much of each RGB channel gets absorbed while
-    /// traversing the medium. Value in `\[0,1\]^3`
+    ///   traversing the medium. Value in `\[0,1\]^3`
     /// * `scattering` - How much of each RGB channel gets scattered on hit
-    /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in
-    /// `(-1,1)`
+    /// * `scatter_param` - Scattering parameter to Henyey-Greenstein in `(-1,1)`
     pub fn new(absorption: Vec3, scattering: Vec3, scatter_param: Float) -> Self {
         assert!(-1.0 < scatter_param && scatter_param < 1.0);
         assert!(scattering.min_element() >= 0.0);
@@ -36,7 +34,7 @@ impl Medium {
 
         Self {
             sigma_t,
-            material: Material::Volumetric(scatter_param, sigma_t, sigma_s),
+            material: Material::volumetric(scatter_param, sigma_t, sigma_s),
         }
     }
 
@@ -82,8 +80,8 @@ impl Object for Medium {
             let t = t_min + hit_dist / ray_length;
             let xi = ro.at(t);
             // need shading normal to cancel out the dot product in integrator.
-            let ns = Normal::X;
-            let ng = Normal::ZERO;
+            let ns = Normal::Z;
+            let ng = Normal::Z;
             let uv = Vec2::ZERO;
             let err = Vec3::ZERO;
 

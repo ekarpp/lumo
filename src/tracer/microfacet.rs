@@ -1,42 +1,46 @@
-use crate::tracer::{ onb::Onb, Color };
-use crate::{ Normal, Direction, Float, Vec2 };
+use crate::{ Normal, Direction, Float, Vec2, complex::Complex, spherical_utils };
+use crate::tracer::{ Color, hit::Hit, Texture };
 
 /// Configurable parameters for a microsurface
-#[derive(Copy, Clone)]
 pub struct MicrofacetConfig {
     /// Roughness of the surface (α) [0,1]
-    pub roughness: Float,
+    pub roughness: Vec2,
     /// Refraction index of the material >= 1.0
-    pub refraction_idx: Float,
-    /// Ratio of how metallic the material is [0,1]
-    pub metallicity: Float,
-    /// Transparency of the material
-    pub transparent: bool,
+    pub eta: Float,
+    /// Absoprtion coefficient
+    pub k: Float,
+    /// Diffuse reflectance
+    pub kd: Texture,
+    /// Specular reflectance
+    pub ks: Texture,
+    /// Transmission filter
+    pub tf: Texture,
 }
 
 impl MicrofacetConfig {
     pub fn new(
         roughness: Float,
-        refraction_idx: Float,
-        metallicity: Float,
-        transparent: bool
+        eta: Float,
+        k: Float,
+        kd: Texture,
+        ks: Texture,
+        tf: Texture,
     ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
-        assert!((0.0..=1.0).contains(&metallicity));
-        assert!(refraction_idx >= 1.0);
+        assert!(eta > 0.0);
+        assert!(k >= 0.0);
 
         Self {
-            roughness: roughness.max(1e-5),
-            refraction_idx,
-            metallicity,
-            transparent,
+            roughness: Vec2::splat(roughness.max(1e-5)),
+            eta,
+            k,
+            kd, ks, tf,
         }
     }
 }
 
 /// Defines a distribution of normals for a microfacet. `Float` parameter is the
 /// roughness (α) of the surface.
-#[derive(Copy, Clone)]
 pub enum MfDistribution {
     /// Walter et al. 2007
     Ggx(MicrofacetConfig),
@@ -47,36 +51,62 @@ pub enum MfDistribution {
 impl MfDistribution {
     pub fn new(
         roughness: Float,
-        refraction_idx: Float,
-        metallicity: Float,
-        transparent: bool
+        eta: Float,
+        k: Float,
+        kd: Texture,
+        ks: Texture,
+        tf: Texture,
     ) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, metallicity, transparent))
-    }
-
-    /// Is the material transparent?
-    pub fn is_transparent(&self) -> bool {
-        self.get_config().transparent
+        Self::Ggx(
+            MicrofacetConfig::new(
+                roughness,
+                eta,
+                k,
+                kd, ks, tf,
+            )
+        )
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
-        self.is_transparent() || self.get_config().roughness < 0.01
+        let roughness = self.roughness();
+        (roughness.x + roughness.y) / 2.0 < 0.01
     }
 
     /// Does the material have delta scattering distribution?
     pub fn is_delta(&self) -> bool {
-        self.get_config().roughness < 1e-2
+        let roughness = self.roughness();
+        (roughness.x + roughness.y) / 2.0 < 1e-3
     }
 
-    /// Gets the refraction index
-    pub fn get_rfrct_idx(&self) -> Float {
-        self.get_config().refraction_idx
+    /// Get refraction index from config
+    pub fn eta(&self) -> Float {
+        self.get_config().eta
+    }
+
+    /// Get absorption coefficient from config
+    pub fn k(&self) -> Float {
+        self.get_config().k
     }
 
     /// Get roughness from config
-    pub fn get_roughness(&self) -> Float {
+    pub fn roughness(&self) -> Vec2 {
         self.get_config().roughness
+    }
+
+    /// Get Kd value at `h`
+    pub fn kd(&self, h: &Hit) -> Color {
+        self.get_config().kd.albedo_at(h)
+    }
+
+    /// Get Ks value at `h`
+    pub fn ks(&self, h: &Hit) -> Color {
+        self.get_config().ks.albedo_at(h)
+    }
+
+    /// Get Tf value at `h`
+    pub fn tf(&self, h: &Hit) -> Color {
+        self.get_config().tf.albedo_at(h)
     }
 
     /// Getter, better way to do this?
@@ -90,16 +120,16 @@ impl MfDistribution {
     /// as done in Frostbite (Lagarde et al. 2014)
     pub fn disney_diffuse(
         &self,
-        no_dot_v: Float,
-        no_dot_wh: Float,
-        no_dot_wi: Float
+        cos_theta_wo: Float,
+        cos_theta_wi: Float,
+        cos_theta_wh: Float
     ) -> Float {
-        let roughness2 = self.get_config().roughness.powi(2);
+        let roughness2 = self.roughness().x.powi(2);
         let energy_bias = 0.5 * roughness2;
-        let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
+        let fd90 = energy_bias + 2.0 * cos_theta_wh.powi(2) * roughness2;
 
-        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_v).powi(5);
-        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_wi).powi(5);
+        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_wo).powi(5);
+        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_wi).powi(5);
 
         let energy_factor = 1.0 + roughness2 * (1.0 / 1.51 - 1.0);
 
@@ -113,48 +143,103 @@ impl MfDistribution {
     /// * GGX - α^2 / (π * (cos^4(θ) * (α^2 - 1.0) + 1.0)^2)
     ///
     /// # Arguments
-    /// * `wh` - Microsurface normal
-    /// * `no` - Macrosurface normal
-    pub fn d(&self, wh: Normal, no: Normal) -> Float {
+    /// * `wh` - Microsurface normal in shading space
+    pub fn d(&self, wh: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = wh.dot(no).powi(2);
+                let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if cos2_theta < crate::EPSILON {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let roughness2 = cfg.roughness * cfg.roughness;
+                    let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
+                    if cos4_theta < crate::EPSILON.powi(2) {
+                        return 0.0;
+                    }
+                    let cos_phi = spherical_utils::cos_phi(wh);
+                    let sin_phi = spherical_utils::sin_phi(wh);
 
-                    roughness2
-                        / (crate::PI * (1.0 - cos2_theta * (1.0 - roughness2)).powi(2))
+                    let alpha2 = cfg.roughness.x * cfg.roughness.y;
+                    let e = tan2_theta * (
+                        (cos_phi / cfg.roughness.x).powi(2)
+                            + (sin_phi / cfg.roughness.y).powi(2)
+                    );
+
+                    1.0 / (crate::PI * alpha2 * cos4_theta * (1.0 + e).powi(2))
+
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = wh.dot(no).powi(2);
+                let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if cos2_theta < crate::EPSILON {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let roughness2 = cfg.roughness * cfg.roughness;
-                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
+                    let roughness2 = cfg.roughness.x * cfg.roughness.x;
+                    let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
 
                     (-tan2_theta / roughness2).exp()
-                        / (crate::PI * roughness2 * cos2_theta.powi(2))
+                        / (crate::PI * roughness2 * cos4_theta)
                 }
             }
         }
     }
 
-    /// Fresnel term with Schlick's approximation
-    pub fn f(&self, wo: Direction, wh: Normal, color: Color) -> Color {
-        let eta = self.get_config().refraction_idx;
-        let metallicity = self.get_config().metallicity;
+    /// Fresnel term with the full equations
+    /// # Arguments
+    /// * `wo`      - Direction to viewer in shading space
+    /// * `wh`     - Microsurface normal in shading space
+    pub fn f(&self, wo: Direction, wh: Normal) -> Float {
+        if self.k() == 0.0 {
+            self.fr_real(wo, wh)
+        } else {
+            self.fr_complex(wo, wh)
+        }
+    }
 
-        let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = Color::splat(f0 * f0).lerp(color, metallicity);
+    fn fr_complex(&self, wo: Direction, wh: Normal) -> Float {
+        // this is a complex number: n + ik
+        let eta = Complex::new(self.eta(), self.k());
+        let cos_o = wo.dot(wh).clamp(0.0, 1.0);
+        let sin2_o = 1.0 - cos_o * cos_o;
 
-        let wo_dot_wh = wo.dot(wh).abs();
-        f0 + (Color::WHITE - f0) * (1.0 - wo_dot_wh).powi(5)
+        let sin2_i: Complex = sin2_o / (eta * eta);
+        let cos_i: Complex = (1.0 - sin2_i).sqrt();
+
+        let r_par: Complex = (eta * cos_o - cos_i) / (eta * cos_o + cos_i);
+        let r_per: Complex = (cos_o - eta * cos_i) / (cos_o + eta * cos_i);
+
+        (r_par.norm_sqr() + r_per.norm_sqr()) / 2.0
+    }
+
+    fn fr_real(&self, wo: Direction, wh: Normal) -> Float {
+        let cos_o = wo.dot(wh);
+        let inside = cos_o < 0.0;
+        let eta = if inside { 1.0 / self.eta() } else { self.eta() };
+
+        let cos_o = cos_o.abs();
+        let sin2_o = 1.0 - cos_o * cos_o;
+        let sin2_i = sin2_o / (eta * eta);
+
+        // total internal reflection
+        if sin2_i >= 1.0 {
+            return 1.0;
+        }
+
+        let cos_i = (1.0 - sin2_i).max(0.0).sqrt();
+
+        let r_par = (eta * cos_o - cos_i) / (eta * cos_o + cos_i);
+        let r_per = (cos_o - eta * cos_i) / (cos_o + eta * cos_i);
+
+        (r_par * r_par + r_per * r_per) / 2.0
+    }
+
+    fn chi_pass(&self, wo: Direction, wh: Normal) -> bool {
+        // signum to fix refraction
+        let cos_theta_wh = spherical_utils::cos_theta(wh);
+        let cos_theta_wo = spherical_utils::cos_theta(wo);
+        let chi = cos_theta_wh.signum() * wo.dot(wh) * cos_theta_wo;
+        chi > crate::EPSILON
     }
 
     /// Shadow-masking term. Used to make sure that only microfacets that are
@@ -162,27 +247,22 @@ impl MfDistribution {
     /// in Chapter 8.4.3 of PBR due to Heitz et al. 2013.
     ///
     /// # Arguments
-    /// * `v` - View direction
-    /// * `wi` - Direction of ray away from the point of impact
-    /// * `wh` - Microsurface normal
-    /// * `no` - Macrosurface normal
-    pub fn g(&self, v: Direction, wi: Direction, wh: Normal, no: Normal) -> Float {
-        // signum to fix refraction
-        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
-        if chi < crate::EPSILON {
+    /// * `v`  - View direction in shading space
+    /// * `wi` - Direction of ray away from the point of impact in shading space
+    /// * `wh` - Microsurface normal in shading space
+    pub fn g(&self, wo: Direction, wi: Direction, wh: Normal) -> Float {
+        if !self.chi_pass(wo, wh) {
             0.0
         } else {
-            1.0 / (1.0 + self.lambda(v, no) + self.lambda(wi, no))
+            1.0 / (1.0 + self.lambda(wo) + self.lambda(wi))
         }
     }
 
-    pub fn g1(&self, v: Direction, wh: Normal, no: Normal) -> Float {
-        // signum to fix refraction
-        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
-        if chi < crate::EPSILON {
+    pub fn g1(&self, wo: Direction, wh: Normal) -> Float {
+        if !self.chi_pass(wo, wh) {
             0.0
         } else {
-            1.0 / (1.0 + self.lambda(v, no))
+            1.0 / (1.0 + self.lambda(wo))
         }
     }
 
@@ -190,28 +270,30 @@ impl MfDistribution {
     /// Beckmann with polynomial approximation and GGX exactly. PBR Chapter 8.4.3
     ///
     /// # Arguments
-    /// * `w` - Direction to consider
-    /// * `no` - Macrosurface normal
-    fn lambda(&self, w: Direction, no: Normal) -> Float {
+    /// * `w` - Direction to consider in shading space
+    fn lambda(&self, w: Direction) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = w.dot(no).powi(2);
-                if cos2_theta < crate::EPSILON {
+                let tan2_theta = spherical_utils::tan2_theta(w);
+
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
-                    let roughness2 = cfg.roughness * cfg.roughness;
+                    let cos_phi = spherical_utils::cos_phi(w);
+                    let sin_phi = spherical_utils::sin_phi(w);
 
-                    ((1.0 + roughness2 * tan2_theta).sqrt() - 1.0) / 2.0
+                    let alpha2 = (cfg.roughness.x * cos_phi).powi(2)
+                        + (cfg.roughness.y * sin_phi).powi(2);
+
+                    ((1.0 + alpha2 * tan2_theta).max(0.0).sqrt() - 1.0) / 2.0
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = w.dot(no).powi(2);
-                if cos2_theta < crate::EPSILON {
+                let tan2_theta = spherical_utils::tan2_theta(w);
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let tan2_theta = ((1.0 - cos2_theta) / cos2_theta).abs();
-                    let a = 1.0 / (cfg.roughness * tan2_theta);
+                    let a = 1.0 / (cfg.roughness.x * tan2_theta);
 
                     if a >= 1.6 {
                         0.0
@@ -224,34 +306,22 @@ impl MfDistribution {
         }
     }
 
-    /// Probability to do importance sampling from NDF. Estimate based on
-    /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: Color) -> Float {
-        let cfg = self.get_config();
-
-        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
-        let f0 = f0 * f0;
-
-        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo.mean()
-    }
-
-    /// Probability that `wh` got sampled
+    /// Probability that `wh` got sampled. `wh` and `wo` in shading space.
     pub fn sample_normal_pdf(
         &self,
         wh: Normal,
-        v: Direction,
-        no: Normal
+        wo: Direction,
     ) -> Float {
         let pdf = match self {
             Self::Beckmann(..) => {
-                let wh_dot_no = wh.dot(no);
-                self.d(wh, no) * wh_dot_no
+                let cos_theta_wh = spherical_utils::cos_theta(wh);
+                self.d(wh) * cos_theta_wh
             }
             Self::Ggx(..) => {
-                let wh_dot_v = wh.dot(v);
-                let no_dot_v = no.dot(v);
+                let wh_dot_wo = wh.dot(wo);
+                let cos_theta_wo = spherical_utils::cos_theta(wo);
 
-                self.g1(v, wh, no) * self.d(wh, no) * wh_dot_v / no_dot_v
+                self.g1(wo, wh) * self.d(wh) * wh_dot_wo.abs() / cos_theta_wo.abs()
             }
         };
 
@@ -259,8 +329,8 @@ impl MfDistribution {
     }
 
     /// Sampling microfacet normals per distribution for importance sampling.
-    /// `v` in shading space.
-    pub fn sample_normal(&self, v: Direction, rand_sq: Vec2) -> Normal {
+    /// `wo` in shading space.
+    pub fn sample_normal(&self, wo: Direction, rand_sq: Vec2) -> Normal {
         match self {
             Self::Ggx(cfg) => {
                 // Heitz 2018 or
@@ -268,30 +338,32 @@ impl MfDistribution {
 
                 let roughness = cfg.roughness;
                 // Map the GGX ellipsoid to a hemisphere
-                let v_stretch = Direction::new(
-                    v.x * roughness,
-                    v.y * roughness,
-                    v.z
+                let wo_stretch = Normal::new(
+                    wo.x * roughness.x,
+                    wo.y * roughness.y,
+                    wo.z
                 ).normalize();
+                // orient the sampled normal to same hemisphere as geometric normal
+                let wo_stretch = if wo_stretch.z < 0.0 { -wo_stretch } else { wo_stretch };
 
                 // ONB basis of the hemisphere configuration
-                let hemi_basis = Onb::new(v_stretch);
+                // don't use Onb class, as it has too strict requirements for orthonormality
+                // first vector should be perpendicular to Z
+                let u = if wo_stretch.z < 0.99999 {
+                    wo_stretch.cross(Normal::Z).normalize()
+                } else {
+                    Normal::X
+                };
+                let v = u.cross(wo_stretch);
 
-                // compute a point on the disk
-                let a = 1.0 / (1.0 + v_stretch.z);
+                // first a point on the unit disk
                 let r = rand_sq.x.sqrt();
-                let phi = if rand_sq.y < a {
-                    crate::PI * rand_sq.y / a
-                } else {
-                    crate::PI + crate::PI * (rand_sq.y - a) / (1.0 - a)
-                };
-
-                let x = r * phi.cos();
-                let y = if rand_sq.y < a {
-                    r * phi.sin()
-                } else {
-                    r * phi.sin() * v_stretch.z
-                };
+                let theta = 2.0 * crate::PI * rand_sq.y;
+                let x = r * theta.cos();
+                // then map it to the projection disk
+                let h = (1.0 - x * x).max(0.0).sqrt();
+                let lerp = (1.0 + wo_stretch.z) / 2.0;
+                let y = (1.0 - lerp) * h + lerp * r * theta.sin();
 
                 // compute normal in hemisphere configuration
                 let wm = Normal::new(
@@ -299,25 +371,26 @@ impl MfDistribution {
                     y,
                     (1.0 - x*x - y*y).max(0.0).sqrt(),
                 );
-                let wm = hemi_basis.to_world(wm);
 
                 // move back to ellipsoid
+                let wm = wm.x * u + wm.y * v + wm.z * wo_stretch;
                 Normal::new(
-                    roughness * wm.x,
-                    roughness * wm.y,
-                    wm.z.max(0.0)
+                    roughness.x * wm.x,
+                    roughness.y * wm.y,
+                    wm.z.max(1e-5)
                 ).normalize()
             }
             Self::Beckmann(cfg) => {
-                let roughness2 = cfg.roughness * cfg.roughness;
+                let roughness2 = cfg.roughness.x * cfg.roughness.x;
                 let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
                 let phi = 2.0 * crate::PI * rand_sq.x;
 
+                // already normalized?
                 Normal::new(
                     theta.sin() * phi.cos(),
                     theta.sin() * phi.sin(),
                     theta.cos(),
-                )
+                ).normalize()
             }
         }
     }

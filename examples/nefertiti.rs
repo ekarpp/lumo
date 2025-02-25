@@ -12,79 +12,82 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(Plane::new(
         Vec3::NEG_Y,
         Vec3::Y,
-        Material::diffuse(Texture::Solid(Color::BLACK))
+        Material::diffuse(Texture::from(Color::BLACK))
     ));
 
     /* roof */
     scene.add(Plane::new(
         Vec3::Y,
         Vec3::NEG_Y,
-        Material::diffuse(Texture::Solid(Color::BLACK))
+        Material::diffuse(Texture::from(Color::BLACK))
     ));
 
     /* left wall */
     scene.add(Plane::new(
         Vec3::NEG_X,
         Vec3::X,
-        Material::diffuse(Texture::Solid(Color::BLACK)),
+        Material::diffuse(Texture::from(Color::BLACK)),
     ));
 
     /* right wall */
     scene.add(Plane::new(
         Vec3::X,
         Vec3::NEG_X,
-        Material::diffuse(Texture::Solid(Color::BLACK))
+        Material::diffuse(Texture::from(Color::BLACK))
     ));
 
     /* front */
     scene.add(Plane::new(
         2.0 * Vec3::NEG_Z,
         Vec3::Z,
-        Material::diffuse(Texture::Solid(Color::BLACK))
+        Material::diffuse(Texture::from(Color::BLACK))
     ));
 
     /* back */
     scene.add(Plane::new(
         Vec3::Z,
         Vec3::NEG_Z,
-        Material::diffuse(Texture::Solid(Color::BLACK))
+        Material::diffuse(Texture::from(Color::BLACK))
     ));
 
     /* bust */
     scene.add(
-        Cube::new(Material::metallic(
-            Texture::Solid(Color::new(61, 45, 36)),
-            0.0,
-        ))
-        .translate(-0.5, -0.5, -0.5)
-        .scale(0.45, 0.5, 0.45)
-        .translate(0.0, -0.75, -1.45),
+        Cube::new(Material::diffuse(Texture::from(Color::new(61, 45, 36))))
+            .translate(-0.5, -0.5, -0.5)
+            .scale(0.45, 0.5, 0.45)
+            .translate(0.0, -0.75, -1.45),
     );
 
     /* statue */
     if cfg!(debug_assertions) {
-	scene.add(
+	    scene.add(
             Cylinder::new(
-		0.6,
-		0.1,
-		Material::diffuse(Texture::Solid(Color::new(255, 0, 0))))
-		.translate(0.0, -0.5, -1.45)
-	);
+		        0.6,
+		        0.1,
+		        Material::diffuse(Texture::from(Color::RED)))
+		        .translate(0.0, -0.5, -1.45)
+	    );
     } else {
-	scene.add(
-	    parser::mesh_from_url(
+	    scene.add(
+	        parser::mesh_from_url(
                 NEFE_URL,
-		Material::specular(
+		        Material::microfacet(
+                    0.8,
+                    1.5,
+                    0.0,
+                    false,
+                    false,
                     Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
-                    0.8
+                    Texture::from(Color::WHITE),
+                    Texture::from(Color::BLACK),
                 )
             )?
-		.to_unit_size()
-		.to_origin()
-		.scale(0.5, 0.5, 0.5)
-		.rotate_x(-PI / 2.0)
-		.translate(0.0, -0.25, -1.45),
-	);
+		        .to_unit_size()
+		        .to_origin()
+		        .scale_uniform(0.5)
+		        .rotate_x(-PI / 2.0)
+		        .translate(0.0, -0.2499, -1.45),
+	    );
     }
 
     let xy_rect = Mat3::from_cols(
@@ -101,80 +104,73 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // left, w.r.t camera
     scene.add_light(Disk::new(
-	disk_towards + 0.3 * disk_dir,
-	-disk_dir,
-	0.05,
-	Material::Light(Texture::Solid(30.0 * Color::WHITE))
+	    disk_towards + 0.3 * disk_dir,
+	    -disk_dir,
+	    0.05,
+	    Material::Light(Texture::from(30.0 * Color::WHITE))
     ));
 
     let right_disk_origin = Vec3::new(0.6, 0.15, -1.6);
     scene.add_light(Disk::new(
-	right_disk_origin,
-	disk_towards + 0.28 * Vec3::X - right_disk_origin,
-	0.08,
-	Material::Light(Texture::Solid(20.0 * Color::WHITE))
+	    right_disk_origin,
+	    disk_towards + 0.28 * Vec3::X - right_disk_origin,
+	    0.08,
+	    Material::Light(Texture::from(20.0 * Color::WHITE))
     ));
 
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::Solid(2.0 * Color::WHITE)))
+        Material::Light(Texture::from(2.0 * Color::WHITE)))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_y(-theta)
-		    .rotate_axis(Vec3::new(theta.cos(), 0.0, theta.sin()), PI / 8.0)
+		            .rotate_axis(Vec3::new(theta.cos(), 0.0, theta.sin()), PI / 8.0)
                     .translate(0.6, 0.2, -1.7)
     );
 
     // behind
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::Solid(Color::WHITE)))
+        Material::Light(Texture::from(Color::WHITE)))
                     .scale(0.3, 0.3, 1.0)
                     .rotate_x(2.0 * PI - 2.0 * theta)
                     .translate(-0.15, 0.5, -0.8)
     );
     scene.add_light(Rectangle::new(
-	xy_rect,
-	Material::Light(Texture::Solid(2.0 * Color::WHITE)))
-		    .scale(0.3, 0.3, 1.0)
-		    .rotate_x(PI)
-		    .translate(-0.1, 0.0, 0.0)
+	    xy_rect,
+	    Material::Light(Texture::from(2.0 * Color::WHITE)))
+		            .scale(0.3, 0.3, 1.0)
+		            .rotate_x(PI)
+		            .translate(-0.1, 0.0, 0.0)
     );
 
     // above
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::Solid(2.0 * Color::WHITE)))
+        Material::Light(Texture::from(2.0 * Color::WHITE)))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_x(PI / 2.0)
                     .translate(-0.2, 0.5, -1.5)
     );
 
     let camera = if cfg!(debug_assertions) {
-	Camera::perspective(
-	    0.5 * Vec3::Z,
-	    Vec3::NEG_Z,
-	    Vec3::Y,
-	    90.0,
-            0.0,
-            0.0,
-	    1000,
-	    1000
-	)
+	    Camera::builder()
+	        .origin(0.5 * Vec3::Z)
+            .resolution((1000, 1000))
+            .build()
     } else {
-	Camera::orthographic(
-            Vec3::new(0.12, -0.23, -1.205),
-            Vec3::new(0.0, -0.26, -1.45),
-            Vec3::Y,
-            0.2,
-            0.0,
-            0.0,
-            641,
-            939,
-	)
+	    Camera::builder()
+            .origin(Vec3::new(0.12, -0.23, -1.205))
+            .towards(Vec3::new(0.0, -0.26, -1.45))
+            .zoom(5.0)
+            .resolution((641, 939))
+            .camera_type(CameraType::Orthographic)
+            .build()
     };
 
-    let renderer = Renderer::new(scene, camera);
-    renderer.render().save("nefe.png")?;
-
+    Renderer::new(scene, camera)
+        .set_integrator(Integrator::PathTrace)
+        .set_samples(1024)
+        .render()
+        .save("nefe.png")?;
     Ok(())
 }

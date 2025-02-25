@@ -59,7 +59,7 @@ fn intersect_teapot() {
     ).unwrap()
         .to_unit_size()
         .to_origin()
-        .scale(0.8, 0.8, 0.8);
+        .scale_uniform(0.8);
 
     shoot_rays(mesh);
 }
@@ -72,7 +72,7 @@ fn intersect_sphere() {
     ).unwrap()
         .to_unit_size()
         .to_origin()
-        .scale(0.5, 0.5, 0.5);
+        .scale_uniform(0.5);
 
     shoot_rays(mesh);
 }

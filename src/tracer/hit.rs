@@ -2,6 +2,7 @@ use crate::{ Point, Float, Direction, Normal, efloat, Vec2, Vec3 };
 use crate::tracer::{ material::Material, object::Sampleable, ray::Ray };
 
 /// Stores information about a hit between a ray and an object
+#[derive(Clone)]
 pub struct Hit<'a> {
     /// The `t` value of ray at which the hit occurred
     pub t: Float,
@@ -62,21 +63,22 @@ impl<'a> Hit<'a> {
     /// Generates a ray at point of impact. Would be better to use accurate
     /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: Direction) -> Ray {
-        let scaled_err = self.fp_error.dot(self.ns.abs());
+        let ne = self.ng;
+        let scaled_err = self.fp_error.dot(ne.abs());
 
         let offset = if wi.dot(self.ng) >= 0.0 {
-            self.ns * scaled_err
+            ne * scaled_err
         } else {
-            -self.ns * scaled_err
+            -ne * scaled_err
         };
 
         let xi = self.p + offset;
 
         let move_double = |v: Float, n: Float| {
             if n > 0.0 {
-                efloat::next_double(v)
+                efloat::next_float(v)
             } else if n < 0.0 {
-                efloat::previous_double(v)
+                efloat::previous_float(v)
             } else {
                 v
             }

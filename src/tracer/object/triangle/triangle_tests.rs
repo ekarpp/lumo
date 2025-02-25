@@ -45,7 +45,8 @@ fn sampled_rays_hit() {
     for _ in 0..NUM_RAYS {
         let wi = tri.sample_towards(xo, rand_utils::unit_square());
         let ri = Ray::new(xo, wi);
-        let (p, _) = tri.sample_towards_pdf(&ri);
+        let Some(hi) = tri.hit(&ri, 0.0, crate::INF) else { panic!() };
+        let p = tri.sample_towards_pdf(&ri, hi.p, hi.ng);
 
         assert!(p > 0.0);
     }

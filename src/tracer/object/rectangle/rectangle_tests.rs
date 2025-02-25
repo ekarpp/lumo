@@ -37,7 +37,8 @@ fn sampled_rays_hit() {
     for _ in 0..NUM_RAYS {
         let wi = rect.sample_towards(xo, rand_utils::unit_square());
         let ri = Ray::new(xo, wi);
-        let (p, _) = rect.sample_towards_pdf(&ri);
+        let Some(hi) = rect.hit(&ri, 0.0, crate::INF) else { panic!() };
+        let p = rect.sample_towards_pdf(&ri, hi.p, hi.ng);
 
         assert!(p > 0.0);
     }

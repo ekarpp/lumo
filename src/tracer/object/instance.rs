@@ -22,7 +22,7 @@ impl<T> Instance<T> {
     /// `transform`.
     pub fn new(object: T, transform: Transform) -> Box<Self> {
         let inv_transform = transform.inverse();
-        let normal_transform = inv_transform.matrix3.transpose().into();
+        let normal_transform = inv_transform.matrix3.transpose();
 
         Box::new(Self {
             object,
@@ -30,6 +30,20 @@ impl<T> Instance<T> {
             inv_transform,
             normal_transform,
         })
+    }
+
+    fn propagate_fp_err(&self, h: &mut Hit) {
+        let e3 = h.fp_error.abs();
+        let p3 = h.p.abs();
+        let m3 = self.transform.matrix3.abs();
+        let t3 = self.transform.translation.abs();
+
+        h.fp_error = if e3.x == 0.0 && e3.y == 0.0 && e3.z == 0.0 {
+            efloat::gamma(3) * (t3 + m3.mul_vec3(p3))
+        } else {
+            efloat::gamma(3) * (t3 + m3.mul_vec3(p3))
+                + (efloat::gamma(3) + 1.0) * m3.mul_vec3(e3)
+        };
     }
 }
 
@@ -40,6 +54,24 @@ impl<T: Bounded> Instance<T> {
         let ax_mid = -(ax_min + ax_max) / 2.0;
 
         self.translate(ax_mid.x, ax_mid.y, ax_mid.z)
+    }
+
+    /// Set `x` of bounding boxes `ax_min` to `x1`
+    pub fn set_x(self, x1: Float) -> Box<Self> {
+        let x_min = self.bounding_box().ax_min.x;
+        self.translate(x1 - x_min, 0.0, 0.0)
+    }
+
+    /// Set `y` of bounding boxes `ax_min` to `y1`
+    pub fn set_y(self, y1: Float) -> Box<Self> {
+        let y_min = self.bounding_box().ax_min.y;
+        self.translate(0.0, y1 - y_min, 0.0)
+    }
+
+    /// Set `z` of bounding boxes `ax_min` to `z1`
+    pub fn set_z(self, z1: Float) -> Box<Self> {
+        let z_min = self.bounding_box().ax_min.z;
+        self.translate(0.0, 0.0, z1 - z_min)
     }
 }
 
@@ -94,18 +126,9 @@ impl<T: Object> Object for Instance<T> {
             h.ns = (self.normal_transform * h.ns).normalize();
             h.ng = (self.normal_transform * h.ng).normalize();
 
-            let err = efloat::gamma(3) * Vec3::new(
-                (Vec3::from(self.transform.matrix3.row(0)) * h.p)
-                    .abs().dot(Vec3::ONE) + self.transform.translation.x.abs(),
-                (Vec3::from(self.transform.matrix3.row(1)) * h.p)
-                    .abs().dot(Vec3::ONE) + self.transform.translation.y.abs(),
-                (Vec3::from(self.transform.matrix3.row(2)) * h.p)
-                    .abs().dot(Vec3::ONE) + self.transform.translation.z.abs(),
-            );
+            self.propagate_fp_err(&mut h);
 
             h.p = self.transform.transform_point3(h.p);
-            // TODO: just add them for now...
-            h.fp_error += err;
             h
         })
     }
@@ -113,8 +136,18 @@ impl<T: Object> Object for Instance<T> {
 
 impl<T: Sampleable> Sampleable for Instance<T> {
     fn area(&self) -> Float {
-        self.object.area();
-        todo!()
+        let scale = Vec3::new(
+            self.transform.matrix3.x_axis.length(),
+            self.transform.matrix3.y_axis.length(),
+            self.transform.matrix3.z_axis.length(),
+        );
+
+        // only allow uniform scale
+        if (scale.x - scale.y).abs() + (scale.y - scale.z).abs() > crate::EPSILON {
+            unimplemented!();
+        }
+
+        scale.x * scale.y * self.object.area()
     }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
@@ -123,6 +156,7 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         ho.ng = self.normal_transform * ho.ng;
         ho.ns = self.normal_transform * ho.ns;
         ho.p = self.transform.transform_point3(ho.p);
+        self.propagate_fp_err(&mut ho);
 
         ho
     }
@@ -131,37 +165,36 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         let xo_local = self.inv_transform.transform_point3(xo);
         let dir_local = self.object.sample_towards(xo_local, rand_sq);
 
-        self.transform.transform_vector3(dir_local)
+        self.transform.transform_vector3(dir_local).normalize()
     }
 
-    fn sample_towards_pdf(&self, ri: &Ray) -> (Float, Option<Hit>) {
+    fn sample_towards_pdf(&self, ri: &Ray, xi: Point, ng: Normal) -> Float {
+        let normal_transform_inverse = self.normal_transform.inverse().transpose();
+        let ng_local = (normal_transform_inverse * ng).normalize();
+        let xi_local = self.inv_transform.transform_point3(xi);
         let ri_local = ri.transform(self.inv_transform);
-        let (pdf_local, hi_local) = self.object.sample_towards_pdf(&ri_local);
-        if let Some(mut hi) = hi_local {
-            let ng_local = hi.ng;
+        let xo_local = ri_local.origin;
+        let pdf_local = self.object.sample_towards_pdf(&ri_local, xi_local, ng_local);
 
-            let xi = ri.at(hi.t);
-            let ng = (self.normal_transform * ng_local).normalize();
+        // imagine a unit cube at the sampled point with the surface normal
+        // at that point as one of the cube edges. apply the linear
+        // transformation to the cube and we get a parallellepiped.
+        // the base of the parallellepiped gives us the area scale at the
+        // point of impact. think this is not exact with ansiotropic
+        // scaling of solids.
+        let height = ng.dot(self.transform.matrix3 * ng_local).abs();
+        let volume = self.transform.matrix3.determinant().abs();
+        let jacobian = volume / height;
 
-            // object pdf just needs these in world coordinates
-            hi.p = xi;
-            hi.ng = ng;
+        let wi_local = ri_local.dir;
+        let wi = ri.dir;
+        let xo = ri.origin;
+        // jacoabian takes care of area, just undo and redo SA conversion
+        let sa_conv = xo.distance_squared(xi) * wi_local.dot(ng_local).abs()
+            / (xo_local.distance_squared(xi_local) * wi.dot(ng).abs());
 
-            // imagine a unit cube at the sampled point with the surface normal
-            // at that point as one of the cube edges. apply the linear
-            // transformation to the cube and we get a parallellepiped.
-            // the base of the parallellepiped gives us the area scale at the
-            // point of impact. think this is not exact with ansiotropic
-            // scaling of solids. how to do for solid angle?
-            let height = ng.dot(self.transform.matrix3 * ng_local).abs();
-            let volume = self.transform.matrix3.determinant().abs();
-            let jacobian = volume / height;
-
-            // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
-            (pdf_local / jacobian, Some(hi))
-        } else {
-            (0.0, None)
-        }
+        // p_y(y) = p_y(T(x)) = p_x(x) / |J_T(x)|
+        pdf_local * sa_conv / jacobian
     }
 }
 
@@ -173,6 +206,9 @@ pub trait Instanceable<T> {
     /// Apply scale `xyz`
     fn scale(self, x: Float, y: Float, z: Float) -> Box<Instance<T>>;
 
+    /// Apply uniform scale `s`
+    fn scale_uniform(self, s: Float) -> Box<Instance<T>>;
+
     /// Rotate around x-axis by `r` radians
     fn rotate_x(self, r: Float) -> Box<Instance<T>>;
 
@@ -182,7 +218,7 @@ pub trait Instanceable<T> {
     /// Rotate around z-axis by `r` radians
     fn rotate_z(self, r: Float) -> Box<Instance<T>>;
 
-    /// Rotate around `axis` by `r` radisn
+    /// Rotate around `axis` by `r` radians
     fn rotate_axis(self, axis: Direction, r: Float) -> Box<Instance<T>>;
 }
 
@@ -197,6 +233,10 @@ impl<T: Object> Instanceable<T> for T {
         assert!(x * y * z != 0.0);
         let s = Vec3::new(x, y, z);
         Instance::new(self, Transform::from_scale(s))
+    }
+
+    fn scale_uniform(self, s: Float) -> Box<Instance<T>> {
+        self.scale(s, s, s)
     }
 
     fn rotate_x(self, r: Float) -> Box<Instance<T>> {
@@ -229,6 +269,11 @@ impl<T: Object> Instance<T> {
         assert!(x * y * z != 0.0);
         let s = Vec3::new(x, y, z);
         Self::new(self.object, Transform::from_scale(s) * self.transform)
+    }
+
+    /// Apply uniform scale AFTER current transformations
+    pub fn scale_uniform(self, s: Float) -> Box<Self> {
+        self.scale(s, s, s)
     }
 
     /// Apply x-rotation AFTER current transformations.

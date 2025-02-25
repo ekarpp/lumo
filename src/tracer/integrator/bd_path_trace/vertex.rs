@@ -1,17 +1,23 @@
 use super::*;
 
 /// Abstraction of a vertex in the paths
+#[derive(Clone)]
 pub struct Vertex<'a> {
     pub h: Hit<'a>,
+    /// `gathered` radiance/importance when arriving at `self`
     pub gathered: Color,
+    /// PDF to arrive at `self` when starting from beginning of a path (in area measure)
     pub pdf_fwd: Float,
+    /// PDF to arrive at `self` when starting from the end of a path (in area measure)
     pub pdf_bck: Float,
+    /// Direction from previous vertex (if exists)
+    pub wo: Direction,
 }
 
 impl<'a> Vertex<'a> {
     /// Camera vertex
-    pub fn camera(xo: Point, gathered: Color) -> Self {
-        let h = Hit::new(
+    pub fn camera(xo: Point, pdf_fwd: Float, gathered: Color) -> Self {
+        let Some(h) = Hit::new(
             0.0,
             &Material::Blank,
             Direction::NEG_X,
@@ -20,49 +26,59 @@ impl<'a> Vertex<'a> {
             Normal::X,
             Normal::X,
             Vec2::X,
-        ).unwrap();
+        ) else { unreachable!() };
+
         Self {
             h,
             gathered,
-            pdf_bck: 1.0,
-            pdf_fwd: 0.0,
+            pdf_bck: 0.0,
+            pdf_fwd,
+            wo: Direction::ZERO,
         }
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: Color, pdf_bck: Float) -> Self {
+    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: Color, pdf_fwd: Float) -> Self {
         h.light = Some(light);
         Self {
             h,
             gathered,
-            pdf_bck,
-            // this might cause issues later on (if area is zero, point light?)...
-            pdf_fwd: 1.0 / light.area(),
+            pdf_bck: 0.0,
+            pdf_fwd,
+            wo: Direction::ZERO,
         }
     }
 
     /// Surface vertex
     pub fn surface(
+        wo: Direction,
         h: Hit<'a>,
         gathered: Color,
-        pdf_fwd: Float,
+        pdf_sa: Float,
         prev: &Vertex,
     ) -> Self {
-        let pdf_fwd = if h.material.is_delta() {
+        let ho = &h;
+        let hp = &prev.h;
+        let xp = hp.p;
+        let xo = ho.p;
+        let pdf_fwd = if ho.material.is_delta() {
             0.0
         } else {
-            let xo = prev.h.p;
-            let xi = h.p;
-            let wi = (xi - xo).normalize();
-            let ng = h.ng;
+            let ng = if matches!(ho.material, Material::Volumetric(..)) {
+                -wo
+            } else {
+                ho.ng
+            };
 
-            pdf_fwd * wi.dot(ng).abs() / xi.distance_squared(xo)
+            // at this
+            measure::sa_to_area(pdf_sa, xp, xo, -wo, ng)
         };
         Self {
             h,
             gathered,
             pdf_fwd,
             pdf_bck: 0.0,
+            wo,
         }
     }
 
@@ -91,104 +107,46 @@ impl<'a> Vertex<'a> {
     }
 
     /// Helper to get shading cosine at hit
-    pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
-        if self.is_surface() {
-            self.material().shading_cosine(wi, ns)
-        } else {
-            1.0
-        }
+    pub fn shading_cosine(&self, wi: Direction) -> Float {
+        self.material().shading_cosine(wi, self.h.ns)
+    }
+
+    /// Correction term for non-symmetry of shading normals when transporting improtance
+    pub fn shading_correction(&self, wi: Direction) -> Float {
+        let m = self.material();
+        let wo = self.wo;
+        let ng = self.h.ng;
+        let ns = self.h.ns;
+
+        m.shading_cosine(wi, ng) * m.shading_cosine(wo, ns)
+            / (m.shading_cosine(wo, ng) * m.shading_cosine(wi, ns))
     }
 
     /// Computes BSDF at hit of `self`
-    pub fn bsdf(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> Color {
-        // TODO (2)
-        let wo = (self.h.p - prev.h.p).normalize();
+    pub fn f(&self, next: &Vertex, mode: Transport) -> Color {
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.material().bsdf_f(wo, wi, mode, &self.h)
+        self.material().bsdf_f(self.wo, wi, mode, &self.h)
     }
 
-    /// Converts solid angle `pdf` to area PDF
-    pub fn solid_angle_to_area(&self, pdf: Float, next: &Vertex) -> Float {
-        let xo = self.h.p;
-        let xi = next.h.p;
-        let wi = (xi - xo).normalize();
-
-        if next.is_surface() {
-            let ng = next.h.ng;
-            pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
-        } else {
-            pdf / xi.distance_squared(xo)
-        }
+    /// PDF w.r.t SA from BSDF at self with `wi` sampled
+    pub fn bsdf_pdf(&self, wi: Direction, swap_dir: bool) -> Float {
+        self.material().bsdf_pdf(self.wo, wi, &self.h, swap_dir)
     }
 
-    /// Geometry term btwn `self` and `v` ... ...
-    /// it is symmetric??
-    pub fn g(&self, v: &Vertex, scene: &Scene) -> Color {
-        let xo = self.h.p;
-        let xi = v.h.p;
-        let no = self.h.ns;
-        let ni = v.h.ns;
-
-        let wi = (xi - xo).normalize();
-        let mut g = 1.0 / xo.distance_squared(xi);
-
-        if self.is_surface() {
-            g *= no.dot(wi).abs();
-        }
-        if v.is_surface() {
-            g *= ni.dot(wi).abs();
-        }
-
-        g * scene.transmittance(xo.distance(xi))
-    }
-
-    /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
-    pub fn pdf_area(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> Float {
-        let ho = &self.h;
-        // prev
-        let xo = prev.h.p;
-        // curr
-        let xi = ho.p;
-        // prev -> curr
-        let wo = xi - xo;
-        let ro = Ray::new(xo, wo);
-        // next
-        let xii = next.h.p;
-        // curr -> next
-        let wi = xii - xi;
-        let ri = Ray::new(xi, wi);
-        // normalized
-        let wi = ri.dir;
-        let angle_pdf = match self.material().bsdf_pdf(ho, &ro) {
-            None => 0.0,
-            Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance))
-        };
-        let ng = next.h.ng;
-
-        // convert solid angle to area at next
-        angle_pdf * wi.dot(ng).abs() / xi.distance_squared(xii)
-    }
-
-    pub fn pdf_light_origin(&self) -> Float {
-        self.h.light.map_or(0.0, |light| 1.0 / light.area())
-    }
-
-    pub fn pdf_light_leaving(&self, next: &Vertex) -> Float {
-        if let Some(light) = self.h.light {
-            let xo = self.h.p;
-            let xi = next.h.p;
-            let wi = xi - xo;
-            let ri = Ray::new(xo, wi);
-            // normalized
-            let wi = ri.dir;
-            let ng = self.h.ng;
-            let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-            let ng = next.h.ng;
-            // convert solid angle to area
-            pdf_dir * wi.dot(ng).abs() / xo.distance_squared(xi)
-        } else {
+    /// PDF from `self` to `prev` with respect to surface area
+    pub fn pdf_prev(&self, prev: &Vertex, wi: Direction) -> Float {
+        if self.is_delta() || prev.is_delta() {
             0.0
+        } else {
+            let pdf_sa = self.bsdf_pdf(wi, true);
+            // v.dot(v) = 1, cancels out the dot product for mediums
+            let ngp = if !prev.is_surface() { -self.wo }  else { prev.h.ng };
+
+            let xp = prev.h.p;
+            let xo = self.h.p;
+            // at prev
+            measure::sa_to_area(pdf_sa, xo, xp, -self.wo, ngp)
         }
     }
 }

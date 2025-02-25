@@ -1,4 +1,4 @@
-use crate::tracer::{filter::Filter, Color};
+use crate::tracer::{filter::PixelFilter, Color};
 use crate::{Float, Vec2};
 use glam::IVec2;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
@@ -38,12 +38,16 @@ impl FilmSample {
 struct Pixel {
     pub color: Color,
     pub splat: Color,
-    pub filter_weight_sum: Float,
+    pub color_weight: Float,
 }
 
 impl Default for Pixel {
     fn default() -> Self {
-        Pixel { color: Color::BLACK, splat: Color::BLACK, filter_weight_sum: 0.0 }
+        Pixel {
+            color: Color::BLACK,
+            splat: Color::BLACK,
+            color_weight: 0.0,
+        }
     }
 }
 
@@ -51,12 +55,12 @@ impl AddAssign<&Pixel> for Pixel {
     fn add_assign(&mut self, rhs: &Self) {
         self.color += rhs.color;
         self.splat += rhs.splat;
-        self.filter_weight_sum += rhs.filter_weight_sum;
+        self.color_weight += rhs.color_weight;
     }
 }
 
 /// FilmTile given to a thread to avoid synchronization issues
-pub struct FilmTile {
+pub struct FilmTile<'a> {
     /// Minimum coordinates of tile in raster space
     pub px_min: IVec2,
     /// Maximum coordinates of tile in raster space
@@ -65,70 +69,100 @@ pub struct FilmTile {
     pub width: i32,
     pixels: Vec<Pixel>,
     splats: Vec<FilmSample>,
-    filter: Filter,
+    resolution: IVec2,
+    filter: &'a PixelFilter,
 }
 
-impl FilmTile {
-    /// Creates a new tile `px_min` x `px_max` with `filter`
-    pub fn new(px_min: IVec2, px_max: IVec2, filter: Filter) -> Self {
+impl<'a> FilmTile<'a> {
+    /// Creates a new tile `[px_min.x, px_max.x) x [px_min.y, px_max.y)` with `filter`
+    pub fn new(px_min: IVec2, px_max: IVec2, res: IVec2, filter: &'a PixelFilter) -> Self {
+        let radius = filter.r_disc();
+        let px_min = (px_min - radius).max(IVec2::ZERO);
+        let px_max = (px_max + radius).min(res);
         let pxs = px_max - px_min;
         let width = pxs.x;
+        let height = pxs.y;
+
         Self {
             px_min,
             px_max,
             filter,
             width,
-            pixels: vec![Pixel::default(); (pxs.x * pxs.y) as usize],
+            resolution: res,
+            pixels: vec![Pixel::default(); (width * height) as usize],
             splats: vec![],
         }
     }
 
     /// Adds a sample to the tile
     pub fn add_sample(&mut self, sample: FilmSample) {
-        if sample.splat {
-            return self.splats.push(sample);
-        }
+        let px_xy = sample.raster_xy.floor().as_ivec2();
+        // middle of pixel where sample is from
+        let px_mid = 0.5 + sample.raster_xy.floor();
 
-        let raster = sample.raster_xy.floor().as_ivec2();
-        if !(self.px_min.x..self.px_max.x).contains(&raster.x) {
-            return;
-        }
-        if !(self.px_min.y..self.px_max.y).contains(&raster.y) {
-            return;
-        }
+        let (mi,mx) = if sample.splat {
+            (-px_xy, self.resolution - px_xy)
+        } else {
+            (self.px_min - px_xy, self.px_max - px_xy)
+        };
 
-        let mid = Vec2::new(raster.x as Float, raster.y as Float) + 0.5;
-        let offset = mid - sample.raster_xy;
-        let weight = self.filter.eval(2.0 * offset);
+        for (y, x) in self.filter.xys(mi, mx) {
+            let px_x = px_xy.x + x;
+            let px_y = px_xy.y + y;
 
-        let raster = raster - self.px_min;
-        let idx = (raster.x + self.width * raster.y) as usize;
-        self.pixels[idx].filter_weight_sum += weight;
-        self.pixels[idx].color += sample.color * weight;
+            // middle of the pixel where filter will be evaluated
+            let mid_xy = Vec2::new(
+                px_mid.x + Float::from(x),
+                px_mid.y + Float::from(y)
+            );
+
+            let v = sample.raster_xy - mid_xy;
+            let w = self.filter.eval(v);
+
+            if w != 0.0 {
+                if sample.splat {
+                    self.splats.push(FilmSample::new(
+                        sample.color * w,
+                        mid_xy,
+                        true,
+                    ))
+                } else {
+                    let px_x = px_x - self.px_min.x;
+                    let px_y = px_y - self.px_min.y;
+                    let idx = (px_x + self.width * px_y) as usize;
+                    self.pixels[idx].color += sample.color * w;
+                    self.pixels[idx].color_weight += w;
+                }
+            }
+        }
     }
 }
 
 /// Film that contains the image being rendered
-pub struct Film {
+pub struct Film<'a> {
     pixels: Vec<Pixel>,
     /// Image resolution
     pub resolution: IVec2,
     splat_scale: Float,
+    filter: &'a PixelFilter,
 }
 
-impl Film {
+impl<'a> Film<'a> {
     /// Creates a new empty film
-    pub fn new(width: i32, height: i32, samples: i32) -> Self {
+    pub fn new(width: i32, height: i32, samples: u32, filter: &'a PixelFilter) -> Self {
         let n = width * height;
         let resolution = IVec2::new(width, height);
+        // TODO: where does 1.2^r come from?
+        let splat_scale = 1.0 / (samples as Float * Float::powi(1.2, filter.r_disc()));
         Self {
             pixels: vec![Pixel::default(); n as usize],
-            splat_scale: 1.0 / samples as Float,
+            splat_scale,
+            filter,
             resolution,
         }
     }
 
-    /// Add samples from `tile` to self
+    /// Add samples from `tile` to self.
     pub fn add_tile(&mut self, tile: FilmTile) {
         let px_offset = tile.px_max - tile.px_min;
         for y in 0..px_offset.y {
@@ -142,15 +176,8 @@ impl Film {
         }
 
         for splat in tile.splats {
-            let raster = splat.raster_xy.floor().as_ivec2();
-            if !(0..self.resolution.x).contains(&raster.x) {
-                continue;
-            }
-            if !(0..self.resolution.y).contains(&raster.y) {
-                continue;
-            }
-
-            let idx = (raster.x + raster.y * self.resolution.x) as usize;
+            let px_xy = splat.raster_xy.floor().as_ivec2();
+            let idx = (px_xy.x + self.resolution.x * px_xy.y) as usize;
             self.pixels[idx].splat += splat.color;
         }
     }
@@ -161,8 +188,15 @@ impl Film {
         for y in 0..self.resolution.y {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
-                let col = self.pixels[idx].splat * self.splat_scale +
-                    self.pixels[idx].color / self.pixels[idx].filter_weight_sum;
+                let pix = &self.pixels[idx];
+
+                let dir = if pix.color_weight == 0.0 {
+                    Color::BLACK
+                } else {
+                    pix.color / pix.color_weight
+                };
+                let splt = self.splat_scale * pix.splat / self.filter.integral();
+                let col = dir + splt;
 
                 let (r, g, b) = col.gamma_enc();
                 img.push(r);

@@ -16,16 +16,28 @@ impl Color {
     pub const BLACK: Self = Self { rgb: Vec3::ZERO };
     /// White color
     pub const WHITE: Self = Self { rgb: Vec3::ONE };
+    /// Red color
+    pub const RED: Self = Self { rgb: Vec3::X };
+    /// Green color
+    pub const GREEN: Self = Self { rgb: Vec3::Y };
+    /// Blue color
+    pub const BLUE: Self = Self { rgb: Vec3::Z };
+
 
     /// Decodes 8-bit sRGB encoded `r`, `g`, and `b` channels to linear RGB.
     pub fn new(r: u8, g: u8, b: u8) -> Self {
-        let rgb = Vec3::new(
-            (r as Float / 255.0).powf(2.2),
-            (g as Float / 255.0).powf(2.2),
-            (b as Float / 255.0).powf(2.2),
-        );
+        let dec = |v: u8| -> Float {
+            let u = v as Float / 255.0;
+            if u <= 0.04045 {
+                u / 12.92
+            } else {
+                ((u + 0.055) / 1.055).powf(2.4)
+            }
+        };
 
-        Self { rgb }
+        Self {
+            rgb: Vec3::new(dec(r), dec(g), dec(b))
+        }
     }
 
     /// Splats `value` to each RGB channel
@@ -45,9 +57,17 @@ impl Color {
 
     /// Gamma encodes self
     pub fn gamma_enc(&self) -> (u8, u8, u8) {
-        let enc = self.rgb.powf(1.0 / 2.2) * 255.0;
+        let enc = |v: Float| -> u8 {
+            let ev = if v <= 0.0031308 {
+                12.92 * v
+            } else {
+                1.055 * v.powf(1.0 / 2.4) - 0.055
+            };
 
-        (enc.x as u8, enc.y as u8, enc.z as u8)
+            (ev * 255.0) as u8
+        };
+
+        (enc(self.rgb.x), enc(self.rgb.y), enc(self.rgb.z))
     }
 
     /// Clamps RGB channels between `lb` and `ub`
@@ -126,6 +146,14 @@ impl Sub<Float> for Color {
     }
 }
 
+impl Sub<Color> for Float {
+    type Output = Color;
+
+    fn sub(self, rhs: Color) -> Self::Output {
+        Color { rgb: self - rhs.rgb }
+    }
+}
+
 impl Add for Color {
     type Output = Self;
 
@@ -165,6 +193,12 @@ impl Mul for Color {
 impl MulAssign for Color {
     fn mul_assign(&mut self, rhs: Color) {
         self.rgb *= rhs.rgb;
+    }
+}
+
+impl MulAssign<Float> for Color {
+    fn mul_assign(&mut self, rhs: Float) {
+        self.rgb *= rhs;
     }
 }
 

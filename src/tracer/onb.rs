@@ -21,6 +21,7 @@ impl Onb {
         Self { u, v, w }
     }
 
+    #[allow(dead_code)]
     pub fn new_from_basis(u: Normal, v: Normal, w: Normal) -> Self {
         let eps = 1e-5;
         // assert orthornomality
@@ -58,6 +59,19 @@ mod tests {
     fn both_directions() {
         let w = Direction::new(1.23, 4.56, 7.89);
         let uvw = Onb::new(w);
+
+        let v = Direction::new(9.87, 6.54, 3.21);
+        let vp = uvw.to_world(uvw.to_local(v));
+
+        assert!(v.distance(vp) < 1e-10);
+    }
+
+    #[test]
+    fn from_basis() {
+        let u = Direction::new(1.23, 4.56, 7.89).normalize();
+        let v = u.cross(Normal::X).normalize();
+        let w = u.cross(v);
+        let uvw = Onb::new_from_basis(u, v, w);
 
         let v = Direction::new(9.87, 6.54, 3.21);
         let vp = uvw.to_world(uvw.to_local(v));

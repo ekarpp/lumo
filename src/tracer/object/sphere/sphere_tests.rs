@@ -3,7 +3,7 @@ use super::*;
 const NUM_RAYS: usize = 10000;
 
 fn unit_sphere() -> Box<Sphere> {
-    Sphere::new(Point::ZERO, 1.0, Material::Blank)
+    Sphere::new(1.0, Material::Blank)
 }
 
 #[test]
@@ -15,9 +15,22 @@ fn sampled_rays_hit() {
     for _ in 0..NUM_RAYS {
         let wi = s.sample_towards(xo, rand_utils::unit_square());
         let ri = Ray::new(xo, wi);
-        let (p, _) = s.sample_towards_pdf(&ri);
+        let Some(hi) = s.hit(&ri, 0.0, crate::INF) else { panic!() };
 
+        let p = s.sample_towards_pdf(&ri, hi.p, hi.ng);
         assert!(p > 0.0);
+    }
+}
+
+#[test]
+fn samples_on() {
+    let r = 3.33;
+    let s = Sphere::new(3.33, Material::Blank);
+    for _ in 0..NUM_RAYS {
+        let h = s.sample_on(rand_utils::unit_square());
+        let xo = h.p;
+
+        assert!((r - xo.length()).abs() < crate::EPSILON);
     }
 }
 

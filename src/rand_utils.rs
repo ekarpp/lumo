@@ -69,6 +69,16 @@ pub fn square_to_cos_hemisphere(rand_sq: Vec2) -> Vec3 {
     rand_disk.extend(z)
 }
 
+/// Uniform random point in hemisphere with Z up
+#[cfg(test)]
+pub fn square_to_hemisphere(rand_sq: Vec2) -> Vec3 {
+    let z = rand_sq.x;
+    let r = (1.0 - z * z).max(0.0).sqrt();
+    let phi = 2.0 * crate::PI * rand_sq.y;
+
+    Vec3::new(r * phi.cos(), r * phi.sin(), z)
+}
+
 /// Uniform random point IN unit sphere
 pub fn square_to_sphere(rand_sq: Vec2) -> Vec3 {
     let z = 1.0 - 2.0 * rand_sq.y;

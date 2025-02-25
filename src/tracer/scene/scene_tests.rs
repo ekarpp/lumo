@@ -1,5 +1,5 @@
 use super::*;
-use crate::tracer::{Plane, Sphere};
+use crate::tracer::{Instanceable, Plane, Sphere};
 use crate::{Point, Direction};
 
 /* light at y = 2, plane at y = 1 perp to z */
@@ -7,10 +7,10 @@ fn scene(m: Material) -> Scene {
     let mut scene = Scene::default();
 
     scene.add_light(Sphere::new(
-        Point::new(0.0, 2.0, 0.0),
         crate::EPSILON,
-        Material::Light(Texture::Solid(Color::WHITE))
-    ));
+        Material::Light(Texture::from(Color::WHITE)))
+                    .translate(0.0, 2.0, 0.0)
+    );
 
     scene.add(Plane::new(
         Point::new(0.0, 1.0, 0.0),
@@ -23,14 +23,14 @@ fn scene(m: Material) -> Scene {
 
 #[test]
 fn light_no_pass() {
-    let s = scene(Material::Mirror);
+    let s = scene(Material::mirror());
     let r = Ray::new(Point::ZERO, Direction::Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_none());
 }
 
 #[test]
 fn object_behind_light() {
-    let s = scene(Material::Mirror);
+    let s = scene(Material::mirror());
     let r = Ray::new(3.0 * Point::Y, Direction::NEG_Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_some());
 }
@@ -48,7 +48,7 @@ fn hits_closest() {
     s.add(Plane::new(
         2.0 * Point::Y,
         Point::NEG_Y,
-        Material::Mirror,
+        Material::mirror(),
     ));
 
     let r = Ray::new(Point::ZERO, Point::Y);

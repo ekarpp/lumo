@@ -3,7 +3,7 @@ use crate::tracer::{
     Scene, Material, Texture,
     TriangleMesh, Face, Mesh
 };
-use std::fs::File;
+use std::fs::{ self, File };
 use std::sync::Arc;
 use std::io::{
     self, BufRead, BufReader, Result,
@@ -18,6 +18,8 @@ use mtl::MtlConfig;
 mod obj;
 /// .mtl parser
 mod mtl;
+
+const SCENE_DIR: &str = "./scenes/";
 
 /*
  * BEWARE WHO ENTERS! HERE BE DRAGONS!
@@ -82,7 +84,10 @@ fn _get_url(url: &str) -> Result<Vec<u8>> {
 }
 
 /// Extracts file matching `re` from zip file in `bytes`
-fn _extract_zip(bytes: Vec<u8>, re: Regex) -> Result<Vec<u8>> {
+fn _extract_zip(bytes: Vec<u8>, re_str: &str) -> Result<Vec<u8>> {
+    let re = Regex::new(re_str)
+        .map_err(|e| obj_error(&e.to_string()))?;
+
     println!("Reading .zip");
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     let mut data = Vec::new();
@@ -116,7 +121,7 @@ fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
 
 /// Loads `tex_name` from `zip` to an `Image`
 fn _img_from_zip(zip: Vec<u8>, tex_name: &str) -> Result<Image> {
-    let file_bytes = _extract_zip(zip, Regex::new(tex_name).unwrap())?;
+    let file_bytes = _extract_zip(zip, tex_name)?;
     let file = _bytes_to_file(file_bytes)?;
 
     println!("Decoding texture");
@@ -133,12 +138,13 @@ pub fn mesh_from_path(path: &str, material: Material) -> Result<Mesh> {
 /// Loads .OBJ file from resource at an URL. Supports direct .OBJ files and
 /// .OBJ files within a zip archive.
 pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
-    println!("Loading .OBJ from \"{}\"", url);
-    let mut bytes = _get_url(url)?;
+    let path = _check_cached(url)?;
+    println!("Loading .OBJ from \"{}\"", &path);
+    let mut bytes = fs::read(path)?;
 
     if url.ends_with(".zip") {
         println!("Found zip archive, searching for .OBJ files");
-        bytes = _extract_zip(bytes, Regex::new(r".+\.obj$").unwrap())?;
+        bytes = _extract_zip(bytes, r".+\.obj$")?;
     } else if !url.ends_with(".obj") {
         return Err(obj_error(
             "Bad URL, or at least does not end with .zip or .obj",
@@ -149,7 +155,26 @@ pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
     obj::load_file(obj_file, material)
 }
 
-/// Loads `tex_name` from .zip at `url`
+fn _check_cached(url: &str) -> Result<String> {
+    if !fs::exists(SCENE_DIR)? {
+        fs::create_dir(SCENE_DIR)?;
+    }
+    let re = Regex::new("[^/]*$")
+        .map_err(|e| obj_error(&e.to_string()))?;
+    let fname = re.find(url)
+        .ok_or(obj_error("couldn't regex parse url"))?.as_str();
+    let path = format!("{}{}", SCENE_DIR, fname);
+    if !fs::exists(&path)? {
+        println!("\"{}\" not found, downloading from \"{}\"", path, url);
+        let resp = _get_url(url)?;
+        let mut file = fs::File::create(&path)?;
+        file.write_all(&resp)?;
+    }
+
+    Ok(path)
+}
+
+/// Loads `tex_name` from .zip at `url`. zip cached to `SCENE_DIR`
 pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
     if !tex_name.ends_with(".png") {
         return Err(obj_error("Can only load .png files"));
@@ -158,15 +183,14 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
         return Err(obj_error("Can only extract textures from zip archives"));
     }
 
-    println!("Loading texture \"{}\" from \"{}\"", tex_name, url);
+    let path = _check_cached(url)?;
+    println!("Loading texture \"{}\" from \"{}\"", tex_name, path);
 
-    let resp = _get_url(url)?;
-
-    _img_from_zip(resp, tex_name)
+    _img_from_zip(fs::read(path)?, tex_name)
 }
 
 /// Parses a whole scene from a .obj file specified by `name`
-/// in a .zip archive at `url`
+/// in a .zip archive at `url`. Cache `url` to `SCENE_DIR`
 #[allow(clippy::single_match)]
 pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
     if !url.ends_with(".zip") {
@@ -176,11 +200,15 @@ pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
         return Err(obj_error("Can only parse .obj files"));
     }
 
-    println!("Loading scene \"{}\" from \"{}\"", obj_name, url);
+    let path = _check_cached(url)?;
 
-    let resp = _get_url(url)?;
+    println!("Loading scene \"{}\" from \"{}\"", obj_name, path);
+    _scene_from_file(fs::read(path)?, obj_name)
+}
 
-    let obj_bytes = _extract_zip(resp.clone(), Regex::new(obj_name).unwrap())?;
+#[allow(clippy::single_match)]
+fn _scene_from_file(f: Vec<u8>, obj_name: &str) -> Result<Scene> {
+    let obj_bytes = _extract_zip(f.clone(), obj_name)?;
 
     let obj_file = _bytes_to_file(obj_bytes.clone())?;
 
@@ -197,10 +225,10 @@ pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
         match tokens[0] {
             "mtllib" => {
                 let mtllib_name = tokens[1];
-                let mtl_bytes = _extract_zip(resp.clone(), Regex::new(mtllib_name).unwrap())?;
+                let mtl_bytes = _extract_zip(f.clone(), mtllib_name)?;
                 let mtl_file = _bytes_to_file(mtl_bytes)?;
 
-                mtl::load_file(mtl_file, Some(resp.clone()), &mut materials)?;
+                mtl::load_file(mtl_file, Some(f.clone()), &mut materials)?;
             }
             _ => (),
         }

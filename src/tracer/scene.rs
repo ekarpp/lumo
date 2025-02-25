@@ -10,6 +10,8 @@ mod scene_tests;
 /// Empty cornell box, custom material for floor, and left and right walls.
 mod empty_box;
 
+mod cornell_box;
+
 /// Defines a scene in 3D space
 #[derive(Default)]
 pub struct Scene {
@@ -88,15 +90,21 @@ impl Scene {
             }).or(h);
         }
 
+        #[cfg(debug_assertions)]
+        {
+            h = h.inspect(|h| {
+                if self.medium.is_none() && h.t < crate::EPSILON {
+                    println!("Suspiciously close hit ({}) at {}", h.t, h.p);
+                }
+            });
+        }
+
         h
     }
 
     /// Does ray `r` reach the light object `light`?
-    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit> {
-        let light_hit = match light.hit(r, 0.0, crate::INF) {
-            None => return None,
-            Some(hi) => hi,
-        };
+    pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit<'a>> {
+        let light_hit = light.hit(r, 0.0, crate::INF)?;
         // consider also checking medium
         let t_max = light_hit.t - crate::EPSILON;
 

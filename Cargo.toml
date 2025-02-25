@@ -1,10 +1,10 @@
 [package]
 name = "lumo"
-version = "0.3.2"
+version = "0.4.0"
 description = "CPU based rendering engine"
 license = "MIT"
-rust-version = "1.70"
-repository = "https://github.com/ekarpp/lumo"
+rust-version = "1.82"
+repository = "https://git.karppinen.xyz/lumo"
 authors = ["ekarpp <eetu@karppinen.xyz>"]
 keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
@@ -15,27 +15,33 @@ codegen-units = 1
 lto = true
 panic = "abort"
 opt-level = 3
-#rustflags = ["-C", "target-cpu=native"]
+debug = true
 
 [profile.dev]
 opt-level = 2
+debug = true
 
 [profile.test]
 opt-level = 2
+debug = true
 
 [profile.gdb]
 inherits = "dev"
 opt-level = 0
 debug = true
 
+[dev-dependencies]
+uuid = { version = "1.8.0", features = ["v4"] }
+
 [dependencies]
 argh = "0.1.10"
-glam = "0.23.0"
+glam = "0.26.0"
 itertools = "0.10.5"
+libm = "0.2.11"
 png = "0.17.7"
 rand = "0.8.5"
 rayon = "1.7.0"
-regex = "1.8.1"
+regex = { version = "1.8.1", features = ["std"] }
 tempfile = "3.4.0"
 ureq = "2.6.2"
 zip = "0.6.4"

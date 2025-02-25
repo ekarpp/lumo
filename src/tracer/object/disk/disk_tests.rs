@@ -3,7 +3,7 @@ use super::*;
 const NUM_RAYS: usize = 10000;
 
 fn unit_disk() -> Box<Disk> {
-    Disk::new(Point::ZERO, Point::Z, 1.0, Material::Mirror)
+    Disk::new(Point::ZERO, Point::Z, 1.0, Material::mirror())
 }
 
 #[test]
@@ -31,7 +31,8 @@ fn sampled_rays_hit() {
     for _ in 0..NUM_RAYS {
         let wi = d.sample_towards(xo, rand_utils::unit_square());
         let ri = Ray::new(xo, wi);
-        let (p, _) = d.sample_towards_pdf(&ri);
+        let Some(hi) = d.hit(&ri, 0.0, crate::INF) else { panic!() };
+        let p = d.sample_towards_pdf(&ri, hi.p, hi.ng);
 
         assert!(p > 0.0);
     }

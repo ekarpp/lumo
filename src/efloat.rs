@@ -8,7 +8,7 @@ pub fn gamma(n: i32) -> Float {
 }
 
 /// Makes the smallest increment possible to `v`
-pub fn next_double(v: Float) -> Float {
+pub fn next_float(v: Float) -> Float {
     if v.is_infinite() && v > 0.0 {
         v
     } else {
@@ -23,7 +23,7 @@ pub fn next_double(v: Float) -> Float {
 }
 
 /// Makes the smalles decrement possible to `v`
-pub fn previous_double(v: Float) -> Float {
+pub fn previous_float(v: Float) -> Float {
     if v.is_infinite() && v < 0.0 {
         v
     } else {
@@ -60,8 +60,8 @@ impl EFloat {
     pub fn sqrt(&self) -> Self {
         Self::new(
             self.value.sqrt(),
-            previous_double(self.low.sqrt()),
-            next_double(self.high.sqrt()),
+            previous_float(self.low.sqrt()),
+            next_float(self.high.sqrt()),
         )
     }
 
@@ -84,7 +84,7 @@ impl EFloat {
     }
 
     pub fn abs_error(&self) -> Float {
-        next_double(
+        next_float(
             (self.high - self.value).abs().max((self.value - self.low).abs())
         )
     }
@@ -118,8 +118,8 @@ impl Add for EFloat {
     fn add(self, other: Self) -> Self {
         Self::new(
             self.value + other.value,
-            previous_double(self.low + other.low),
-            next_double(self.high + other.high),
+            previous_float(self.low + other.low),
+            next_float(self.high + other.high),
         )
     }
 }
@@ -130,8 +130,8 @@ impl Sub for EFloat {
     fn sub(self, other: Self) -> Self {
         Self::new(
             self.value - other.value,
-            previous_double(self.low - other.high),
-            next_double(self.high - other.low),
+            previous_float(self.low - other.high),
+            next_float(self.high - other.low),
         )
     }
 }
@@ -159,8 +159,8 @@ impl Mul for EFloat {
 
         Self::new(
             self.value * other.value,
-            previous_double(min),
-            next_double(max),
+            previous_float(min),
+            next_float(max),
         )
     }
 }
@@ -196,8 +196,8 @@ impl Div for EFloat {
 
             Self::new(
                 self.value / other.value,
-                previous_double(min),
-                next_double(max),
+                previous_float(min),
+                next_float(max),
             )
         }
     }

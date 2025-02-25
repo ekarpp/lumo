@@ -1,4 +1,4 @@
-pub use camera::Camera;
+pub use camera::{ Camera, CameraBuilder, CameraType };
 pub use color::Color;
 pub use film::{Film, FilmTile, FilmSample};
 pub use integrator::Integrator;
@@ -10,10 +10,10 @@ pub use object::{
 };
 pub use scene::Scene;
 pub use texture::Texture;
-pub use filter::Filter;
+pub use filter::PixelFilter;
 
-/// Different BSDFs.
-mod bxdfs;
+mod bxdf;
+mod bsdf;
 /// Abstraction for a camera
 mod camera;
 /// Color struct
@@ -32,8 +32,6 @@ mod microfacet;
 mod object;
 /// Utility struct for orthonormal basis.
 mod onb;
-/// Implementation of different probability density functions for sampling.
-mod pdfs;
 /// Abstractions for rays.
 mod ray;
 /// Scene that describes the 3D world to render.

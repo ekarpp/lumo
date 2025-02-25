@@ -1,18 +1,22 @@
 use super::*;
 use crate::tracer::material::Material;
 
-/*
- * TODO:
- * (2) store directions in vertex?
- */
+const RR_DEPTH: usize = 5;
+const RR_MIN: Float = 0.05;
+
 use vertex::Vertex;
 
 /// Vertex abstraction
 mod vertex;
 /// Light and camera path generators
 mod path_gen;
-/// Multiple improtance sampling weights
+/// Multiple importance sampling weights
 mod mis;
+/// Helpers to convert between probability measures
+mod measure;
+
+#[cfg(test)]
+mod mis_tests;
 
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);
@@ -27,6 +31,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec
         }
     }
 
+    // earlier loop takes care of t == 1
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance += connect_paths(
@@ -52,50 +57,55 @@ fn connect_light_path(
     // assert!(s >= 2);
 
     let light_last = &light_path[s - 1];
-    let xi = light_last.h.p;
-    let ro = camera.sample_towards(xi, rand_utils::unit_square());
-    let pdf = camera.sample_towards_pdf(&ro, xi);
-    if pdf == 0.0 {
+    // delta BxDFs don't work too well here
+    if light_last.is_delta() {
+        return None;
+    }
+    // sample direction
+    let hi = &light_last.h;
+    let xi = hi.p;
+    let ri = camera.sample_towards(xi, rand_utils::unit_square())?;
+    let xo = ri.origin;
+    let wi = ri.dir;
+    // MIS checks this too
+    let p_sct = light_last.bsdf_pdf(-wi, false);
+    let p_imp = camera.pdf_importance(&ri, xi);
+    if p_sct == 0.0 || p_imp == 0.0 {
         return None;
     }
 
-    let xo = ro.origin;
-    let v = -ro.dir;
-    let vr = light_last.h.generate_ray(v);
-    let t2 = xo.distance_squared(xi);
-    if scene.hit(&vr).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON) {
+    // visibility test
+    if scene.hit(&ri).is_none_or(|h| (h.p - xi).abs().max_element() > crate::EPSILON) {
         return None;
     }
 
-    let light_scnd_last = &light_path[s - 2];
-    let mut sample = camera.importance_sample(&ro);
-    sample.color /= pdf;
-    let sampled_vertex = Some(Vertex::camera(ro.origin, sample.color));
-    let camera_last = sampled_vertex.as_ref().unwrap();
+    // get color
+    match camera.sample_importance(&ri) {
+        None => None,
+        Some(mut sample) => {
+            if sample.color.is_black() {
+                return None;
+            }
+            sample.color /= p_imp;
+            let p_xo = camera.pdf_xo(&ri);
+            let camera_last = Vertex::camera(xo, p_xo, sample.color);
+            let t2 = xo.distance_squared(xi);
 
-    let shading_cosine = if !light_last.is_surface() {
-        // we have to be a medium
-        1.0
-    } else {
-        let xn = light_scnd_last.h.p;
-        let wi = (xn - xi).normalize();
-        let ns = light_last.h.ns;
-        let ng = light_last.h.ng;
-        wi.dot(ng).abs() * light_last.shading_cosine(v, ns)
-            / v.dot(ng).abs()
-    };
+            sample.color *= light_last.gathered
+                * scene.transmittance(t2.sqrt())
+                * light_last.shading_cosine(-wi)
+                * light_last.shading_correction(-wi)
+                * light_last.f(&camera_last, Transport::Importance);
 
-    sample.color *= light_last.gathered
-        * scene.transmittance(t2.sqrt())
-        * shading_cosine
-        * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
-        * mis::mis_weight(camera, light_path, s, camera_path, 1, sampled_vertex);
+            sample.color *=
+                mis::weight(camera, light_path, s, camera_path, 1, Some( camera_last ));
 
-    Some(sample)
+            Some(sample)
+        }
+    }
 }
 
 /// Connects a light subpath and a camera subpath.
-/// Camera sampling not implemented i.e. camera paths of length 0 or 1 discarded.
 /// Special logic if light path length 0 or 1.
 fn connect_paths(
     scene: &Scene,
@@ -106,7 +116,6 @@ fn connect_paths(
     t: usize,
 ) -> Color {
     // assert!(t >= 2);
-
     // camera path ends on a light, but light path not empty
     if s != 0 && camera_path[t - 1].is_light() {
         return Color::BLACK;
@@ -124,49 +133,51 @@ fn connect_paths(
         }
     } else if s == 1 {
         // just one vertex on the light path. instead of using it, we sample a
-        // point on the same light.
+        // point on a random light
         let camera_last = &camera_path[t - 1];
         // can't sample from delta and light as last exited early
         if camera_last.is_delta() {
             Color::BLACK
         } else {
-            // .unwrap() not nice :(
-            // just sample any random light?
-            let light = light_path[0].h.light.unwrap();
+            let light = scene.uniform_random_light();
+            let pdf_light = 1.0 / scene.num_lights() as Float;
 
-            let xo = camera_last.h.p;
-            let pdf_light = ObjectPdf::new(light, xo);
+            let ho = &camera_last.h;
+            let xo = ho.p;
 
-            match pdf_light.sample_direction(rand_utils::unit_square()) {
+            let wi = light.sample_towards(xo, rand_utils::unit_square());
+            // alternatively let MIS take care of this
+            let p_sct = camera_last.bsdf_pdf(wi, false);
+            if p_sct == 0.0 {
+                return Color::BLACK;
+            }
+
+            let ri = ho.generate_ray(wi);
+            match scene.hit_light(&ri, light) {
                 None => Color::BLACK,
-                Some(wi) => {
-                    let ri = camera_last.h.generate_ray(wi);
-                    match scene.hit_light(&ri, light) {
-                        None => Color::BLACK,
-                        Some(hi) => {
-                            let ns = hi.ns;
-                            let emittance = hi.material.emit(&hi)
-                                / pdf_light.value_for(&ri, false);
-                            sampled_vertex = Some(Vertex::light(
-                                hi,
-                                light,
-                                emittance,
-                                0.0,
-                            ));
-                            let light_last = sampled_vertex.as_ref().unwrap();
-                            let bsdf = camera_last.bsdf(
-                                &camera_path[t - 2],
-                                light_last,
-                                Transport::Radiance,
-                            );
-                            /* MB: medium bug. missing trace too */
-                            camera_last.gathered
-                                * bsdf
-                                * light_last.gathered
-                                * camera_last.shading_cosine(wi, ns)
-                                * scene.transmittance(light_last.h.t)
-                        }
+                Some(hi) => {
+                    let xi = hi.p;
+                    let ngi = if !camera_last.is_surface() { wi } else { hi.ng };
+                    let p_lig = light.sample_towards_pdf(&ri, xi, ngi) * pdf_light;
+                    if p_lig == 0.0 {
+                        return Color::BLACK;
                     }
+                    let wi = ri.dir;
+                    let pdf_origin = measure::sa_to_area(p_lig, xo, xi, wi, ngi);
+                    let emittance = hi.material.emit(&hi);
+                    let light_last = Vertex::light(
+                        hi,
+                        light,
+                        emittance,
+                        pdf_origin,
+                    );
+                    let bsdf = camera_last.f(&light_last, Transport::Radiance);
+                    let tr = scene.transmittance(light_last.h.t);
+                    let cos_wi = camera_last.shading_cosine(wi);
+                    sampled_vertex = Some( light_last );
+                    /* MB: medium bug. missing trace too */
+                    camera_last.gathered * bsdf * emittance * tr * cos_wi
+                        / p_lig
                 }
             }
         }
@@ -182,30 +193,36 @@ fn connect_paths(
             || !visible(scene, &light_last.h, &camera_last.h) {
                 Color::BLACK
             } else {
-                let light_bsdf = light_last.bsdf(
-                    &light_path[s - 2],
+                let xc = camera_last.h.p;
+                let xl = light_last.h.p;
+                let wi = (xl - xc).normalize();
+                // MIS checks these too
+                let p_sct = camera_last.bsdf_pdf(wi, false)
+                    * light_last.bsdf_pdf(-wi, false);
+                if p_sct == 0.0 {
+                    return Color::BLACK;
+                }
+
+                let light_bsdf = light_last.f(
                     camera_last,
                     Transport::Importance,
                 );
-                let camera_bsdf = camera_last.bsdf(
-                    &camera_path[t - 2],
+                let camera_bsdf = camera_last.f(
                     light_last,
                     Transport::Radiance,
                 );
 
-                light_last.gathered
-                    * light_bsdf
-                    * camera_bsdf
-                    * camera_last.gathered
-                    * light_last.g(camera_last, scene)
-                    // transmittance baked in to G
-        }
+                light_last.gathered * light_bsdf * light_last.shading_cosine(-wi)
+                    * camera_last.gathered * camera_bsdf * camera_last.shading_cosine(wi)
+                    * scene.transmittance(xc.distance(xl))
+                    / xc.distance_squared(xl)
+            }
     };
 
     let weight = if radiance.is_black() {
         0.0
     } else {
-        mis::mis_weight(camera, light_path, s, camera_path, t, sampled_vertex)
+        mis::weight(camera, light_path, s, camera_path, t, sampled_vertex)
     };
 
     radiance * weight
@@ -215,14 +232,14 @@ fn connect_paths(
 fn visible(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
     let xo = h1.p;
     let xi = h2.p;
-    let r = h1.generate_ray(xi - xo);
-    let wi = r.dir;
+    let ri = h1.generate_ray(xi - xo);
+    let wi = ri.dir;
 
     if wi.dot(h1.ng) < crate::EPSILON {
         return false;
     }
 
-    match s.hit(&r) {
+    match s.hit(&ri) {
         None => false,
         Some(h) => h.p.distance_squared(xi) < crate::EPSILON,
     }

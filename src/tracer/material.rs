@@ -1,77 +1,162 @@
-use crate::{ Normal, Direction, Transport, Float, Vec3 };
+use crate::{ Normal, Direction, Transport, Float, Vec3, Vec2 };
 use crate::tracer::{
-    bxdfs, Color, hit::Hit, ray::Ray,
-    microfacet::MfDistribution,
-    texture::Texture, pdfs::{Pdf, CosPdf}
+    Color, hit::Hit, microfacet::MfDistribution,
+    texture::Texture, bsdf::BSDF, bxdf::BxDF
 };
+
+#[cfg(test)]
+mod white_furnace_tests;
 
 /// Describes which material an object is made out of
 pub enum Material {
-    /// Glossy
-    Microfacet(Texture, MfDistribution),
-    /// Lambertian diffuse material. Mostly for debugging
-    Lambertian(Texture),
+    /// Materials with standard BSDF
+    Standard(BSDF),
     /// Emits light
     Light(Texture),
-    /// Perfect reflection
-    Mirror,
-    /// Perfect refraction with refraction index as argument
-    Glass(Float),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
-    Volumetric(Float, Vec3, Color),
+    Volumetric(BSDF),
     /// Not specified. Used with objects that are built on top of other objects.
     Blank,
 }
 
 impl Material {
-    /// Helper function to create a microfacet material
+    /// General microfacet constructor
+    #[allow(clippy::too_many_arguments)]
     pub fn microfacet(
-        texture: Texture,
         roughness: Float,
-        refraction_idx: Float,
-        metallicity: Float,
-        transparent: bool
+        eta: Float,
+        k: Float,
+        is_transparent: bool,
+        fresnel_enabled: bool,
+        kd: Texture,
+        ks: Texture,
+        tf: Texture,
     ) -> Self {
-        let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
-        Self::Microfacet(texture, mfd)
+        let mfd = MfDistribution::new(roughness, eta, k, kd, ks, tf);
+        // dirty dirty...
+        let bsdf = if is_transparent {
+            BSDF::new(BxDF::MfDielectric(mfd))
+        } else if fresnel_enabled {
+            BSDF::new(BxDF::MfConductor(mfd))
+        } else {
+            BSDF::new(BxDF::MfDiffuse(mfd))
+        };
+        Self::Standard(bsdf)
     }
 
-    /// Metallic microfacet material
-    pub fn metallic(texture: Texture, roughness: Float) -> Self {
-        Self::microfacet(texture, roughness, 1.5, 1.0, false)
-    }
+    /// Microfacet mirror with assignable roughness
+    pub fn metal(ks: Texture, roughness: Float, eta: Float, k: Float) -> Self {
+        let kd = Texture::from(Color::WHITE);
+        let tf = Texture::from(Color::BLACK);
 
-    /// Specular microfacet material
-    pub fn specular(texture: Texture, roughness: Float) -> Self {
-        Self::microfacet(texture, roughness, 1.5, 0.0, false)
+        let is_transparent = false;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+            kd, ks, tf,
+        )
     }
 
     /// Diffuse material
-    pub fn diffuse(texture: Texture) -> Self {
-        Self::microfacet(texture, 1.0, 1.5, 0.0, false)
+    pub fn diffuse(kd: Texture) -> Self {
+        let ks = Texture::from(Color::WHITE);
+        let tf = Texture::from(Color::BLACK);
+
+        let roughness = 1.0;
+        let eta = 1.5;
+        let k = 0.0;
+        let is_transparent = false;
+        let fresnel_enabled = false;
+
+        Self::microfacet(
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+            kd, ks, tf,
+        )
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, roughness: Float, refraction_idx: Float) -> Self {
-        Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
+    pub fn transparent(tf: Texture, roughness: Float, eta: Float) -> Self {
+        let kd = Texture::from(Color::BLACK);
+        let ks = Texture::from(Color::WHITE);
+
+        let k = 0.0;
+        let is_transparent = true;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+            kd, ks, tf,
+        )
     }
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        Self::Mirror
+        let kd = Texture::from(Color::WHITE);
+        let ks = Texture::from(Color::WHITE);
+        let tf = Texture::from(Color::BLACK);
+
+        let roughness = 0.0;
+        let eta = 1e5;
+        let k = 0.0;
+        let is_transparent = false;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+            kd, ks, tf,
+        )
     }
 
     /// Perfect refraction
-    pub fn glass(refraction_index: Float) -> Self {
-        assert!(refraction_index >= 1.0);
-        Self::Glass(refraction_index)
+    pub fn glass() -> Self {
+        let kd = Texture::from(Color::WHITE);
+        let ks = Texture::from(Color::WHITE);
+        let tf = Texture::from(Color::WHITE);
+
+        let eta = 1.5;
+        let roughness = 0.0;
+        let k = 0.0;
+        let is_transparent = true;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+            kd, ks, tf,
+        )
+    }
+
+    /// Volumetric material for mediums
+    pub fn volumetric(g: Float, sigma_t: Vec3, sigma_s: Color) -> Self {
+        let bsdf = BSDF::new(BxDF::Volumetric(g, sigma_t, sigma_s));
+        Self::Volumetric(bsdf)
     }
 
     /// Is the material specular? I.e. reflects light
     pub fn is_specular(&self) -> bool {
         match self {
-            Self::Mirror | Self::Glass(..) => true,
-            Self::Microfacet(_, mfd) => mfd.is_specular(),
+            Self::Volumetric(..) => true,
+            Self::Standard(bsdf) => bsdf.is_specular(),
             _ => false,
         }
     }
@@ -80,9 +165,8 @@ impl Material {
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
         match self {
-            Self::Lambertian(_) => false,
-            Self::Microfacet(_, mfd) => mfd.is_delta(),
-            _ => true,
+            Self::Standard(bsdf) => bsdf.is_delta(),
+            _ => false,
         }
     }
 
@@ -99,7 +183,8 @@ impl Material {
         }
     }
 
-    /// What is the color at `h`?
+    /// BSDF evaluated at `h` for incoming `wo` and outgoing `wi` while
+    /// transporting `mode`
     pub fn bsdf_f(
         &self,
         wo: Direction,
@@ -107,59 +192,45 @@ impl Material {
         mode: Transport,
         h: &Hit
     ) -> Color {
-        let ns = h.ns;
-        let ng = h.ng;
         match self {
-            Self::Mirror => Color::WHITE,
-            Self::Glass(eta) => {
-                match mode {
-                    Transport::Importance => Color::WHITE,
-                    Transport::Radiance => {
-                        let inside = wi.dot(ng) > 0.0;
-                        if inside {
-                            Color::splat(1.0 / (eta * eta))
-                        } else {
-                            Color::splat(eta * eta)
-                        }
-                    }
-                }
-            }
-            // volumetric BSDF handled in integrator to cancel out PDF
-            Self::Volumetric(_, sigma_t, sigma_s) => {
-                let transmittance = (-*sigma_t * h.t).exp();
-                // cancel out the transmittance pdf taken from scene transmitance
-                let pdf = (transmittance * *sigma_t).dot(Vec3::ONE)
-                    / transmittance.dot(Vec3::ONE);
-
-                if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
-            }
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
-            }
-            Self::Lambertian(t) => t.albedo_at(h) / crate::PI,
+            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.f(wo, wi, h, mode),
             _ => Color::BLACK,
+        }
+    }
+
+    /// Samples leaving direction from `h` from incoming direction `wo`
+    pub fn bsdf_sample(
+        &self,
+        wo: Direction,
+        h: &Hit,
+        rand_sq: Vec2
+    ) -> Option<Direction> {
+        match self {
+            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.sample(wo, h, rand_sq),
+            _ => None,
+        }
+    }
+
+    /// PDF for direction `wi` at `h` with incoming direction `wo`
+    pub fn bsdf_pdf(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        h: &Hit,
+        swap_dir: bool
+    ) -> Float {
+        let (wo, wi) = if swap_dir { (wi, wo) } else { (wo, wi) };
+        match self {
+            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.pdf(wo, wi, h),
+            _ => 0.0,
         }
     }
 
     /// Computes the shading cosine coefficient per material
     pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
         match self {
-            Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
-            _ => 1.0
-        }
-    }
-
-    /// How does `ro` get scattered at `ho`?
-    pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
-        match self {
-            Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
-            Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric(g, ..) => bxdfs::brdf_volumetric_pdf(ro, *g),
-            Self::Lambertian(_) => Some(Box::new(CosPdf::new(ho.ns))),
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
-            }
-            Self::Light(_) | Self::Blank => None,
+            Self::Standard(_) => ns.dot(wi).abs(),
+            _ => 1.0,
         }
     }
 }

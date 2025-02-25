@@ -1,10 +1,12 @@
 //! Just a path tracer :)
 #![warn(missing_docs)]
+#![allow(clippy::needless_range_loop)]
 
 pub use cli::TracerCli;
 pub use image::Image;
 pub use perlin::Perlin;
 pub use renderer::Renderer;
+pub use samplers::SamplerType;
 pub use tone_mapping::ToneMap;
 
 /// Wavefront .mtl and .obj parser
@@ -12,6 +14,8 @@ pub mod parser;
 /// The heart.
 pub mod tracer;
 
+/// Complex numbers
+mod complex;
 /// Command line interface
 mod cli;
 /// `Float` with built in tracking of floating point error
@@ -26,10 +30,22 @@ mod rand_utils;
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
+/// Utility functions when working with vectors in shading space
+mod spherical_utils;
 /// Tone mapping functions
 mod tone_mapping;
 
+#[cfg(test)]
+/// Implementation of adaptive simpson for numerical integration. Used in tests only.
+mod simpson_integration;
+
+#[cfg(test)]
+/// Chi2 CDF, used only in tests
+mod chi2;
+
 type Transform = glam::DAffine3;
+type Vec4 = glam::DVec4;
+type Mat4 = glam::DMat4;
 type Vec2 = glam::DVec2;
 /// 3x3 matrix type alias
 pub type Mat3 = glam::DMat3;

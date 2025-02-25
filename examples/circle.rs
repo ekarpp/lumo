@@ -5,7 +5,7 @@ use lumo::*;
 fn hsv_to_rgb(h: Float) -> Color {
     let f = |n: Float| {
         let k = (n + h / (PI / 3.0)) % 6.0;
-        1.0 - k.min(4.0 - k).min(1.0).max(0.0)
+        1.0 - k.min(4.0 - k).clamp(0.0, 1.0)
     };
 
     let rgb = Vec3::new(f(5.0), f(3.0), f(1.0)) * 255.0;
@@ -14,16 +14,11 @@ fn hsv_to_rgb(h: Float) -> Color {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = Camera::perspective(
-        Vec3::new(0.0, 1.5, 1.5),
-        Vec3::ZERO,
-        Vec3::new(0.0, 1.0, -1.0),
-        90.0,
-        0.0,
-        0.0,
-        1024,
-        768,
-    );
+    let camera = Camera::builder()
+        .origin(Vec3::new(0.0, 1.5, 1.5))
+        .towards(Vec3::ZERO)
+        .up(Vec3::Y - Vec3::Z)
+        .build();
 
     let mut scene = Scene::default();
     let ground = -0.2;
@@ -32,15 +27,15 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Plane::new(
         ground * Vec3::Y,
         Vec3::Y,
-        Material::metallic(Texture::Solid(Color::new(150, 40, 39)), 0.009999),
+        Material::metal(Texture::from(Color::new(150, 40, 39)), 0.009999, 2.5, 0.0),
     ));
 
     let r = 0.2;
     scene.add_light(Sphere::new(
-        Vec3::new(0.0, ground + r + 0.1, 0.0),
         r,
-        Material::Light(Texture::Solid(Color::WHITE)),
-    ));
+        Material::Light(Texture::from(Color::WHITE)))
+                    .translate(0.0, ground + r + 0.1, 0.0)
+    );
 
     let circle_s = 8;
     let offset = PI / circle_s as Float;
@@ -52,10 +47,10 @@ fn main() -> Result<(), std::io::Error> {
         let z = theta.sin();
 
         scene.add(Sphere::new(
-            Vec3::new(x, y, z),
             r,
-            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.2),
-        ));
+            Material::diffuse(Texture::from(hsv_to_rgb(theta - offset))))
+                  .translate(x, y, z)
+        );
     }
 
     scene.set_medium(
@@ -66,8 +61,8 @@ fn main() -> Result<(), std::io::Error> {
         )
     );
 
-    let renderer = Renderer::new(scene, camera);
-    renderer.render().save("circle.png")?;
-
+    Renderer::new(scene, camera)
+        .render()
+        .save("circle.png")?;
     Ok(())
 }
