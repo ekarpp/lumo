@@ -99,6 +99,25 @@ impl Object for Disk {
             )
         }
     }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let xo = r.origin;
+        let wi = r.dir;
+
+        // check coplanarity
+        if self.normal.dot(wi).abs() < crate::EPSILON { return crate::INF; }
+
+        let t = -(self.d.value + self.normal.dot(xo)) / self.normal.dot(wi);
+        let xi = r.at(t);
+
+        if xi.distance_squared(self.origin) > self.radius * self.radius {
+            crate::INF
+        } else if t <= t_min || t >= t_max {
+            crate::INF
+        } else {
+            t
+        }
+    }
 }
 
 impl Sampleable for Disk {

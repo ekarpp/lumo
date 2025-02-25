@@ -51,11 +51,38 @@ mod triangle;
 /// Triangle meshes, stores vertices, normals and texture coordinates to save space
 mod triangle_mesh;
 
+mod util {
+    use crate::Float;
+
+    pub fn quadratic(a: Float, b: Float, c: Float) -> Option<(Float, Float)> {
+        let disc = b * b - 4.0 * a * c;
+        if disc < 0.0 { return None; }
+        let disc_root = disc.sqrt();
+
+        let mut t0 = (-b - disc_root) / (2.0 * a);
+        let mut t1 = (-b + disc_root) / (2.0 * a);
+
+        if t0 > t1 {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+
+        // t0 always lower value
+        Some((t0, t1))
+    }
+}
+
 /// Common functionality shared between all objects.
 pub trait Object: Sync {
     /// Does the ray hit the object? NOTE: ray direction can be unnormalized
     /// for instanced objects. Is this an issue?
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit>;
+
+    /// Get the distance for `r` to hit `self`.
+    /// Returns `INF` if value not in `(t_min,t_max)`.
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let t = self.hit(r, 0.0, crate::INF).map_or(crate::INF, |h| h.t);
+        if t <= t_min || t >= t_max { crate::INF } else { t }
+    }
 }
 
 /// Objects that can be contained within an AABB

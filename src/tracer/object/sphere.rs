@@ -82,6 +82,27 @@ impl Object for Sphere {
 
         Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let xo = r.origin;
+        let wi = r.dir;
+
+        let a = wi.dot(wi);
+        let b = 2.0 * wi.dot(xo);
+        let c = xo.dot(xo) - self.radius * self.radius;
+
+        let Some((t0, t1)) = util::quadratic(a, b, c) else { return crate::INF; };
+
+        if t0 >= t_max || t1 <= t_min { return crate::INF; }
+
+        if t0 > t_min {
+            t0
+        } else if t1 >= t_max {
+            crate::INF
+        } else {
+            t1
+        }
+    }
 }
 
 impl Sampleable for Sphere {

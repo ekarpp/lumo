@@ -60,6 +60,19 @@ impl<'a> Hit<'a> {
         })
     }
 
+    pub fn from_t(t: Float) -> Option<Self> {
+        Self::new(
+            t,
+            &Material::Blank,
+            Direction::Z,
+            Point::Z,
+            Vec3::ZERO,
+            Normal::Z,
+            Normal::Z,
+            Vec2::ZERO,
+        )
+    }
+
     /// Generates a ray at point of impact. Would be better to use accurate
     /// error bounds instead of `EPSILON`.
     pub fn generate_ray(&self, wi: Direction) -> Ray {

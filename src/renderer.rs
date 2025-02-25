@@ -1,9 +1,9 @@
 use crate::{
-    Vec2, Float, TracerCli, ToneMap, SamplerType,
+    Vec2, Float, TracerCli, ToneMap, SamplerType, rand_utils,
 };
 use crate::tracer::{
-    Camera, Film, FilmSample,
-    Integrator, Scene, PixelFilter, FilmTile
+    Camera, Film, FilmSample, ColorWavelength,
+    Integrator, Scene, PixelFilter, FilmTile, ColorSpace
 };
 use glam::IVec2;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -23,6 +23,7 @@ pub struct Renderer {
     integrator: Integrator,
     tone_map: ToneMap,
     filter: PixelFilter,
+    color_space: ColorSpace,
     sampler: SamplerType,
     threads: usize,
 }
@@ -47,42 +48,49 @@ impl Renderer {
             sampler: SamplerType::MultiJittered,
             integrator: cli_args.get_integrator(),
             tone_map: ToneMap::NoMap,
+            color_space: ColorSpace::default(),
         }
     }
 
     /// Sets the tone mapping algorithm used
-    pub fn set_tone_map(mut self, tone_map: ToneMap) -> Self {
+    pub fn tone_map(mut self, tone_map: ToneMap) -> Self {
         self.tone_map = tone_map;
         self
     }
 
     /// Sets the pixel filter
-    pub fn set_filter(mut self, filter: PixelFilter) -> Self {
+    pub fn filter(mut self, filter: PixelFilter) -> Self {
         self.filter = filter;
         self
     }
 
     /// Sets number of samples per pixel
-    pub fn set_samples(mut self, samples: u32) -> Self {
+    pub fn samples(mut self, samples: u32) -> Self {
         self.num_samples = samples;
         self
     }
 
     /// Sets the integrator used to render the image
-    pub fn set_integrator(mut self, integrator: Integrator) -> Self {
+    pub fn integrator(mut self, integrator: Integrator) -> Self {
         self.integrator = integrator;
         self
     }
 
     /// Set the sampler used in rendering
-    pub fn set_sampler(mut self, sampler: SamplerType) -> Self {
+    pub fn sampler(mut self, sampler: SamplerType) -> Self {
         self.sampler = sampler;
         self
     }
 
     /// Sets the number of threads used for rendering
-    pub fn set_threads(mut self, threads: usize) -> Self {
+    pub fn threads(mut self, threads: usize) -> Self {
         self.threads = threads;
+        self
+    }
+
+    /// Sets the color space used to develop the film
+    pub fn color_space(mut self, color_space: ColorSpace) -> Self {
+        self.color_space = color_space;
         self
     }
 
@@ -104,21 +112,25 @@ impl Renderer {
                   \t Integrator: {}\n\
                   \t Filter: {}\n\
                   \t Sampler: {}\n\
+                  \t Color space: {}\n\
                   \t Threads: {}",
                  self.resolution.x, self.resolution.y,
                  self.num_samples,
                  self.integrator,
                  self.filter,
                  self.sampler,
+                 self.color_space,
                  pool.current_num_threads(),
         );
 
         let start = Instant::now();
         let rays = self.num_samples as i32 * self.resolution.x * self.resolution.y;
+
         let mut film = Film::new(
             self.resolution.x,
             self.resolution.y,
             self.num_samples,
+            &self.color_space,
             &self.filter,
         );
 
@@ -209,25 +221,33 @@ impl Renderer {
     }
 
     fn get_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
-        FilmTile::new(px_min, px_max.min(self.resolution), self.resolution, &self.filter)
+        FilmTile::new(
+            px_min,
+            px_max.min(self.resolution),
+            self.resolution,
+            &self.color_space,
+            &self.filter,
+        )
     }
 
     /// Sends `num_samples` rays towards the given pixel and averages the result
     fn get_samples(&self, tile: &mut FilmTile, num_samples: u32, x: i32, y: i32) {
         let xy = Vec2::new(x as Float, y as Float);
         self.sampler.new(num_samples)
-            .flat_map(|rand_sq: Vec2| {
+            .for_each(|rand_sq: Vec2| {
                 let raster_xy = xy + rand_sq;
+                let lambda = ColorWavelength::sample(rand_utils::rand_float());
                 self.integrator.integrate(
                     &self.scene,
                     &self.camera,
+                    lambda,
                     raster_xy,
                     self.camera.generate_ray(raster_xy),
                 )
-            })
-            .for_each(|mut sample: FilmSample| {
-                sample.color = self.tone_map.map(sample.color);
-                tile.add_sample(sample)
+                    .iter_mut().for_each(|sample: &mut FilmSample| {
+                        sample.color = self.tone_map.map(sample.color, &sample.lambda);
+                        tile.add_sample(sample)
+                    })
             })
     }
 }

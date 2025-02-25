@@ -1,5 +1,5 @@
 use crate::{ Float, Image, Point, perlin::Perlin };
-use crate::tracer::{Color, hit::Hit};
+use crate::tracer::{Color, ColorWavelength, Spectrum, hit::Hit};
 
 /// Scale of points in perlin. bigger = more noticeable effect
 const MARBLE_SCALE: Float = 4.0;
@@ -15,7 +15,7 @@ const MARBLE_GAIN: Float = 0.5;
 /// Defines a texture to choose a colour of material at each point.
 pub enum Texture {
     /// Solid colour.
-    Solid(Color),
+    Solid(Spectrum),
     /* box avoids having to define lifetime all the way to objects.
      * should texture be a struct instead? */
     /// Checkerboard of textures. Float defines scale,
@@ -23,41 +23,41 @@ pub enum Texture {
     Checkerboard(Box<Texture>, Box<Texture>, Float),
     /// Marble like texture generated from Perlin noise.
     /// Underlying color as argument.
-    Marble(Perlin, Color),
+    Marble(Perlin, Spectrum),
     /// Image texture loaded from a .png
     Image(Image),
 }
 
 impl Default for Texture {
-    fn default() -> Self { Self::Solid(Color::WHITE) }
+    fn default() -> Self { Self::Solid(Spectrum::WHITE) }
 }
 
-impl From<Color> for Texture {
-    fn from(col: Color) -> Self {
-        Self::Solid(col)
+impl From<Spectrum> for Texture {
+    fn from(spec: Spectrum) -> Self {
+        Self::Solid(spec)
     }
 }
 
 impl Texture {
     /// Colour at hit `h`
-    pub fn albedo_at(&self, h: &Hit) -> Color {
+    pub fn albedo_at(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
         match self {
-            Texture::Solid(c) => *c,
-            Texture::Marble(pn, c) => {
+            Texture::Solid(spec) => spec.sample(lambda),
+            Texture::Marble(pn, spec) => {
                 let xo = h.p;
                 let turb = Self::turbulence(pn, 0.0, MARBLE_SCALE * xo.abs(), 0);
                 let scaled = 1.0 -
                     (0.5 + 0.5 * (MARBLE_FREQ * xo.x + MARBLE_AMP * turb).sin())
                     .powi(6);
 
-                *c * scaled
+                spec.sample(lambda) * scaled
             }
             Texture::Checkerboard(t1, t2, s) => {
                 let uv = h.uv * (*s);
                 if (uv.x.floor() + uv.y.floor()) as i32 % 2 == 0 {
-                    t1.albedo_at(h)
+                    t1.albedo_at(lambda, h)
                 } else {
-                    t2.albedo_at(h)
+                    t2.albedo_at(lambda, h)
                 }
             }
             Texture::Image(img) => {
@@ -66,7 +66,7 @@ impl Texture {
                 let x = x.floor() as usize;
                 let y = uv.y * img.height as Float;
                 let y = img.height - y.floor() as u32 - 1;
-                img.buffer[x + (y*img.width) as usize]
+                img.buffer[x + (y*img.width) as usize].sample(lambda)
             }
         }
     }

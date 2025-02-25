@@ -1,6 +1,9 @@
 #![allow(clippy::manual_swap)]
 use super::*;
-use crate::tracer::{ bxdf::BxDF, bsdf::BSDF, CameraBuilder, Instanceable, Sphere, Texture };
+use crate::tracer::{
+    bxdf::BxDF, bsdf::BSDF, CameraBuilder, Spectrum,
+    Instanceable, Sphere, Texture
+};
 
 const NUM_PATHS: usize = 10_000;
 
@@ -10,9 +13,9 @@ fn camera() -> Camera {
 
 fn scene() -> Scene {
     Scene::empty_box(
-        Color::WHITE,
-        Material::diffuse(Texture::from(Color::RED)),
-        Material::Standard(BSDF::new(BxDF::Lambertian(Color::GREEN)))
+        Spectrum::WHITE,
+        Material::diffuse(Texture::from(Spectrum::RED)),
+        Material::Standard(BSDF::new(BxDF::Lambertian(Spectrum::GREEN)))
     )
 }
 
@@ -59,12 +62,12 @@ fn all_sum_to_one_specular_rough() {
 
     sce.add(Sphere::new(
         0.25,
-        Material::metal(Texture::from(Color::WHITE), 0.5, 1.5, 1.5))
+        Material::metal(Texture::from(Spectrum::WHITE), 0.5, 1.5, 1.5))
             .translate(-0.45, -0.5, -1.5)
     );
     sce.add(Sphere::new(
         0.25,
-        Material::transparent(Texture::from(Color::WHITE), 0.5, 1.5))
+        Material::transparent(Texture::from(Spectrum::WHITE), 0.5, 1.5))
             .translate(0.45, -0.5, -1.3)
     );
 
@@ -87,11 +90,11 @@ fn all_sum_to_one_big_scale() {
 fn test_scene(sce: Scene, cam: Camera) {
     let r = cam.generate_ray(Vec2::ZERO);
     let xc = r.origin;
-
+    let lambda = ColorWavelength::sample(rand_utils::rand_float());
     for _ in 0..NUM_PATHS {
         let mut pth;
         loop {
-            pth = path_gen::light_path(&sce);
+            pth = path_gen::light_path(&sce, &lambda);
             // too short, try another path
             if pth.len() <= 2 { continue; }
             let ls = &pth[pth.len() - 1];

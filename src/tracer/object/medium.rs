@@ -1,5 +1,5 @@
 use super::*;
-use crate::tracer::Color;
+use crate::tracer::{ Color, ColorWavelength, Spectrum };
 
 #[cfg(test)]
 mod medium_test;
@@ -10,7 +10,7 @@ mod medium_test;
 pub struct Medium {
     /// Transmittance of the medium, defined as `sigma_a + sigma_s`, where
     /// `sigma_a` tells how much each RGB channel gets absorbed while traversing the medium
-    sigma_t: Vec3,
+    sigma_t: Spectrum,
     /// Material of the medium
     material: Material,
 }
@@ -28,28 +28,29 @@ impl Medium {
         assert!(scattering.min_element() >= 0.0);
         assert!(absorption.max_element() <= 1.0
                 && absorption.min_element() >= 0.0);
-
-        let sigma_s = Color::from(scattering);
-        let sigma_t = scattering + absorption;
+        let sigma_s = Spectrum::from_rgb(scattering);
+        let sigma_t = Spectrum::from_rgb(scattering + absorption);
 
         Self {
-            sigma_t,
+            sigma_t: sigma_t.clone(),
             material: Material::volumetric(scatter_param, sigma_t, sigma_s),
+
+
         }
     }
 
     /// Computes the transmittance for the distance `t`.
-    pub fn transmittance(&self, t_delta: Float) -> Color {
+    pub fn transmittance(&self, lambda: &ColorWavelength, t_delta: Float) -> Color {
         // need to move some of the stuff to bsdf?
-        let transmittance = (-self.sigma_t * t_delta).exp();
+        let transmittance = (-self.sigma_t.sample(lambda) * t_delta).exp();
 
-        let pdf = transmittance.dot(Vec3::ONE) / 3.0;
+        let pdf = transmittance.mean();
 
         if pdf == 0.0 {
             // this medium does not do much...
             Color::WHITE
         } else {
-            Color::from(transmittance / pdf)
+            transmittance / pdf
         }
     }
 }
@@ -57,11 +58,8 @@ impl Medium {
 impl Object for Medium {
     fn hit(&self, ro: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         // choose a random color channel from density
-        let density = match 3.0 * rand_utils::rand_float() {
-            f if f < 1.0 => self.sigma_t.x,
-            f if f < 2.0 => self.sigma_t.y,
-            _ => self.sigma_t.z,
-        };
+        let lambda = ColorWavelength::sample_one(rand_utils::rand_float());
+        let density = self.sigma_t.sample_one(lambda);
 
         // this channel never gets hit
         if density == 0.0 {

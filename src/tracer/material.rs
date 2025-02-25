@@ -1,6 +1,6 @@
-use crate::{ Normal, Direction, Transport, Float, Vec3, Vec2 };
+use crate::{ Normal, Direction, Transport, Float, Vec2 };
 use crate::tracer::{
-    Color, hit::Hit, microfacet::MfDistribution,
+    Color, ColorWavelength, Spectrum, hit::Hit, microfacet::MfDistribution,
     texture::Texture, bsdf::BSDF, bxdf::BxDF
 };
 
@@ -46,8 +46,8 @@ impl Material {
 
     /// Microfacet mirror with assignable roughness
     pub fn metal(ks: Texture, roughness: Float, eta: Float, k: Float) -> Self {
-        let kd = Texture::from(Color::WHITE);
-        let tf = Texture::from(Color::BLACK);
+        let kd = Texture::from(Spectrum::WHITE);
+        let tf = Texture::from(Spectrum::BLACK);
 
         let is_transparent = false;
         let fresnel_enabled = true;
@@ -62,10 +62,10 @@ impl Material {
         )
     }
 
-    /// Diffuse material
+    /// Diffuse material with a microfacet based BxDF
     pub fn diffuse(kd: Texture) -> Self {
-        let ks = Texture::from(Color::WHITE);
-        let tf = Texture::from(Color::BLACK);
+        let ks = Texture::from(Spectrum::WHITE);
+        let tf = Texture::from(Spectrum::BLACK);
 
         let roughness = 1.0;
         let eta = 1.5;
@@ -83,10 +83,15 @@ impl Material {
         )
     }
 
+    /// Plain lambertian diffuse material
+    pub fn lambertian(spec: Spectrum) -> Self {
+        Self::Standard(BSDF::new(BxDF::Lambertian(spec)))
+    }
+
     /// Transparent material
     pub fn transparent(tf: Texture, roughness: Float, eta: Float) -> Self {
-        let kd = Texture::from(Color::BLACK);
-        let ks = Texture::from(Color::WHITE);
+        let kd = Texture::from(Spectrum::BLACK);
+        let ks = Texture::from(Spectrum::WHITE);
 
         let k = 0.0;
         let is_transparent = true;
@@ -104,9 +109,9 @@ impl Material {
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        let kd = Texture::from(Color::WHITE);
-        let ks = Texture::from(Color::WHITE);
-        let tf = Texture::from(Color::BLACK);
+        let kd = Texture::from(Spectrum::WHITE);
+        let ks = Texture::from(Spectrum::WHITE);
+        let tf = Texture::from(Spectrum::BLACK);
 
         let roughness = 0.0;
         let eta = 1e5;
@@ -126,9 +131,9 @@ impl Material {
 
     /// Perfect refraction
     pub fn glass() -> Self {
-        let kd = Texture::from(Color::WHITE);
-        let ks = Texture::from(Color::WHITE);
-        let tf = Texture::from(Color::WHITE);
+        let kd = Texture::from(Spectrum::WHITE);
+        let ks = Texture::from(Spectrum::WHITE);
+        let tf = Texture::from(Spectrum::WHITE);
 
         let eta = 1.5;
         let roughness = 0.0;
@@ -147,7 +152,7 @@ impl Material {
     }
 
     /// Volumetric material for mediums
-    pub fn volumetric(g: Float, sigma_t: Vec3, sigma_s: Color) -> Self {
+    pub fn volumetric(g: Float, sigma_t: Spectrum, sigma_s: Spectrum) -> Self {
         let bsdf = BSDF::new(BxDF::Volumetric(g, sigma_t, sigma_s));
         Self::Volumetric(bsdf)
     }
@@ -172,12 +177,12 @@ impl Material {
 
 
     /// How much light emitted at `h`?
-    pub fn emit(&self, h: &Hit) -> Color {
+    pub fn emit(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
         match self {
             Self::Light(t) => if h.backface {
                 Color::BLACK
             } else {
-                t.albedo_at(h)
+                t.albedo_at(lambda, h)
             },
             _ => Color::BLACK
         }
@@ -189,11 +194,12 @@ impl Material {
         &self,
         wo: Direction,
         wi: Direction,
+        lambda: &ColorWavelength,
         mode: Transport,
         h: &Hit
     ) -> Color {
         match self {
-            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.f(wo, wi, h, mode),
+            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.f(wo, wi, lambda, h, mode),
             _ => Color::BLACK,
         }
     }

@@ -122,15 +122,21 @@ impl<T: Object> Object for Instance<T> {
         // transformation to ray instead of transformation to object.
         let ray_local = r.transform(self.inv_transform);
 
-        self.object.hit(&ray_local, t_min, t_max).map(|mut h| {
-            h.ns = (self.normal_transform * h.ns).normalize();
-            h.ng = (self.normal_transform * h.ng).normalize();
+        self.object.hit(&ray_local, t_min, t_max)
+            .map(|mut h| {
+                h.ns = (self.normal_transform * h.ns).normalize();
+                h.ng = (self.normal_transform * h.ng).normalize();
 
-            self.propagate_fp_err(&mut h);
+                self.propagate_fp_err(&mut h);
 
-            h.p = self.transform.transform_point3(h.p);
-            h
-        })
+                h.p =  self.transform.transform_point3(h.p);
+                h
+            })
+    }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let r_local = r.transform(self.inv_transform);
+        self.object.hit_t(&r_local, t_min, t_max)
     }
 }
 

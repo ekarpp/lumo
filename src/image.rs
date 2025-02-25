@@ -1,12 +1,12 @@
 use png::{BitDepth, ColorType, Decoder, DecodingError};
 use std::fs::File;
-use crate::tracer::Color;
+use crate::tracer::Spectrum;
 
 /// Loaded texture images stored in a Rust vector
 #[derive(Clone)]
 pub struct Image {
     /// Image buffer storing color values
-    pub buffer: Vec<Color>,
+    pub buffer: Vec<Spectrum>,
     /// Width of rendered image.
     pub width: u32,
     /// Height of rendered image.
@@ -33,13 +33,13 @@ impl Image {
             ColorType::Rgb => {
                 bytes[..info.buffer_size()]
                     .chunks(3)
-                    .map(|rgb| Color::new(rgb[0], rgb[1], rgb[2]))
+                    .map(|rgb| Spectrum::from_srgb(rgb[0], rgb[1], rgb[2]))
                     .collect()
             }
             ColorType::Rgba => {
                 bytes[..info.buffer_size()]
                     .chunks(4)
-                    .map(|rgba| Color::new(rgba[0], rgba[1], rgba[2]))
+                    .map(|rgba| Spectrum::from_srgb(rgba[0], rgba[1], rgba[2]))
                     .collect()
             }
             _ => panic!("unsupported image type {:?}", info.color_type),

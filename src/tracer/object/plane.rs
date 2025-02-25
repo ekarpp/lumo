@@ -79,4 +79,15 @@ impl Object for Plane {
             )
         }
     }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let xo = r.origin;
+        let wi = r.dir;
+
+        // check coplanarity
+        if self.normal.dot(wi).abs() < crate::EPSILON { return crate::INF; }
+
+        let t = -(self.d.value + self.normal.dot(xo)) / self.normal.dot(wi);
+        if t <= t_min || t >= t_max { crate::INF } else { t }
+    }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::tracer::{Instanceable, Plane, Sphere};
+use crate::tracer::{Instanceable, Plane, Sphere, Spectrum};
 use crate::{Point, Direction};
 
 /* light at y = 2, plane at y = 1 perp to z */
@@ -8,7 +8,7 @@ fn scene(m: Material) -> Scene {
 
     scene.add_light(Sphere::new(
         crate::EPSILON,
-        Material::Light(Texture::from(Color::WHITE)))
+        Material::Light(Texture::from(Spectrum::WHITE)))
                     .translate(0.0, 2.0, 0.0)
     );
 

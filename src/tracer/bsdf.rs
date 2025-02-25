@@ -1,5 +1,5 @@
 use crate::{ Direction, Transport, Float, Vec2 };
-use crate::tracer::{ Color, bxdf::BxDF, onb::Onb, hit::Hit };
+use crate::tracer::{ Color, ColorWavelength, bxdf::BxDF, onb::Onb, hit::Hit };
 
 #[allow(non_snake_case, clippy::upper_case_acronyms)]
 pub struct BSDF {
@@ -26,6 +26,7 @@ impl BSDF {
         &self,
         wo: Direction,
         wi: Direction,
+        lambda: &ColorWavelength,
         h: &Hit,
         mode: Transport
     ) -> Color {
@@ -36,7 +37,7 @@ impl BSDF {
         let wo_local = uvw.to_local(wo);
         let wi_local = uvw.to_local(wi);
 
-        self.BxDF.f(wo_local, wi_local, reflection, h, mode)
+        self.BxDF.f(wo_local, wi_local, lambda, reflection, h, mode)
     }
 
     /// Sample direction from a random BxDF

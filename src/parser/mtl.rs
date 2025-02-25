@@ -1,17 +1,17 @@
 use super::*;
-use crate::tracer::Color;
+use crate::tracer::Spectrum;
 
 /// Holds the properties of a microfacet material
 #[allow(non_snake_case)]
 pub struct MtlConfig {
     /// Diffuse color of the material
-    pub Kd: Color,
+    pub Kd: Spectrum,
     /// Specular color of the material
-    pub Ks: Color,
+    pub Ks: Spectrum,
     /// Emittance of the material. If not zero vector, then createas a light
-    pub Ke: Color,
-    /// How much each light channel passes on transmission. Unused.
-    pub Tf: Color,
+    pub Ke: Spectrum,
+    /// How much each light channel passes on transmission
+    pub Tf: Spectrum,
     /// Refraction index of the material
     pub Ni: Float,
     /// Roughness of the material
@@ -26,10 +26,10 @@ pub struct MtlConfig {
 impl Default for MtlConfig {
     fn default() -> Self {
         Self {
-            Kd: Color::BLACK,
-            Ks: Color::BLACK,
-            Ke: Color::BLACK,
-            Tf: Color::BLACK,
+            Kd: Spectrum::BLACK,
+            Ks: Spectrum::BLACK,
+            Ke: Spectrum::BLACK,
+            Tf: Spectrum::BLACK,
             Ni: 1.5,
             Ns: 0.0,
             illum: 0,
@@ -41,7 +41,7 @@ impl Default for MtlConfig {
 impl MtlConfig {
     pub fn build_material(&self) -> Material {
         if !self.Ke.is_black() {
-            Material::Light(Texture::from(self.Ke))
+            Material::Light(Texture::from(self.Ke.clone()))
         } else {
             let fresnel_enabled = self.illum == 5 || self.illum == 7;
             let is_transparent = self.illum == 6 || self.illum == 7;
@@ -49,10 +49,10 @@ impl MtlConfig {
             let kd = if let Some(img) = &self.map_Kd {
                 Texture::Image(img.clone())
             } else {
-                Texture::from(self.Kd)
+                Texture::from(self.Kd.clone())
             };
-            let ks = Texture::from(self.Ks);
-            let tf = Texture::from(self.Tf);
+            let ks = Texture::from(self.Ks.clone());
+            let tf = Texture::from(self.Tf.clone());
 
             // blender uses this mapping
             let roughness = 1.0 - self.Ns.min(900.0).sqrt() / 30.0;
@@ -97,7 +97,7 @@ pub fn load_file(
             /* diffuse color */
             "Kd" => {
                 let kd = parse_vec3(&tokens)?;
-                mtl.Kd = Color::from(kd);
+                mtl.Kd = Spectrum::from_rgb(kd);
             }
             /* texture map */
             "map_Kd" => {
@@ -110,17 +110,17 @@ pub fn load_file(
             /* emission color */
             "Ke" => {
                 let ke = parse_vec3(&tokens)?;
-                mtl.Ke = Color::from(ke);
+                mtl.Ke = Spectrum::from_rgb(ke);
             }
             /* specular color */
             "Ks" => {
                 let ks = parse_vec3(&tokens)?;
-                mtl.Ks = Color::from(ks);
+                mtl.Ks = Spectrum::from_rgb(ks);
             }
             /* transmission filter */
             "Tf" => {
                 let tf = parse_vec3(&tokens)?;
-                mtl.Tf = Color::from(tf);
+                mtl.Tf = Spectrum::from_rgb(tf);
             }
             /* refraction index */
             "Ni" => {

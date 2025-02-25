@@ -1,31 +1,37 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, ro: Ray, raster_xy: Vec2) -> FilmSample {
-    let radiance = _integrate(scene, ro, 0);
-    FilmSample::new(radiance, raster_xy, false)
+pub fn integrate(
+    scene: &Scene,
+    ro: Ray,
+    lambda: ColorWavelength,
+    raster_xy: Vec2
+) -> FilmSample {
+    let radiance = _integrate(scene, ro, &lambda, 0);
+    FilmSample::new(radiance, lambda, raster_xy, false)
 }
 
 const MAX_RECURSION: usize = 50;
 
-fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> Color {
+fn _integrate(scene: &Scene, ro: Ray, lambda: &ColorWavelength, depth: usize) -> Color {
     match scene.hit(&ro) {
         None => Color::BLACK,
         Some(ho) => {
             let material = ho.material;
             let wo = -ro.dir;
             match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
-                None => material.emit(&ho),
+                None => material.emit(lambda, &ho),
                 Some(wi) => {
                     if !material.is_specular() {
                         let radiance = shadow_ray(
                             scene,
                             -ro.dir,
+                            lambda,
                             &ho,
                             rand_utils::unit_square(),
                             rand_utils::unit_square(),
                         );
 
-                        scene.transmittance(ho.t) * radiance
+                        scene.transmittance(lambda, ho.t) * radiance
                     } else {
                         if depth > MAX_RECURSION {
                             return Color::BLACK;
@@ -43,6 +49,7 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> Color {
                         let bsdf = material.bsdf_f(
                             wo,
                             wi,
+                            lambda,
                             Transport::Radiance,
                             &ho
                         );
@@ -57,9 +64,9 @@ fn _integrate(scene: &Scene, ro: Ray, depth: usize) -> Color {
                         let ns = ho.ns;
 
                         bsdf
-                            * scene.transmittance(ho.t)
+                            * scene.transmittance(lambda, ho.t)
                             * material.shading_cosine(wi, ns)
-                            * _integrate(scene, ri, depth + 1)
+                            * _integrate(scene, ri, lambda, depth + 1)
                             / p_scatter
                     }
                 }

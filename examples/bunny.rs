@@ -5,18 +5,18 @@ const BUNNY_URL: &str = "https://www.prinmath.com/csci5229/OBJ/bunny.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::builder().build();
-    let def_color = Color::new(242, 242, 242);
+    let def_color = Spectrum::from_srgb(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
-        Material::diffuse(Texture::from(Color::RED)),
-        Material::diffuse(Texture::from(Color::GREEN)),
+        Material::diffuse(Texture::from(Spectrum::RED)),
+        Material::diffuse(Texture::from(Spectrum::GREEN)),
     );
 
     scene.add(
         parser::mesh_from_url(
             BUNNY_URL,
             Material::transparent(
-                Texture::from(Color::BLUE),
+                Texture::from(Spectrum::BLUE),
                 0.1,
                 1.5,
             ),

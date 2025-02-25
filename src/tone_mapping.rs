@@ -1,6 +1,9 @@
-use crate::tracer::Color;
-
+use crate::tracer::{Color, ColorWavelength};
 use crate::Float;
+
+#[cfg(debug_assertions)]
+use crate::tracer::Spectrum;
+
 #[cfg(debug_assertions)]
 const SUSPICIOUSLY_LARGE_VALUE: Float = 1_000.0;
 
@@ -16,26 +19,26 @@ pub enum ToneMap {
 
 impl ToneMap {
     /// Tone maps the `rgb` sample with channels in `\[0,∞\]`
-    pub fn map(&self, rgb: Color) -> Color {
+    pub fn map(&self, col: Color, lambda: &ColorWavelength) -> Color {
         #[cfg(debug_assertions)]
-        if rgb.rgb.is_nan() {
+        if col.is_nan() {
             println!("Found NaN during tone mapping.");
-            return Color::GREEN;
+            return Spectrum::GREEN.sample(lambda);
         }
         #[cfg(debug_assertions)]
-        if rgb.rgb.is_negative_bitmask() > 0 {
+        if col.is_neg() {
             println!("Found negative value during tone mapping.");
-            return Color::RED;
+            return Spectrum::RED.sample(lambda);
         }
         #[cfg(debug_assertions)]
-        if rgb.rgb.max_element() > SUSPICIOUSLY_LARGE_VALUE {
+        if col.max() > SUSPICIOUSLY_LARGE_VALUE {
             println!("Found suspiciously large value during tone mapping.");
-            return Color::BLUE;
+            return Spectrum::BLUE.sample(lambda);
         }
         match self {
-            Self::NoMap => rgb,
-            Self::Clamp(mx) => rgb.clamp(0.0, *mx),
-            Self::Reinhard => rgb / (1.0 + rgb.luminance()),
+            Self::NoMap => col,
+            Self::Clamp(mx) => col.clamp(0.0, *mx),
+            Self::Reinhard => col / (1.0 + col.luminance(lambda)),
         }
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{ Mat3, Point };
-use crate::tracer::Color;
+use crate::tracer::Spectrum;
 
 impl Scene {
     const LIGHT_EPS: crate::Float = 0.001;
@@ -13,7 +13,7 @@ impl Scene {
     /// * `mat_left` - Material of the left wall
     /// * `mat_right` - Material of the right wall
     pub fn empty_box(
-        def_color: Color,
+        def_color: Spectrum,
         mat_left: Material,
         mat_right: Material,
     ) -> Self {
@@ -32,6 +32,7 @@ impl Scene {
 
         let mut scene = Self::default();
 
+        let light: Spectrum = 32.0 * Spectrum::from_srgb(252, 201, 138);
         /* rectangular area light */
         scene.add_light(Rectangle::new(
             Mat3::from_cols(
@@ -39,7 +40,7 @@ impl Scene {
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
                 Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::from(32.0 * Color::new(252, 201, 138)))
+            Material::Light(Texture::from(light))
         ));
 
         /* left wall */
@@ -69,7 +70,7 @@ impl Scene {
                 Point::new(right, ground, back),
                 Point::new(right, ground, front),
             ),
-            Material::diffuse(Texture::from(def_color)),
+            Material::diffuse(Texture::from(def_color.clone())),
         ));
 
         /* roof */
@@ -79,7 +80,7 @@ impl Scene {
                 Point::new(right, ceiling, front),
                 Point::new(right, ceiling, back),
             ),
-            Material::diffuse(Texture::from(def_color)),
+            Material::diffuse(Texture::from(def_color.clone())),
         ));
 
         /* front wall */

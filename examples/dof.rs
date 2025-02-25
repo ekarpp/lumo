@@ -20,15 +20,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Vec3::NEG_Y,
         Vec3::Y,
         Material::diffuse(Texture::Checkerboard(
-            Box::new(Texture::from(Color::BLACK)),
-            Box::new(Texture::from(Color::WHITE)),
+            Box::new(Texture::from(Spectrum::BLACK)),
+            Box::new(Texture::from(Spectrum::WHITE)),
             10.0,
         ))
     ));
 
     scene.add_light(Sphere::new(
         4.0,
-        Material::Light(Texture::from(Color::WHITE)))
+        Material::Light(Texture::from(Spectrum::WHITE)))
                     .translate(0.0, 8.0, -1.5)
     );
 
@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             parser::mesh_from_url(
                 TEAPOT_URL,
                 Material::diffuse(
-                    Texture::Marble(Perlin::default(), Color::new(255, 245, 255))
+                    Texture::Marble(Perlin::default(), Spectrum::from_srgb(255, 245, 255))
                 ),
             )?
                 .to_unit_size()
@@ -49,8 +49,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Renderer::new(scene, camera)
-        .set_integrator(Integrator::PathTrace)
-        .set_samples(512)
+        .integrator(Integrator::PathTrace)
+        .samples(512)
         .render()
         .save("dof.png")?;
     Ok(())

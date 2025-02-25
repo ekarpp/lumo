@@ -18,8 +18,7 @@ impl Ray {
     }
 
     /// Applies `transformation` to `self`. Direction unnormalized to guarantee
-    /// correct computations in Instance.
-    // ....why?
+    /// correct ray distances in Instance.
     pub fn transform(&self, transformation: Transform) -> Self {
         Self {
             origin: transformation.transform_point3(self.origin),

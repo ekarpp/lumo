@@ -1,16 +1,20 @@
 use super::*;
 
 pub fn f(
+    lambda: &ColorWavelength,
     h: &Hit,
-    sigma_t: Vec3,
-    sigma_s: Color,
+    sigma_t: &Spectrum,
+    sigma_s: &Spectrum,
 ) -> Color {
-    let transmittance = (-sigma_t * h.t).exp();
+    let transmittance = (-sigma_t.sample(lambda) * h.t).exp();
     // cancel out the transmittance pdf taken from scene transmitance
-    let pdf = (transmittance * sigma_t).dot(Vec3::ONE)
-        / transmittance.dot(Vec3::ONE);
-
-    if pdf == 0.0 { Color::WHITE } else { sigma_s / pdf }
+    let pdf = (transmittance * sigma_t.sample(lambda)).mean()
+        / transmittance.mean();
+    if pdf == 0.0 {
+        Color::WHITE
+    } else {
+        sigma_s.sample(lambda) / pdf
+    }
 }
 
 /* Henyey-Greenstein (1941) */

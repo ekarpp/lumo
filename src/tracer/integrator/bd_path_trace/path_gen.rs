@@ -1,18 +1,23 @@
 use super::*;
 
 /// Generates a ray path starting from the camera
-pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vertex<'a>> {
+pub fn camera_path<'a>(
+    scene: &'a Scene,
+    camera: &'a Camera,
+    r: Ray,
+    lambda: &ColorWavelength,
+) -> Vec<Vertex<'a>> {
     let gathered = Color::WHITE;
     let xo = r.origin;
     let pdf_wi = camera.pdf_wi(&r);
     let pdf_xo = camera.pdf_xo(&r);
     let root = Vertex::camera(xo, pdf_xo, gathered);
 
-    walk(scene, r, root, gathered, pdf_wi, Transport::Radiance)
+    walk(scene, r, lambda, root, gathered, pdf_wi, Transport::Radiance)
 }
 
 /// Generates a ray path strating from a light
-pub fn light_path(scene: &Scene) -> Vec<Vertex> {
+pub fn light_path<'a>(scene: &'a Scene, lambda: &'a ColorWavelength) -> Vec<Vertex<'a>> {
     let light = scene.uniform_random_light();
     let pdf_light = 1.0 / scene.num_lights() as Float;
     let (ri, ho) = light.sample_leaving(
@@ -22,7 +27,7 @@ pub fn light_path(scene: &Scene) -> Vec<Vertex> {
     let ng = ho.ng;
     let ns = ho.ns;
     let (pdf_origin, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
-    let emit = ho.material.emit(&ho);
+    let emit = ho.material.emit(lambda, &ho);
     let root = Vertex::light(
         ho,
         light,
@@ -33,13 +38,14 @@ pub fn light_path(scene: &Scene) -> Vec<Vertex> {
     let wi = ri.dir;
     let gathered = emit * wi.dot(ns).abs() / (pdf_light * pdf_origin * pdf_dir);
 
-    walk(scene, ri, root, gathered, pdf_dir, Transport::Importance)
+    walk(scene, ri, lambda, root, gathered, pdf_dir, Transport::Importance)
 }
 
 /// Ray that randomly scatters around from the given root vertex
 fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
+    lambda: &ColorWavelength,
     root: Vertex<'a>,
     mut gathered: Color,
     pdf_dir: Float,
@@ -53,7 +59,7 @@ fn walk<'a>(
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
-        gathered *= scene.transmittance(ho.t);
+        gathered *= scene.transmittance(lambda, ho.t);
 
         let prev = depth;
         let wo = -ro.dir;
@@ -92,7 +98,7 @@ fn walk<'a>(
                     Transport::Importance => vertices[curr].shading_correction(wi),
                 };
 
-                let bsdf = material.bsdf_f(wo, wi, mode, ho);
+                let bsdf = material.bsdf_f(wo, wi, lambda, mode, ho);
                 let bsdf = if ho.is_medium() {
                     bsdf * pdf_fwd
                 } else {
@@ -108,7 +114,7 @@ fn walk<'a>(
                 vertices[prev].pdf_bck = vertices[curr].pdf_prev(&vertices[prev], wi);
 
                 if depth >= RR_DEPTH {
-                    let luminance = gathered.luminance();
+                    let luminance = gathered.luminance(lambda);
                     let rr_prob = (1.0 - luminance).max(RR_MIN);
                     if rand_utils::rand_float() < rr_prob {
                         break;

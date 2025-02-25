@@ -3,7 +3,7 @@ use crate::{
     Normal, Point, Direction, Vec3
 };
 use crate::tracer::{
-    camera::Camera, film::FilmSample, hit::Hit,
+    camera::Camera, ColorWavelength, film::FilmSample, hit::Hit,
     object::Sampleable,
     ray::Ray, scene::Scene, Color
 };
@@ -38,11 +38,18 @@ impl fmt::Display for Integrator {
 
 impl Integrator {
     /// Calls the corresponding integration function
-    pub fn integrate(&self, s: &Scene, c: &Camera, raster_xy: Vec2, r: Ray) -> Vec<FilmSample> {
+    pub fn integrate(
+        &self,
+        s: &Scene,
+        c: &Camera,
+        lambda: ColorWavelength,
+        raster_xy: Vec2,
+        r: Ray
+    ) -> Vec<FilmSample> {
         match self {
-            Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
-            Self::DirectLight => vec![direct_light::integrate(s, r, raster_xy)],
-            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
+            Self::PathTrace => vec![path_trace::integrate(s, r, lambda, raster_xy)],
+            Self::DirectLight => vec![direct_light::integrate(s, r, lambda, raster_xy)],
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, lambda, raster_xy),
         }
     }
 }
@@ -51,6 +58,7 @@ impl Integrator {
 fn shadow_ray(
     scene: &Scene,
     wo: Direction,
+    lambda: &ColorWavelength,
     ho: &Hit,
     rand_sq0: Vec2,
     rand_sq1: Vec2,
@@ -68,7 +76,7 @@ fn shadow_ray(
             return Color::BLACK;
         }
 
-        let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, ho);
+        let bsdf = material.bsdf_f(wo, wi, lambda, Transport::Radiance, ho);
         let bsdf = if ho.is_medium() {
             // assume that mediums get sampled perfectly
             // according to the BSDF and thus cancel out PDF
@@ -91,8 +99,8 @@ fn shadow_ray(
         };
 
         bsdf
-            * scene.transmittance(hi.t)
-            * hi.material.emit(&hi)
+            * scene.transmittance(lambda, hi.t)
+            * hi.material.emit(lambda, &hi)
             * material.shading_cosine(wi, ns)
             * weight
             / p_denom

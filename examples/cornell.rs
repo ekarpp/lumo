@@ -13,8 +13,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let scene = Scene::cornell_box();
 
     Renderer::new(scene, camera)
-        .set_integrator(Integrator::PathTrace)
-        .set_samples(1024)
+        .integrator(Integrator::PathTrace)
+        .samples(512)
         .render()
         .save("cornell.png")?;
     Ok(())

@@ -5,18 +5,18 @@ const DRAGON_URL: &str = "https://casual-effects.com/g3d/data10/research/model/d
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::builder().build();
-    let def_color = Color::new(242, 242, 242);
+    let def_color = Spectrum::from_srgb(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
-        Material::diffuse(Texture::from(Color::RED)),
-        Material::diffuse(Texture::from(Color::GREEN)),
+        Material::diffuse(Texture::from(Spectrum::RED)),
+        Material::diffuse(Texture::from(Spectrum::GREEN)),
     );
 
     scene.add(
         parser::mesh_from_url(
             DRAGON_URL,
             Material::transparent(
-                Texture::from(Color::new(255, 0, 255)),
+                Texture::from(Spectrum::MAGENTA),
                 0.03,
                 1.5,
             ),

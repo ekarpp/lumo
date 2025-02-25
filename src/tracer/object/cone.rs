@@ -75,9 +75,8 @@ impl Object for Cone {
         let ni = Normal::new(xi.x, radius * tan_theta.value, xi.z);
         let ni = ni.normalize();
 
-        if ni.dot(wi) >= 0.0 /* && !r.is_light_ray() */ {
+        if ni.dot(wi) >= 0.0 {
             // backface, make it see through
-            // TODO: handle shadows
             return None;
         }
 
@@ -92,5 +91,40 @@ impl Object for Cone {
         let uv = Vec2::new(u, v);
 
         Hit::new(t.value, &self.material, wi, xi, err, ni, ni, uv)
+    }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let xo = r.origin;
+        let wi = r.dir;
+
+        let tan_theta = self.radius / self.height;
+        let tan2_theta = tan_theta * tan_theta;
+        let xoy_height = xo.y - self.height;
+
+        let a = wi.x * wi.x - tan2_theta * wi.y * wi.y + wi.z * wi.z;
+        let b = 2.0 * (wi.x * xo.x - tan2_theta * wi.y * xoy_height + wi.z * xo.z);
+        let c = xo.x * xo.x - tan2_theta * xoy_height * xoy_height + xo.z * xo.z;
+
+        let Some((t0, t1)) = util::quadratic(a, b, c) else { return crate::INF; };
+
+        if t0 >= t_max || t1 <= t_min { return crate::INF; }
+
+        if t0 > t_min {
+            let xi = r.at(t0);
+            if xi.y >= 0.0 && xi.y <= self.height {
+                return t0;
+            }
+        }
+
+        if t1 >= t_max {
+            return crate::INF;
+        }
+
+        let xi = r.at(t1);
+        if xi.y >= 0.0 && xi.y <= self.height {
+            t1
+        } else {
+            crate::INF
+        }
     }
 }

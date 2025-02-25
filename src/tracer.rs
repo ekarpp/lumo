@@ -1,5 +1,5 @@
 pub use camera::{ Camera, CameraBuilder, CameraType };
-pub use color::Color;
+pub use color::{Color, ColorWavelength, Spectrum, RGB, ColorSpace};
 pub use film::{Film, FilmTile, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;

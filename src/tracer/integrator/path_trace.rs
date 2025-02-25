@@ -1,6 +1,11 @@
 use super::*;
 
-pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
+pub fn integrate(
+    scene: &Scene,
+    mut ro: Ray,
+    lambda: ColorWavelength,
+    raster_xy: Vec2
+) -> FilmSample {
     let mut last_specular = true;
     let mut radiance = Color::BLACK;
     let mut gathered = Color::WHITE;
@@ -8,13 +13,13 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
 
     while let Some(ho) = scene.hit(&ro) {
         let material = ho.material;
-        gathered *= scene.transmittance(ho.t);
+        gathered *= scene.transmittance(&lambda, ho.t);
         let wo = -ro.dir;
 
         match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
             None => {
                 if last_specular {
-                    radiance += gathered * material.emit(&ho)
+                    radiance += gathered * material.emit(&lambda, &ho)
                 }
                 break;
             }
@@ -24,6 +29,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
                         * shadow_ray(
                             scene,
                             -ro.dir,
+                            &lambda,
                             &ho,
                             rand_utils::unit_square(),
                             rand_utils::unit_square()
@@ -39,7 +45,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
                     break;
                 }
 
-                let bsdf = material.bsdf_f(wo, wi, Transport::Radiance, &ho);
+                let bsdf = material.bsdf_f(wo, wi, &lambda, Transport::Radiance, &ho);
                 let bsdf = if ho.is_medium() {
                     // assume that mediums get sampled perfectly
                     // according to the BSDF and thus cancel out PDF
@@ -54,7 +60,7 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
 
                 // russian roulette
                 if depth > 3 {
-                    let luminance = gathered.luminance();
+                    let luminance = gathered.luminance(&lambda);
                     let rr_prob = (1.0 - luminance).max(0.05);
                     if rand_utils::rand_float() < rr_prob {
                         break;
@@ -69,5 +75,5 @@ pub fn integrate(scene: &Scene, mut ro: Ray, raster_xy: Vec2) -> FilmSample {
         }
     }
 
-    FilmSample::new(radiance, raster_xy, false)
+    FilmSample::new(radiance, lambda, raster_xy, false)
 }

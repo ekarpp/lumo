@@ -91,4 +91,31 @@ impl Object for Cylinder {
 
         Hit::new(t.value, &self.material, r.dir, xi, err, ni, ni, uv)
     }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        let xo = r.origin;
+        let wi = r.dir;
+
+        // check coplanarity
+        if wi.x == 0.0 && wi.z == 0.0 { return crate::INF; }
+
+        let xo_xz = Vec2::new(xo.x, xo.z);
+        let wi_xz = Vec2::new(wi.x, wi.z);
+
+        let a = wi_xz.dot(wi_xz);
+        let b = 2.0 * wi_xz.dot(xo_xz);
+        let c = xo_xz.dot(xo_xz) - self.radius * self.radius;
+
+        let Some((t0, t1)) = util::quadratic(a, b, c) else { return crate::INF; };
+
+        if t0 >= t_max || t1 <= t_min { return crate::INF; }
+
+        if t0 > t_min {
+            t0
+        } else if t1 >= t_max {
+            crate::INF
+        } else {
+            t1
+        }
+    }
 }

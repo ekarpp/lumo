@@ -1,6 +1,6 @@
 use super::*;
 use crate::simpson_integration;
-use crate::tracer::Texture;
+use crate::tracer::{ Spectrum, Texture };
 
 // used for numerically integrating PDF over whole space
 const THETA_BINS: usize = 80;
@@ -14,15 +14,15 @@ const INT_TOLERANCE: Float = 1e-2;
 fn mfd(r: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
         r, eta, 0.0,
-        Texture::from(Color::WHITE),
-        Texture::from(Color::WHITE),
-        Texture::from(Color::WHITE),
+        Texture::from(Spectrum::WHITE),
+        Texture::from(Spectrum::WHITE),
+        Texture::from(Spectrum::WHITE),
     )
 }
 
 #[test]
 fn lambertian_sampling() {
-    let bxdf = BxDF::Lambertian(Color::WHITE);
+    let bxdf = BxDF::Lambertian(Spectrum::WHITE);
 
     assert_bins(do_sampling(bxdf));
 }

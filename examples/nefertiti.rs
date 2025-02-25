@@ -12,47 +12,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(Plane::new(
         Vec3::NEG_Y,
         Vec3::Y,
-        Material::diffuse(Texture::from(Color::BLACK))
+        Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* roof */
     scene.add(Plane::new(
         Vec3::Y,
         Vec3::NEG_Y,
-        Material::diffuse(Texture::from(Color::BLACK))
+        Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* left wall */
     scene.add(Plane::new(
         Vec3::NEG_X,
         Vec3::X,
-        Material::diffuse(Texture::from(Color::BLACK)),
+        Material::diffuse(Texture::from(Spectrum::BLACK)),
     ));
 
     /* right wall */
     scene.add(Plane::new(
         Vec3::X,
         Vec3::NEG_X,
-        Material::diffuse(Texture::from(Color::BLACK))
+        Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* front */
     scene.add(Plane::new(
         2.0 * Vec3::NEG_Z,
         Vec3::Z,
-        Material::diffuse(Texture::from(Color::BLACK))
+        Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* back */
     scene.add(Plane::new(
         Vec3::Z,
         Vec3::NEG_Z,
-        Material::diffuse(Texture::from(Color::BLACK))
+        Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* bust */
     scene.add(
-        Cube::new(Material::diffuse(Texture::from(Color::new(61, 45, 36))))
+        Cube::new(Material::diffuse(Texture::from(Spectrum::from_srgb(61, 45, 36))))
             .translate(-0.5, -0.5, -0.5)
             .scale(0.45, 0.5, 0.45)
             .translate(0.0, -0.75, -1.45),
@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Cylinder::new(
 		        0.6,
 		        0.1,
-		        Material::diffuse(Texture::from(Color::RED)))
+		        Material::diffuse(Texture::from(Spectrum::RED)))
 		        .translate(0.0, -0.5, -1.45)
 	    );
     } else {
@@ -78,8 +78,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     false,
                     false,
                     Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
-                    Texture::from(Color::WHITE),
-                    Texture::from(Color::BLACK),
+                    Texture::from(Spectrum::WHITE),
+                    Texture::from(Spectrum::BLACK),
                 )
             )?
 		        .to_unit_size()
@@ -107,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	    disk_towards + 0.3 * disk_dir,
 	    -disk_dir,
 	    0.05,
-	    Material::Light(Texture::from(30.0 * Color::WHITE))
+	    Material::Light(Texture::from(30.0 * Spectrum::WHITE))
     ));
 
     let right_disk_origin = Vec3::new(0.6, 0.15, -1.6);
@@ -115,12 +115,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	    right_disk_origin,
 	    disk_towards + 0.28 * Vec3::X - right_disk_origin,
 	    0.08,
-	    Material::Light(Texture::from(20.0 * Color::WHITE))
+	    Material::Light(Texture::from(20.0 * Spectrum::WHITE))
     ));
 
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::from(2.0 * Color::WHITE)))
+        Material::Light(Texture::from(2.0 * Spectrum::WHITE)))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_y(-theta)
 		            .rotate_axis(Vec3::new(theta.cos(), 0.0, theta.sin()), PI / 8.0)
@@ -130,14 +130,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // behind
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::from(Color::WHITE)))
+        Material::Light(Texture::from(Spectrum::WHITE)))
                     .scale(0.3, 0.3, 1.0)
                     .rotate_x(2.0 * PI - 2.0 * theta)
                     .translate(-0.15, 0.5, -0.8)
     );
     scene.add_light(Rectangle::new(
 	    xy_rect,
-	    Material::Light(Texture::from(2.0 * Color::WHITE)))
+	    Material::Light(Texture::from(2.0 * Spectrum::WHITE)))
 		            .scale(0.3, 0.3, 1.0)
 		            .rotate_x(PI)
 		            .translate(-0.1, 0.0, 0.0)
@@ -146,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // above
     scene.add_light(Rectangle::new(
         xy_rect,
-        Material::Light(Texture::from(2.0 * Color::WHITE)))
+        Material::Light(Texture::from(2.0 * Spectrum::WHITE)))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_x(PI / 2.0)
                     .translate(-0.2, 0.5, -1.5)
@@ -168,8 +168,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     Renderer::new(scene, camera)
-        .set_integrator(Integrator::PathTrace)
-        .set_samples(1024)
+        .integrator(Integrator::PathTrace)
+        .samples(1024)
         .render()
         .save("nefe.png")?;
     Ok(())

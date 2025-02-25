@@ -102,8 +102,8 @@ impl<'a> Vertex<'a> {
     }
 
     /// Helper to get emittance at hit
-    pub fn emittance(&self) -> Color {
-        self.material().emit(&self.h)
+    pub fn emittance(&self, lambda: &ColorWavelength) -> Color {
+        self.material().emit(lambda, &self.h)
     }
 
     /// Helper to get shading cosine at hit
@@ -123,10 +123,10 @@ impl<'a> Vertex<'a> {
     }
 
     /// Computes BSDF at hit of `self`
-    pub fn f(&self, next: &Vertex, mode: Transport) -> Color {
+    pub fn f(&self, next: &Vertex, lambda: &ColorWavelength, mode: Transport) -> Color {
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.material().bsdf_f(self.wo, wi, mode, &self.h)
+        self.material().bsdf_f(self.wo, wi, lambda, mode, &self.h)
     }
 
     /// PDF w.r.t SA from BSDF at self with `wi` sampled

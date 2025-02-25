@@ -18,16 +18,23 @@ mod measure;
 #[cfg(test)]
 mod mis_tests;
 
-pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec<FilmSample> {
-    let light_path = path_gen::light_path(scene);
-    let camera_path = path_gen::camera_path(scene, camera, r);
+pub fn integrate(
+    scene: &Scene,
+    camera: &Camera,
+    r: Ray,
+    lambda: ColorWavelength,
+    raster_xy: Vec2
+) -> Vec<FilmSample> {
+    let light_path = path_gen::light_path(scene, &lambda);
+    let camera_path = path_gen::camera_path(scene, camera, r, &lambda);
 
     let mut radiance = Color::BLACK;
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
-        if let Some(sample) = connect_light_path(scene, camera, &camera_path, &light_path, s) {
-            samples.push(sample);
+        match connect_light_path(scene, camera, &lambda, &camera_path, &light_path, s) {
+            None => (),
+            Some(sample) => samples.push(sample),
         }
     }
 
@@ -35,14 +42,14 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance += connect_paths(
-                scene, camera,
+                scene, camera, &lambda,
                 &light_path, s,
                 &camera_path, t,
             );
         }
     }
 
-    samples.push(FilmSample::new(radiance, raster_xy, false));
+    samples.push( FilmSample::new(radiance, lambda, raster_xy, false) );
     samples
 }
 
@@ -50,6 +57,7 @@ pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec
 fn connect_light_path(
     scene: &Scene,
     camera: &Camera,
+    lambda: &ColorWavelength,
     camera_path: &[Vertex],
     light_path: &[Vertex],
     s: usize
@@ -82,25 +90,23 @@ fn connect_light_path(
     // get color
     match camera.sample_importance(&ri) {
         None => None,
-        Some(mut sample) => {
-            if sample.color.is_black() {
+        Some((mut color, raster_xy)) => {
+            if color.is_black() {
                 return None;
             }
-            sample.color /= p_imp;
+            color /= p_imp;
             let p_xo = camera.pdf_xo(&ri);
-            let camera_last = Vertex::camera(xo, p_xo, sample.color);
+            let camera_last = Vertex::camera(xo, p_xo, color / p_imp);
             let t2 = xo.distance_squared(xi);
 
-            sample.color *= light_last.gathered
-                * scene.transmittance(t2.sqrt())
+            color *= light_last.gathered
+                * scene.transmittance(lambda, t2.sqrt())
                 * light_last.shading_cosine(-wi)
                 * light_last.shading_correction(-wi)
-                * light_last.f(&camera_last, Transport::Importance);
+                * light_last.f(&camera_last, lambda, Transport::Importance)
+                * mis::weight(camera, light_path, s, camera_path, 1, Some( camera_last ));
 
-            sample.color *=
-                mis::weight(camera, light_path, s, camera_path, 1, Some( camera_last ));
-
-            Some(sample)
+            Some( FilmSample::new(color, lambda.clone(), raster_xy, true) )
         }
     }
 }
@@ -110,6 +116,7 @@ fn connect_light_path(
 fn connect_paths(
     scene: &Scene,
     camera: &Camera,
+    lambda: &ColorWavelength,
     light_path: &[Vertex],
     s: usize,
     camera_path: &[Vertex],
@@ -129,7 +136,7 @@ fn connect_paths(
         if !camera_last.is_light() {
             Color::BLACK
         } else {
-            camera_last.gathered * camera_last.emittance()
+            camera_last.gathered * camera_last.emittance(lambda)
         }
     } else if s == 1 {
         // just one vertex on the light path. instead of using it, we sample a
@@ -164,15 +171,15 @@ fn connect_paths(
                     }
                     let wi = ri.dir;
                     let pdf_origin = measure::sa_to_area(p_lig, xo, xi, wi, ngi);
-                    let emittance = hi.material.emit(&hi);
+                    let emittance = hi.material.emit(lambda, &hi);
                     let light_last = Vertex::light(
                         hi,
                         light,
                         emittance,
                         pdf_origin,
                     );
-                    let bsdf = camera_last.f(&light_last, Transport::Radiance);
-                    let tr = scene.transmittance(light_last.h.t);
+                    let bsdf = camera_last.f(&light_last, lambda, Transport::Radiance);
+                    let tr = scene.transmittance(lambda, light_last.h.t);
                     let cos_wi = camera_last.shading_cosine(wi);
                     sampled_vertex = Some( light_last );
                     /* MB: medium bug. missing trace too */
@@ -205,16 +212,18 @@ fn connect_paths(
 
                 let light_bsdf = light_last.f(
                     camera_last,
+                    lambda,
                     Transport::Importance,
                 );
                 let camera_bsdf = camera_last.f(
                     light_last,
+                    lambda,
                     Transport::Radiance,
                 );
 
                 light_last.gathered * light_bsdf * light_last.shading_cosine(-wi)
                     * camera_last.gathered * camera_bsdf * camera_last.shading_cosine(wi)
-                    * scene.transmittance(xc.distance(xl))
+                    * scene.transmittance(lambda, xc.distance(xl))
                     / xc.distance_squared(xl)
             }
     };
@@ -239,8 +248,5 @@ fn visible(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
         return false;
     }
 
-    match s.hit(&ri) {
-        None => false,
-        Some(h) => h.p.distance_squared(xi) < crate::EPSILON,
-    }
+    (xo.distance(xi) - s.hit_t(&ri)).abs() < crate::EPSILON
 }

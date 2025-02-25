@@ -1,94 +1,123 @@
-use crate::{Vec3, Float};
+use crate::{Vec3, Float, Mat3, Vec2};
 use std::ops::{
-    Add, AddAssign, Sub, SubAssign,
+    Add, AddAssign, Sub, SubAssign, Neg,
     Mul, MulAssign, Div, DivAssign
 };
+use std::fmt;
+
+pub use wavelength::ColorWavelength;
+pub use spectrum::Spectrum;
+pub use rgb::RGB;
+pub use space::ColorSpace;
+
+mod space;
+mod spectrum;
+mod rgb;
+mod xyz;
+mod wavelength;
+
+const LAMBDA_MIN: Float = 380.0;
+const LAMBDA_MAX: Float = 700.0;
+const SPECTRUM_SAMPLES: usize = 4;
 
 #[derive(Clone, Copy)]
-/// Abstraction for color using linear RGB values
+/// Abstraction for color using `SPECTRUM_SAMPLES` from a spectrum
 pub struct Color {
-    /// The linear RGB values
-    pub rgb: Vec3,
+    samples: [Float; SPECTRUM_SAMPLES],
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RBG[{:?}]", self.samples)
+    }
+}
+
+impl From<[Float; SPECTRUM_SAMPLES]> for Color {
+    fn from(samples: [Float; SPECTRUM_SAMPLES]) -> Self {
+        Self { samples }
+    }
 }
 
 impl Color {
-    /// Black color
-    pub const BLACK: Self = Self { rgb: Vec3::ZERO };
-    /// White color
-    pub const WHITE: Self = Self { rgb: Vec3::ONE };
-    /// Red color
-    pub const RED: Self = Self { rgb: Vec3::X };
-    /// Green color
-    pub const GREEN: Self = Self { rgb: Vec3::Y };
-    /// Blue color
-    pub const BLUE: Self = Self { rgb: Vec3::Z };
-
-
-    /// Decodes 8-bit sRGB encoded `r`, `g`, and `b` channels to linear RGB.
-    pub fn new(r: u8, g: u8, b: u8) -> Self {
-        let dec = |v: u8| -> Float {
-            let u = v as Float / 255.0;
-            if u <= 0.04045 {
-                u / 12.92
-            } else {
-                ((u + 0.055) / 1.055).powf(2.4)
-            }
-        };
-
-        Self {
-            rgb: Vec3::new(dec(r), dec(g), dec(b))
-        }
-    }
-
-    /// Splats `value` to each RGB channel
-    pub fn splat(value: Float) -> Self {
-        Self { rgb: Vec3::splat(value) }
-    }
+    /// Color sampled from the constant 1.0 spectrum
+    pub const WHITE: Self = Self { samples: [1.0; SPECTRUM_SAMPLES] };
+    /// Color sampled from the constant 0.0 spectrum
+    pub const BLACK: Self = Self { samples: [0.0; SPECTRUM_SAMPLES] };
 
     /// Maps linear RGB value to luminance
-    pub fn luminance(&self) -> Float {
-        self.rgb.dot(Vec3::new(0.2126, 0.7152, 0.0722))
+    pub fn luminance(&self, lambda: &ColorWavelength) -> Float {
+        let y = xyz::Y(lambda);
+        let pdf = lambda.pdf();
+
+        (y * *self).mean() / (pdf * xyz::CIE_Y)
     }
 
-    /// LERP `self` with `other` using `c` as the coefficient
-    pub fn lerp(&self, other: Self, c: Float) -> Self {
-        Self { rgb: self.rgb.lerp(other.rgb, c) }
+    /// `self` at `lambda` mapped to the XYZ color space
+    pub fn xyz(&self, lambda: &ColorWavelength) -> Vec3 {
+        let x = xyz::X(lambda);
+        let y = xyz::Y(lambda);
+        let z = xyz::Z(lambda);
+        let pdf = lambda.pdf();
+
+        Vec3::new((x * *self).mean(), (y * *self).mean(), (z * *self).mean())
+            / (pdf * xyz::CIE_Y)
     }
 
-    /// Gamma encodes self
-    pub fn gamma_enc(&self) -> (u8, u8, u8) {
-        let enc = |v: Float| -> u8 {
-            let ev = if v <= 0.0031308 {
-                12.92 * v
-            } else {
-                1.055 * v.powf(1.0 / 2.4) - 0.055
-            };
-
-            (ev * 255.0) as u8
-        };
-
-        (enc(self.rgb.x), enc(self.rgb.y), enc(self.rgb.z))
+    /// Does `self` have NaN values
+    pub fn is_nan(&self) -> bool {
+        self.samples.iter().any(|v| v.is_nan())
     }
 
-    /// Clamps RGB channels between `lb` and `ub`
-    pub fn clamp(&self, lb: Float, ub: Float) -> Self {
-        Self { rgb: self.rgb.clamp(Vec3::splat(lb), Vec3::splat(ub)) }
+    /// Does `self` have negative values
+    pub fn is_neg(&self) -> bool {
+        self.samples.iter().any(|v| v < &0.0)
+    }
+
+    /// Is the "maxiumum" of `self` less than `v`
+    pub fn max(&self) -> Float {
+        self.samples.iter().fold(crate::NEG_INF, |acc, v| acc.max(*v))
+    }
+
+    /// Is the "maximum" of `self` greater than `v`
+    pub fn min(&self) -> Float {
+        self.samples.iter().fold(crate::INF, |acc, v| acc.min(*v))
     }
 
     /// Is the color black?
     pub fn is_black(&self) -> bool {
-        self.rgb.length_squared() == 0.0
+        self.samples.iter().all(|v| v == &0.0)
     }
 
-    /// Mean of the RGB channel values
+    /// Mean of the samples
     pub fn mean(&self) -> Float {
-        self.rgb.dot(Vec3::ONE) / 3.0
+        self.samples.iter().sum::<Float>() / SPECTRUM_SAMPLES as Float
+    }
+
+    /// Clamp the samples to `[mi,mx]`
+    pub fn clamp(&self, mi: Float, mx: Float) -> Self {
+        let samples = self.samples.iter()
+            .map(|v| v.clamp(mi, mx))
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
+    }
+
+    /// Map samples of `self` to `exp(sample)`
+    pub fn exp(mut self) -> Self {
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] = self.samples[i].exp();
+        }
+        self
     }
 }
 
-impl From<Vec3> for Color {
-    fn from(value: Vec3) -> Self {
-        Self { rgb: value }
+impl Neg for Color {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        let samples = self.samples.iter()
+            .map(|v| -v)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
@@ -96,13 +125,18 @@ impl Div<Float> for Color {
     type Output = Self;
 
     fn div(self, rhs: Float) -> Self::Output {
-        Self { rgb: self.rgb / rhs }
+        let samples = self.samples.iter()
+            .map(|v| v / rhs)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
 impl DivAssign<Float> for Color {
     fn div_assign(&mut self, rhs: Float) {
-        self.rgb /= rhs;
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] /= rhs;
+        }
     }
 }
 
@@ -110,7 +144,10 @@ impl Mul<Float> for Color {
     type Output = Self;
 
     fn mul(self, rhs: Float) -> Self::Output {
-        Self { rgb: self.rgb * rhs }
+        let samples = self.samples.iter()
+            .map(|v| v * rhs)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
@@ -118,7 +155,18 @@ impl Mul<Color> for Float {
     type Output = Color;
 
     fn mul(self, rhs: Color) -> Self::Output {
-        Color { rgb: rhs.rgb * self }
+        let samples = rhs.samples.iter()
+            .map(|v| v * self)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Color { samples }
+    }
+}
+
+impl MulAssign<Float> for Color {
+    fn mul_assign(&mut self, rhs: Float) {
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] *= rhs;
+        }
     }
 }
 
@@ -126,7 +174,10 @@ impl Add<Float> for Color {
     type Output = Self;
 
     fn add(self, rhs: Float) -> Self::Output {
-        Self { rgb: self.rgb + rhs }
+        let samples = self.samples.iter()
+            .map(|v| v + rhs)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
@@ -134,7 +185,10 @@ impl Add<Color> for Float {
     type Output = Color;
 
     fn add(self, rhs: Color) -> Self::Output {
-        Color { rgb: rhs.rgb + self }
+        let samples = rhs.samples.iter()
+            .map(|v| v + self)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Color { samples }
     }
 }
 
@@ -142,7 +196,10 @@ impl Sub<Float> for Color {
     type Output = Self;
 
     fn sub(self, rhs: Float) -> Self::Output {
-        Self { rgb: self.rgb - rhs }
+        let samples = self.samples.iter()
+            .map(|v| v - rhs)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
@@ -150,7 +207,10 @@ impl Sub<Color> for Float {
     type Output = Color;
 
     fn sub(self, rhs: Color) -> Self::Output {
-        Color { rgb: self - rhs.rgb }
+        let samples = rhs.samples.iter()
+            .map(|v| self - v)
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Color { samples }
     }
 }
 
@@ -158,13 +218,18 @@ impl Add for Color {
     type Output = Self;
 
     fn add(self, rhs: Color) -> Self::Output {
-        Self { rgb: self.rgb + rhs.rgb }
+        let samples = self.samples.iter().zip(rhs.samples.iter())
+            .map(|(lhs, rhs)| { lhs + rhs })
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
 impl AddAssign for Color {
     fn add_assign(&mut self, rhs: Color) {
-        self.rgb += rhs.rgb;
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] += rhs.samples[i];
+        }
     }
 }
 
@@ -172,13 +237,18 @@ impl Sub for Color {
     type Output = Self;
 
     fn sub(self, rhs: Color) -> Self::Output {
-        Self { rgb: self.rgb - rhs.rgb }
+        let samples = self.samples.iter().zip(rhs.samples.iter())
+            .map(|(lhs, rhs)| { lhs - rhs })
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
 impl SubAssign for Color {
     fn sub_assign(&mut self, rhs: Color) {
-        self.rgb -= rhs.rgb;
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] -= rhs.samples[i];
+        }
     }
 }
 
@@ -186,19 +256,18 @@ impl Mul for Color {
     type Output = Self;
 
     fn mul(self, rhs: Color) -> Self::Output {
-        Self { rgb: self.rgb * rhs.rgb }
+        let samples = self.samples.iter().zip(rhs.samples.iter())
+            .map(|(lhs, rhs)| { lhs * rhs })
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }
 
 impl MulAssign for Color {
     fn mul_assign(&mut self, rhs: Color) {
-        self.rgb *= rhs.rgb;
-    }
-}
-
-impl MulAssign<Float> for Color {
-    fn mul_assign(&mut self, rhs: Float) {
-        self.rgb *= rhs;
+        for i in 0..SPECTRUM_SAMPLES {
+            self.samples[i] *= rhs.samples[i];
+        }
     }
 }
 
@@ -206,6 +275,9 @@ impl Div for Color {
     type Output = Self;
 
     fn div(self, rhs: Color) -> Self::Output {
-        Self { rgb: self.rgb / rhs.rgb }
+        let samples = self.samples.iter().zip(rhs.samples.iter())
+            .map(|(lhs, rhs)| { lhs / rhs })
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Self { samples }
     }
 }

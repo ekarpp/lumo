@@ -1,6 +1,6 @@
 [package]
 name = "lumo"
-version = "0.4.0"
+version = "0.5.0"
 description = "CPU based rendering engine"
 license = "MIT"
 rust-version = "1.82"
@@ -9,26 +9,6 @@ authors = ["ekarpp <eetu@karppinen.xyz>"]
 keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
-
-[profile.release]
-codegen-units = 1
-lto = true
-panic = "abort"
-opt-level = 3
-debug = true
-
-[profile.dev]
-opt-level = 2
-debug = true
-
-[profile.test]
-opt-level = 2
-debug = true
-
-[profile.gdb]
-inherits = "dev"
-opt-level = 0
-debug = true
 
 [dev-dependencies]
 uuid = { version = "1.8.0", features = ["v4"] }

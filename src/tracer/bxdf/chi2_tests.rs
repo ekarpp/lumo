@@ -1,6 +1,6 @@
 use super::*;
 use crate::simpson_integration;
-use crate::tracer::Texture;
+use crate::tracer::{ Spectrum, Texture };
 use std::io::Write;
 use std::fs::File;
 use std::path::Path;
@@ -17,15 +17,15 @@ const CHI2_MIN_FREQ: Float = 5.0;
 fn mfd(r: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
         r, eta, 0.0,
-        Texture::from(Color::WHITE),
-        Texture::from(Color::WHITE),
-        Texture::from(Color::WHITE),
+        Texture::from(Spectrum::WHITE),
+        Texture::from(Spectrum::WHITE),
+        Texture::from(Spectrum::WHITE),
     )
 }
 
 #[test]
 fn lambertian_chi2() {
-    let bxdf = BxDF::Lambertian(Color::WHITE);
+    let bxdf = BxDF::Lambertian(Spectrum::WHITE);
     test_bxdf(bxdf)
 }
 

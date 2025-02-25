@@ -1,7 +1,7 @@
 use crate::{ Float, rand_utils };
 use crate::tracer::{
     hit::Hit, ray::Ray, Material, Texture, Color,
-    Medium, Object, Rectangle, Sampleable
+    ColorWavelength, Medium, Object, Rectangle, Sampleable
 };
 
 #[cfg(test)]
@@ -54,10 +54,10 @@ impl Scene {
     }
 
     /// Returns the transmittance due to volumetric medium
-    pub fn transmittance(&self, t: Float) -> Color {
+    pub fn transmittance(&self, lambda: &ColorWavelength, t: Float) -> Color {
         match &self.medium {
             None => Color::WHITE,
-            Some(medium) => medium.transmittance(t),
+            Some(medium) => medium.transmittance(lambda, t),
         }
     }
 
@@ -102,20 +102,44 @@ impl Scene {
         h
     }
 
+    /// Distance to nearest object for `r`, `INF` if no intersections.
+    pub fn hit_t(&self, r: &Ray) -> Float {
+        let mut t = crate::INF;
+
+        if let Some(medium) = &self.medium {
+            t = t.min(medium.hit_t(r, 0.0, t));
+        }
+
+        for object in &self.objects {
+            t = t.min(object.hit_t(r, 0.0, t));
+        }
+
+        for light in &self.lights {
+            t = t.min(light.hit_t(r, 0.0, t));
+        }
+
+        t
+    }
+
     /// Does ray `r` reach the light object `light`?
     pub fn hit_light<'a>(&'a self, r: &Ray, light: &'a dyn Sampleable) -> Option<Hit<'a>> {
         let light_hit = light.hit(r, 0.0, crate::INF)?;
-        // consider also checking medium
         let t_max = light_hit.t - crate::EPSILON;
 
+        if let Some(medium) = &self.medium {
+            if medium.hit_t(r, 0.0, t_max) < t_max {
+                return None;
+            }
+        }
+
         for object in &self.objects {
-            if object.hit(r, 0.0, t_max).is_some() {
+            if object.hit_t(r, 0.0, t_max) < t_max {
                 return None;
             }
         }
 
         for light in &self.lights {
-            if light.hit(r, 0.0, t_max).is_some() {
+            if light.hit_t(r, 0.0, t_max) < t_max {
                 return None;
             }
         }

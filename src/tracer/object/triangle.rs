@@ -54,20 +54,9 @@ impl Triangle {
             }
         }
     }
-}
 
-impl Bounded for Triangle {
-    fn bounding_box(&self) -> AaBoundingBox {
-        AaBoundingBox::new(
-            self.a().min(self.b().min(self.c())),
-            self.a().max(self.b().max(self.c())),
-        )
-    }
-}
-
-impl Object for Triangle {
     /// Watertight intersection due to Woop et. al. 2013
-    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
+    fn _hit<const GEO: bool>(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         let xo = r.origin;
 
         let wi_abs = r.dir.abs();
@@ -133,6 +122,10 @@ impl Object for Triangle {
 
         let t = t_scaled / det;
 
+        if !GEO {
+            return Hit::from_t(t);
+        }
+
         // compute floating point error and verify we are not below t_min
         let max_z_v = at.z.abs().max(bt.z.abs()).max(ct.z.abs());
         let delta_z = efloat::gamma(3) * max_z_v;
@@ -186,6 +179,25 @@ impl Object for Triangle {
 
         // material will be set by parent object
         Hit::new(t, &Material::Blank, r.dir, xi, err, ns, ng, uv)
+    }
+}
+
+impl Bounded for Triangle {
+    fn bounding_box(&self) -> AaBoundingBox {
+        AaBoundingBox::new(
+            self.a().min(self.b().min(self.c())),
+            self.a().max(self.b().max(self.c())),
+        )
+    }
+}
+
+impl Object for Triangle {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
+        self._hit::<true>(r, t_min, t_max)
+    }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        self._hit::<false>(r, t_min, t_max).map_or(crate::INF, |h| h.t)
     }
 }
 

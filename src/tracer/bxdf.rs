@@ -1,5 +1,5 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2, Vec3, rand_utils, spherical_utils };
-use crate::tracer::{ Color, hit::Hit, microfacet::MfDistribution, onb::Onb };
+use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils, spherical_utils };
+use crate::tracer::{ Color, ColorWavelength, Spectrum, hit::Hit, microfacet::MfDistribution, onb::Onb };
 
 mod microfacet;
 mod scatter;
@@ -12,7 +12,7 @@ mod sampling_tests;
 mod chi2_tests;
 
 pub enum BxDF {
-    Lambertian(Color),
+    Lambertian(Spectrum),
     /// Lambertian diffuse
     MfDiffuse(MfDistribution),
     /// Microfacet mirror
@@ -20,7 +20,7 @@ pub enum BxDF {
     /// Microfacet glass
     MfDielectric(MfDistribution),
     /// Volumetric medium
-    Volumetric(Float, Vec3, Color),
+    Volumetric(Float, Spectrum, Spectrum),
     None,
 }
 
@@ -56,6 +56,7 @@ impl BxDF {
         &self,
         wo: Direction,
         wi: Direction,
+        lambda: &ColorWavelength,
         reflection: bool,
         h: &Hit,
         mode: Transport
@@ -64,13 +65,15 @@ impl BxDF {
             return Color::BLACK;
         }
         match self {
-            Self::Lambertian(kd) => *kd / crate::PI,
-            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, h, mfd),
-            Self::MfConductor(mfd) => microfacet::conductor_f(wo, wi, h, mfd),
+            Self::Lambertian(spec) => spec.sample(lambda) / crate::PI,
+            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, lambda, h, mfd),
+            Self::MfConductor(mfd) => microfacet::conductor_f(wo, wi, lambda, h, mfd),
             Self::MfDielectric(mfd) => {
-                microfacet::dielectric_f(wo, wi, reflection, h, mfd, mode)
+                microfacet::dielectric_f(wo, wi, lambda, reflection, h, mfd, mode)
             }
-            Self::Volumetric(_, sigma_t, sigma_s) => volumetric::f(h, *sigma_t, *sigma_s),
+            Self::Volumetric(_, sigma_t, sigma_s) => {
+                volumetric::f(lambda, h, sigma_t, sigma_s)
+            }
             Self::None => Color::BLACK,
         }
     }

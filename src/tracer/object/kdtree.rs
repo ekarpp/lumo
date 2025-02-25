@@ -69,7 +69,18 @@ impl<T: Bounded> KdTree<T> {
         self.scale_uniform(s)
     }
 
-    fn hit_subtree(
+    fn _hit<const GEO: bool>(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
+        let (t_start, t_end) = self.boundary.intersect(r);
+        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
+        // box missed / is behind
+        if t_start > t_end {
+            None
+        } else {
+            self.hit_subtree::<GEO>(&self.root, r, t_min, t_end, &self.boundary)
+        }
+    }
+
+    fn hit_subtree<const GEO: bool>(
         &self,
         node: &KdNode,
         r: &Ray,
@@ -82,15 +93,21 @@ impl<T: Bounded> KdTree<T> {
             KdNode::Split(axis, point, left, right) => (*axis, *point, left, right),
             KdNode::Leaf(indices) => {
                 let mut tt = t_max;
-                let mut h = None;
-                for idx in indices {
-                    h = self.objects[*idx].hit(r, t_min, tt).or(h);
-                    tt = h.as_ref().map_or(tt, |hit| hit.t);
+                let mut idx = None;
+
+                for i in indices {
+                    let t = self.objects[*i].hit_t(r, t_min, tt);
+                    if t < tt { tt = t; idx = Some(i); }
                 }
-                return h.map(|mut h| {
-                    h.material = &self.material;
-                    h
-                });
+
+                let idx = idx?;
+
+                return if GEO {
+                    self.objects[*idx].hit(r, t_min, t_max)
+                        .map(|mut h| { h.material = &self.material; h })
+                } else {
+                    Hit::from_t(tt)
+                };
             }
         };
 
@@ -110,20 +127,21 @@ impl<T: Bounded> KdTree<T> {
 
         // PBR Figure 4.19 (a). we hit only the first aabb.
         if t_split > t_end || t_split <= 0.0 {
-            self.hit_subtree(node_first, r, t_min, t_end, &aabb_first)
+            self.hit_subtree::<GEO>(node_first, r, t_min, t_end, &aabb_first)
         // PBR Figure 4.19 (b). we hit only the second aabb.
         } else if t_split < t_start {
-            self.hit_subtree(node_second, r, t_min, t_end, &aabb_second)
+            self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second)
         } else {
-            match self.hit_subtree(node_first, r, t_start, t_end, &aabb_first) {
-                None => self.hit_subtree(node_second, r, t_min, t_end, &aabb_second),
+            match self.hit_subtree::<GEO>(node_first, r, t_start, t_end, &aabb_first) {
+                None => self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second),
                 Some(h1) => {
                     /* if we hit something in the first AABB before the split,
                      * there is no need to process the other subtree. */
                     if h1.t < t_split {
                         Some(h1)
                     } else {
-                        self.hit_subtree(node_second, r, t_min, h1.t, &aabb_second).or(Some(h1))
+                        self.hit_subtree::<GEO>(node_second, r, t_min, h1.t, &aabb_second)
+                            .or(Some(h1))
                     }
                 }
             }
@@ -139,14 +157,11 @@ impl<T: Bounded> Bounded for KdTree<T> {
 
 impl<T: Bounded> Object for KdTree<T> {
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
-        let (t_start, t_end) = self.boundary.intersect(r);
-        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
-        // box missed / is behind
-        if t_start > t_end {
-            None
-        } else {
-            self.hit_subtree(&self.root, r, t_min, t_end, &self.boundary)
-        }
+        self._hit::<true>(r, t_min, t_max)
+    }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        self._hit::<false>(r, t_min, t_max).map_or(crate::INF, |h| h.t)
     }
 }
 

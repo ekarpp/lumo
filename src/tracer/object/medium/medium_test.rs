@@ -17,7 +17,8 @@ fn zero_medium_has_no_effect() {
         Normal::X,
         Vec2::X,
     ).unwrap();
-    assert!(m.transmittance(h.t).mean() == 1.0);
+    let tr = m.transmittance(&ColorWavelength::sample(rand_utils::rand_float()), h.t);
+    assert!((tr - Color::WHITE).is_black());
 }
 
 #[test]

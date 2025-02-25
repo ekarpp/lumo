@@ -43,6 +43,10 @@ impl Object for Rectangle {
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         self.mesh.hit(r, t_min, t_max)
     }
+
+    fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
+        self.mesh.hit_t(r, t_min, t_max)
+    }
 }
 
 impl Sampleable for Rectangle {

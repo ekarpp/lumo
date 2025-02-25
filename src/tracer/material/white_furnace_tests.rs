@@ -12,7 +12,7 @@ const NUM_SAMPLES: usize = 16_384;
 const MAX_RADIANCE: Float = 1.01;
 
 fn white_texture() -> Texture {
-    Texture::from(Color::WHITE)
+    Texture::from(Spectrum::WHITE)
 }
 
 fn disk(material: Material) -> Disk {
@@ -26,7 +26,7 @@ fn disk(material: Material) -> Disk {
 
 #[test]
 fn lambert_white_furnace() {
-    let m = Material::Standard(BSDF::new(BxDF::Lambertian(Color::WHITE)));
+    let m = Material::Standard(BSDF::new(BxDF::Lambertian(Spectrum::WHITE)));
     test_material(m, Transport::Radiance);
 }
 
@@ -202,10 +202,10 @@ fn furnace_pass(d: &Disk, mode: Transport) -> bool {
         None => Color::WHITE,
         Some(h) => furnace_sample(wo, h, mode),
     };
-    let pass = radiance.rgb.max_element() < MAX_RADIANCE;
+    let pass = radiance.max() < MAX_RADIANCE;
 
     if !pass {
-        println!("L: {}, wo: {}", radiance.rgb, wo);
+        println!("L: {}, wo: {}", radiance, wo);
     }
 
     pass
@@ -216,11 +216,12 @@ fn furnace_sample(wo: Direction, h: Hit, mode: Transport) -> Color {
 
     let mut misses = 0;
     let mut radiance = Color::BLACK;
+    let lambda = ColorWavelength::sample(rand_utils::rand_float());
 
     for _ in 0..NUM_SAMPLES {
         match m.bsdf_sample(wo, &h, rand_utils::unit_square()) {
             None => misses += 1,
-            Some(wi) => radiance += m.bsdf_f(wo, wi, mode, &h)
+            Some(wi) => radiance += m.bsdf_f(wo, wi, &lambda, mode, &h)
                 * m.shading_cosine(wi, h.ns)
                 / m.bsdf_pdf(wo, wi, &h, false),
         }

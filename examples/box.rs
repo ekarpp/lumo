@@ -3,13 +3,13 @@ use lumo::*;
 
 fn main() -> Result<(), std::io::Error> {
     let camera = Camera::builder().build();
-    let def_color = Color::new(242, 242, 242);
+    let def_color = Spectrum::from_srgb(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
         // left
-        Material::diffuse(Texture::from(Color::new(255, 0, 255))),
+        Material::diffuse(Texture::from(Spectrum::MAGENTA)),
         // right
-        Material::diffuse(Texture::from(Color::new(0, 255, 255))),
+        Material::diffuse(Texture::from(Spectrum::CYAN)),
     );
 
     scene.add(Sphere::new(0.25, Material::mirror())

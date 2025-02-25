@@ -1,5 +1,5 @@
 use crate::{ Normal, Direction, Float, Vec2, complex::Complex, spherical_utils };
-use crate::tracer::{ Color, hit::Hit, Texture };
+use crate::tracer::{ Color, ColorWavelength, hit::Hit, Texture };
 
 /// Configurable parameters for a microsurface
 pub struct MicrofacetConfig {
@@ -95,18 +95,18 @@ impl MfDistribution {
     }
 
     /// Get Kd value at `h`
-    pub fn kd(&self, h: &Hit) -> Color {
-        self.get_config().kd.albedo_at(h)
+    pub fn kd(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
+        self.get_config().kd.albedo_at(lambda, h)
     }
 
     /// Get Ks value at `h`
-    pub fn ks(&self, h: &Hit) -> Color {
-        self.get_config().ks.albedo_at(h)
+    pub fn ks(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
+        self.get_config().ks.albedo_at(lambda, h)
     }
 
     /// Get Tf value at `h`
-    pub fn tf(&self, h: &Hit) -> Color {
-        self.get_config().tf.albedo_at(h)
+    pub fn tf(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
+        self.get_config().tf.albedo_at(lambda, h)
     }
 
     /// Getter, better way to do this?

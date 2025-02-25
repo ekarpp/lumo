@@ -64,10 +64,11 @@ mod util {
 pub fn conductor_f(
     wo: Direction,
     wi: Direction,
+    lambda: &ColorWavelength,
     h: &Hit,
     mfd: &MfDistribution,
 ) -> Color {
-    let ks = mfd.ks(h);
+    let ks = mfd.ks(lambda, h);
     if mfd.is_delta() {
         let f = mfd.f(wo, Normal::Z);
         ks * f / spherical_utils::cos_theta(wi).abs()
@@ -119,20 +120,21 @@ pub fn conductor_pdf(
 pub fn diffuse_f(
     wo: Direction,
     wi: Direction,
+    lambda: &ColorWavelength,
     h: &Hit,
     mfd: &MfDistribution,
 ) -> Color {
     let wh = (wo + wi).normalize();
     let f = mfd.f(wo, wh);
 
-    let ks = mfd.ks(h);
+    let ks = mfd.ks(lambda, h);
     let fr = if ks.is_black() {
         0.0
     } else {
         util::reflect_coeff(wo, wi, mfd)
     };
 
-    let kd = mfd.kd(h);
+    let kd = mfd.kd(lambda, h);
     let fd = if kd.is_black() {
         0.0
     } else {
@@ -151,6 +153,7 @@ pub fn diffuse_f(
 pub fn dielectric_f(
     wo: Direction,
     wi: Direction,
+    lambda: &ColorWavelength,
     reflection: bool,
     h: &Hit,
     mfd: &MfDistribution,
@@ -176,7 +179,7 @@ pub fn dielectric_f(
     let f = mfd.f(wo, wh);
 
     if reflection {
-        let ks = mfd.ks(h);
+        let ks = mfd.ks(lambda, h);
         if mfd.eta() == 1.0 || mfd.is_delta() {
             ks * f / cos_theta_wi.abs()
         } else {
@@ -191,7 +194,7 @@ pub fn dielectric_f(
             Transport::Importance => 1.0,
         };
 
-        let tf = mfd.tf(h);
+        let tf = mfd.tf(lambda, h);
 
         if mfd.eta() == 1.0 || mfd.is_delta() {
             tf * (1.0 - f) / (scale * cos_theta_wi.abs())

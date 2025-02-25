@@ -3,9 +3,7 @@ use crate::{
     Mat3, Mat4, Vec4, Vec3, rand_utils, spherical_utils
 };
 use glam::IVec2;
-use crate::tracer::{
-    film::FilmSample, ray::Ray, Color
-};
+use crate::tracer::{ Color, ray::Ray };
 
 mod matrices;
 mod builder;
@@ -329,12 +327,12 @@ impl Camera {
     }
 
     /// Incident importance for a ray `ri` starting from camera lens
-    pub fn sample_importance(&self, ri: &Ray) -> Option<FilmSample> {
+    pub fn sample_importance(&self, ri: &Ray) -> Option<(Color, Vec2)> {
         let raster_xy = self.raster_xy(ri)?;
         match self {
             Self::Orthographic(cfg) => {
                 let imp = 1.0 / cfg.image_plane_area;
-                Some( FilmSample::new(Color::splat(imp), raster_xy, true) )
+                Some( (imp * Color::WHITE, raster_xy) )
             }
             Self::Perspective(cfg) => {
                 let wi = ri.dir;
@@ -345,7 +343,7 @@ impl Camera {
                     * cos_theta.powi(4)
                     * self.lens_area();
                 let imp = 1.0 / denom;
-                Some( FilmSample::new(Color::splat(imp), raster_xy, true) )
+                Some( (imp * Color::WHITE, raster_xy) )
             }
         }
     }

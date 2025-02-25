@@ -8,12 +8,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .origin(2.0 * Vec3::Z)
         .zoom(3.0)
         .build();
-    let def_color = Color::new(242, 242, 242);
+    let def_color = Spectrum::from_srgb(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
-        Material::diffuse(Texture::from(Color::new(255, 0, 255))),
+        // left
+        Material::diffuse(Texture::from(Spectrum::MAGENTA)),
         // right
-        Material::diffuse(Texture::from(Color::new(0, 255, 255))),
+        Material::diffuse(Texture::from(Spectrum::CYAN)),
     );
 
     scene.add(
@@ -43,8 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     Renderer::new(scene, camera)
-        .set_integrator(Integrator::BDPathTrace)
-        .set_samples(2048)
+        .integrator(Integrator::BDPathTrace)
+        .samples(2048)
         .render()
         .save("caustics.png")?;
     Ok(())
