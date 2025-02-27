@@ -51,6 +51,9 @@ mod triangle;
 /// Triangle meshes, stores vertices, normals and texture coordinates to save space
 mod triangle_mesh;
 
+#[cfg(test)]
+mod test_util;
+
 mod util {
     use crate::Float;
 
@@ -72,7 +75,7 @@ mod util {
 }
 
 /// Common functionality shared between all objects.
-pub trait Object: Sync {
+pub trait Object: Sync + Send {
     /// Does the ray hit the object? NOTE: ray direction can be unnormalized
     /// for instanced objects. Is this an issue?
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit>;
@@ -121,7 +124,6 @@ pub trait Sampleable: Object {
     }
 
     /// Returns randomly sampled point on the surface of the object
-    /// and the normal at the point.
     fn sample_on(&self, rand_sq: Vec2) -> Hit;
 
     /// Sample random direction from `xo` towards area of object

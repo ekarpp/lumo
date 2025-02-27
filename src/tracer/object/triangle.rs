@@ -1,7 +1,22 @@
 use super::*;
 
 #[cfg(test)]
-mod triangle_tests;
+mod triangle_tests {
+    use super::*;
+    fn mesh() -> TriangleMesh {
+        TriangleMesh {
+            vertices: vec![
+                Point::NEG_Y + Point::X,
+                Point::Y + Point::X,
+                Point::Y + Point::NEG_X,
+            ],
+            normals: vec![],
+            uvs: vec![],
+        }
+    }
+
+    test_util::test_sampleable!(Triangle::new(Arc::new(mesh()), (0, 1, 2), None, None));
+}
 
 /// Triangle specified by three points
 pub struct Triangle {

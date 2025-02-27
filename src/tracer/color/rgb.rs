@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 /// Represents a linear RGB value
 pub struct RGB {
     rgb: Vec3,

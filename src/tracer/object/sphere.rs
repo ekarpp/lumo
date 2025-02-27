@@ -1,7 +1,10 @@
 use super::*;
 
 #[cfg(test)]
-mod sphere_tests;
+mod sphere_tests {
+    use super::*;
+    test_util::test_sampleable!(Sphere::new(1.0, Material::Blank));
+}
 
 /// Sphere specified by its radius and origin
 pub struct Sphere {

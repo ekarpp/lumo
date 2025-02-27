@@ -2,7 +2,7 @@ use crate::tracer::{filter::PixelFilter, ColorSpace, RGB, Color, ColorWavelength
 use crate::{Float, Vec2};
 use glam::IVec2;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
-use std::{fs::File, io::BufWriter, path::Path, ops::AddAssign};
+use std::{fmt, fs::File, io::BufWriter, sync::Arc, path::Path, ops::AddAssign};
 
 /// Sample for the film
 pub struct FilmSample {
@@ -92,7 +92,7 @@ impl TileSplat {
 }
 
 /// FilmTile given to a thread to avoid synchronization issues
-pub struct FilmTile<'a> {
+pub struct FilmTile {
     /// Minimum coordinates of tile in raster space
     pub px_min: IVec2,
     /// Maximum coordinates of tile in raster space
@@ -102,23 +102,23 @@ pub struct FilmTile<'a> {
     pixels: Vec<TilePixel>,
     splats: Vec<TileSplat>,
     resolution: IVec2,
-    cs: &'a ColorSpace,
-    filter: &'a PixelFilter,
+    cs: Arc<ColorSpace>,
+    filter: Arc<PixelFilter>,
 }
 
-impl<'a> FilmTile<'a> {
+impl FilmTile {
     /// Creates a new tile `[px_min.x, px_max.x) x [px_min.y, px_max.y)` with `filter`
     pub fn new(
         px_min: IVec2,
         px_max: IVec2,
         res: IVec2,
-        cs: &'a ColorSpace,
-        filter: &'a PixelFilter,
+        cs: Arc<ColorSpace>,
+        filter: Arc<PixelFilter>,
     ) -> Self {
         let radius = filter.r_disc();
-        let px_min = (px_min - radius).max(IVec2::ZERO);
-        let px_max = (px_max + radius).min(res);
-        let pxs = px_max - px_min;
+        let filt_min = (px_min - radius).max(IVec2::ZERO);
+        let filt_max = (px_max + radius).min(res);
+        let pxs = filt_max - filt_min;
         let width = pxs.x;
         let height = pxs.y;
 
@@ -165,7 +165,7 @@ impl<'a> FilmTile<'a> {
             if w != 0.0 {
                 if sample.splat {
                     self.splats.push(TileSplat::new(
-                        rgb * w,
+                        rgb.clone() * w,
                         px_x,
                         px_y,
                     ))
@@ -173,7 +173,7 @@ impl<'a> FilmTile<'a> {
                     let px_x = px_x - self.px_min.x;
                     let px_y = px_y - self.px_min.y;
                     let idx = (px_x + self.width * px_y) as usize;
-                    self.pixels[idx].color += &(rgb * w);
+                    self.pixels[idx].color += &(rgb.clone() * w);
                     self.pixels[idx].color_weight += w;
                 }
             }
@@ -182,36 +182,67 @@ impl<'a> FilmTile<'a> {
 }
 
 /// Film that contains the image being rendered
-pub struct Film<'a> {
+pub struct Film {
     pixels: Vec<Pixel>,
     /// Image resolution
     pub resolution: IVec2,
     splat_scale: Float,
-    filter: &'a PixelFilter,
-    cs: &'a ColorSpace,
+    filter: Arc<PixelFilter>,
+    cs: Arc<ColorSpace>,
 }
 
-impl<'a> Film<'a> {
+impl fmt::Display for Film {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Filter: {}, Color space: {}", self.filter, self.cs)
+    }
+}
+
+impl Film {
     /// Creates a new empty film
     pub fn new(
         width: i32,
         height: i32,
         samples: u32,
-        cs: &'a ColorSpace,
-        filter: &'a PixelFilter,
+        cs: ColorSpace,
+        filter: PixelFilter,
     ) -> Self {
         let n = width * height;
         let resolution = IVec2::new(width, height);
-        // TODO: where does 1.2^r come from?
-        let splat_scale = 1.0 / (samples as Float * Float::powi(1.2, filter.r_disc()));
+
+        let cs = Arc::new(cs);
+        let filter = Arc::new(filter);
 
         Self {
             pixels: vec![Pixel::default(); n as usize],
-            splat_scale,
+            splat_scale: 1.0 / samples as Float,
             filter,
             cs,
             resolution,
         }
+    }
+
+    /// Set the color space used by the film
+    pub fn set_color_space(&mut self, cs: ColorSpace) {
+        self.cs = Arc::new(cs);
+    }
+
+    /// Set the pixel filter used by the film
+    pub fn set_filter(&mut self, filter: PixelFilter) {
+        self.filter = Arc::new(filter);
+    }
+
+    /// Set the number of samples per pixel for correct splat scaling
+    pub fn set_samples(&mut self, samples: u32) {
+        self.splat_scale = 1.0 / samples as Float;
+    }
+
+    /// Create a tile of the film for block rendering
+    pub fn create_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
+        FilmTile::new(
+            px_min, px_max, self.resolution,
+            Arc::clone(&self.cs),
+            Arc::clone(&self.filter),
+        )
     }
 
     /// Add samples from `tile` to self.

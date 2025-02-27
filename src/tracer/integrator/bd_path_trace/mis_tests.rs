@@ -1,4 +1,3 @@
-#![allow(clippy::manual_swap)]
 use super::*;
 use crate::tracer::{
     bxdf::BxDF, bsdf::BSDF, CameraBuilder, Spectrum,
@@ -87,6 +86,7 @@ fn all_sum_to_one_big_scale() {
     test_scene(sce, cam)
 }
 
+#[allow(clippy::manual_swap)]
 fn test_scene(sce: Scene, cam: Camera) {
     let r = cam.generate_ray(Vec2::ZERO);
     let xc = r.origin;

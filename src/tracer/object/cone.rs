@@ -1,7 +1,10 @@
 use super::*;
 
 #[cfg(test)]
-mod cone_tests;
+mod cone_tests {
+    use super::*;
+    test_util::test_object!(Cone::new(1.0, 1.0, Material::Blank));
+}
 
 /// Cone aligned with the `y` axis and base disk at `y=0`
 pub struct Cone {
@@ -74,11 +77,6 @@ impl Object for Cone {
         let radius = (xi.x * xi.x + xi.z * xi.z).sqrt();
         let ni = Normal::new(xi.x, radius * tan_theta.value, xi.z);
         let ni = ni.normalize();
-
-        if ni.dot(wi) >= 0.0 {
-            // backface, make it see through
-            return None;
-        }
 
         let err = Vec3::new(
             (ox + dx * t).abs_error(),

@@ -1,7 +1,10 @@
 use super::*;
 
 #[cfg(test)]
-mod cube_tests;
+mod cube_tests {
+    use super::*;
+    test_util::test_sampleable!(Cube::new(Material::Blank));
+}
 
 /// A unit cube consisting of 6 squares
 pub struct Cube {

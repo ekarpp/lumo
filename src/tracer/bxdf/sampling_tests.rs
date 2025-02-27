@@ -103,7 +103,7 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
     // let wo face directly the normal
     let wo = Direction::Z;
     for _ in 0..NUM_SAMPLES {
-        let wi = bxdf.sample(wo, rand_utils::unit_square());
+        let wi = bxdf.sample(wo, false, rand_utils::unit_square());
         match wi {
             None => num_failed += 1,
             Some(wi) => {

@@ -217,7 +217,7 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
     let phi_factor = PHI_BINS as Float / (2.0 * crate::PI);
 
     for _ in 0..NUM_SAMPLES {
-        match bxdf.sample(wo, rand_utils::unit_square()) {
+        match bxdf.sample(wo, false, rand_utils::unit_square()) {
             None => (),
             Some(wi) => {
                 let theta = spherical_utils::theta(wi);

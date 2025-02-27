@@ -1,7 +1,18 @@
 use super::*;
 
 #[cfg(test)]
-mod rectangle_tests;
+mod rectangle_tests {
+    use super::*;
+
+    test_util::test_sampleable!(Rectangle::new(
+        Mat3::from_cols(
+            Point::NEG_Y + Point::X,
+            Point::Y + Point::X,
+            Point::Y + Point::NEG_X,
+        ),
+        Material::Blank,
+    ));
+}
 
 /// Rectangle defined by two triangles
 pub struct Rectangle {

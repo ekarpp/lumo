@@ -5,6 +5,7 @@ use std::fmt;
 mod sobol_seq;
 
 /// Determines the type of a 2D sampler
+#[derive(Clone)]
 pub enum SamplerType {
     /// Sample uniformly within `[0,1]x[0,1]`
     Uniform,
@@ -14,6 +15,10 @@ pub enum SamplerType {
     MultiJittered,
     /// Samples generated from the Sobol sequence
     Sobol,
+}
+
+impl Default for SamplerType {
+    fn default() -> Self { Self::MultiJittered }
 }
 
 impl SamplerType {

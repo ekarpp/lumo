@@ -1,10 +1,14 @@
 use super::*;
-use crate::cli::TracerCli;
-use std::time::Instant;
+use std::{ cmp::Ordering, sync::mpsc, thread, time::Instant };
+use rustc_hash::{FxHashMap, FxHashSet};
+use node::KdNode;
+use event::{ KdEvent, KdEventType };
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
 
+mod node;
+mod event;
 #[cfg(test)]
 mod kdtree_tests;
 
@@ -23,6 +27,7 @@ pub struct KdTree<T> {
 /// [ekzhang/rpt](https://github.com/ekzhang/rpt/blob/master/src/kdtree.rs),
 /// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go),
 /// [Article by Amsallem](https://www.flomonster.fr/articles/kdtree.html)
+/// [Wald & Havran](https://www.irisa.fr/prive/kadi/Sujets_CTR/kadi/Kadi_sujet2_article_Kdtree.pdf)
 impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
@@ -32,7 +37,6 @@ impl<T: Bounded> KdTree<T> {
             println!("Creating kd-tree of {} triangles", objects.len());
         }
 
-        let indices = (0..objects.len()).collect();
         let bounds: Vec<AaBoundingBox> = objects
             .iter()
             .map(|obj| obj.bounding_box()).collect();
@@ -40,15 +44,30 @@ impl<T: Bounded> KdTree<T> {
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
 
-        let threads = argh::from_env::<TracerCli>().threads;
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        let root = pool.install(|| KdNode::construct(&bounds, &boundary, indices));
+        let mut events: Vec<KdEvent> = Vec::with_capacity(3 * objects.len());
+        for i in 0..objects.len() {
+            let aabb = &bounds[i];
+            for ax in [Axis::X, Axis::Y, Axis::Z] {
+                let mi = aabb.min(ax);
+                let mx = aabb.max(ax);
+                if mi == mx {
+                    events.push(KdEvent::new(mi, ax, KdEventType::Planar, i));
+                } else {
+                    events.push(KdEvent::new(mi, ax, KdEventType::Start, i));
+                    events.push(KdEvent::new(mx, ax, KdEventType::End, i));
+                }
+            }
+        }
+        // could be parallelized, ~10% of construction
+        events.sort_by(|a, b| a.cmp(b));
+
+        let (tx, rx) = mpsc::channel();
+        KdNode::construct(events, objects.len(), &boundary, 0, Some(tx));
+        let root = rx.recv().unwrap();
 
         if objects.len() > 10_000 {
-            println!("Created kd-tree in {:#?}", start.elapsed());
+            let dt = start.elapsed().as_millis() as Float / 1e3;
+            println!("Created kd-tree in {:.3} seconds", dt);
         }
 
         Self {
@@ -176,148 +195,5 @@ impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
         let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
         ho.material = &self.material;
         ho
-    }
-}
-
-const COST_TRAVERSE: Float = 15.0;
-const COST_INTERSECT: Float = 20.0;
-const EMPTY_BONUS: Float = 0.2;
-
-/// A node in the kD-tree. Can be either a plane split or a leaf node.
-pub enum KdNode {
-    /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
-    Split(Axis, Float, Box<KdNode>, Box<KdNode>),
-    /// Stores indices to the object vector in the kD-tree
-    Leaf(Vec<usize>),
-}
-
-impl KdNode {
-    /// Computes the cost for split along `axis` at `point`.
-    fn cost(
-        boundary: &AaBoundingBox,
-        axis: Axis,
-        point: Float,
-        num_left: usize,
-        num_right: usize,
-    ) -> Float {
-        if !boundary.cuts(axis, point) {
-            crate::INF
-        } else {
-            let (left, right) = boundary.split(axis, point);
-
-            let cost = COST_TRAVERSE + COST_INTERSECT *
-                (num_left as Float * left.area() / boundary.area()
-                 + num_right as Float * right.area() / boundary.area());
-
-            if num_left == 0 || num_right == 0 {
-                (1.0 - EMPTY_BONUS) * cost
-            } else {
-                cost
-            }
-        }
-    }
-
-    /// Finds the best split according to SAH.
-    fn find_best_split(aabbs: &[&AaBoundingBox], boundary: &AaBoundingBox) -> (Axis, Float, Float) {
-        let mut best_cost = crate::INF;
-        let mut best_point = crate::INF;
-        let mut best_axis = Axis::X;
-
-        for axis in [Axis::X, Axis::Y, Axis::Z] {
-            let mut mins: Vec<Float> = Vec::with_capacity(aabbs.len());
-            let mut maxs: Vec<Float> = Vec::with_capacity(aabbs.len());
-
-            aabbs.iter().for_each(|aabb| {
-                mins.push(aabb.min(axis));
-                maxs.push(aabb.max(axis));
-            });
-
-            mins.sort_by(|a: &Float, b: &Float| a.partial_cmp(b).unwrap());
-            maxs.sort_by(|a: &Float, b: &Float| a.partial_cmp(b).unwrap());
-
-            let mut num_left = 0;
-            let mut num_right = aabbs.len();
-
-            // iterator for mins
-            let mut min_idx = 0;
-            // iterator for maxs
-            let mut max_idx = 0;
-
-            // add infinity to end as "null"
-            mins.push(crate::INF);
-            maxs.push(crate::INF);
-
-            // do quasi merge
-            while mins[min_idx] < crate::INF || maxs[max_idx] < crate::INF {
-                let is_min = mins[min_idx] <= maxs[max_idx];
-                let point = mins[min_idx].min(maxs[max_idx]);
-
-                // update objects on right before cost..
-                if !is_min { max_idx += 1; num_right -= 1; }
-
-                let cost = Self::cost(boundary, axis, point, num_left, num_right);
-
-                if cost < best_cost {
-                    best_cost = cost;
-                    best_axis = axis;
-                    best_point = point;
-                }
-
-                // ..and objects on left after cost
-                if is_min { min_idx += 1; num_left += 1; }
-            }
-        }
-
-        (best_axis, best_point, best_cost)
-    }
-
-    /// Partitions indices to left and right parts along `axis` at `point`
-    fn partition(
-        aabbs: &[&AaBoundingBox],
-        indices: Vec<usize>,
-        axis: Axis,
-        point: Float,
-    ) -> (Vec<usize>, Vec<usize>) {
-        let mut left: Vec<usize> = Vec::with_capacity(aabbs.len());
-        let mut right: Vec<usize> = Vec::with_capacity(aabbs.len());
-        aabbs.iter().zip(indices).for_each(|(aabb, idx)| {
-            if aabb.min(axis) < point {
-                left.push(idx);
-            }
-            // are we missing one, since both check strict?
-            if aabb.max(axis) > point {
-                right.push(idx);
-            }
-        });
-        (left, right)
-    }
-
-    /// Constructs nodes of the kD-tree recursively with SAH.
-    pub fn construct(
-        bounds: &[AaBoundingBox],
-        boundary: &AaBoundingBox,
-        indices: Vec<usize>,
-    ) -> Box<Self> {
-        // filter relevant AABBs
-        let aabbs: Vec<&AaBoundingBox> = indices.iter()
-            .map(|idx| &bounds[*idx]).collect();
-        let (axis, point, cost) = Self::find_best_split(&aabbs, boundary);
-        // cut not worth it, make a leaf
-        if cost > COST_INTERSECT * indices.len() as Float {
-            Box::new(Self::Leaf(indices))
-        } else {
-            let (left_idx, right_idx) = Self::partition(&aabbs, indices, axis, point);
-            let (left_bound, right_bound) = boundary.split(axis, point);
-            let (left, right) = rayon::join(
-                || Self::construct(bounds, &left_bound, left_idx),
-                || Self::construct(bounds, &right_bound, right_idx)
-            );
-            Box::new(Self::Split(
-                axis,
-                point,
-                left,
-                right,
-            ))
-        }
     }
 }

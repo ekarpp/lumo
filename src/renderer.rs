@@ -1,29 +1,37 @@
 use crate::{
-    Vec2, Float, TracerCli, ToneMap, SamplerType, rand_utils,
+    Vec2, Float, ToneMap, SamplerType
 };
 use crate::tracer::{
-    Camera, Film, FilmSample, ColorWavelength,
+    Camera, Film, FilmSample,
     Integrator, Scene, PixelFilter, FilmTile, ColorSpace
 };
 use glam::IVec2;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{io::Write, sync::Mutex, time::Instant};
+use std::{io::Write, sync::{Arc, mpsc, Mutex}, time::Instant};
+use itertools::Itertools;
 
 const TILE_SIZE: i32 = 16;
 // should be a square for samplers
 const SAMPLES_INCREMENT: u32 = 256;
 const PROGRESS_BAR_LEN: usize = 16;
 
+const DEFAULT_NUM_SAMPLES: u32 = 1;
+const DEFAULT_THREADS: usize = 4;
+
+mod result;
+mod pool;
+mod queue;
+mod task;
+mod worker;
+
 /// Configures the image to be rendered
 pub struct Renderer {
-    scene: Scene,
-    camera: Camera,
+    scene: Arc<Scene>,
+    camera: Arc<Camera>,
     resolution: IVec2,
     num_samples: u32,
     integrator: Integrator,
     tone_map: ToneMap,
-    filter: PixelFilter,
-    color_space: ColorSpace,
+    film: Film,
     sampler: SamplerType,
     threads: usize,
 }
@@ -35,20 +43,30 @@ impl Renderer {
     pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
-        let cli_args: TracerCli = argh::from_env();
+        let scene = Arc::new(scene);
+        let camera = Arc::new(camera);
+
         let resolution = camera.get_resolution();
+        let num_samples = DEFAULT_NUM_SAMPLES;
+        let film = Film::new(
+            resolution.x,
+            resolution.y,
+            num_samples,
+            ColorSpace::default(),
+            PixelFilter::default(),
+        );
+
 
         Self {
             scene,
             camera,
             resolution,
-            threads: cli_args.threads,
-            filter: PixelFilter::default(),
-            num_samples: cli_args.samples,
-            sampler: SamplerType::MultiJittered,
-            integrator: cli_args.get_integrator(),
-            tone_map: ToneMap::NoMap,
-            color_space: ColorSpace::default(),
+            film,
+            num_samples,
+            threads: DEFAULT_THREADS,
+            sampler: SamplerType::default(),
+            integrator: Integrator::default(),
+            tone_map: ToneMap::default(),
         }
     }
 
@@ -60,13 +78,14 @@ impl Renderer {
 
     /// Sets the pixel filter
     pub fn filter(mut self, filter: PixelFilter) -> Self {
-        self.filter = filter;
+        self.film.set_filter(filter);
         self
     }
 
     /// Sets number of samples per pixel
     pub fn samples(mut self, samples: u32) -> Self {
         self.num_samples = samples;
+        self.film.set_samples(samples);
         self
     }
 
@@ -90,17 +109,11 @@ impl Renderer {
 
     /// Sets the color space used to develop the film
     pub fn color_space(mut self, color_space: ColorSpace) -> Self {
-        self.color_space = color_space;
+        self.film.set_color_space(color_space);
         self
     }
 
-    /// Starts the rendering process and returns the rendered image
-    pub fn render(&self) -> Film {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(self.threads)
-            .build()
-            .unwrap();
-
+    fn output_begin(&self) {
         if matches!(self.integrator, Integrator::BDPathTrace)
             && self.scene.medium.is_some() {
                 println!("Volumetric mediums not currently supported with BDPT, \
@@ -110,144 +123,128 @@ impl Renderer {
                   \t Resolution: {} x {}\n\
                   \t Samples: {}\n\
                   \t Integrator: {}\n\
-                  \t Filter: {}\n\
                   \t Sampler: {}\n\
-                  \t Color space: {}\n\
+                  \t Film: [{}] \n\
                   \t Threads: {}",
                  self.resolution.x, self.resolution.y,
                  self.num_samples,
                  self.integrator,
-                 self.filter,
                  self.sampler,
-                 self.color_space,
-                 pool.current_num_threads(),
+                 self.film,
+                 self.threads,
         );
+    }
 
-        let start = Instant::now();
-        let rays = self.num_samples as i32 * self.resolution.x * self.resolution.y;
-
-        let mut film = Film::new(
-            self.resolution.x,
-            self.resolution.y,
-            self.num_samples,
-            &self.color_space,
-            &self.filter,
+    fn output_progress(
+        &self,
+        rays_traced: i32,
+        rays_total: i32,
+        dt: Float,
+    ) {
+        let bar_step = rays_total / PROGRESS_BAR_LEN as i32;
+        let steps = rays_traced / bar_step;
+        let prog = rays_total as Float / rays_traced as Float;
+        print!("\r{}", " ".repeat(PROGRESS_BAR_LEN + 32));
+        print!("\r[{}{}] (~{} left)",
+               "+".repeat(steps as usize),
+               "-".repeat(PROGRESS_BAR_LEN - steps as usize),
+               self.fmt_ms(dt as Float * (prog - 1.0), false),
         );
+        let _ = std::io::stdout().flush();
+    }
 
-        let fmt_ms = |ms: Float| -> String {
-            let sec = ms / 1e3;
-            if sec <= 60.0 {
+    fn fmt_si(&self, val: i32) -> String {
+        let val = val as Float;
+
+        if val > 1e9 {
+            format!("{:.2} G", val / 1e9)
+        } else if val > 1e6 {
+            format!("{:.2} M", val / 1e6)
+        } else if val > 1e3 {
+            format!("{:.2} k", val / 1e3)
+        } else {
+            format!("{:.2}", val)
+        }
+    }
+
+    fn fmt_ms(&self, ms: Float, accurate: bool) -> String {
+        let sec = ms / 1e3;
+        if sec <= 60.0 {
+            if accurate {
+                format!("{:.3} s", sec)
+            } else {
                 format!("{:.0} s", sec)
-            } else if sec <= 60.0 * 60.0 {
-                format!("{:.1} m", sec / 60.0)
+            }
+        } else if sec <= 60.0 * 60.0 {
+            format!("{:.1} m", sec / 60.0)
+        } else {
+            format!("{:.1} h", sec / 3600.0)
+        }
+    }
+
+
+    /// Starts the rendering process and returns the rendered image
+    pub fn render(&mut self) -> &Film {
+        self.output_begin();
+        let start = Instant::now();
+
+        let pool = pool::ThreadPool::new(
+            self.threads,
+            Arc::clone(&self.camera),
+            Arc::clone(&self.scene),
+            self.integrator.clone(),
+            self.sampler.clone(),
+            self.tone_map.clone(),
+        );
+
+        let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
+        let tiles_y = (self.resolution.y + TILE_SIZE - 1) / TILE_SIZE;
+
+        let mut samples_taken = 0;
+        while samples_taken < self.num_samples {
+            let prev = samples_taken;
+            samples_taken += SAMPLES_INCREMENT;
+            samples_taken = samples_taken.min(self.num_samples);
+            let samples = samples_taken - prev;
+
+            (0..tiles_y).cartesian_product(0..tiles_x).for_each(|(y, x): (i32, i32)| {
+                let px_min = IVec2::new(x, y) * TILE_SIZE;
+                let px_max = (px_min + TILE_SIZE).min(self.resolution);
+                let tile = self.film.create_tile(px_min, px_max);
+
+                let task = task::RenderTask::new(tile, samples);
+                pool.publish(task);
+            });
+        }
+
+        pool.all_published();
+
+        let rays_total = self.num_samples as i32 * self.resolution.x * self.resolution.y;
+        let mut rays_traced = 0;
+        let mut finished = 0;
+        let mut tiles_added = 0;
+        while finished < self.threads {
+            let result = pool.pop_result();
+            if let Some(tile) = result.tile {
+                self.film.add_tile(tile);
+                rays_traced += result.num_rays;
+                tiles_added += 1;
+                let output = tiles_added % self.resolution.x == 0
+                    || tiles_added == self.threads as i32;
+                if output {
+                    let dt = start.elapsed().as_millis() as Float;
+                    self.output_progress(rays_traced, rays_total, dt);
+                }
             } else {
-                format!("{:.1} h", sec / 3600.0)
+                finished += 1;
             }
-        };
-
-        pool.install(|| {
-            let mutex_film = Mutex::new(&mut film);
-
-            let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
-            let tiles_y = (self.resolution.y + TILE_SIZE - 1) / TILE_SIZE;
-
-            let mutex_progr = Mutex::new(0);
-
-            let mut samples_taken = 0;
-            while samples_taken < self.num_samples {
-                let prev = samples_taken;
-                samples_taken += SAMPLES_INCREMENT;
-                samples_taken = samples_taken.min(self.num_samples);
-                let samples = samples_taken - prev;
-
-                (0..tiles_y).into_par_iter()
-                    .for_each(|y: i32| {
-                        (0..tiles_x).for_each(|x: i32| {
-                            let px_min = IVec2::new(x, y) * TILE_SIZE;
-                            let px_max = px_min + TILE_SIZE;
-                            let mut tile = self.get_tile(px_min, px_max);
-
-                            for y in tile.px_min.y..tile.px_max.y {
-                                for x in tile.px_min.x..tile.px_max.x {
-                                    self.get_samples(&mut tile, samples, x, y)
-                                }
-                            }
-
-                            mutex_film.lock().unwrap().add_tile(tile);
-                            {
-                                let mut ray_counter = mutex_progr.lock().unwrap();
-                                *ray_counter += samples * (TILE_SIZE as u32).pow(2);
-                                let y0 = tiles_x.min(pool.current_num_threads() as i32 + 1);
-
-                                if x == 0 || (y == 0 && x == y0) {
-                                    let count = *ray_counter as i32;
-                                    let n = count / (rays / PROGRESS_BAR_LEN as i32);
-                                    let dt = start.elapsed().as_millis() as i32;
-                                    let prog = rays as Float / count as Float;
-                                    print!("\r{}", " ".repeat(PROGRESS_BAR_LEN + 32));
-                                    print!("\r[{}{}] (~{} left)",
-                                           "+".repeat(n as usize),
-                                           "-".repeat(PROGRESS_BAR_LEN - n as usize),
-                                           fmt_ms(dt as Float * (prog - 1.0)),
-                                    );
-                                    let _ = std::io::stdout().flush();
-                                }
-                            }
-                        })
-                    });
-            }
-        });
-
-        let fmt_si = |rays: i32| -> String {
-            let r = rays as Float;
-
-            if r > 1e9 {
-                format!("{:.2} G", r / 1e9)
-            } else if r > 1e6 {
-                format!("{:.2} M", r / 1e6)
-            } else if r > 1e3 {
-                format!("{:.2} k", r / 1e3)
-            } else {
-                format!("{:.2}", r)
-            }
-        };
+        }
 
         println!("\rFinished rendering in {} ({} camera rays)",
-                 fmt_ms(start.elapsed().as_millis() as Float),
-                 fmt_si(rays),
+                 self.fmt_ms(start.elapsed().as_millis() as Float, true),
+                 self.fmt_si(rays_total),
         );
 
-        film
-    }
-
-    fn get_tile(&self, px_min: IVec2, px_max: IVec2) -> FilmTile {
-        FilmTile::new(
-            px_min,
-            px_max.min(self.resolution),
-            self.resolution,
-            &self.color_space,
-            &self.filter,
-        )
-    }
-
-    /// Sends `num_samples` rays towards the given pixel and averages the result
-    fn get_samples(&self, tile: &mut FilmTile, num_samples: u32, x: i32, y: i32) {
-        let xy = Vec2::new(x as Float, y as Float);
-        self.sampler.new(num_samples)
-            .for_each(|rand_sq: Vec2| {
-                let raster_xy = xy + rand_sq;
-                let lambda = ColorWavelength::sample(rand_utils::rand_float());
-                self.integrator.integrate(
-                    &self.scene,
-                    &self.camera,
-                    lambda,
-                    raster_xy,
-                    self.camera.generate_ray(raster_xy),
-                )
-                    .iter_mut().for_each(|sample: &mut FilmSample| {
-                        sample.color = self.tone_map.map(sample.color, &sample.lambda);
-                        tile.add_sample(sample)
-                    })
-            })
+        &self.film
     }
 }

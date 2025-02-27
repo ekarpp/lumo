@@ -52,7 +52,7 @@ impl BSDF {
 
         let wo_local = uvw.to_local(wo);
 
-        self.BxDF.sample(wo_local, rand_sq)
+        self.BxDF.sample(wo_local, h.backface, rand_sq)
             .map(|wi| uvw.to_world(wi))
     }
 

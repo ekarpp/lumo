@@ -61,11 +61,11 @@ impl BxDF {
         h: &Hit,
         mode: Transport
     ) -> Color {
-        if !reflection && self.is_reflection() {
+        if (!reflection || h.backface) && self.is_reflection() {
             return Color::BLACK;
         }
         match self {
-            Self::Lambertian(spec) => spec.sample(lambda) / crate::PI,
+            Self::Lambertian(spec) => scatter::lambertian_f(spec, lambda),
             Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, lambda, h, mfd),
             Self::MfConductor(mfd) => microfacet::conductor_f(wo, wi, lambda, h, mfd),
             Self::MfDielectric(mfd) => {
@@ -78,10 +78,13 @@ impl BxDF {
         }
     }
 
-    pub fn sample(&self, wo: Direction, rand_sq: Vec2) -> Option<Direction> {
+    pub fn sample(&self, wo: Direction, backface: bool, rand_sq: Vec2) -> Option<Direction> {
+        if backface && self.is_reflection() {
+            return None;
+        }
         match self {
-            Self::Lambertian(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
-            Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
+            Self::Lambertian(_) => scatter::lambertian_sample(rand_sq),
+            Self::MfDiffuse(_) => scatter::lambertian_sample(rand_sq),
             Self::MfConductor(mfd) => microfacet::conductor_sample(wo, mfd, rand_sq),
             Self::MfDielectric(mfd) => microfacet::dielectric_sample(wo, mfd, rand_sq),
             Self::Volumetric(g, ..) => volumetric::sample(wo, *g, rand_sq),
@@ -91,6 +94,7 @@ impl BxDF {
 
     pub fn pdf(&self, wo: Direction, wi: Direction, reflection: bool) -> Float {
         if !reflection && self.is_reflection() {
+            // backfaces too? or explicitly in pdfs?
             return 0.0;
         }
         match self {

@@ -2,7 +2,6 @@
 #![warn(missing_docs)]
 #![allow(clippy::needless_range_loop)]
 
-pub use cli::TracerCli;
 pub use image::Image;
 pub use perlin::Perlin;
 pub use renderer::Renderer;
@@ -16,8 +15,6 @@ pub mod tracer;
 
 /// Complex numbers
 mod complex;
-/// Command line interface
-mod cli;
 /// `Float` with built in tracking of floating point error
 mod efloat;
 /// Wrapper for writing image buffer to file.
@@ -75,12 +72,12 @@ pub enum Transport {
 }
 
 /// Represents an axis in the cartesian coordinate system
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, PartialOrd)]
 pub enum Axis {
     /// X-axis
-    X,
+    X = 0,
     /// Y-axis
-    Y,
+    Y = 1,
     /// Z-axis
-    Z,
+    Z = 2,
 }

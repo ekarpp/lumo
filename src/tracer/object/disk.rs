@@ -1,7 +1,10 @@
 use super::*;
 
 #[cfg(test)]
-mod disk_tests;
+mod disk_tests {
+    use super::*;
+    test_util::test_sampleable!(Disk::new(Point::ZERO, Normal::Z, 1.0, Material::Blank));
+}
 
 /// A two dimensional disk
 pub struct Disk {
@@ -100,6 +103,7 @@ impl Object for Disk {
         }
     }
 
+    #[allow(clippy::if_same_then_else)]
     fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
         let xo = r.origin;
         let wi = r.dir;

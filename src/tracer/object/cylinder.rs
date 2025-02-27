@@ -1,7 +1,28 @@
 use super::*;
 
 #[cfg(test)]
-mod cylinder_tests;
+mod cylinder_tests {
+    use super::*;
+    fn cylinder() -> Box<Cylinder> {
+        Cylinder::new(1.0, 1.0, Material::Blank)
+    }
+
+    test_util::test_object!(cylinder());
+
+    #[test]
+    fn no_hit_parallel() {
+        let c = cylinder();
+        let r = Ray::new(Point::X, Direction::Y);
+        assert!(c.hit(&r, 0.0, crate::INF).is_none());
+    }
+
+    #[test]
+    fn no_hit_middle() {
+        let c = cylinder();
+        let r = Ray::new(0.5 * Point::NEG_ONE, Direction::Y);
+        assert!(c.hit(&r, 0.0, crate::INF).is_none());
+    }
+}
 
 /// Cylinder aligned with the `y` axis with base at `y=0`
 pub struct Cylinder {
@@ -111,11 +132,21 @@ impl Object for Cylinder {
         if t0 >= t_max || t1 <= t_min { return crate::INF; }
 
         if t0 > t_min {
-            t0
-        } else if t1 >= t_max {
-            crate::INF
-        } else {
+            let xi = r.at(t0);
+            if xi.y >= 0.0 && xi.y <= self.height {
+                return t0;
+            }
+        }
+
+        if t1 >= t_max {
+            return crate::INF;
+        }
+
+        let xi = r.at(t1);
+        if xi.y >= 0.0 && xi.y <= self.height {
             t1
+        } else {
+            crate::INF
         }
     }
 }

@@ -14,6 +14,7 @@ mod direct_light;
 mod path_trace;
 
 /// Enum to choose which integrator to use
+#[derive(Clone)]
 pub enum Integrator {
     /// Implements the path tracing algorithm with
     /// Russian Roulette (With probability `p` terminate each path.
@@ -36,16 +37,20 @@ impl fmt::Display for Integrator {
     }
 }
 
+impl Default for Integrator {
+    fn default() -> Self { Self::PathTrace }
+}
+
 impl Integrator {
     /// Calls the corresponding integration function
     pub fn integrate(
         &self,
         s: &Scene,
         c: &Camera,
-        lambda: ColorWavelength,
         raster_xy: Vec2,
-        r: Ray
     ) -> Vec<FilmSample> {
+        let r = c.generate_ray(raster_xy);
+        let lambda = ColorWavelength::sample(rand_utils::rand_float());
         match self {
             Self::PathTrace => vec![path_trace::integrate(s, r, lambda, raster_xy)],
             Self::DirectLight => vec![direct_light::integrate(s, r, lambda, raster_xy)],
