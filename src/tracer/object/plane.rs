@@ -1,22 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod plane_tests {
-    use super::*;
-    fn plane() -> Box<Plane> {
-        Plane::new(Point::ZERO, Normal::Z, Material::Blank)
-    }
-
-    test_util::test_object!(plane());
-
-    #[test]
-    fn no_hit_parallel() {
-        let p = plane();
-        let r = Ray::new(Point::Z, Direction::X);
-        assert!(p.hit(&r, 0.0, crate::INF).is_none());
-    }
-}
-
 /// Infinite plane defined by a single point and a normal
 pub struct Plane {
     /// Unidirectional normal
@@ -103,5 +86,22 @@ impl Object for Plane {
 
         let t = -(self.d.value + self.normal.dot(xo)) / self.normal.dot(wi);
         if t <= t_min || t >= t_max { crate::INF } else { t }
+    }
+}
+
+#[cfg(test)]
+mod plane_tests {
+    use super::*;
+    fn plane() -> Box<Plane> {
+        Plane::new(Point::ZERO, Normal::Z, Material::Blank)
+    }
+
+    test_util::test_object!(plane());
+
+    #[test]
+    fn no_hit_parallel() {
+        let p = plane();
+        let r = Ray::new(Point::Z, Direction::X);
+        assert!(p.hit(&r, 0.0, crate::INF).is_none());
     }
 }

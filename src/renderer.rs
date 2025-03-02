@@ -1,12 +1,15 @@
 use crate::{
-    Vec2, Float, ToneMap, SamplerType
+    formatting, rng::Xorshift, Vec2, Float, ToneMap, SamplerType
 };
 use crate::tracer::{
     Camera, Film, FilmSample,
     Integrator, Scene, PixelFilter, FilmTile, ColorSpace
 };
 use glam::IVec2;
-use std::{io::Write, sync::{Arc, mpsc, Mutex}, time::Instant};
+use std::{
+    sync::{Arc, mpsc, Mutex}, cell::RefCell,
+    io::Write, time::Instant
+};
 use itertools::Itertools;
 
 const TILE_SIZE: i32 = 16;
@@ -17,7 +20,8 @@ const PROGRESS_BAR_LEN: usize = 16;
 const DEFAULT_NUM_SAMPLES: u32 = 1;
 const DEFAULT_THREADS: usize = 4;
 
-mod result;
+use task::{ RenderTask, RenderTaskResult, RenderTaskExecutor };
+
 mod pool;
 mod queue;
 mod task;
@@ -34,6 +38,7 @@ pub struct Renderer {
     film: Film,
     sampler: SamplerType,
     threads: usize,
+    seed: u64,
 }
 
 impl Renderer {
@@ -56,6 +61,7 @@ impl Renderer {
             PixelFilter::default(),
         );
 
+        let seed = crate::rng::gen_seed();
 
         Self {
             scene,
@@ -63,6 +69,7 @@ impl Renderer {
             resolution,
             film,
             num_samples,
+            seed,
             threads: DEFAULT_THREADS,
             sampler: SamplerType::default(),
             integrator: Integrator::default(),
@@ -95,6 +102,12 @@ impl Renderer {
         self
     }
 
+    /// Set the seed used for random number generation
+    pub fn seed(mut self, seed: u64) -> Self {
+        self.seed = seed;
+        self
+    }
+
     /// Set the sampler used in rendering
     pub fn sampler(mut self, sampler: SamplerType) -> Self {
         self.sampler = sampler;
@@ -124,13 +137,17 @@ impl Renderer {
                   \t Samples: {}\n\
                   \t Integrator: {}\n\
                   \t Sampler: {}\n\
+                  \t Tone map: {}\n\
                   \t Film: [{}] \n\
+                  \t Seed: {}\n\
                   \t Threads: {}",
                  self.resolution.x, self.resolution.y,
                  self.num_samples,
                  self.integrator,
                  self.sampler,
+                 self.tone_map,
                  self.film,
+                 self.seed,
                  self.threads,
         );
     }
@@ -148,38 +165,41 @@ impl Renderer {
         print!("\r[{}{}] (~{} left)",
                "+".repeat(steps as usize),
                "-".repeat(PROGRESS_BAR_LEN - steps as usize),
-               self.fmt_ms(dt as Float * (prog - 1.0), false),
+               formatting::fmt_ms(dt as Float * (prog - 1.0), false),
         );
         let _ = std::io::stdout().flush();
     }
 
-    fn fmt_si(&self, val: i32) -> String {
-        let val = val as Float;
+    fn render_executor(&self) -> Arc<RenderTaskExecutor> {
+        let integrator = self.integrator.clone();
+        let sampler = self.sampler.clone();
+        let tone_map = self.tone_map.clone();
 
-        if val > 1e9 {
-            format!("{:.2} G", val / 1e9)
-        } else if val > 1e6 {
-            format!("{:.2} M", val / 1e6)
-        } else if val > 1e3 {
-            format!("{:.2} k", val / 1e3)
-        } else {
-            format!("{:.2}", val)
-        }
-    }
+        Arc::new(
+            move |task, rng, camera, scene| -> RenderTaskResult {
+                let Some(mut tile) = task.tile else { return RenderTaskResult::null(); };
 
-    fn fmt_ms(&self, ms: Float, accurate: bool) -> String {
-        let sec = ms / 1e3;
-        if sec <= 60.0 {
-            if accurate {
-                format!("{:.3} s", sec)
-            } else {
-                format!("{:.0} s", sec)
+                let (mi_y, mx_y) = (tile.px_min.y, tile.px_max.y);
+                let (mi_x, mx_x) = (tile.px_min.x, tile.px_max.x);
+
+                (mi_y..mx_y).cartesian_product(mi_x..mx_x)
+                    .for_each(|(y, x): (i32, i32)| {
+                        let xy = Vec2::new(x as Float, y as Float);
+                        sampler.new(task.samples, rng)
+                            .flat_map(|rand_sq: Vec2| {
+                                let raster_xy = xy + rand_sq;
+                                integrator.integrate(scene, camera, rng, raster_xy)
+                            })
+                            .for_each(|mut sample: FilmSample| {
+                                tone_map.map(&mut sample);
+                                tile.add_sample(&sample)
+                            })
+                    });
+
+                let num_rays = (mx_x - mi_x) * (mx_y - mi_y) * task.samples as i32;
+                RenderTaskResult::new(tile, num_rays)
             }
-        } else if sec <= 60.0 * 60.0 {
-            format!("{:.1} m", sec / 60.0)
-        } else {
-            format!("{:.1} h", sec / 3600.0)
-        }
+        )
     }
 
 
@@ -190,11 +210,10 @@ impl Renderer {
 
         let pool = pool::ThreadPool::new(
             self.threads,
+            Xorshift::new(self.seed),
             Arc::clone(&self.camera),
             Arc::clone(&self.scene),
-            self.integrator.clone(),
-            self.sampler.clone(),
-            self.tone_map.clone(),
+            self.render_executor(),
         );
 
         let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
@@ -241,8 +260,8 @@ impl Renderer {
         }
 
         println!("\rFinished rendering in {} ({} camera rays)",
-                 self.fmt_ms(start.elapsed().as_millis() as Float, true),
-                 self.fmt_si(rays_total),
+                 formatting::fmt_ms(start.elapsed().as_millis() as Float, true),
+                 formatting::fmt_si(rays_total),
         );
 
         &self.film

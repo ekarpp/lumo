@@ -5,6 +5,7 @@ pub fn camera_path<'a>(
     scene: &'a Scene,
     camera: &'a Camera,
     r: Ray,
+    rng: &mut Xorshift,
     lambda: &ColorWavelength,
 ) -> Vec<Vertex<'a>> {
     let gathered = Color::WHITE;
@@ -13,16 +14,20 @@ pub fn camera_path<'a>(
     let pdf_xo = camera.pdf_xo(&r);
     let root = Vertex::camera(xo, pdf_xo, gathered);
 
-    walk(scene, r, lambda, root, gathered, pdf_wi, Transport::Radiance)
+    walk(scene, r, rng, lambda, root, gathered, pdf_wi, Transport::Radiance)
 }
 
 /// Generates a ray path strating from a light
-pub fn light_path<'a>(scene: &'a Scene, lambda: &'a ColorWavelength) -> Vec<Vertex<'a>> {
-    let light = scene.uniform_random_light();
+pub fn light_path<'a>(
+    scene: &'a Scene,
+    rng: &mut Xorshift,
+    lambda: &'a ColorWavelength
+) -> Vec<Vertex<'a>> {
+    let light = scene.uniform_random_light(rng.gen_float());
     let pdf_light = 1.0 / scene.num_lights() as Float;
     let (ri, ho) = light.sample_leaving(
-        rand_utils::unit_square(),
-        rand_utils::unit_square()
+        rng.gen_vec2(),
+        rng.gen_vec2(),
     );
     let ng = ho.ng;
     let ns = ho.ns;
@@ -38,13 +43,15 @@ pub fn light_path<'a>(scene: &'a Scene, lambda: &'a ColorWavelength) -> Vec<Vert
     let wi = ri.dir;
     let gathered = emit * wi.dot(ns).abs() / (pdf_light * pdf_origin * pdf_dir);
 
-    walk(scene, ri, lambda, root, gathered, pdf_dir, Transport::Importance)
+    walk(scene, ri, rng, lambda, root, gathered, pdf_dir, Transport::Importance)
 }
 
 /// Ray that randomly scatters around from the given root vertex
+#[allow(clippy::too_many_arguments)]
 fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
+    rng: &mut Xorshift,
     lambda: &ColorWavelength,
     root: Vertex<'a>,
     mut gathered: Color,
@@ -57,7 +64,7 @@ fn walk<'a>(
     // w.r.t. SA
     let mut pdf_fwd = pdf_dir;
 
-    while let Some(ho) = scene.hit(&ro) {
+    while let Some(ho) = scene.hit(&ro, rng) {
         let material = ho.material;
         gathered *= scene.transmittance(lambda, ho.t);
 
@@ -74,7 +81,7 @@ fn walk<'a>(
         let curr = depth;
         let ho = &vertices[curr].h;
 
-        match material.bsdf_sample(wo, ho, rand_utils::unit_square()) {
+        match material.bsdf_sample(wo, ho, rng.gen_float(), rng.gen_vec2()) {
             None => {
                 // we hit a light. if tracing from a light, discard latest vertex
                 if matches!(mode, Transport::Importance) {
@@ -116,7 +123,7 @@ fn walk<'a>(
                 if depth >= RR_DEPTH {
                     let luminance = gathered.luminance(lambda);
                     let rr_prob = (1.0 - luminance).max(RR_MIN);
-                    if rand_utils::rand_float() < rr_prob {
+                    if rng.gen_float() < rr_prob {
                         break;
                     }
                     gathered /= 1.0 - rr_prob;

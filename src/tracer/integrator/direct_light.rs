@@ -3,22 +3,30 @@ use super::*;
 pub fn integrate(
     scene: &Scene,
     ro: Ray,
+    rng: &mut Xorshift,
     lambda: ColorWavelength,
     raster_xy: Vec2
 ) -> FilmSample {
-    let radiance = _integrate(scene, ro, &lambda, 0);
+    let radiance = _integrate(scene, ro, rng, &lambda, 0);
     FilmSample::new(radiance, lambda, raster_xy, false)
 }
 
 const MAX_RECURSION: usize = 50;
 
-fn _integrate(scene: &Scene, ro: Ray, lambda: &ColorWavelength, depth: usize) -> Color {
-    match scene.hit(&ro) {
+fn _integrate(
+    scene: &Scene,
+    ro: Ray,
+    rng: &mut Xorshift,
+    lambda: &ColorWavelength,
+    depth: usize
+) -> Color {
+    match scene.hit(&ro, rng) {
         None => Color::BLACK,
         Some(ho) => {
             let material = ho.material;
             let wo = -ro.dir;
-            match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
+
+            match material.bsdf_sample(wo, &ho, rng.gen_float(), rng.gen_vec2()) {
                 None => material.emit(lambda, &ho),
                 Some(wi) => {
                     if !material.is_specular() {
@@ -27,8 +35,7 @@ fn _integrate(scene: &Scene, ro: Ray, lambda: &ColorWavelength, depth: usize) ->
                             -ro.dir,
                             lambda,
                             &ho,
-                            rand_utils::unit_square(),
-                            rand_utils::unit_square(),
+                            rng,
                         );
 
                         scene.transmittance(lambda, ho.t) * radiance
@@ -66,7 +73,7 @@ fn _integrate(scene: &Scene, ro: Ray, lambda: &ColorWavelength, depth: usize) ->
                         bsdf
                             * scene.transmittance(lambda, ho.t)
                             * material.shading_cosine(wi, ns)
-                            * _integrate(scene, ri, lambda, depth + 1)
+                            * _integrate(scene, ri, rng, lambda, depth + 1)
                             / p_scatter
                     }
                 }

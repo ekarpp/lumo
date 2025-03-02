@@ -1,6 +1,6 @@
-use crate::{Float, Vec2, rand_utils};
+use crate::{Float, Vec2, rng::Xorshift};
 use glam::UVec2;
-use std::fmt;
+use std::{ fmt, cell::RefCell };
 
 mod sobol_seq;
 
@@ -24,12 +24,12 @@ impl Default for SamplerType {
 impl SamplerType {
     /// Returns a sampler with `samples` corresponding to `self`
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(&self, samples: u32) -> Box<dyn Sampler> {
+    pub fn new<'a>(&'a self, samples: u32, rng: &'a RefCell<Xorshift>) -> Box<dyn Sampler + 'a> {
         match self {
-            Self::Uniform => Box::new(UniformSampler::new(samples)),
-            Self::Jittered => Box::new(JitteredSampler::new(samples)),
-            Self::MultiJittered => Box::new(MultiJitteredSampler::new(samples)),
-            Self::Sobol => Box::new(SobolSampler::new(samples)),
+            Self::Uniform => Box::new(UniformSampler::new(samples, rng)),
+            Self::Jittered => Box::new(JitteredSampler::new(samples, rng)),
+            Self::MultiJittered => Box::new(MultiJitteredSampler::new(samples, rng)),
+            Self::Sobol => Box::new(SobolSampler::new(samples, rng)),
         }
     }
 }
@@ -46,27 +46,28 @@ impl fmt::Display for SamplerType {
 }
 
 pub trait Sampler: Iterator<Item=Vec2> { }
-impl Sampler for UniformSampler { }
-impl Sampler for JitteredSampler { }
-impl Sampler for MultiJitteredSampler { }
-impl Sampler for SobolSampler { }
+impl Sampler for UniformSampler<'_> { }
+impl Sampler for JitteredSampler<'_> { }
+impl Sampler for MultiJitteredSampler<'_> { }
+impl Sampler for SobolSampler<'_> { }
 
 /// Choose each sample point uniformly at random
-pub struct UniformSampler {
+struct UniformSampler<'a> {
     /// How many samples have been given?
     state: u32,
     /// How many samples was asked?
     samples: u32,
+    rng: &'a RefCell<Xorshift>,
 }
 
-impl UniformSampler {
-    fn new(samples: u32) -> Self {
+impl<'a> UniformSampler<'a> {
+    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
         assert!(samples > 0);
-        Self { samples, state: 0 }
+        Self { samples, rng, state: 0 }
     }
 }
 
-impl Iterator for UniformSampler {
+impl Iterator for UniformSampler<'_> {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -74,13 +75,13 @@ impl Iterator for UniformSampler {
             None
         } else {
             self.state += 1;
-            Some(rand_utils::unit_square())
+            Some( self.rng.borrow_mut().gen_vec2() )
         }
     }
 }
 
 /// Divide unit square to `n`x`n` strata and provide one sample from each strata.
-struct JitteredSampler {
+struct JitteredSampler<'a> {
     /// Width of one strata
     scale: Vec2,
     /// How many samples have been given?
@@ -90,17 +91,19 @@ struct JitteredSampler {
     /// How many samples have been asked for? Should be a square,
     /// otherwise gets rounded down to the nearest square.
     samples: u32,
+    rng: &'a RefCell<Xorshift>,
 }
 
-impl JitteredSampler {
+impl<'a> JitteredSampler<'a> {
     /// Constructs a jittered sampler
-    fn new(samples: u32) -> Self {
+    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
         let dim = (samples as Float).sqrt().ceil() as u32;
         let scale = Vec2::new(
             1.0 / (dim as Float),
             (dim as Float) / (samples as Float),
         );
         Self {
+            rng,
             scale,
             samples,
             strata_dim: dim,
@@ -109,7 +112,7 @@ impl JitteredSampler {
     }
 }
 
-impl Iterator for JitteredSampler {
+impl Iterator for JitteredSampler<'_> {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -122,12 +125,12 @@ impl Iterator for JitteredSampler {
                     (self.state / self.strata_dim) as Float,
                 );
             self.state += 1;
-            Some(self.scale * rand_utils::unit_square() + offset)
+            Some(self.scale * self.rng.borrow_mut().gen_vec2() + offset)
         }
     }
 }
 
-struct MultiJitteredSampler {
+struct MultiJitteredSampler<'a> {
     samples: u32,
     state: u32,
     perm_x: Vec<usize>,
@@ -135,21 +138,28 @@ struct MultiJitteredSampler {
     scale0: Vec2,
     scale1: Vec2,
     strata_dim: u32,
+    rng: &'a RefCell<Xorshift>,
 }
 
-impl MultiJitteredSampler {
-    fn new(samples: u32) -> Self {
+impl<'a> MultiJitteredSampler<'a> {
+    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
         let dim = (samples as Float).sqrt().ceil() as u32;
         let scale = Vec2::new(
             1.0 / (dim as Float),
             (dim as Float) / (samples as Float),
         );
 
+        let (perm_x, perm_y) = {
+            let mut rng_mut = rng.borrow_mut();
+            (rng_mut.gen_perm(dim as usize), rng_mut.gen_perm(dim as usize))
+        };
+
         Self {
+            rng,
             samples,
+            perm_x,
+            perm_y,
             state: 0,
-            perm_x: rand_utils::perm_n(dim as usize),
-            perm_y: rand_utils::perm_n(dim as usize),
             scale0: scale,
             scale1: scale / dim as Float,
             strata_dim: dim,
@@ -157,7 +167,7 @@ impl MultiJitteredSampler {
     }
 }
 
-impl Iterator for MultiJitteredSampler {
+impl Iterator for MultiJitteredSampler<'_> {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -172,7 +182,7 @@ impl Iterator for MultiJitteredSampler {
             let y1 = self.perm_y[x0 as usize];
             let offset1 = self.scale1 * Vec2::new(x1 as Float, y1 as Float);
 
-            let rand_sq = self.scale1 * rand_utils::unit_square();
+            let rand_sq = self.scale1 * self.rng.borrow_mut().gen_vec2();
 
             self.state += 1;
             Some( offset0 + offset1 + rand_sq )
@@ -181,23 +191,29 @@ impl Iterator for MultiJitteredSampler {
 }
 
 
-struct SobolSampler {
+struct SobolSampler<'a> {
+    _rng: &'a RefCell<Xorshift>,
     samples: u32,
     state: u32,
     seed: u32,
     prev: UVec2,
 }
 
-impl SobolSampler {
-    fn new(samples: u32) -> Self {
+impl<'a> SobolSampler<'a> {
+    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
         assert!(samples > 0);
         let samples = samples as usize;
         assert!(samples <= sobol_seq::SOBOL_MAX_LEN);
 
+        let seed = {
+            rng.borrow_mut().gen_u64()
+        };
+
         Self {
+            _rng: rng,
             samples: samples as u32,
             state: 0,
-            seed: (rand_utils::rand_float() * Float::powi(2.0, 32)) as u32,
+            seed: seed as u32,
             prev: UVec2::ZERO,
         }
     }
@@ -215,7 +231,7 @@ impl SobolSampler {
     }
 }
 
-impl Iterator for SobolSampler {
+impl Iterator for SobolSampler<'_> {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {

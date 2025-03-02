@@ -1,11 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod sphere_tests {
-    use super::*;
-    test_util::test_sampleable!(Sphere::new(1.0, Material::Blank));
-}
-
 /// Sphere specified by its radius and origin
 pub struct Sphere {
     /// Radius of the sphere
@@ -115,7 +109,7 @@ impl Sampleable for Sphere {
 
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
-        let rand_sph = rand_utils::square_to_sphere(rand_sq);
+        let rand_sph = rng::maps::square_to_sphere(rand_sq);
 
         let xo = self.radius * rand_sph;
         // reproject to sphere to reduce floating point error
@@ -228,4 +222,10 @@ impl Sampleable for Sphere {
 
         p_area * xo.distance_squared(xi) / ng.dot(wi).abs()
     }
+}
+
+#[cfg(test)]
+mod sphere_tests {
+    use super::*;
+    test_util::test_sampleable!(Sphere::new(1.0, Material::Blank));
 }

@@ -1,29 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod cylinder_tests {
-    use super::*;
-    fn cylinder() -> Box<Cylinder> {
-        Cylinder::new(1.0, 1.0, Material::Blank)
-    }
-
-    test_util::test_object!(cylinder());
-
-    #[test]
-    fn no_hit_parallel() {
-        let c = cylinder();
-        let r = Ray::new(Point::X, Direction::Y);
-        assert!(c.hit(&r, 0.0, crate::INF).is_none());
-    }
-
-    #[test]
-    fn no_hit_middle() {
-        let c = cylinder();
-        let r = Ray::new(0.5 * Point::NEG_ONE, Direction::Y);
-        assert!(c.hit(&r, 0.0, crate::INF).is_none());
-    }
-}
-
 /// Cylinder aligned with the `y` axis with base at `y=0`
 pub struct Cylinder {
     /// Radius of the cylinder
@@ -148,5 +124,29 @@ impl Object for Cylinder {
         } else {
             crate::INF
         }
+    }
+}
+
+#[cfg(test)]
+mod cylinder_tests {
+    use super::*;
+    fn cylinder() -> Box<Cylinder> {
+        Cylinder::new(1.0, 1.0, Material::Blank)
+    }
+
+    test_util::test_object!(cylinder());
+
+    #[test]
+    fn no_hit_parallel() {
+        let c = cylinder();
+        let r = Ray::new(Point::X, Direction::Y);
+        assert!(c.hit(&r, 0.0, crate::INF).is_none());
+    }
+
+    #[test]
+    fn no_hit_middle() {
+        let c = cylinder();
+        let r = Ray::new(0.5 * Point::NEG_ONE, Direction::Y);
+        assert!(c.hit(&r, 0.0, crate::INF).is_none());
     }
 }

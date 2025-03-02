@@ -1,4 +1,4 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils, spherical_utils };
+use crate::{ Direction, Normal, Transport, Float, Vec2, rng, spherical_utils };
 use crate::tracer::{ Color, ColorWavelength, Spectrum, hit::Hit, microfacet::MfDistribution, onb::Onb };
 
 mod microfacet;
@@ -65,11 +65,11 @@ impl BxDF {
             return Color::BLACK;
         }
         match self {
-            Self::Lambertian(spec) => scatter::lambertian_f(spec, lambda),
-            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, lambda, h, mfd),
-            Self::MfConductor(mfd) => microfacet::conductor_f(wo, wi, lambda, h, mfd),
+            Self::Lambertian(spec) => scatter::lambertian::f(spec, lambda),
+            Self::MfDiffuse(mfd) => microfacet::diffuse::f(wo, wi, lambda, h, mfd),
+            Self::MfConductor(mfd) => microfacet::conductor::f(wo, wi, lambda, h, mfd),
             Self::MfDielectric(mfd) => {
-                microfacet::dielectric_f(wo, wi, lambda, reflection, h, mfd, mode)
+                microfacet::dielectric::f(wo, wi, lambda, reflection, h, mfd, mode)
             }
             Self::Volumetric(_, sigma_t, sigma_s) => {
                 volumetric::f(lambda, h, sigma_t, sigma_s)
@@ -78,15 +78,24 @@ impl BxDF {
         }
     }
 
-    pub fn sample(&self, wo: Direction, backface: bool, rand_sq: Vec2) -> Option<Direction> {
+    pub fn sample(
+        &self,
+        wo: Direction,
+        backface: bool,
+        rand_u: Float,
+        rand_sq: Vec2,
+    ) -> Option<Direction> {
         if backface && self.is_reflection() {
             return None;
         }
         match self {
-            Self::Lambertian(_) => scatter::lambertian_sample(rand_sq),
-            Self::MfDiffuse(_) => scatter::lambertian_sample(rand_sq),
-            Self::MfConductor(mfd) => microfacet::conductor_sample(wo, mfd, rand_sq),
-            Self::MfDielectric(mfd) => microfacet::dielectric_sample(wo, mfd, rand_sq),
+            Self::Lambertian(_) => scatter::lambertian::sample(rand_sq),
+            Self::MfDiffuse(_) => scatter::lambertian::sample(rand_sq),
+//          Self::MfDiffuse(mfd) => microfacet::diffuse::sample(wo, mfd, rand_u, rand_sq),
+            Self::MfConductor(mfd) => microfacet::conductor::sample(wo, mfd, rand_sq),
+            Self::MfDielectric(mfd) => {
+                microfacet::dielectric::sample(wo, mfd, rand_u, rand_sq)
+            }
             Self::Volumetric(g, ..) => volumetric::sample(wo, *g, rand_sq),
             Self::None => None,
         }
@@ -98,11 +107,12 @@ impl BxDF {
             return 0.0;
         }
         match self {
-            Self::Lambertian(_) => scatter::lambertian_pdf(wo, wi),
-            Self::MfDiffuse(_) => scatter::lambertian_pdf(wo, wi),
-            Self::MfConductor(mfd) => microfacet::conductor_pdf(wo, wi, mfd),
+            Self::Lambertian(_) => scatter::lambertian::pdf(wo, wi),
+            Self::MfDiffuse(_) => scatter::lambertian::pdf(wo, wi),
+//          Self::MfDiffuse(mfd) => microfacet::diffuse::pdf(wo, wi, mfd),
+            Self::MfConductor(mfd) => microfacet::conductor::pdf(wo, wi, mfd),
             Self::MfDielectric(mfd) => {
-                microfacet::dielectric_pdf(wo, wi, reflection, mfd)
+                microfacet::dielectric::pdf(wo, wi, reflection, mfd)
             }
             Self::Volumetric(g, ..) => volumetric::pdf(wo, wi, *g),
             Self::None => 0.0,

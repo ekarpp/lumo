@@ -1,4 +1,5 @@
 use super::*;
+use crate::formatting;
 use std::{ cmp::Ordering, sync::mpsc, thread, time::Instant };
 use rustc_hash::{FxHashMap, FxHashSet};
 use node::KdNode;
@@ -32,6 +33,12 @@ impl<T: Bounded> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
     pub fn new(objects: Vec<T>, material: Material) -> Self {
+        // don't warn for rectangles, they work
+        if matches!(material, Material::Light(_)) && objects.len() > 2 {
+            // TODO: fix them, issues in sampling,
+            // probably have to add each triangle separately as a light to the scene?
+            println!("Rendering meshes as lights may produce incorrect results.")
+        }
         let start = Instant::now();
         if objects.len() > 10_000 {
             println!("Creating kd-tree of {} triangles", objects.len());
@@ -66,8 +73,8 @@ impl<T: Bounded> KdTree<T> {
         let root = rx.recv().unwrap();
 
         if objects.len() > 10_000 {
-            let dt = start.elapsed().as_millis() as Float / 1e3;
-            println!("Created kd-tree in {:.3} seconds", dt);
+            let dt = start.elapsed().as_millis() as Float;
+            println!("Created kd-tree in {} seconds", formatting::fmt_ms(dt, true));
         }
 
         Self {
@@ -76,6 +83,11 @@ impl<T: Bounded> KdTree<T> {
             boundary,
             material,
         }
+    }
+
+    /// Reference to material of `self`
+    pub fn material(&self) -> &Material {
+        &self.material
     }
 
     /// Returns self uniformly scaled as an instance with largest dimension
@@ -151,7 +163,7 @@ impl<T: Bounded> KdTree<T> {
         } else if t_split < t_start {
             self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second)
         } else {
-            match self.hit_subtree::<GEO>(node_first, r, t_start, t_end, &aabb_first) {
+            match self.hit_subtree::<GEO>(node_first, r, t_min, t_end, &aabb_first) {
                 None => self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second),
                 Some(h1) => {
                     /* if we hit something in the first AABB before the split,
@@ -191,7 +203,9 @@ impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
     }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
-        let n = rand_utils::rand_float() * self.objects.len() as Float;
+        // TODO: this is not correct
+        let rand_u = rand_sq.x;
+        let n = rand_u * self.objects.len() as Float;
         let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
         ho.material = &self.material;
         ho

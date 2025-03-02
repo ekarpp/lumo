@@ -1,5 +1,5 @@
 use super::*;
-use crate::Vec3;
+use crate::{ Mat3, Vec3 };
 use crate::tracer::{ Face, Spectrum, TriangleMesh };
 
 impl Scene {
@@ -40,18 +40,28 @@ impl Scene {
             faces
         };
 
+        /* light */
+        {
+            let vertices = [
+                Vec3::new(343.0, 548.8, 227.0),
+                Vec3::new(343.0, 548.8, 332.0),
+                Vec3::new(213.0, 548.8, 332.0),
+                Vec3::new(213.0, 548.8, 227.0),
+            ];
+            scene.add_light(Rectangle::new(
+                Mat3::from_cols(vertices[0], vertices[1], vertices[2]),
+                light,
+            ));
+            //add_object(vertices, light, None);
+        }
+
         let mut add_object = |v: Vec<Vec3>, m: Material, f: Option<Vec<Face>>| {
             let f = f.unwrap_or(vec!(
                 Face::new(vec!(0,1,2), vec!(), vec!()),
                 Face::new(vec!(0,2,3), vec!(), vec!()),
             ));
-            let light = matches!(m, Material::Light(..));
             let mesh = Box::new(TriangleMesh::new(v, f, vec!(), vec!(), m));
-            if light {
-                scene.add_light(mesh);
-            } else {
-                scene.add(mesh);
-            }
+            scene.add(mesh);
         };
 
 
@@ -109,18 +119,6 @@ impl Scene {
             );
             add_object(vertices, left_wall, None);
         }
-
-        /* light */
-        {
-            let vertices = vec!(
-                Vec3::new(343.0, 548.8, 227.0),
-                Vec3::new(343.0, 548.8, 332.0),
-                Vec3::new(213.0, 548.8, 332.0),
-                Vec3::new(213.0, 548.8, 227.0),
-            );
-            add_object(vertices, light, None);
-        }
-
 
         /* small box */
         {

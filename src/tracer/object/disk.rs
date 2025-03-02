@@ -1,11 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod disk_tests {
-    use super::*;
-    test_util::test_sampleable!(Disk::new(Point::ZERO, Normal::Z, 1.0, Material::Blank));
-}
-
 /// A two dimensional disk
 pub struct Disk {
     /// Origin of the disk
@@ -130,7 +124,7 @@ impl Sampleable for Disk {
     }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
-        let rand_disk = rand_utils::square_to_disk(rand_sq);
+        let rand_disk = rng::maps::square_to_disk(rand_sq);
 
         let xo = self.origin + self.uvw.to_world(Point::new(
             rand_disk.x * self.radius,
@@ -149,4 +143,10 @@ impl Sampleable for Disk {
             Vec2::ZERO,
         ).unwrap()
     }
+}
+
+#[cfg(test)]
+mod disk_tests {
+    use super::*;
+    test_util::test_sampleable!(Disk::new(Point::ZERO, Normal::Z, 1.0, Material::Blank));
 }

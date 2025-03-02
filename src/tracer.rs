@@ -3,10 +3,11 @@ pub use color::{Color, ColorWavelength, Spectrum, RGB, ColorSpace};
 pub use film::{Film, FilmTile, FilmSample};
 pub use integrator::Integrator;
 pub use material::Material;
+pub use medium::Medium;
 pub use object::{
     Bounded, Disk, Instance, Instanceable, KdTree, Object,
     Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle,
-    Sampleable, Medium, TriangleMesh, Face, Mesh
+    Sampleable, TriangleMesh, Face, Mesh
 };
 pub use scene::Scene;
 pub use texture::Texture;
@@ -26,6 +27,8 @@ mod hit;
 mod integrator;
 /// Material of an object that defines how it behaves with rays
 mod material;
+/// Volumetric mediums
+mod medium;
 /// MFDistribution
 mod microfacet;
 /// Abstractions for objects in the 3D world

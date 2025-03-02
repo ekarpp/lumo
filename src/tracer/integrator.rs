@@ -1,13 +1,13 @@
 use crate::{
-    Transport, rand_utils, Vec2, Float,
-    Normal, Point, Direction, Vec3
+    Transport, Vec2, Float,
+    Normal, Point, Direction, Vec3, rng::Xorshift,
 };
 use crate::tracer::{
     camera::Camera, ColorWavelength, film::FilmSample, hit::Hit,
     object::Sampleable,
     ray::Ray, scene::Scene, Color
 };
-use std::fmt;
+use std::{ fmt, cell::RefCell };
 
 mod bd_path_trace;
 mod direct_light;
@@ -47,14 +47,22 @@ impl Integrator {
         &self,
         s: &Scene,
         c: &Camera,
+        rng: &RefCell<Xorshift>,
         raster_xy: Vec2,
     ) -> Vec<FilmSample> {
-        let r = c.generate_ray(raster_xy);
-        let lambda = ColorWavelength::sample(rand_utils::rand_float());
+        let mut rng = rng.borrow_mut();
+        let r = c.generate_ray(raster_xy, rng.gen_vec2());
+        let lambda = ColorWavelength::sample(rng.gen_float());
         match self {
-            Self::PathTrace => vec![path_trace::integrate(s, r, lambda, raster_xy)],
-            Self::DirectLight => vec![direct_light::integrate(s, r, lambda, raster_xy)],
-            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, lambda, raster_xy),
+            Self::PathTrace => {
+                vec![path_trace::integrate(s, r, &mut rng, lambda, raster_xy)]
+            }
+            Self::DirectLight => {
+                vec![direct_light::integrate(s, r, &mut rng, lambda, raster_xy)]
+            }
+            Self::BDPathTrace => {
+                bd_path_trace::integrate(s, c, r, &mut rng, lambda, raster_xy)
+            }
         }
     }
 }
@@ -65,14 +73,13 @@ fn shadow_ray(
     wo: Direction,
     lambda: &ColorWavelength,
     ho: &Hit,
-    rand_sq0: Vec2,
-    rand_sq1: Vec2,
+    rng: &mut Xorshift,
 ) -> Color {
     let material = ho.material;
     let xo = ho.p;
     let ns = ho.ns;
 
-    let light = scene.uniform_random_light();
+    let light = scene.uniform_random_light(rng.gen_float());
 
     let mut radiance = Color::BLACK;
 
@@ -113,9 +120,9 @@ fn shadow_ray(
 
     // sample light first
     radiance += {
-        let wi = light.sample_towards(xo, rand_sq0);
+        let wi = light.sample_towards(xo, rng.gen_vec2());
         let ri = ho.generate_ray(wi);
-        match scene.hit_light(&ri, light) {
+        match scene.hit_light(&ri, rng, light) {
             None => Color::BLACK,
             Some(hi) => {
                 let xi = hi.p;
@@ -128,11 +135,11 @@ fn shadow_ray(
     };
 
     // then sample BSDF
-    radiance += match material.bsdf_sample(wo, ho, rand_sq1) {
+    radiance += match material.bsdf_sample(wo, ho, rng.gen_float(), rng.gen_vec2()) {
         None => Color::BLACK,
         Some(wi) => {
             let ri = ho.generate_ray(wi);
-            match scene.hit_light(&ri, light) {
+            match scene.hit_light(&ri, rng, light) {
                 None => Color::BLACK,
                 Some(hi) => {
                     let xi = hi.p;

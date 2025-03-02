@@ -1,7 +1,7 @@
 use crate::Float;
 
-const EPS: Float = 1e-6;
-const MAX_DEPTH: usize = 6;
+const EPS: Float = crate::EPSILON;
+const MAX_DEPTH: usize = 16;
 
 struct SimpsonIteration {
     a: Float,

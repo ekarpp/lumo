@@ -1,5 +1,6 @@
 use crate::tracer::FilmSample;
 use crate::Float;
+use std::fmt;
 
 #[cfg(debug_assertions)]
 use crate::tracer::Spectrum;
@@ -16,6 +17,16 @@ pub enum ToneMap {
     Clamp(Float),
     /// Reinhard tone mapping to luminance `M(l) = l / (1 + l)`
     Reinhard,
+}
+
+impl fmt::Display for ToneMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoMap => write!(f, "no map"),
+            Self::Clamp(arg) => write!(f, "clamp[{}]", arg),
+            Self::Reinhard => write!(f, "Reinhard"),
+        }
+    }
 }
 
 impl Default for ToneMap {

@@ -209,10 +209,13 @@ impl Material {
         &self,
         wo: Direction,
         h: &Hit,
-        rand_sq: Vec2
+        rand_u: Float,
+        rand_sq: Vec2,
     ) -> Option<Direction> {
         match self {
-            Self::Volumetric(bsdf) | Self::Standard(bsdf) => bsdf.sample(wo, h, rand_sq),
+            Self::Volumetric(bsdf) | Self::Standard(bsdf) => {
+                bsdf.sample(wo, h, rand_u, rand_sq)
+            }
             _ => None,
         }
     }

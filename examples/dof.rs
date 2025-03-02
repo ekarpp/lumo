@@ -3,6 +3,13 @@ use lumo::*;
 
 const TEAPOT_URL: &str = "https://casual-effects.com/g3d/data10/common/model/teapot/teapot.zip";
 
+fn marble_texture() -> Texture {
+    Texture::Marble(
+        Perlin::new(4747430103121057286),
+        Spectrum::from_srgb(255, 245, 255)
+    )
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let o = 0.75 * Vec3::NEG_X + 0.25 * Vec3::Y;
     let t = 0.75 * Vec3::NEG_Y + Vec3::NEG_Z;
@@ -34,12 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for i in 0..3 {
         scene.add(
-            parser::mesh_from_url(
-                TEAPOT_URL,
-                Material::diffuse(
-                    Texture::Marble(Perlin::default(), Spectrum::from_srgb(255, 245, 255))
-                ),
-            )?
+            parser::mesh_from_url(TEAPOT_URL, Material::diffuse(marble_texture()))?
                 .to_unit_size()
                 .to_origin()
                 .rotate_y(-PI / 4.0)

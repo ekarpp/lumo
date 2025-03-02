@@ -1,11 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod cone_tests {
-    use super::*;
-    test_util::test_object!(Cone::new(1.0, 1.0, Material::Blank));
-}
-
 /// Cone aligned with the `y` axis and base disk at `y=0`
 pub struct Cone {
     /// Height of the cone
@@ -125,4 +119,10 @@ impl Object for Cone {
             crate::INF
         }
     }
+}
+
+#[cfg(test)]
+mod cone_tests {
+    use super::*;
+    test_util::test_object!(Cone::new(1.0, 1.0, Material::Blank));
 }

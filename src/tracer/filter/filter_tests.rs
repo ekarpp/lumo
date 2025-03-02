@@ -5,112 +5,52 @@ const MAX_R: Float = 5.0;
 const STEPS: usize = 1_000;
 const TOLERANCE: Float = 1e-3;
 
-#[test]
-fn square_zero_radius() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::square(r)
-    };
-    test_radius(f);
-}
+macro_rules! test_filter {
+    ( $( $name:ident, $f_gen:expr ),* ) => {
+        $(
+            mod $name {
+                use super::*;
 
-#[test]
-fn triangle_zero_radius() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::triangle(r)
-    };
-    test_radius(f);
-}
+                #[test]
+                fn zero_radius() {
+                    let rs = vec!(0.5, 1.0, 1.5, 2.0, 2.5, 1.3333, 0.4213);
 
-#[test]
-fn gaussian_05_zero_radius() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::gaussian(r, 0.5)
-    };
-    test_radius(f);
-}
+                    for r in rs {
+                        let f = $f_gen(r);
+                        let rr = r + 1e-10;
+                        assert!(f.eval(Vec2::splat(2.0 * r)) == 0.0);
+                        assert!(f.eval(Vec2::X * rr) == 0.0);
+                        assert!(f.eval(Vec2::Y * rr) == 0.0);
+                    }
+                }
 
-#[test]
-fn gaussian_20_zero_radius() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::gaussian(r, 2.0)
-    };
-    test_radius(f);
-}
+                #[test]
+                fn integral() {
+                    let rs = vec!(0.5, 1.0, 1.5, 2.0, 2.5, 1.3333);
 
-#[test]
-fn mitchell_03_zero_radius() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::mitchell(r, 1.0 / 3.0)
-    };
-    test_radius(f);
-}
+                    for r in rs {
+                        assert!(r < MAX_R);
+                        let f = $f_gen(r);
+                        let ig = f.integral();
+                        let igs = integrate(&f);
 
-#[test]
-fn square_integral() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::square(r)
-    };
-    test_integral(f);
-}
-
-#[test]
-fn triangle_integral() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::triangle(r)
-    };
-    test_integral(f);
-}
-
-#[test]
-fn gaussian_05_integral() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::gaussian(r, 0.5)
-    };
-    test_integral(f);
-}
-
-#[test]
-fn gaussian_20_integral() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::gaussian(r, 2.0)
-    };
-    test_integral(f);
-}
-
-#[test]
-fn mitchell_03_integral() {
-    let f = |r: Float| -> PixelFilter {
-        PixelFilter::mitchell(r, 1.0 / 3.0)
-    };
-    test_integral(f);
-}
-
-fn test_radius<F>(gen: F) where F: Fn(Float) -> PixelFilter {
-    let rs = vec!(0.5, 1.0, 1.5, 2.0, 2.5, 1.3333, 0.4213);
-
-    for r in rs {
-        let f = gen(r);
-        let rr = r + 1e-10;
-        assert!(f.eval(Vec2::splat(2.0 * r)) == 0.0);
-        assert!(f.eval(Vec2::X * rr) == 0.0);
-        assert!(f.eval(Vec2::Y * rr) == 0.0);
+                        println!("r = {}: {} {}", r, ig, igs);
+                        assert!((ig - igs).abs() < TOLERANCE);
+                    }
+                }
+            }
+        )*
     }
 }
 
-fn test_integral<F>(gen: F) where F: Fn(Float) -> PixelFilter {
-    let rs = vec!(0.5, 1.0, 1.5, 2.0, 2.5, 1.3333);
-
-    for r in rs {
-        assert!(r < MAX_R);
-        let f = gen(r);
-        let ig = f.integral();
-        let igs = integrate(&f);
-
-        println!("r = {}: {} {}", r, ig, igs);
-        assert!((ig - igs).abs() < TOLERANCE);
-    }
+test_filter!{
+    square, |r: Float| -> PixelFilter { PixelFilter::square(r) },
+    triangle, |r: Float| -> PixelFilter { PixelFilter::triangle(r) },
+    gaussian_05, |r: Float| -> PixelFilter { PixelFilter::gaussian(r, 0.5) },
+    gaussian_15, |r: Float| -> PixelFilter { PixelFilter::gaussian(r, 1.5) },
+    gaussian_25, |r: Float| -> PixelFilter { PixelFilter::gaussian(r, 2.5) },
+    mitchell_03, |r: Float| -> PixelFilter { PixelFilter::mitchell(r, 1.0 / 3.0) }
 }
-
 
 fn integrate(filter: &PixelFilter) -> Float {
     let f = |x: Float, y: Float| {

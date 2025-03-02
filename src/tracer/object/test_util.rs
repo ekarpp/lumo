@@ -25,8 +25,11 @@ macro_rules! test_object {
         #[test]
         fn shadow_hit_accurate() {
             let o = $obj;
-            let xo = 5.0 * rand_utils::square_to_sphere(rand_utils::unit_square());
-            for _ in 0..1_000 {
+            let mut rng = Xorshift::default();
+
+            for _ in 0..10_000 {
+                let xo = 5.0 * rng::maps::square_to_sphere(rng.gen_vec2());
+
                 let r = Ray::new(xo, Point::ZERO - xo);
                 let h = o.hit(&r, 0.0, crate::INF);
                 let h_t = o.hit_t(&r, 0.0, crate::INF);
@@ -52,9 +55,11 @@ macro_rules! test_sampleable {
         #[test]
         fn sampled_rays_hit() {
             let s = $smp;
-            let xo = 5.0 * rand_utils::square_to_sphere(rand_utils::unit_square());
+            let mut rng = Xorshift::default();
+
+            let xo = 5.0 * rng::maps::square_to_sphere(rng.gen_vec2());
             for _ in 0..NUM_SAMPLES {
-                let wi = s.sample_towards(xo, rand_utils::unit_square());
+                let wi = s.sample_towards(xo, rng.gen_vec2());
                 let ri = Ray::new(xo, wi);
                 let Some(hi) = s.hit(&ri, 0.0, crate::INF) else { panic!() };
 
@@ -66,8 +71,10 @@ macro_rules! test_sampleable {
         #[test]
         fn samples_on() {
             let s = $smp;
+            let mut rng = Xorshift::default();
+
             for _ in 0..NUM_SAMPLES {
-                let h = s.sample_on(rand_utils::unit_square());
+                let h = s.sample_on(rng.gen_vec2());
                 let xo = 0.5 * Point::ONE;
                 let xi = h.p;
                 let ri = Ray::new(xo, xi - xo);

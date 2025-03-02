@@ -15,10 +15,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scene.add(
         parser::mesh_from_url(
             BUNNY_URL,
-            Material::transparent(
-                Texture::from(Spectrum::BLUE),
+            Material::metal(
+                Texture::from(Spectrum::YELLOW),
                 0.1,
-                1.5,
+                2.5,
+                3.0,
             ),
         )?
             .to_unit_size()
@@ -28,6 +29,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     Renderer::new(scene, camera)
+        .integrator(Integrator::PathTrace)
+        .samples(256)
         .render()
         .save("bunny.png")?;
     Ok(())

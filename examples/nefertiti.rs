@@ -52,7 +52,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::diffuse(Texture::from(Spectrum::from_srgb(61, 45, 36))))
+        Cube::new(
+            Material::metal(
+                Texture::from(Spectrum::from_srgb(218, 138, 103)),
+                0.1, 2.5, 3.0
+            ),
+        )
             .translate(-0.5, -0.5, -0.5)
             .scale(0.45, 0.5, 0.45)
             .translate(0.0, -0.75, -1.45),

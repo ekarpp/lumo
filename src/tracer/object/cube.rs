@@ -1,11 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod cube_tests {
-    use super::*;
-    test_util::test_sampleable!(Cube::new(Material::Blank));
-}
-
 /// A unit cube consisting of 6 squares
 pub struct Cube {
     /// Just a mesh...
@@ -64,10 +58,54 @@ impl Object for Cube {
 
 impl Sampleable for Cube {
     fn area(&self) -> Float {
-        self.mesh.area()
+        // unit cube
+        6.0
     }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
-        self.mesh.sample_on(rand_sq)
+        let rand_sphere = 0.5 * rng::maps::square_to_sphere(rand_sq);
+        // reproject to reduce floating point accuracies and move inside unit cube
+        let rand_sphere = 0.5 * rand_sphere / rand_sphere.length() + 0.5;
+
+        let mut mi = crate::INF;
+        let mut ax = crate::Axis::X; let mut d = 0.0;
+
+        for axis in [crate::Axis::X, crate::Axis::Y, crate::Axis::Z] {
+            let p = match axis {
+                crate::Axis::X => rand_sphere.x,
+                crate::Axis::Y => rand_sphere.y,
+                crate::Axis::Z => rand_sphere.z,
+            };
+
+            if p.abs() < mi { mi = p.abs(); ax = axis; d = -1.0; }
+            if (1.0 - p).abs() < mi { mi = (1.0 - p).abs(); ax = axis; d = 1.0; }
+        }
+        let ng = match ax {
+            crate::Axis::X => Vec3::new(d,   0.0, 0.0),
+            crate::Axis::Y => Vec3::new(0.0, d,   0.0),
+            crate::Axis::Z => Vec3::new(0.0, 0.0, d),
+        };
+
+        let xo = rand_sphere + ng * mi;
+        let xo_abs = rand_sphere.abs() + (ng * mi).abs();
+        // not accurate
+        let err = efloat::gamma(9) * xo_abs;
+
+        Hit::new(
+            0.0,
+            self.mesh.material(),
+            -ng,
+            xo,
+            err,
+            ng,
+            ng,
+            Vec2::ZERO,
+        ).unwrap()
     }
+}
+
+#[cfg(test)]
+mod cube_tests {
+    use super::*;
+    test_util::test_sampleable!(Cube::new(Material::Blank));
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::simpson_integration;
+use crate::{ simpson_integration, rng::Xorshift };
 use crate::tracer::{ Spectrum, Texture };
 
 // used for numerically integrating PDF over whole space
@@ -11,86 +11,73 @@ const NUM_SAMPLES: usize = THETA_BINS * PHI_BINS * 1_000;
 const BIN_TOLERANCE: Float = 5e-2 * NUM_BINS as Float;
 const INT_TOLERANCE: Float = 1e-2;
 
-fn mfd(r: Float, eta: Float) -> MfDistribution {
+macro_rules! test_bxdf {
+    ( $( $name:ident, $bxdf:expr ),* ) => {
+        $(
+            mod $name {
+                use super::*;
+
+                #[test]
+                fn sampling() {
+                    let mut rng = Xorshift::default();
+                    let bins = do_sampling(&mut rng, $bxdf);
+
+                    // print bins first for debugging
+                    println!("bin values:");
+                    for i in 0..NUM_BINS {
+                        for j in 0..NUM_BINS {
+                            print!("{:.3} ", bins[i][j]);
+                        }
+                        println!();
+                    }
+
+                    let mut sum = 0.0;
+                    println!("bin deltas:");
+                    for i in 0..NUM_BINS {
+                        for j in 0..NUM_BINS {
+                            sum += bins[i][j];
+                            let delta = (2.0 * crate::PI - bins[i][j]).abs();
+                            print!("{:.3} ", delta);
+                            assert!(delta < BIN_TOLERANCE);
+                        }
+                        println!();
+                    }
+
+                    sum /= (NUM_BINS * NUM_BINS) as Float;
+                    let delta = (2.0 * crate::PI - sum).abs();
+                    println!("delta: {}", delta);
+                    assert!(delta < INT_TOLERANCE);
+                }
+            }
+        )*
+    }
+}
+
+fn mfd(roughness: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
-        r, eta, 0.0,
+        roughness, eta, 0.0,
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
     )
 }
 
-#[test]
-fn lambertian_sampling() {
-    let bxdf = BxDF::Lambertian(Spectrum::WHITE);
+// TODO: support dielectrics
+test_bxdf!{
+    lambertian, BxDF::Lambertian(Spectrum::WHITE),
+    diffuse,    BxDF::MfDiffuse(mfd(1.0, 1.5)),
 
-    assert_bins(do_sampling(bxdf));
-}
-
-#[test]
-fn conductor75_sampling() {
-    let bxdf = BxDF::MfConductor(mfd(0.75, 1.0));
-
-    assert_bins(do_sampling(bxdf));
-}
-
-#[test]
-fn conductor50_sampling() {
-    let bxdf = BxDF::MfConductor(mfd(0.5, 1.0));
-
-    assert_bins(do_sampling(bxdf));
-}
-
-#[test]
-fn conductor25_sampling() {
-    let bxdf = BxDF::MfConductor(mfd(0.25, 1.0));
-
-    assert_bins(do_sampling(bxdf));
-}
-
-#[test]
-fn conductor10_sampling() {
-    let bxdf = BxDF::MfConductor(mfd(0.10, 1.0));
-
-    assert_bins(do_sampling(bxdf));
-}
-
-fn print_bins(bins: &[Vec<Float>]) {
-    println!("bin values:");
-    for i in 0..NUM_BINS {
-        for j in 0..NUM_BINS {
-            print!("{:.3} ", bins[i][j]);
-        }
-        println!();
-    }
-}
-
-fn assert_bins(bins: Vec<Vec<Float>>) {
-    // print bins first for debugging
-    print_bins(&bins);
-    let mut sum = 0.0;
-    println!("bin deltas:");
-    for i in 0..NUM_BINS {
-        for j in 0..NUM_BINS {
-            sum += bins[i][j];
-            let delta = (2.0 * crate::PI - bins[i][j]).abs();
-            print!("{:.3} ", delta);
-            assert!(delta < BIN_TOLERANCE);
-        }
-        println!();
-    }
-
-    sum /= (NUM_BINS * NUM_BINS) as Float;
-    let delta = (2.0 * crate::PI - sum).abs();
-    println!("delta: {}", delta);
-    assert!(delta < INT_TOLERANCE);
+    conductor75, BxDF::MfConductor(mfd(0.75, 1.5)),
+    conductor50, BxDF::MfConductor(mfd(0.50, 1.5)),
+    conductor25, BxDF::MfConductor(mfd(0.25, 1.5)),
+    conductor10, BxDF::MfConductor(mfd(0.10, 1.5))
 }
 
 /* ripped from pbrt. take v = normal and sample NUM_SAMPLES times.
  * if sample is ok add 1 / pdf to a *bin*. each bin should converge to 2*PI.
  * split bins using spherical coordinates of the sampled vector.
  */
-fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
+fn do_sampling(rng: &mut Xorshift, bxdf: BxDF) -> Vec<Vec<Float>> {
     let mut bins: Vec<Vec<Float>> = vec!();
     let mut num_failed: usize = 0;
 
@@ -103,7 +90,7 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
     // let wo face directly the normal
     let wo = Direction::Z;
     for _ in 0..NUM_SAMPLES {
-        let wi = bxdf.sample(wo, false, rand_utils::unit_square());
+        let wi = bxdf.sample(wo, false, rng.gen_float(), rng.gen_vec2());
         match wi {
             None => num_failed += 1,
             Some(wi) => {
@@ -111,8 +98,7 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
                     * spherical_utils::cos_theta(wi) >= 0.0;
                 let pdf = bxdf.pdf(wo, wi, reflection);
                 if pdf == 0.0 {
-                    num_failed += 1;
-                    continue;
+                    panic!("Sampled direction with 0 probability");
                 }
                 let wi_phi = spherical_utils::phi(wi) / (2.0 * crate::PI);
                 let phi_idx = (wi_phi * NUM_BINS as Float) as usize;
@@ -132,10 +118,12 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
      */
     for i in 0..NUM_BINS {
         for j in 0..NUM_BINS {
-            bins[i][j] *= integral * (NUM_BINS * NUM_BINS) as Float / good_samples as Float;
+            bins[i][j] *= integral * (NUM_BINS * NUM_BINS) as Float
+                / good_samples as Float;
         }
     }
-    println!("failed samples: {:.2} %", 100.0 * num_failed as Float / NUM_SAMPLES as Float);
+    let fail_percent = 100.0 * num_failed as Float / NUM_SAMPLES as Float;
+    println!("failed samples: {:.2} %", fail_percent);
     bins
 }
 

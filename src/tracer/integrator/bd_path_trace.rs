@@ -22,17 +22,18 @@ pub fn integrate(
     scene: &Scene,
     camera: &Camera,
     r: Ray,
+    rng: &mut Xorshift,
     lambda: ColorWavelength,
     raster_xy: Vec2
 ) -> Vec<FilmSample> {
-    let light_path = path_gen::light_path(scene, &lambda);
-    let camera_path = path_gen::camera_path(scene, camera, r, &lambda);
+    let light_path = path_gen::light_path(scene, rng, &lambda);
+    let camera_path = path_gen::camera_path(scene, camera, r, rng, &lambda);
 
     let mut radiance = Color::BLACK;
     let mut samples = vec![];
 
     for s in 2..=light_path.len() {
-        match connect_light_path(scene, camera, &lambda, &camera_path, &light_path, s) {
+        match connect_light_path(scene, camera, rng, &lambda, &camera_path, &light_path, s) {
             None => (),
             Some(sample) => samples.push(sample),
         }
@@ -42,7 +43,7 @@ pub fn integrate(
     for t in 2..=camera_path.len() {
         for s in 0..=light_path.len() {
             radiance += connect_paths(
-                scene, camera, &lambda,
+                scene, camera, rng, &lambda,
                 &light_path, s,
                 &camera_path, t,
             );
@@ -57,6 +58,7 @@ pub fn integrate(
 fn connect_light_path(
     scene: &Scene,
     camera: &Camera,
+    rng: &mut Xorshift,
     lambda: &ColorWavelength,
     camera_path: &[Vertex],
     light_path: &[Vertex],
@@ -72,7 +74,7 @@ fn connect_light_path(
     // sample direction
     let hi = &light_last.h;
     let xi = hi.p;
-    let ri = camera.sample_towards(xi, rand_utils::unit_square())?;
+    let ri = camera.sample_towards(xi, rng.gen_vec2())?;
     let xo = ri.origin;
     let wi = ri.dir;
     // MIS checks this too
@@ -83,7 +85,7 @@ fn connect_light_path(
     }
 
     // visibility test
-    if scene.hit(&ri).is_none_or(|h| (h.p - xi).abs().max_element() > crate::EPSILON) {
+    if scene.hit(&ri, rng).is_none_or(|h| (h.p - xi).abs().max_element() > crate::EPSILON) {
         return None;
     }
 
@@ -113,9 +115,11 @@ fn connect_light_path(
 
 /// Connects a light subpath and a camera subpath.
 /// Special logic if light path length 0 or 1.
+#[allow(clippy::too_many_arguments)]
 fn connect_paths(
     scene: &Scene,
     camera: &Camera,
+    rng: &mut Xorshift,
     lambda: &ColorWavelength,
     light_path: &[Vertex],
     s: usize,
@@ -146,13 +150,13 @@ fn connect_paths(
         if camera_last.is_delta() {
             Color::BLACK
         } else {
-            let light = scene.uniform_random_light();
+            let light = scene.uniform_random_light(rng.gen_float());
             let pdf_light = 1.0 / scene.num_lights() as Float;
 
             let ho = &camera_last.h;
             let xo = ho.p;
 
-            let wi = light.sample_towards(xo, rand_utils::unit_square());
+            let wi = light.sample_towards(xo, rng.gen_vec2());
             // alternatively let MIS take care of this
             let p_sct = camera_last.bsdf_pdf(wi, false);
             if p_sct == 0.0 {
@@ -160,7 +164,7 @@ fn connect_paths(
             }
 
             let ri = ho.generate_ray(wi);
-            match scene.hit_light(&ri, light) {
+            match scene.hit_light(&ri, rng, light) {
                 None => Color::BLACK,
                 Some(hi) => {
                     let xi = hi.p;
@@ -197,7 +201,7 @@ fn connect_paths(
 
         if camera_last.is_delta()
             || light_last.is_delta()
-            || !visible(scene, &light_last.h, &camera_last.h) {
+            || !visible(scene, rng, &light_last.h, &camera_last.h) {
                 Color::BLACK
             } else {
                 let xc = camera_last.h.p;
@@ -238,7 +242,7 @@ fn connect_paths(
 }
 
 /// Is `h1` visible from `h2`?
-fn visible(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
+fn visible(s: &Scene, rng: &mut Xorshift, h1: &Hit, h2: &Hit) -> bool {
     let xo = h1.p;
     let xi = h2.p;
     let ri = h1.generate_ray(xi - xo);
@@ -248,5 +252,5 @@ fn visible(s: &Scene, h1: &Hit, h2: &Hit) -> bool {
         return false;
     }
 
-    (xo.distance(xi) - s.hit_t(&ri)).abs() < crate::EPSILON
+    (xo.distance(xi) - s.hit_t(&ri, rng)).abs() < crate::EPSILON
 }

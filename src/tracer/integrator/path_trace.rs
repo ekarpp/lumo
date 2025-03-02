@@ -3,6 +3,7 @@ use super::*;
 pub fn integrate(
     scene: &Scene,
     mut ro: Ray,
+    rng: &mut Xorshift,
     lambda: ColorWavelength,
     raster_xy: Vec2
 ) -> FilmSample {
@@ -11,12 +12,12 @@ pub fn integrate(
     let mut gathered = Color::WHITE;
     let mut depth = 0;
 
-    while let Some(ho) = scene.hit(&ro) {
+    while let Some(ho) = scene.hit(&ro, rng) {
         let material = ho.material;
         gathered *= scene.transmittance(&lambda, ho.t);
         let wo = -ro.dir;
 
-        match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
+        match material.bsdf_sample(wo, &ho, rng.gen_float(), rng.gen_vec2()) {
             None => {
                 if last_specular {
                     radiance += gathered * material.emit(&lambda, &ho)
@@ -31,8 +32,7 @@ pub fn integrate(
                             -ro.dir,
                             &lambda,
                             &ho,
-                            rand_utils::unit_square(),
-                            rand_utils::unit_square()
+                            rng,
                         );
                 }
 
@@ -62,7 +62,7 @@ pub fn integrate(
                 if depth > 3 {
                     let luminance = gathered.luminance(&lambda);
                     let rr_prob = (1.0 - luminance).max(0.05);
-                    if rand_utils::rand_float() < rr_prob {
+                    if rng.gen_float() < rr_prob {
                         break;
                     }
                     gathered /= 1.0 - rr_prob;

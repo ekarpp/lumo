@@ -1,5 +1,7 @@
-use super::*;
-use crate::tracer::{ Color, ColorWavelength, Spectrum };
+use crate::{ Float, Vec3, Normal, rng::Xorshift, Vec2 };
+use crate::tracer::{
+    Color, ColorWavelength, Material, ray::Ray, hit::Hit, Spectrum
+};
 
 #[cfg(test)]
 mod medium_test;
@@ -53,30 +55,21 @@ impl Medium {
             transmittance / pdf
         }
     }
-}
 
-impl Object for Medium {
-    fn hit(&self, ro: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
-        // choose a random color channel from density
-        let lambda = ColorWavelength::sample_one(rand_utils::rand_float());
-        let density = self.sigma_t.sample_one(lambda);
+    /// Get a hit to `self` for `r`, if any
+    pub fn hit(
+        &self,
+        r: &Ray,
+        rng: &mut Xorshift,
+        t_min: Float,
+        t_max: Float
+    ) -> Option<Hit> {
+        let t = self.hit_t(r, rng, t_min, t_max);
 
-        // this channel never gets hit
-        if density == 0.0 {
-            return None;
-        }
-
-        let ray_length = ro.dir.length();
-        let inside_dist = (t_max - t_min) * ray_length;
-
-        let hit_dist = -(1.0 - rand_utils::rand_float()).ln() / density;
-        // this way, the scale of the world matters.
-        // doubt there are alternative ways?
-        if hit_dist > inside_dist {
+        if t <= t_min || t >= t_max {
             None
         } else {
-            let t = t_min + hit_dist / ray_length;
-            let xi = ro.at(t);
+            let xi = r.at(t);
             // need shading normal to cancel out the dot product in integrator.
             let ns = Normal::Z;
             let ng = Normal::Z;
@@ -84,6 +77,38 @@ impl Object for Medium {
             let err = Vec3::ZERO;
 
             Hit::new(t, &self.material, -ng, xi, err, ns, ng, uv)
+        }
+    }
+
+    /// Get a distance for hit to `self` for `r`, `INF` if no hit
+    pub fn hit_t(&self, r: &Ray, rng: &mut Xorshift, t_min: Float, t_max: Float) -> Float {
+        // choose a random color channel from density
+        let lambda = ColorWavelength::sample_one(rng.gen_float());
+        let density = self.sigma_t.sample_one(lambda);
+
+        // this channel never gets hit
+        if density == 0.0 {
+            crate::INF
+        } else {
+            // distance inside the medium
+            let inside_t = -(1.0 - rng.gen_float()).ln() / density;
+
+            let ray_length = r.dir.length();
+            let inside_dist = (t_max - t_min) * ray_length;
+
+            // this way, the scale of the world matters, kind of.
+            // should make medium include a transformation to scale unit cube to the scene
+            if inside_t > inside_dist {
+                crate::INF
+            } else {
+                let ray_length = r.dir.length();
+                let t = t_min + inside_t / ray_length;
+                if t <= t_min || t >= t_max {
+                    crate::INF
+                } else {
+                    t
+                }
+            }
         }
     }
 }

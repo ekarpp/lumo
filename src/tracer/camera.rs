@@ -1,6 +1,6 @@
 use crate::{
     Point, Direction, Float, Vec2, Transform, Normal,
-    Mat3, Mat4, Vec4, Vec3, rand_utils, spherical_utils
+    Mat3, Mat4, Vec4, Vec3, rng, spherical_utils
 };
 use glam::IVec2;
 use crate::tracer::{ Color, ray::Ray };
@@ -183,12 +183,16 @@ impl Camera {
     }
 
     /// Adds depth of field to camera space ray and transform to world space ray
-    fn add_dof(xo_local: Point, wi_local: Direction, cfg: &CameraConfig) -> Ray {
+    fn add_dof(
+        xo_local: Point,
+        wi_local: Direction,
+        cfg: &CameraConfig,
+        rand_sq: Vec2
+    ) -> Ray {
         let (xo_local, wi_local) = if cfg.lens_radius == 0.0 {
             (xo_local, wi_local)
         } else {
-            let lens_xy = cfg.lens_radius
-                * rand_utils::square_to_disk(rand_utils::unit_square());
+            let lens_xy = cfg.lens_radius * rng::maps::square_to_disk(rand_sq);
             let lens_xyz = lens_xy.extend(0.0);
 
             let focus_distance = cfg.focal_length / wi_local.z;
@@ -215,15 +219,15 @@ impl Camera {
     }
 
     /// Generates a ray given a point in raster space `\[0,width\] x \[0,height\]`
-    pub fn generate_ray(&self, raster_xy: Vec2) -> Ray {
+    pub fn generate_ray(&self, raster_xy: Vec2, rand_sq: Vec2) -> Ray {
         match self {
             Self::Perspective(cfg) => {
                 let wi_local = cfg.raster_to_camera(raster_xy).normalize();
-                Self::add_dof(Point::ZERO, wi_local, cfg)
+                Self::add_dof(Point::ZERO, wi_local, cfg, rand_sq)
             }
             Self::Orthographic(cfg) => {
                 let xo_local = cfg.raster_to_camera(raster_xy);
-                Self::add_dof(xo_local, Direction::Z, cfg)
+                Self::add_dof(xo_local, Direction::Z, cfg, rand_sq)
             }
         }
     }
@@ -233,7 +237,7 @@ impl Camera {
         let ri = match self {
             Self::Orthographic(cfg) => {
                 let lens_xyz = cfg.lens_radius
-                    * rand_utils::square_to_disk(rand_sq).extend(0.0);
+                    * rng::maps::square_to_disk(rand_sq).extend(0.0);
                 let xi_local = cfg.point_to_local(xi);
                 let xo_local = xi_local * Vec3::new(1.0, 1.0, 0.0);
                 let xo = cfg.point_to_world(xo_local + lens_xyz);
@@ -243,7 +247,7 @@ impl Camera {
             }
             Self::Perspective(cfg) => {
                 let xo_local = cfg.lens_radius
-                    * rand_utils::square_to_disk(rand_sq).extend(0.0);
+                    * rng::maps::square_to_disk(rand_sq).extend(0.0);
                 let xi_local = cfg.point_to_local(xi);
                 let wi_local = (xi_local - xo_local).normalize();
                 let xo = cfg.point_to_world(xo_local);

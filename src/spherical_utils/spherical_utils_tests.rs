@@ -1,5 +1,5 @@
 use super::*;
-use crate::rand_utils;
+use crate::{ rng::{self, Xorshift} };
 
 const NUM_SAMPLES: usize = 100_000;
 
@@ -18,71 +18,54 @@ fn same_hemisphere_test() {
         Direction::NEG_Y + 0.1 * Direction::Z
     ));
 
+    let mut rng = Xorshift::default();
+
     for _ in 0..NUM_SAMPLES {
-        let wo = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        let wi = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
+        let wo = rng::maps::square_to_sphere(rng.gen_vec2());
+        let wi = rng::maps::square_to_sphere(rng.gen_vec2());
         assert!(same_hemisphere(wo, wi) != same_hemisphere(wo, -wi));
         assert!(same_hemisphere(wo, wi) == same_hemisphere(-wo, -wi));
     }
 }
 
-#[test]
-fn cos_phi_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((cos_phi(w) - phi(w).cos()) < crate::EPSILON);
+macro_rules! test_func {
+    ( $( $name:ident, $ref:expr, $call:expr),* ) => {
+        $(
+            mod $name {
+                use super::*;
+
+                #[test]
+                fn is_correct() {
+                    let mut rng = Xorshift::default();
+
+                    for _ in 0..NUM_SAMPLES {
+                        let w = rng::maps::square_to_sphere(rng.gen_vec2());
+
+                        // tan does not like Z = 1 or Z = 0, relax them a bit
+                        let rlx = w.z.abs().min(1.0 - w.z.abs());
+                        let threshold = crate::EPSILON / rlx.sqrt();
+
+                        assert!(threshold < 1e-5);
+                        assert!(($ref(w) - $call(w)).abs() < threshold);
+                    }
+                }
+            }
+        )*
     }
 }
 
-#[test]
-fn sin_phi_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((sin_phi(w) - phi(w).sin()) < crate::EPSILON);
-    }
-}
+test_func!{
+    cos_phi, cos_phi, |w| phi(w).cos(),
+    sin_phi, sin_phi, |w| phi(w).sin(),
 
-#[test]
-fn cos_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((cos_theta(w) - theta(w).cos()) < crate::EPSILON);
-    }
-}
+    cos_theta, cos_theta, |w| theta(w).cos(),
+    sin_theta, sin_theta, |w| theta(w).sin(),
 
-#[test]
-fn cos2_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((cos2_theta(w) - theta(w).cos().powi(2)) < crate::EPSILON);
-    }
-}
+    cos2_theta, cos2_theta, |w| theta(w).cos().powi(2),
+    sin2_theta, sin2_theta, |w| theta(w).sin().powi(2),
 
-#[test]
-fn sin_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((sin_theta(w) - theta(w).sin()) < crate::EPSILON);
-    }
-}
-
-#[test]
-fn sin2_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_sphere(rand_utils::unit_square()).normalize();
-        assert!((sin2_theta(w) - theta(w).sin().powi(2)) < crate::EPSILON);
-    }
-}
-
-#[test]
-fn tan_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
-        assert!(
-            (tan_theta(w) - theta(w).tan()) < 1e-5
-                || (tan_theta(w).is_infinite() && theta(w).tan().is_infinite())
-        );
-    }
+    tan_theta,  |_| 1.0, |w| tan_theta(w)  / theta(w).tan(),
+    tan2_theta, |_| 1.0, |w| tan2_theta(w) / theta(w).tan().powi(2)
 }
 
 #[test]
@@ -90,17 +73,6 @@ fn tan_theta_infinite_test() {
     assert!(tan_theta(Direction::X).is_infinite());
     assert!(tan_theta(Direction::Y).is_infinite());
     assert!(tan_theta(Direction::new(1.0, 1.0, Float::MIN).normalize()).is_infinite());
-}
-
-#[test]
-fn tan2_theta_test() {
-    for _ in 0..NUM_SAMPLES {
-        let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
-        assert!(
-            (tan2_theta(w) - theta(w).tan().powi(2)) < 1e-5
-                || (tan2_theta(w).is_infinite() && theta(w).tan().powi(2).is_infinite())
-        );
-    }
 }
 
 #[test]

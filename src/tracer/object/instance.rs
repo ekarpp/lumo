@@ -1,47 +1,5 @@
 use super::*;
 
-#[cfg(test)]
-mod instance_tests {
-    use super::*;
-    fn spheres() -> (Box<Instance<Sphere>>, Box<Sphere>) {
-        let s_ref = Sphere::new(1.0, Material::Blank);
-        let s = Sphere::new(0.1, Material::Blank)
-            .rotate_x(crate::PI)
-            .scale_uniform(10.0)
-            .rotate_y(crate::PI)
-            .rotate_z(crate::PI)
-            .translate(-1.23, 4.56, -7.89)
-            .set_y(-1.0)
-            .set_x(-1.0)
-            .set_z(-1.0);
-
-        (s, s_ref)
-    }
-
-    test_util::test_sampleable!(spheres().0);
-
-    #[test]
-    fn sampling_equals_plain_object() {
-        let (s, s_ref) = spheres();
-        let xo = 5.0 * rand_utils::square_to_sphere(rand_utils::unit_square());
-        for _ in 0..NUM_SAMPLES {
-            let wi = s.sample_towards(xo, rand_utils::unit_square());
-            let r = Ray::new(xo, wi);
-            let Some(h) = s.hit(&r, 0.0, crate::INF) else { panic!() };
-            let Some(h_ref) = s_ref.hit(&r, 0.0, crate::INF) else { panic!() };
-            let p = s.sample_towards_pdf(&r, h.p, h.ng);
-            let p_ref = s_ref.sample_towards_pdf(&r, h_ref.p, h_ref.ng);
-            assert!((p - p_ref).abs() < 1e-5);
-        }
-    }
-
-    #[test]
-    fn area_equals_plain_object() {
-        let (s, s_ref) = spheres();
-        assert!((s.area() - s_ref.area()).abs() < crate::EPSILON);
-    }
-}
-
 /// Instance of an object i.e. an object to which affine transformations have
 /// been applied
 pub struct Instance<T> {
@@ -340,5 +298,49 @@ impl<T: Object> Instance<T> {
     /// Apply axis rotation AFTER current transformations
     pub fn rotate_axis(self, axis: Direction, r: Float) -> Box<Instance<T>> {
         Self::new(self.object, Transform::from_axis_angle(axis, r) * self.transform)
+    }
+}
+
+#[cfg(test)]
+mod instance_tests {
+    use super::*;
+    fn spheres() -> (Box<Instance<Sphere>>, Box<Sphere>) {
+        let s_ref = Sphere::new(1.0, Material::Blank);
+        let s = Sphere::new(0.1, Material::Blank)
+            .rotate_x(crate::PI)
+            .scale_uniform(10.0)
+            .rotate_y(crate::PI)
+            .rotate_z(crate::PI)
+            .translate(-1.23, 4.56, -7.89)
+            .set_y(-1.0)
+            .set_x(-1.0)
+            .set_z(-1.0);
+
+        (s, s_ref)
+    }
+
+    test_util::test_sampleable!(spheres().0);
+
+    #[test]
+    fn sampling_equals_plain_object() {
+        let (s, s_ref) = spheres();
+        let mut rng = Xorshift::default();
+
+        let xo = 5.0 * rng::maps::square_to_sphere(rng.gen_vec2());
+        for _ in 0..NUM_SAMPLES {
+            let wi = s.sample_towards(xo, rng.gen_vec2());
+            let r = Ray::new(xo, wi);
+            let Some(h) = s.hit(&r, 0.0, crate::INF) else { panic!() };
+            let Some(h_ref) = s_ref.hit(&r, 0.0, crate::INF) else { panic!() };
+            let p = s.sample_towards_pdf(&r, h.p, h.ng);
+            let p_ref = s_ref.sample_towards_pdf(&r, h_ref.p, h_ref.ng);
+            assert!((p - p_ref).abs() < 1e-5);
+        }
+    }
+
+    #[test]
+    fn area_equals_plain_object() {
+        let (s, s_ref) = spheres();
+        assert!((s.area() - s_ref.area()).abs() < crate::EPSILON);
     }
 }

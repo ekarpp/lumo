@@ -1,5 +1,5 @@
 use super::*;
-use crate::simpson_integration;
+use crate::{ simpson_integration, rng::Xorshift };
 use crate::tracer::{ Spectrum, Texture };
 use std::io::Write;
 use std::fs::File;
@@ -14,110 +14,53 @@ const CHI2_SLEVEL: Float = 0.01;
 const CHI2_TOLERANCE: Float = (NUM_SAMPLES as Float) * 1e-5;
 const CHI2_MIN_FREQ: Float = 5.0;
 
-fn mfd(r: Float, eta: Float) -> MfDistribution {
+macro_rules! test_bxdf {
+    ( $( $name:ident, $bxdf:expr ),* ) => {
+        $(
+            mod $name {
+                use super::*;
+
+                #[test]
+                fn chi2() {
+                    let mut rng = Xorshift::default();
+
+                    for _ in 0..CHI2_RUNS {
+                        let wo = rng::maps::square_to_hemisphere(rng.gen_vec2());
+                        assert!(chi2_pass(wo, &mut rng, $bxdf));
+                    }
+                }
+            }
+        )*
+    }
+}
+
+fn mfd(roughness: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
-        r, eta, 0.0,
+        roughness, eta, 0.0, /* k has no effect on sampling */
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
     )
 }
 
-#[test]
-fn lambertian_chi2() {
-    let bxdf = BxDF::Lambertian(Spectrum::WHITE);
-    test_bxdf(bxdf)
-}
+test_bxdf!{
+    lambertian, BxDF::Lambertian(Spectrum::WHITE),
+    diffuse,    BxDF::MfDiffuse(mfd(1.0, 1.5)),
 
-#[test]
-fn conductor75_chi2() {
-    let mfd = mfd(0.75, 1.5);
-    let bxdf = BxDF::MfConductor(mfd);
-    test_bxdf(bxdf)
-}
+    conductor75, BxDF::MfConductor(mfd(0.75, 1.5)),
+    conductor50, BxDF::MfConductor(mfd(0.50, 1.5)),
+    conductor25, BxDF::MfConductor(mfd(0.25, 1.5)),
+    conductor10, BxDF::MfConductor(mfd(0.10, 1.5)),
 
-#[test]
-fn conductor50_chi2() {
-    let mfd = mfd(0.5, 1.5);
-    let bxdf = BxDF::MfConductor(mfd);
-    test_bxdf(bxdf)
-}
+    dielectric75_eta15, BxDF::MfDielectric(mfd(0.75, 1.5)),
+    dielectric50_eta15, BxDF::MfDielectric(mfd(0.50, 1.5)),
+    dielectric25_eta15, BxDF::MfDielectric(mfd(0.25, 1.5)),
+    dielectric10_eta15, BxDF::MfDielectric(mfd(0.10, 1.5)),
 
-#[test]
-fn conductor25_chi2() {
-    let mfd = mfd(0.25, 1.5);
-    let bxdf = BxDF::MfConductor(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn conductor10_chi2() {
-    let mfd = mfd(0.10, 1.5);
-    let bxdf = BxDF::MfConductor(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric75_eta15_chi2() {
-    let mfd = mfd(0.75, 1.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric50_eta15_chi2() {
-    let mfd = mfd(0.5, 1.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric25_eta15_chi2() {
-    let mfd = mfd(0.25, 1.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric10_eta15_chi2() {
-    let mfd = mfd(0.10, 1.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric75_eta25_chi2() {
-    let mfd = mfd(0.75, 2.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric50_eta25_chi2() {
-    let mfd = mfd(0.5, 2.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric25_eta25_chi2() {
-    let mfd = mfd(0.25, 2.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-#[test]
-fn dielectric10_eta25_chi2() {
-    let mfd = mfd(0.10, 2.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    test_bxdf(bxdf)
-}
-
-fn test_bxdf(bxdf: BxDF) {
-    for _ in 0..CHI2_RUNS {
-        let wo = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
-        assert!(chi2_pass(wo, &bxdf));
-    }
+    dielectric75_eta25, BxDF::MfDielectric(mfd(0.75, 2.5)),
+    dielectric50_eta25, BxDF::MfDielectric(mfd(0.50, 2.5)),
+    dielectric25_eta25, BxDF::MfDielectric(mfd(0.25, 2.5)),
+    dielectric10_eta25, BxDF::MfDielectric(mfd(0.10, 2.5))
 }
 
 fn write_tables(
@@ -133,9 +76,9 @@ fn write_tables(
     println!("Dumped tables to {}", path.to_str().unwrap());
 }
 
-fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
-    let actual_freq = sample_frequencies(wo, bxdf);
-    let expected_freq = compute_frequencies(wo, bxdf);
+fn chi2_pass(wo: Direction, rng: &mut Xorshift, bxdf: BxDF) -> bool {
+    let actual_freq = sample_frequencies(wo, rng, &bxdf);
+    let expected_freq = compute_frequencies(wo, &bxdf);
 
     // degrees of freedom
     let mut dof = 0;
@@ -210,14 +153,18 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     }
 }
 
-fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
+fn sample_frequencies(
+    wo: Direction,
+    rng: &mut Xorshift,
+    bxdf: &BxDF
+) -> [usize; THETA_BINS*PHI_BINS] {
     let mut samples = [0; THETA_BINS*PHI_BINS];
 
     let theta_factor = THETA_BINS as Float / crate::PI;
     let phi_factor = PHI_BINS as Float / (2.0 * crate::PI);
 
     for _ in 0..NUM_SAMPLES {
-        match bxdf.sample(wo, false, rand_utils::unit_square()) {
+        match bxdf.sample(wo, false, rng.gen_float(), rng.gen_vec2()) {
             None => (),
             Some(wi) => {
                 let theta = spherical_utils::theta(wi);

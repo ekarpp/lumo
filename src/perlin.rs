@@ -1,4 +1,4 @@
-use crate::{Float, Vec3, rand_utils};
+use crate::{Float, Vec3, rng::{self, Xorshift} };
 use itertools::Itertools;
 
 /// Number of points in the perlin noise lattice
@@ -21,19 +21,32 @@ pub struct Perlin {
 
 impl Default for Perlin {
     fn default() -> Self {
-        Self {
-            lattice: rand_utils::rand_vec_vec3(PERLIN_POINTS),
-            perm: PermutationXyz {
-                x: rand_utils::perm_n(PERLIN_POINTS),
-                y: rand_utils::perm_n(PERLIN_POINTS),
-                z: rand_utils::perm_n(PERLIN_POINTS),
-            },
-        }
+        let seed = rng::gen_seed();
+        println!("Seeded perlin noise with: {}", seed);
+        Self::new(seed)
     }
 }
 
 impl Perlin {
+    /// Create new perlin noise generator with `seed`
+    pub fn new(seed: u64) -> Self {
+        let mut rng = Xorshift::new(seed);
+        let lattice = (0..PERLIN_POINTS)
+            .map(|_| rng::maps::square_to_sphere(rng.gen_vec2()))
+            .collect();
+
+        Self {
+            lattice,
+            perm: PermutationXyz {
+                x: rng.gen_perm(PERLIN_POINTS),
+                y: rng.gen_perm(PERLIN_POINTS),
+                z: rng.gen_perm(PERLIN_POINTS),
+            },
+        }
+    }
+
     /// Computes Perlin noise at point `p`
+    // consider using uv instead of world position
     pub fn noise_at(&self, p: Vec3) -> Float {
         let weight = p.fract();
         let floor = p.floor();

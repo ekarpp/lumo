@@ -1,6 +1,6 @@
 use super::*;
 use crate::tracer::{Instanceable, Plane, Sphere, Spectrum};
-use crate::{Point, Direction};
+use crate::{ Point, Direction };
 
 /* light at y = 2, plane at y = 1 perp to z */
 fn scene(m: Material) -> Scene {
@@ -25,14 +25,18 @@ fn scene(m: Material) -> Scene {
 fn light_no_pass() {
     let s = scene(Material::mirror());
     let r = Ray::new(Point::ZERO, Direction::Y);
-    assert!(s.hit_light(&r, s.lights[0].as_ref()).is_none());
+    let mut rng = Xorshift::default();
+
+    assert!(s.hit_light(&r, &mut rng, s.lights[0].as_ref()).is_none());
 }
 
 #[test]
 fn object_behind_light() {
     let s = scene(Material::mirror());
     let r = Ray::new(3.0 * Point::Y, Direction::NEG_Y);
-    assert!(s.hit_light(&r, s.lights[0].as_ref()).is_some());
+    let mut rng = Xorshift::default();
+
+    assert!(s.hit_light(&r, &mut rng, s.lights[0].as_ref()).is_some());
 }
 
 #[test]
@@ -53,5 +57,7 @@ fn hits_closest() {
 
     let r = Ray::new(Point::ZERO, Point::Y);
     let is_blank = |h: &Hit| -> bool { matches!(h.material, Material::Blank) };
-    assert!(s.hit(&r).filter(is_blank).is_some());
+    let mut rng = Xorshift::default();
+
+    assert!(s.hit(&r, &mut rng).filter(is_blank).is_some());
 }

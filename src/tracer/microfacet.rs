@@ -128,8 +128,8 @@ impl MfDistribution {
         let energy_bias = 0.5 * roughness2;
         let fd90 = energy_bias + 2.0 * cos_theta_wh.powi(2) * roughness2;
 
-        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_wo).powi(5);
-        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_wi).powi(5);
+        let view_scatter = self.f_schlick(1.0, fd90, cos_theta_wo);
+        let light_scatter = self.f_schlick(1.0, fd90, cos_theta_wi);
 
         let energy_factor = 1.0 + roughness2 * (1.0 / 1.51 - 1.0);
 
@@ -183,6 +183,11 @@ impl MfDistribution {
                 }
             }
         }
+    }
+
+    /// Schlicks approximation for Fresnel term
+    pub fn f_schlick(&self, f0: Float, f90: Float, cos_theta: Float) -> Float {
+        f0 + (f90 - f0) * (1.0 - cos_theta).powi(5)
     }
 
     /// Fresnel term with the full equations
@@ -349,10 +354,10 @@ impl MfDistribution {
                 // ONB basis of the hemisphere configuration
                 // don't use Onb class, as it has too strict requirements for orthonormality
                 // first vector should be perpendicular to Z
-                let u = if wo_stretch.z < 0.99999 {
-                    wo_stretch.cross(Normal::Z).normalize()
-                } else {
+                let u = if 1.0 - wo_stretch.z < crate::EPSILON {
                     Normal::X
+                } else {
+                    wo_stretch.cross(Normal::Z).normalize()
                 };
                 let v = u.cross(wo_stretch);
 
@@ -377,7 +382,7 @@ impl MfDistribution {
                 Normal::new(
                     roughness.x * wm.x,
                     roughness.y * wm.y,
-                    wm.z.max(1e-5)
+                    wm.z.max(crate::EPSILON)
                 ).normalize()
             }
             Self::Beckmann(cfg) => {

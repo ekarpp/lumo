@@ -88,13 +88,15 @@ fn all_sum_to_one_big_scale() {
 
 #[allow(clippy::manual_swap)]
 fn test_scene(sce: Scene, cam: Camera) {
-    let r = cam.generate_ray(Vec2::ZERO);
+    let mut rng = Xorshift::default();
+
+    let r = cam.generate_ray(Vec2::ZERO, rng.gen_vec2());
     let xc = r.origin;
-    let lambda = ColorWavelength::sample(rand_utils::rand_float());
+    let lambda = ColorWavelength::sample(rng.gen_float());
     for _ in 0..NUM_PATHS {
         let mut pth;
         loop {
-            pth = path_gen::light_path(&sce, &lambda);
+            pth = path_gen::light_path(&sce, &mut rng, &lambda);
             // too short, try another path
             if pth.len() <= 2 { continue; }
             let ls = &pth[pth.len() - 1];
@@ -115,7 +117,7 @@ fn test_scene(sce: Scene, cam: Camera) {
             let wi = (xi - xc).normalize();
             let ri = Ray::new(xc, wi);
             // can't hit last from camera, try another path
-            if sce.hit(&ri).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON.powi(2)) {
+            if sce.hit(&ri, &mut rng).is_some_and(|h: Hit| h.t * h.t < t2 - crate::EPSILON.powi(2)) {
                 continue;
             }
             // good path found, append camera vertex and update

@@ -17,12 +17,14 @@ pub mod tracer;
 mod complex;
 /// `Float` with built in tracking of floating point error
 mod efloat;
+/// Utility functions to format output
+mod formatting;
 /// Wrapper for writing image buffer to file.
 mod image;
 /// Perlin noise generator.
 mod perlin;
-/// Wrapper around rand. Provides functions to sample from various geometrics.
-mod rand_utils;
+/// Random number generator and utility functions to sample different geometrics
+mod rng;
 /// Configures and computes the image.
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
@@ -60,7 +62,6 @@ const EPSILON: Float = 1e-10;
 type Normal = Vec3;
 type Direction = Vec3;
 type Point = Vec3;
-
 
 /// Enum to determine from which direction we are tracing rays
 #[derive(Copy, Clone)]

@@ -73,70 +73,40 @@ impl KdNode {
         let mut best_left = 0;
         let mut best_right = 0;
 
-        let mut num_left = [0 ; 3];
-        let mut num_planar = [0 ; 3];
-        let mut num_right = [primitives ; 3];
+        for axis in [Axis::X, Axis::Y, Axis::Z] {
+            let mut num_left = 0;
+            let mut num_right = primitives;
+            events.iter()
+                .filter(|ev| ev.a == axis)
+                .for_each(|ev| {
+                    let end = matches!(ev.t, KdEventType::End);
+                    let planar = matches!(ev.t, KdEventType::Planar);
+                    let start = matches!(ev.t, KdEventType::Start);
+                    let num_planar = if planar { 1 } else { 0 };
 
-        let mut i = 0;
-        while i < events.len() {
-            let (mut s, mut p, mut e) = (0, 0, 0);
-            let event = &events[i];
-            while i < events.len()
-                && events[i].a == event.a
-                && events[i].p == event.p
-                && events[i].t == KdEventType::End
-            {
-                e += 1; i += 1
-            }
+                    if end || planar { num_right -= 1; }
 
-            while i < events.len()
-                && events[i].a == event.a
-                && events[i].p == event.p
-                && events[i].t == KdEventType::Planar
-            {
-                p += 1; i += 1
-            }
+                    let (cost, cut_side) = Self::cost(
+                        boundary, ev.a, ev.p,
+                        num_left, num_planar, num_right,
+                    );
 
-            while i < events.len()
-                && events[i].a == event.a
-                && events[i].p == event.p
-                && events[i].t == KdEventType::Start
-            {
-                s += 1; i += 1
-            }
+                    if cost < best_cost {
+                        best_cost = cost;
+                        best_point = ev.p;
+                        best_axis = axis;
+                        best_side = cut_side;
+                        best_left = num_left;
+                        best_right = num_right;
+                        if matches!(best_side, KdSide::Left) {
+                            best_left += num_planar;
+                        } else {
+                            best_right += num_planar;
+                        }
+                    }
 
-
-            let axis = event.a as usize;
-            num_planar[axis] = p;
-            num_right[axis] -= p;
-            num_right[axis] -= e;
-
-            let (cost, cut_side) = Self::cost(
-                boundary,
-                event.a,
-                event.p,
-                num_left[axis],
-                num_planar[axis],
-                num_right[axis],
-            );
-
-            if cost < best_cost {
-                best_cost = cost;
-                best_point = event.p;
-                best_axis = event.a;
-                best_side = cut_side;
-                if matches!(best_side, KdSide::Left) {
-                    best_left = num_left[axis] + num_planar[axis];
-                    best_right = num_right[axis];
-                } else {
-                    best_left = num_left[axis];
-                    best_right = num_right[axis] + num_planar[axis];
-                }
-            }
-
-            num_left[axis] += s;
-            num_left[axis] += p;
-            num_planar[axis] = 0;
+                    if start || planar { num_left += 1; }
+                })
         }
 
         (best_axis, best_point, best_cost, best_left, best_right, best_side)
@@ -189,8 +159,8 @@ impl KdNode {
         let (axis, point, cost, n_l, n_r, side) =
             Self::find_best_split(&events, boundary, primitives);
 
-        // cut not worth it, make a leaf
-        let node = if cost > COST_INTERSECT * primitives as Float {
+        let cost_leaf = COST_INTERSECT * primitives as Float;
+        let node = if cost > cost_leaf {
             let mut indices = Vec::with_capacity(primitives);
             let mut haves = FxHashSet::default();
             haves.reserve(primitives);
@@ -209,8 +179,8 @@ impl KdNode {
                 point,
                 side,
             );
-            let mut events_l = Vec::with_capacity(primitives / 2);
-            let mut events_r = Vec::with_capacity(primitives / 2);
+            let mut events_l = Vec::with_capacity(2 * n_l);
+            let mut events_r = Vec::with_capacity(2 * n_r);
 
             // TODO: hashmap is slow here
             for ev in events {

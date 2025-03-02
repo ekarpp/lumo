@@ -1,5 +1,5 @@
 use crate::{
-    rand_utils, Axis, efloat::{self, EFloat},
+    rng, Axis, efloat::{self, EFloat},
     Point, Normal, Direction, Float,
     Vec3, Vec2, Transform, Mat3
 };
@@ -9,6 +9,9 @@ use crate::tracer::{
 };
 use std::sync::Arc;
 
+#[cfg(test)]
+use crate::rng::Xorshift;
+
 pub use aabb::AaBoundingBox;
 pub use cone::Cone;
 pub use cube::Cube;
@@ -16,7 +19,6 @@ pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
 pub use kdtree::{KdTree, Mesh};
-pub use medium::Medium;
 pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;
@@ -38,8 +40,6 @@ mod disk;
 mod instance;
 /// kD-trees, used for complex meshes
 mod kdtree;
-/// Volumetric mediums
-mod medium;
 /// Defines infinite planes
 mod plane;
 /// Defines rectangles. Built from two triangles.
@@ -105,7 +105,7 @@ pub trait Sampleable: Object {
         let ho = self.sample_on(rand_sq0);
         let ns = ho.ns;
         let uvw = Onb::new(ns);
-        let wi_local = rand_utils::square_to_cos_hemisphere(rand_sq1);
+        let wi_local = rng::maps::square_to_cos_hemisphere(rand_sq1);
         let wi = uvw.to_world(wi_local);
         // pdf start = 1 / area
         // pdf dir = cos hemisphere
