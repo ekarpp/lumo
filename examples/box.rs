@@ -19,6 +19,9 @@ fn main() -> Result<(), std::io::Error> {
               .translate(0.45, -0.5, -1.3));
 
     Renderer::new(scene, camera)
+        .integrator(Integrator::BDPathTrace)
+        .filter(PixelFilter::gaussian(2.5, 2.5 / 4.0))
+        .samples(64)
         .render()
         .save("box.png")?;
     Ok(())

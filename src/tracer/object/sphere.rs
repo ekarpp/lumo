@@ -143,7 +143,7 @@ impl Sampleable for Sphere {
         } else {
             /* uvw-orthonormal basis,
              * where w is the direction from xo to origin of this sphere. */
-            let uvw = Onb::new(xo);
+            let uvw = Onb::new(xo.normalize());
 
             let dist_origin = dist_origin2.sqrt();
 

@@ -1,6 +1,4 @@
 use crate::{Float, Vec2};
-use glam::IVec2;
-use itertools::Itertools;
 use std::fmt;
 
 #[cfg(test)]
@@ -67,13 +65,13 @@ impl PixelFilter {
 
     /// Returns the discretized radius of the filter
     /// i.e. how many pixels in each direction we should look for
-    pub fn r_disc(&self) -> i32 {
+    pub fn r_disc(&self) -> u64 {
         match self {
             Self::Square(r)
                 | Self::Triangle(r)
                 | Self::Gaussian(r, ..)
                 | Self::Mitchell(r, ..) => {
-                    (*r - 0.5).ceil() as i32
+                    (*r - 0.5).ceil() as u64
             }
         }
     }
@@ -112,22 +110,6 @@ impl PixelFilter {
                 (ig - 2.0 * r * gr).powi(2)
             }
         }
-    }
-
-    /// Return the `(y,x)` offsets in the radius and range `[mi.x, mx.x) x [mi.y, mx.y)`
-    pub fn xys(&self, mi: IVec2, mx: IVec2) -> impl Iterator<Item=(i32, i32)> {
-        let radius = self.r_disc();
-
-        let f = move |(y, x): &(i32, i32)| -> bool {
-            let bounds_x = mi.x <= *x && *x < mx.x;
-            let bounds_y = mi.y <= *y && *y < mx.y;
-
-            bounds_x && bounds_y
-        };
-
-        (-radius..=radius)
-            .cartesian_product(-radius..=radius)
-            .filter(f)
     }
 
     fn gauss(x: Float, sigma: &Float) -> Float {

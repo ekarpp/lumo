@@ -2,7 +2,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use crate::Float;
 
 /// Used for error estimation in manually propagated floating point errors
-pub fn gamma(n: i32) -> Float {
+pub fn gamma(n: u64) -> Float {
     let n = n as Float;
     (n * Float::EPSILON) / (1.0 - n * Float::EPSILON)
 }

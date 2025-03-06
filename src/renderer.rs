@@ -5,19 +5,19 @@ use crate::tracer::{
     Camera, Film, FilmSample,
     Integrator, Scene, PixelFilter, FilmTile, ColorSpace
 };
-use glam::IVec2;
+use crate::math::vec2::UVec2;
 use std::{
     sync::{Arc, mpsc, Mutex}, cell::RefCell,
     io::Write, time::Instant
 };
 use itertools::Itertools;
 
-const TILE_SIZE: i32 = 16;
+const TILE_SIZE: u64 = 16;
 // should be a square for samplers
-const SAMPLES_INCREMENT: u32 = 256;
+const SAMPLES_INCREMENT: u64 = 256;
 const PROGRESS_BAR_LEN: usize = 16;
 
-const DEFAULT_NUM_SAMPLES: u32 = 1;
+const DEFAULT_NUM_SAMPLES: u64 = 1;
 const DEFAULT_THREADS: usize = 4;
 
 use task::{ RenderTask, RenderTaskResult, RenderTaskExecutor };
@@ -31,8 +31,8 @@ mod worker;
 pub struct Renderer {
     scene: Arc<Scene>,
     camera: Arc<Camera>,
-    resolution: IVec2,
-    num_samples: u32,
+    resolution: UVec2,
+    num_samples: u64,
     integrator: Integrator,
     tone_map: ToneMap,
     film: Film,
@@ -42,9 +42,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    /// Constructs a new renderer. Defaults to 1000x1000 image with 1 sample
-    /// per pixel and path tracing as the integrator. Configured through the CLI
-    /// or the setter functions of the struct.
+    /// Constructs a new renderer.
     pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
@@ -54,8 +52,7 @@ impl Renderer {
         let resolution = camera.get_resolution();
         let num_samples = DEFAULT_NUM_SAMPLES;
         let film = Film::new(
-            resolution.x,
-            resolution.y,
+            resolution,
             num_samples,
             ColorSpace::default(),
             PixelFilter::default(),
@@ -90,7 +87,7 @@ impl Renderer {
     }
 
     /// Sets number of samples per pixel
-    pub fn samples(mut self, samples: u32) -> Self {
+    pub fn samples(mut self, samples: u64) -> Self {
         self.num_samples = samples;
         self.film.set_samples(samples);
         self
@@ -127,6 +124,9 @@ impl Renderer {
     }
 
     fn output_begin(&self) {
+        #[cfg(debug_assertions)]
+        println!("Debug assertions enabled");
+
         if matches!(self.integrator, Integrator::BDPathTrace)
             && self.scene.medium.is_some() {
                 println!("Volumetric mediums not currently supported with BDPT, \
@@ -154,11 +154,11 @@ impl Renderer {
 
     fn output_progress(
         &self,
-        rays_traced: i32,
-        rays_total: i32,
+        rays_traced: u64,
+        rays_total: u64,
         dt: Float,
     ) {
-        let bar_step = rays_total / PROGRESS_BAR_LEN as i32;
+        let bar_step = rays_total / PROGRESS_BAR_LEN as u64;
         let steps = rays_traced / bar_step;
         let prog = rays_total as Float / rays_traced as Float;
         print!("\r{}", " ".repeat(PROGRESS_BAR_LEN + 32));
@@ -183,7 +183,7 @@ impl Renderer {
                 let (mi_x, mx_x) = (tile.px_min.x, tile.px_max.x);
 
                 (mi_y..mx_y).cartesian_product(mi_x..mx_x)
-                    .for_each(|(y, x): (i32, i32)| {
+                    .for_each(|(y, x): (u64, u64)| {
                         let xy = Vec2::new(x as Float, y as Float);
                         sampler.new(task.samples, rng)
                             .flat_map(|rand_sq: Vec2| {
@@ -196,7 +196,7 @@ impl Renderer {
                             })
                     });
 
-                let num_rays = (mx_x - mi_x) * (mx_y - mi_y) * task.samples as i32;
+                let num_rays = (mx_x - mi_x) * (mx_y - mi_y) * task.samples;
                 RenderTaskResult::new(tile, num_rays)
             }
         )
@@ -216,8 +216,8 @@ impl Renderer {
             self.render_executor(),
         );
 
-        let tiles_x = (self.resolution.x + TILE_SIZE - 1) / TILE_SIZE;
-        let tiles_y = (self.resolution.y + TILE_SIZE - 1) / TILE_SIZE;
+        let tiles_x = self.resolution.x.div_ceil(TILE_SIZE);
+        let tiles_y = self.resolution.y.div_ceil(TILE_SIZE);
 
         let mut samples_taken = 0;
         while samples_taken < self.num_samples {
@@ -226,8 +226,8 @@ impl Renderer {
             samples_taken = samples_taken.min(self.num_samples);
             let samples = samples_taken - prev;
 
-            (0..tiles_y).cartesian_product(0..tiles_x).for_each(|(y, x): (i32, i32)| {
-                let px_min = IVec2::new(x, y) * TILE_SIZE;
+            (0..tiles_y).cartesian_product(0..tiles_x).for_each(|(y, x): (u64, u64)| {
+                let px_min = UVec2::new(x, y) * TILE_SIZE;
                 let px_max = (px_min + TILE_SIZE).min(self.resolution);
                 let tile = self.film.create_tile(px_min, px_max);
 
@@ -238,7 +238,9 @@ impl Renderer {
 
         pool.all_published();
 
-        let rays_total = self.num_samples as i32 * self.resolution.x * self.resolution.y;
+        let rays_total = self.num_samples
+            * self.resolution.x
+            * self.resolution.y;
         let mut rays_traced = 0;
         let mut finished = 0;
         let mut tiles_added = 0;
@@ -249,7 +251,7 @@ impl Renderer {
                 rays_traced += result.num_rays;
                 tiles_added += 1;
                 let output = tiles_added % self.resolution.x == 0
-                    || tiles_added == self.threads as i32;
+                    || tiles_added == self.threads as u64;
                 if output {
                     let dt = start.elapsed().as_millis() as Float;
                     self.output_progress(rays_traced, rays_total, dt);

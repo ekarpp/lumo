@@ -20,7 +20,7 @@ impl<'a> Vertex<'a> {
         let Some(h) = Hit::new(
             0.0,
             &Material::Blank,
-            Direction::NEG_X,
+            -Direction::X,
             xo,
             Vec3::ZERO,
             Normal::X,

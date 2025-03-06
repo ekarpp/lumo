@@ -12,7 +12,7 @@ fn zero_medium_has_no_effect() {
     let h = Hit::new(
         100.0,
         &m.material,
-        Direction::NEG_X,
+        -Direction::X,
         Point::X,
         Vec3::X,
         Normal::X,

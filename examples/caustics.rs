@@ -5,7 +5,7 @@ const OBJ_URL: &str = "https://www.prinmath.com/csci5229/OBJ/suzanne.zip";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::builder()
-        .origin(2.0 * Vec3::Z)
+        .origin(0.0, 0.0, 2.0)
         .zoom(3.0)
         .build();
     let def_color = Spectrum::from_srgb(242, 242, 242);

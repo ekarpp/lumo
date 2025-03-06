@@ -23,7 +23,7 @@ pub fn load_file(file: File, material: Material) -> Result<Mesh> {
 }
 
 
-pub fn load_scene(file: File, materials: HashMap<String, MtlConfig>) -> Result<Scene> {
+pub fn load_scene(file: File, materials: FxHashMap<String, MtlConfig>) -> Result<Scene> {
     let mut scene = Scene::default();
     let mut vertices: Vec<Point> = Vec::new();
     let mut normals: Vec<Normal> = Vec::new();
@@ -193,16 +193,16 @@ fn normalize_uvs(uvs: &mut [Vec2]) {
         mi = mi.min(uvs[i]);
     }
 
-    if mi.min_element() < 0.0 {
+    if mi.x < 0.0 || mi.y < 0.0 {
         // assume if one is negative both are
         for i in 0..uvs.len() {
-            uvs[i] -= mi;
+            uvs[i] = uvs[i] - mi;
         }
     }
     let d = mx - mi;
-    if d.max_element() > 1.0 {
+    if d.x > 1.0 || d.y > 1.0 {
         for i in 0..uvs.len() {
-            uvs[i] /= d;
+            uvs[i] = uvs[i] / d;
         }
     }
 }

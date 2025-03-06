@@ -57,7 +57,7 @@ impl ColorSpace {
     /// Transform `color` sampled at `lambda` to the colorspace of `self`
     pub fn from_color(&self, color: &Color, lambda: &ColorWavelength) -> RGB {
         let xyz = color.xyz(lambda);
-        let rgb = self.XYZ_to_RGB * xyz;
+        let rgb = self.XYZ_to_RGB.mul_vec3(xyz);
 
         RGB::from(rgb)
     }
@@ -84,11 +84,11 @@ impl ColorSpace {
         let B = xyz::from_xyY(b, 1.0);
         let W = xyz::from_xyY(w, 1.0);
 
-        let RGB_c = Mat3::from_cols(R, G, B);
-        let C = RGB_c.inverse() * W;
+        let RGB_c = Mat3::new(R, G, B).transpose();
+        let C = RGB_c.inv().mul_vec3(W);
 
-        let RGB_to_XYZ = RGB_c * Mat3::from_diagonal(C);
-        let XYZ_to_RGB = RGB_to_XYZ.inverse();
+        let RGB_to_XYZ = RGB_c * Mat3::diag(C);
+        let XYZ_to_RGB = RGB_to_XYZ.inv();
 
         Self { XYZ_to_RGB, trc, name }
     }

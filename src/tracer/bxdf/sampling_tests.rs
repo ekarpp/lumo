@@ -1,5 +1,5 @@
 use super::*;
-use crate::{ simpson_integration, rng::Xorshift };
+use crate::{ math::simpson_integration, rng::Xorshift };
 use crate::tracer::{ Spectrum, Texture };
 
 // used for numerically integrating PDF over whole space

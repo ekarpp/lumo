@@ -3,8 +3,8 @@ use lumo::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = CameraBuilder::new()
-        .origin(Vec3::new(278.0, 273.0, -800.0))
-        .towards(Vec3::new(278.0, 273.0, 0.0))
+        .origin(278.0, 273.0, -800.0)
+        .towards(278.0, 273.0, 0.0)
         .zoom(2.8)
         .focal_length(0.035)
         .resolution((512, 512))

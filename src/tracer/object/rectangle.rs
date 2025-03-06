@@ -17,10 +17,10 @@ impl Rectangle {
     /// is mirrored around the line `ac`
     ///
     /// # Arguments
-    /// * `abc` - Points `a,b,c` stored in the columns. Normal in CCW
+    /// * `abc` - Points `a,b,c` stored in the rows. Normal in CCW
     /// * `material` - Material of the rectangle
     pub fn new(abc: Mat3, material: Material) -> Box<Self> {
-        let (a, b, c) = (abc.col(0), abc.col(1), abc.col(2));
+        let (a, b, c) = (abc.y0, abc.y1, abc.y2);
         let origin = b;
         let b0 = c - origin;
         let b1 = a - origin;
@@ -79,10 +79,10 @@ mod rectangle_tests {
     use super::*;
 
     test_util::test_sampleable!(Rectangle::new(
-        Mat3::from_cols(
-            Point::NEG_Y + Point::X,
+        Mat3::new(
+            -Point::Y + Point::X,
             Point::Y + Point::X,
-            Point::Y + Point::NEG_X,
+            Point::Y + -Point::X,
         ),
         Material::Blank,
     ));

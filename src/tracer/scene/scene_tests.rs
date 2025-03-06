@@ -33,7 +33,7 @@ fn light_no_pass() {
 #[test]
 fn object_behind_light() {
     let s = scene(Material::mirror());
-    let r = Ray::new(3.0 * Point::Y, Direction::NEG_Y);
+    let r = Ray::new(3.0 * Point::Y, -Direction::Y);
     let mut rng = Xorshift::default();
 
     assert!(s.hit_light(&r, &mut rng, s.lights[0].as_ref()).is_some());
@@ -45,13 +45,13 @@ fn hits_closest() {
 
     s.add(Plane::new(
         Point::Y,
-        Point::NEG_Y,
+        -Point::Y,
         Material::Blank,
     ));
 
     s.add(Plane::new(
         2.0 * Point::Y,
-        Point::NEG_Y,
+        -Point::Y,
         Material::mirror(),
     ));
 

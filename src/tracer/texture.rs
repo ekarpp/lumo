@@ -1,4 +1,5 @@
 use crate::{ Float, Image, Point, perlin::Perlin };
+use crate::math::complex::Complex;
 use crate::tracer::{Color, ColorWavelength, Spectrum, hit::Hit};
 
 /// Scale of points in perlin. bigger = more noticeable effect
@@ -11,6 +12,13 @@ const MARBLE_AMP: Float = 20.0;
 const MARBLE_OCTAVES: i32 = 6;
 /// Scale of each term in turbulence. should be less than 1.0
 const MARBLE_GAIN: Float = 0.5;
+
+/// Maximum number of Mandelbrot iterations
+const MANDELBROT_DEPTH: usize = 256;
+/// Escape radius for Mandelbrot
+const MANDELBROT_R: Float = 64.0;
+/// Escape radius squared
+const MANDELBROT_R2: Float = MANDELBROT_R * MANDELBROT_R;
 
 /// Defines a texture to choose a colour of material at each point.
 pub enum Texture {
@@ -26,6 +34,8 @@ pub enum Texture {
     Marble(Perlin, Spectrum),
     /// Image texture loaded from a .png
     Image(Image),
+    /// Cheap render of the Mandelbrot set
+    Mandelbrot,
 }
 
 impl Default for Texture {
@@ -54,7 +64,7 @@ impl Texture {
             }
             Texture::Checkerboard(t1, t2, s) => {
                 let uv = h.uv * (*s);
-                if (uv.x.floor() + uv.y.floor()) as i32 % 2 == 0 {
+                if (uv.x.floor() + uv.y.floor()) as u64 % 2 == 0 {
                     t1.albedo_at(lambda, h)
                 } else {
                     t2.albedo_at(lambda, h)
@@ -67,6 +77,23 @@ impl Texture {
                 let y = uv.y * img.height as Float;
                 let y = img.height - y.floor() as u32 - 1;
                 img.buffer[x + (y*img.width) as usize].sample(lambda)
+            }
+            Texture::Mandelbrot => {
+                let mut depth = 0;
+                // [-1.5,0.5] x [-1.0,1.0]
+                let c = 2.0 * Complex::new(h.uv.x - 0.75, h.uv.y - 0.5);
+                let mut z = Complex::new(0.0, 0.0);
+
+                while depth < MANDELBROT_DEPTH && z.norm_sqr() < MANDELBROT_R2 {
+                    z = z * z + c;
+                    depth += 1;
+                }
+
+                if depth == MANDELBROT_DEPTH {
+                    Color::WHITE
+                } else {
+                    Color::BLACK
+                }
             }
         }
     }

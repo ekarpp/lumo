@@ -11,12 +11,12 @@ fn marble_texture() -> Texture {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let o = 0.75 * Vec3::NEG_X + 0.25 * Vec3::Y;
-    let t = 0.75 * Vec3::NEG_Y + Vec3::NEG_Z;
+    let o = 0.75 * -Vec3::X + 0.25 * Vec3::Y;
+    let t = 0.75 * -Vec3::Y + -Vec3::Z;
 
     let camera = Camera::builder()
-        .origin(o)
-        .towards(t)
+        .origin(o.x, o.y, o.z)
+        .towards(t.x, t.y, t.z)
         .lens_radius(0.03)
         .focal_length(o.distance(t))
         .camera_type(CameraType::Orthographic)
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut scene = Scene::default();
 
     scene.add(Plane::new(
-        Vec3::NEG_Y,
+        -Vec3::Y,
         Vec3::Y,
         Material::diffuse(Texture::Checkerboard(
             Box::new(Texture::from(Spectrum::BLACK)),

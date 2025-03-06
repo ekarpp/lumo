@@ -1,11 +1,11 @@
 use super::*;
-use crate::{ simpson_integration, rng::Xorshift };
+use crate::{ math::simpson_integration, rng::Xorshift };
 use crate::tracer::{ Spectrum, Texture };
 use std::io::Write;
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::Path;
-use uuid::Uuid;
 
+const TMP_DIR: &str = "./tmp/";
 const THETA_BINS: usize = 10;
 const PHI_BINS: usize = 2 * THETA_BINS;
 const NUM_SAMPLES: usize = THETA_BINS * PHI_BINS * 1_000;
@@ -68,11 +68,20 @@ fn write_tables(
     expected: [Float; PHI_BINS*THETA_BINS],
     wo: Direction,
 ) {
-    let file_name = format!("/tmp/lumo_chi2_{}.json", Uuid::new_v4());
+    if !fs::exists(TMP_DIR).expect("IO error") {
+        fs::create_dir(TMP_DIR).expect("Unable to create temp dir");
+    }
+    let file_name = format!("{}lumo_chi2_{}.json", TMP_DIR, rng::gen_seed());
     let path = Path::new(&file_name);
-    let mut tmp_file = File::create(path).expect("Unable to create temporary file");
-    write!(tmp_file, "{{\"expected\":{:?},\"actual\":{:?},\"wo\":{}}}", expected, actual, wo)
+    let mut tmp_file = File::create(&file_name)
+        .expect("Unable to create temporary file");
+
+    write!(tmp_file,
+           "{{\"expected\":{:?},\"actual\":{:?},\"wo\":{}}}",
+           expected, actual, wo
+    )
         .expect("Unable to write to temporary file");
+
     println!("Dumped tables to {}", path.to_str().unwrap());
 }
 
@@ -136,7 +145,7 @@ fn chi2_pass(wo: Direction, rng: &mut Xorshift, bxdf: BxDF) -> bool {
          * p-value, probability to get test statistic at least as extreme,
          * assuming null hypothesis holds
          */
-        let pval = 1.0 - crate::chi2::chi2_cdf(dof, stat);
+        let pval = 1.0 - crate::math::chi2::chi2_cdf(dof, stat);
         println!("test statistic: {} p-value: {}", stat, pval);
 
         // we are possibly running multiple chi2 tests. apply Šidák correction

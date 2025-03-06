@@ -15,9 +15,9 @@ fn hsv_to_rgb(h: Float) -> Spectrum {
 
 fn main() -> Result<(), std::io::Error> {
     let camera = Camera::builder()
-        .origin(Vec3::new(0.0, 1.5, 1.5))
-        .towards(Vec3::ZERO)
-        .up(Vec3::Y - Vec3::Z)
+        .origin(0.0, 1.5, 1.5)
+        .towards(0.0, 0.0, 0.0)
+        .up(0.0, 1.0, -1.0)
         .build();
 
     let mut scene = Scene::default();

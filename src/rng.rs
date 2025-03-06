@@ -1,4 +1,4 @@
-use crate::{Float, Vec2, Vec3};
+use crate::{Float, Vec2, Vec3, Vec4};
 use std::time::SystemTime;
 
 /// Utility functions to help sample from different geometrics
@@ -85,6 +85,15 @@ impl Xorshift {
     /// Random vector in `[0,1)^3`
     pub fn gen_vec3(&mut self) -> Vec3 {
         Vec3::new(
+            self.gen_float(),
+            self.gen_float(),
+            self.gen_float(),
+        )
+    }
+
+    pub fn gen_vec4(&mut self) -> Vec4 {
+        Vec4::new(
+            self.gen_float(),
             self.gen_float(),
             self.gen_float(),
             self.gen_float(),

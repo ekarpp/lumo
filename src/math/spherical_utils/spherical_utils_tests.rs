@@ -11,11 +11,11 @@ fn same_hemisphere_test() {
     ));
     assert!(!same_hemisphere(
         Direction::Z,
-        Direction::NEG_Z
+        -Direction::Z
     ));
     assert!(same_hemisphere(
         Direction::Y + 0.1 * Direction::Z,
-        Direction::NEG_Y + 0.1 * Direction::Z
+        -Direction::Y + 0.1 * Direction::Z
     ));
 
     let mut rng = Xorshift::default();

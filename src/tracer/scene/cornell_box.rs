@@ -49,7 +49,7 @@ impl Scene {
                 Vec3::new(213.0, 548.8, 227.0),
             ];
             scene.add_light(Rectangle::new(
-                Mat3::from_cols(vertices[0], vertices[1], vertices[2]),
+                Mat3::new(vertices[0], vertices[1], vertices[2]),
                 light,
             ));
             //add_object(vertices, light, None);

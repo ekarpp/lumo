@@ -8,6 +8,10 @@ pub struct Plane {
     material: Material,
     /// `p.dot(-norm)`, used for fast hit calculations
     d: EFloat,
+    /// u for uv-basis
+    u: Normal,
+    /// v for uv-basis
+    v: Normal,
 }
 
 impl Plane {
@@ -15,6 +19,10 @@ impl Plane {
     pub fn new(p: Point, n: Normal, material: Material) -> Box<Self> {
         assert!(n.dot(n) != 0.0);
         let normal = n.normalize();
+        let onb = Onb::new(normal);
+        let u = onb.u;
+        let v = onb.v;
+
         let nx = EFloat::from(normal.x); let ny = EFloat::from(normal.y);
         let nz = EFloat::from(normal.z); let px = EFloat::from(p.x);
         let py = EFloat::from(p.y); let pz = EFloat::from(p.z);
@@ -25,7 +33,7 @@ impl Plane {
         Box::new(Self {
             normal,
             material,
-            d,
+            d, u, v
         })
     }
 }
@@ -61,8 +69,19 @@ impl Object for Plane {
                 (oz + dz * t).abs_error(),
             );
 
-            let (u, v) = self.normal.any_orthonormal_pair();
-            let uv = Vec2::new(u.dot(xi), v.dot(xi)).fract();
+            let map_uv = |n: Normal, p: Point| -> Float {
+                let dt = n.dot(p).fract();
+                if dt < 0.0 {
+                    dt + 1.0
+                } else {
+                    dt
+                }
+            };
+
+            let uv = Vec2::new(
+                map_uv(self.u, xi),
+                map_uv(self.v, xi),
+            );
 
             Hit::new(
                 t.value,

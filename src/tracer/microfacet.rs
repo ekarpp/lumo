@@ -1,4 +1,5 @@
-use crate::{ Normal, Direction, Float, Vec2, complex::Complex, spherical_utils };
+use crate::{ Normal, Direction, Float, Vec2 };
+use crate::math::{ complex::Complex, spherical_utils };
 use crate::tracer::{ Color, ColorWavelength, hit::Hit, Texture };
 
 /// Configurable parameters for a microsurface

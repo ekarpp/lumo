@@ -1,6 +1,6 @@
 use crate::Float;
 
-pub fn fmt_si(val: i32) -> String {
+pub fn fmt_si(val: u64) -> String {
     let val = val as Float;
 
     if val > 1e9 {

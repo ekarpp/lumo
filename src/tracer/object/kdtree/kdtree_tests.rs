@@ -27,10 +27,10 @@ mod util {
 #[test]
 fn intersect_planar() {
     let vertices = vec![
-        Point::NEG_X,
+        -Point::X,
         Point::X,
         Point::X + Point::Y,
-        Point::NEG_X + Point::Y,
+        -Point::X + Point::Y,
     ];
     let faces = vec![
         Face::new(vec![0, 1, 2], vec![], vec![]),
@@ -45,7 +45,7 @@ fn intersect_planar() {
         Material::Blank,
     );
 
-    let r = Ray::new(0.5 * (Point::Y + Point::Z), Point::NEG_Z);
+    let r = Ray::new(0.5 * (Point::Y + Point::Z), -Point::Z);
     assert!(mesh.hit(&r, 0.0, crate::INF).is_some());
 }
 

@@ -16,7 +16,7 @@ pub struct CameraBuilder {
     zoom: Float,
     lens_radius: Float,
     focal_length: Float,
-    resolution: (i32, i32),
+    resolution: (u64, u64),
     camera_type: CameraType,
     vfov: Float,
 }
@@ -32,7 +32,7 @@ impl CameraBuilder {
     pub fn new() -> Self {
         Self {
             origin: Point::ZERO,
-            towards: Point::NEG_Z,
+            towards: -Point::Z,
             up: Direction::Y,
             zoom: 1.0,
             lens_radius: 0.0,
@@ -44,20 +44,20 @@ impl CameraBuilder {
     }
 
     /// Set `origin` of the camera
-    pub fn origin(mut self, origin: Point) -> Self {
-        self.origin = origin;
+    pub fn origin(mut self, x: Float, y: Float, z: Float) -> Self {
+        self.origin = Vec3::new(x, y, z);
         self
     }
 
     /// Set point `towards` which the camera is looking
-    pub fn towards(mut self, towards: Point) -> Self {
-        self.towards = towards;
+    pub fn towards(mut self, x: Float, y: Float, z: Float) -> Self {
+        self.towards = Vec3::new(x, y, z);
         self
     }
 
     /// Set `up` direction of the camera
-    pub fn up(mut self, up: Direction) -> Self {
-        self.up = up;
+    pub fn up(mut self, x: Float, y: Float, z: Float) -> Self {
+        self.up = Vec3::new(x, y, z);
         self
     }
 
@@ -80,7 +80,7 @@ impl CameraBuilder {
     }
 
     /// Set the `resolution` of the image
-    pub fn resolution(mut self, resolution: (i32, i32)) -> Self {
+    pub fn resolution(mut self, resolution: (u64, u64)) -> Self {
         self.resolution = resolution;
         self
     }
@@ -104,16 +104,16 @@ impl CameraBuilder {
             CameraType::Orthographic => matrices::orthographic_projection(),
         };
 
-        let ctw = matrices::camera_to_world(self.origin, self.towards, self.up);
-        let rts = matrices::raster_to_screen(self.resolution, self.zoom);
+        let wtc = matrices::world_to_camera(self.origin, self.towards, self.up);
+        let sctr = matrices::screen_to_raster(self.resolution, self.zoom);
 
         let cfg = CameraConfig::new(
             self.lens_radius,
             self.focal_length,
             self.resolution,
-            ctw,
-            rts,
-            cts.inverse(),
+            wtc,
+            sctr,
+            cts,
         );
 
         match self.camera_type {

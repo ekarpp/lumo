@@ -14,19 +14,41 @@ impl Onb {
     /// Creates a new ONB.
     ///
     /// # Arguments
-    /// * `dir` - Direction of `z` axis. Not necessarily normalized.
-    pub fn new(dir: Direction) -> Self {
-        let w = dir.normalize();
-        let (u, v) = w.any_orthonormal_pair();
+    /// * `w` - Direction of `z` axis, normalized.
+    #[inline]
+    pub fn new(w: Normal) -> Self {
+        #[cfg(debug_assertions)]
+        assert!(w.is_normalized());
+
+        // Duff et al. 2017
+        let sgn = w.z.signum();
+        let a = -1.0 / (sgn + w.z);
+        let b = w.x * w.y * a;
+
+        let u = Normal::new(
+            1.0 + sgn * w.x * w.x * a,
+            sgn * b,
+            -sgn * w.x,
+        );
+        let v = Normal::new(
+            b,
+            sgn + w.y * w.y * a,
+            -w.y
+        );
+
         Self { u, v, w }
     }
 
+    #[inline]
     #[allow(dead_code)]
     pub fn new_from_basis(u: Normal, v: Normal, w: Normal) -> Self {
-        let eps = 1e-5;
-        // assert orthornomality
-        assert!(u.is_normalized() && v.is_normalized() && w.is_normalized());
-        assert!(u.dot(v).abs() < eps && u.dot(w).abs() < eps && v.dot(w).abs() < eps);
+        #[cfg(debug_assertions)]
+        {
+            let eps = 1e-5;
+            // assert orthornomality
+            assert!(u.is_normalized() && v.is_normalized() && w.is_normalized());
+            assert!(u.dot(v).abs() < eps && u.dot(w).abs() < eps && v.dot(w).abs() < eps);
+        }
         Self { u, v, w }
     }
 
@@ -57,13 +79,13 @@ mod tests {
 
     #[test]
     fn both_directions() {
-        let w = Direction::new(1.23, 4.56, 7.89);
+        let w = Direction::new(1.23, 4.56, 7.89).normalize();
         let uvw = Onb::new(w);
 
-        let v = Direction::new(9.87, 6.54, 3.21);
+        let v = Direction::new(9.87, 6.54, 3.21).normalize();
         let vp = uvw.to_world(uvw.to_local(v));
 
-        assert!(v.distance(vp) < 1e-10);
+        assert!(v.distance(vp) < crate::EPSILON);
     }
 
     #[test]
@@ -76,6 +98,6 @@ mod tests {
         let v = Direction::new(9.87, 6.54, 3.21);
         let vp = uvw.to_world(uvw.to_local(v));
 
-        assert!(v.distance(vp) < 1e-10);
+        assert!(v.distance(vp) < crate::EPSILON);
     }
 }

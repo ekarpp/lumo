@@ -1,6 +1,6 @@
 [package]
 name = "lumo"
-version = "0.5.2"
+version = "0.5.3"
 description = "CPU based rendering engine"
 license = "MIT"
 rust-version = "1.82"
@@ -10,16 +10,10 @@ keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
 
-[dev-dependencies]
-uuid = { version = "1.8.0", features = ["v4"] }
-
 [dependencies]
-glam = "0.26.0"
+curl = "0.4.47"
 itertools = "0.10.5"
 libm = "0.2.11"
 png = "0.17.7"
-regex = { version = "1.8.1", features = ["std"] }
 rustc-hash = "2.1.1"
-tempfile = "3.4.0"
-ureq = "2.6.2"
 zip = "0.6.4"

@@ -13,14 +13,14 @@ pub mod parser;
 /// The heart.
 pub mod tracer;
 
-/// Complex numbers
-mod complex;
 /// `Float` with built in tracking of floating point error
 mod efloat;
 /// Utility functions to format output
 mod formatting;
 /// Wrapper for writing image buffer to file.
 mod image;
+/// Math utilities
+mod math;
 /// Perlin noise generator.
 mod perlin;
 /// Random number generator and utility functions to sample different geometrics
@@ -29,27 +29,17 @@ mod rng;
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
-/// Utility functions when working with vectors in shading space
-mod spherical_utils;
 /// Tone mapping functions
 mod tone_mapping;
 
-#[cfg(test)]
-/// Implementation of adaptive simpson for numerical integration. Used in tests only.
-mod simpson_integration;
-
-#[cfg(test)]
-/// Chi2 CDF, used only in tests
-mod chi2;
-
-type Transform = glam::DAffine3;
-type Vec4 = glam::DVec4;
-type Mat4 = glam::DMat4;
-type Vec2 = glam::DVec2;
+type Transform = math::transform::Transform;
+type Vec4 = math::mat4::Vec4;
+type Mat4 = math::mat4::Mat4;
+type Vec2 = math::vec2::Vec2;
 /// 3x3 matrix type alias
-pub type Mat3 = glam::DMat3;
+pub type Mat3 = math::mat3::Mat3;
 /// 3 element vector type alias
-pub type Vec3 = glam::DVec3;
+pub type Vec3 = math::vec3::Vec3;
 /// Float type alias
 pub type Float = f64;
 

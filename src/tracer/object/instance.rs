@@ -7,8 +7,6 @@ pub struct Instance<T> {
     object: T,
     /// Transformation from local to world
     transform: Transform,
-    /// Transformation from world to local
-    inv_transform: Transform,
     /// Transformation for normals from local to world.
     /// Transpose of `inv_transform` without translation.
     normal_transform: Mat3,
@@ -18,13 +16,11 @@ impl<T> Instance<T> {
     /// Constructs an instance of `object` that is transformed with
     /// `transform`.
     pub fn new(object: T, transform: Transform) -> Box<Self> {
-        let inv_transform = transform.inverse();
-        let normal_transform = inv_transform.matrix3.transpose();
+        let normal_transform = transform.to_normal();
 
         Box::new(Self {
             object,
             transform,
-            inv_transform,
             normal_transform,
         })
     }
@@ -32,14 +28,12 @@ impl<T> Instance<T> {
     fn propagate_fp_err(&self, h: &mut Hit) {
         let e3 = h.fp_error.abs();
         let p3 = h.p.abs();
-        let m3 = self.transform.matrix3.abs();
-        let t3 = self.transform.translation.abs();
 
         h.fp_error = if e3.x == 0.0 && e3.y == 0.0 && e3.z == 0.0 {
-            efloat::gamma(3) * (t3 + m3.mul_vec3(p3))
+            efloat::gamma(3) * self.transform.abs().transform_pt(p3)
         } else {
-            efloat::gamma(3) * (t3 + m3.mul_vec3(p3))
-                + (efloat::gamma(3) + 1.0) * m3.mul_vec3(e3)
+            efloat::gamma(3) * self.transform.abs().transform_pt(p3)
+                + (efloat::gamma(3) + 1.0) * self.transform.abs().transform_dir(e3)
         };
     }
 }
@@ -79,35 +73,30 @@ impl<T: Bounded> Bounded for Instance<T> {
         let mut ax_max = Point::ZERO;
         let aabb = self.object.bounding_box();
 
-        let a0 = self.transform.matrix3.row(0) * aabb.min(Axis::X);
-        let b0 = self.transform.matrix3.row(0) * aabb.max(Axis::X);
+        let a0 = self.transform.row(0).truncate() * aabb.min(Axis::X);
+        let b0 = self.transform.row(0).truncate() * aabb.max(Axis::X);
         let a0b0 = a0.min(b0);
         ax_min.x += a0b0.x + a0b0.y + a0b0.z;
         let a0b0 = a0.max(b0);
         ax_max.x += a0b0.x + a0b0.y + a0b0.z;
 
-        let a1 = self.transform.matrix3.row(1) * aabb.min(Axis::Y);
-        let b1 = self.transform.matrix3.row(1) * aabb.max(Axis::Y);
+        let a1 = self.transform.row(1).truncate() * aabb.min(Axis::Y);
+        let b1 = self.transform.row(1).truncate() * aabb.max(Axis::Y);
         let a1b1 = a1.min(b1);
         ax_min.y += a1b1.x + a1b1.y + a1b1.z;
         let a1b1 = a1.max(b1);
         ax_max.y += a1b1.x + a1b1.y + a1b1.z;
 
-        let a2 = self.transform.matrix3.row(2) * aabb.min(Axis::Z);
-        let b2 = self.transform.matrix3.row(2) * aabb.max(Axis::Z);
+        let a2 = self.transform.row(2).truncate() * aabb.min(Axis::Z);
+        let b2 = self.transform.row(2).truncate() * aabb.max(Axis::Z);
         let a2b2 = a2.min(b2);
         ax_min.z += a2b2.x + a2b2.y + a2b2.z;
         let a2b2 = a2.max(b2);
         ax_max.z += a2b2.x + a2b2.y + a2b2.z;
 
         // translate
-        ax_min.x += self.transform.translation.x;
-        ax_min.y += self.transform.translation.y;
-        ax_min.z += self.transform.translation.z;
-
-        ax_max.x += self.transform.translation.x;
-        ax_max.y += self.transform.translation.y;
-        ax_max.z += self.transform.translation.z;
+        ax_min += self.transform.to_translation();
+        ax_max += self.transform.to_translation();
 
         AaBoundingBox::new(ax_min, ax_max)
     }
@@ -117,32 +106,33 @@ impl<T: Object> Object for Instance<T> {
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         // inner object is in world coordinates. hence apply inverse
         // transformation to ray instead of transformation to object.
-        let ray_local = r.transform(self.inv_transform);
+        let ray_local = r.transform(&self.transform);
 
         self.object.hit(&ray_local, t_min, t_max)
             .map(|mut h| {
-                h.ns = (self.normal_transform * h.ns).normalize();
-                h.ng = (self.normal_transform * h.ng).normalize();
+                h.ns = (self.normal_transform.mul_vec3(h.ns)).normalize();
+                h.ng = (self.normal_transform.mul_vec3(h.ng)).normalize();
 
                 self.propagate_fp_err(&mut h);
 
-                h.p =  self.transform.transform_point3(h.p);
+                h.p =  self.transform.transform_pt(h.p);
                 h
             })
     }
 
     fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
-        let r_local = r.transform(self.inv_transform);
+        let r_local = r.transform(&self.transform);
         self.object.hit_t(&r_local, t_min, t_max)
     }
 }
 
 impl<T: Sampleable> Sampleable for Instance<T> {
     fn area(&self) -> Float {
+        let m3t = self.transform.to_mat3().transpose();
         let scale = Vec3::new(
-            self.transform.matrix3.x_axis.length(),
-            self.transform.matrix3.y_axis.length(),
-            self.transform.matrix3.z_axis.length(),
+            m3t.y0.length(),
+            m3t.y1.length(),
+            m3t.y2.length(),
         );
 
         // only allow uniform scale
@@ -156,26 +146,26 @@ impl<T: Sampleable> Sampleable for Instance<T> {
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let mut ho = self.object.sample_on(rand_sq);
 
-        ho.ng = self.normal_transform * ho.ng;
-        ho.ns = self.normal_transform * ho.ns;
-        ho.p = self.transform.transform_point3(ho.p);
+        ho.ng = self.normal_transform.mul_vec3(ho.ng);
+        ho.ns = self.normal_transform.mul_vec3(ho.ns);
+        ho.p = self.transform.transform_pt(ho.p);
         self.propagate_fp_err(&mut ho);
 
         ho
     }
 
     fn sample_towards(&self, xo: Point, rand_sq: Vec2) -> Direction {
-        let xo_local = self.inv_transform.transform_point3(xo);
+        let xo_local = self.transform.transform_pt_inv(xo);
         let dir_local = self.object.sample_towards(xo_local, rand_sq);
 
-        self.transform.transform_vector3(dir_local).normalize()
+        self.transform.transform_dir(dir_local).normalize()
     }
 
     fn sample_towards_pdf(&self, ri: &Ray, xi: Point, ng: Normal) -> Float {
-        let normal_transform_inverse = self.normal_transform.inverse().transpose();
-        let ng_local = (normal_transform_inverse * ng).normalize();
-        let xi_local = self.inv_transform.transform_point3(xi);
-        let ri_local = ri.transform(self.inv_transform);
+        let normal_transform_inverse = self.normal_transform.inv().transpose();
+        let ng_local = (normal_transform_inverse.mul_vec3(ng)).normalize();
+        let xi_local = self.transform.transform_pt_inv(xi);
+        let ri_local = ri.transform(&self.transform);
         let xo_local = ri_local.origin;
         let pdf_local = self.object.sample_towards_pdf(&ri_local, xi_local, ng_local);
 
@@ -185,8 +175,8 @@ impl<T: Sampleable> Sampleable for Instance<T> {
         // the base of the parallellepiped gives us the area scale at the
         // point of impact. think this is not exact with ansiotropic
         // scaling of solids.
-        let height = ng.dot(self.transform.matrix3 * ng_local).abs();
-        let volume = self.transform.matrix3.determinant().abs();
+        let height = ng.dot(self.transform.transform_dir(ng_local)).abs();
+        let volume = self.transform.to_mat3().det().abs();
         let jacobian = volume / height;
 
         let wi_local = ri_local.dir;
@@ -220,22 +210,17 @@ pub trait Instanceable<T> {
 
     /// Rotate around z-axis by `r` radians
     fn rotate_z(self, r: Float) -> Box<Instance<T>>;
-
-    /// Rotate around `axis` by `r` radians
-    fn rotate_axis(self, axis: Direction, r: Float) -> Box<Instance<T>>;
 }
 
 /// To make applying transformations to objects easy
 impl<T: Object> Instanceable<T> for T {
     fn translate(self, x: Float, y: Float, z: Float) -> Box<Instance<T>> {
-        let t = Vec3::new(x, y, z);
-        Instance::new(self, Transform::from_translation(t))
+        Instance::new(self, Transform::translation(x, y, z))
     }
 
     fn scale(self, x: Float, y: Float, z: Float) -> Box<Instance<T>> {
         assert!(x * y * z != 0.0);
-        let s = Vec3::new(x, y, z);
-        Instance::new(self, Transform::from_scale(s))
+        Instance::new(self, Transform::scale(x, y, z))
     }
 
     fn scale_uniform(self, s: Float) -> Box<Instance<T>> {
@@ -243,35 +228,30 @@ impl<T: Object> Instanceable<T> for T {
     }
 
     fn rotate_x(self, r: Float) -> Box<Instance<T>> {
-        Instance::new(self, Transform::from_rotation_x(r))
+        Instance::new(self, Transform::rotate_x(r))
     }
 
     fn rotate_y(self, r: Float) -> Box<Instance<T>> {
-        Instance::new(self, Transform::from_rotation_y(r))
+        Instance::new(self, Transform::rotate_y(r))
     }
 
     fn rotate_z(self, r: Float) -> Box<Instance<T>> {
-        Instance::new(self, Transform::from_rotation_z(r))
+        Instance::new(self, Transform::rotate_z(r))
     }
 
-    fn rotate_axis(self, axis: Direction, r: Float) -> Box<Instance<T>> {
-        Instance::new(self, Transform::from_axis_angle(axis, r))
-    }
 }
 
 /// Prevent nested Instance structs
 impl<T: Object> Instance<T> {
     /// Apply translation AFTER curret transformations
     pub fn translate(self, x: Float, y: Float, z: Float) -> Box<Self> {
-        let t = Vec3::new(x, y, z);
-        Self::new(self.object, Transform::from_translation(t) * self.transform)
+        Self::new(self.object, Transform::translation(x, y, z) * self.transform)
     }
 
     /// Apply scale AFTER current transformations
     pub fn scale(self, x: Float, y: Float, z: Float) -> Box<Self> {
         assert!(x * y * z != 0.0);
-        let s = Vec3::new(x, y, z);
-        Self::new(self.object, Transform::from_scale(s) * self.transform)
+        Self::new(self.object, Transform::scale(x, y, z) * self.transform)
     }
 
     /// Apply uniform scale AFTER current transformations
@@ -282,22 +262,17 @@ impl<T: Object> Instance<T> {
     /// Apply x-rotation AFTER current transformations.
     /// Looking at positive x, rotation in clockwise direction.
     pub fn rotate_x(self, r: Float) -> Box<Self> {
-        Self::new(self.object, Transform::from_rotation_x(r) * self.transform)
+        Self::new(self.object, Transform::rotate_x(r) * self.transform)
     }
 
     /// Apply y-rotation AFTER current transformations
     pub fn rotate_y(self, r: Float) -> Box<Self> {
-        Self::new(self.object, Transform::from_rotation_y(r) * self.transform)
+        Self::new(self.object, Transform::rotate_y(r) * self.transform)
     }
 
     /// Apply z-rotation AFTER current transformations
     pub fn rotate_z(self, r: Float) -> Box<Self> {
-        Self::new(self.object, Transform::from_rotation_z(r) * self.transform)
-    }
-
-    /// Apply axis rotation AFTER current transformations
-    pub fn rotate_axis(self, axis: Direction, r: Float) -> Box<Instance<T>> {
-        Self::new(self.object, Transform::from_axis_angle(axis, r) * self.transform)
+        Self::new(self.object, Transform::rotate_z(r) * self.transform)
     }
 }
 

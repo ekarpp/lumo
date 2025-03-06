@@ -7,11 +7,10 @@ use std::fs::{ self, File };
 use std::sync::Arc;
 use std::io::{
     self, BufRead, BufReader, Result,
-    Cursor, Read, Seek, Write
+    Cursor, Read, Write,
 };
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use zip::ZipArchive;
-use regex::Regex;
 use mtl::MtlConfig;
 
 /// .obj parser
@@ -20,6 +19,7 @@ mod obj;
 mod mtl;
 
 const SCENE_DIR: &str = "./scenes/";
+const TMP_DIR: &str = "./tmp/";
 
 /*
  * BEWARE WHO ENTERS! HERE BE DRAGONS!
@@ -57,12 +57,12 @@ fn parse_vec3(tokens: &[&str]) -> Result<Vec3> {
 /// For .obj and .mtl parsers
 fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
     token
-        .parse::<i32>()
+        .parse::<i64>()
         .map(|idx| {
             if idx > 0 {
                 (idx - 1) as usize
             } else {
-                (vec_len as i32 + idx) as usize
+                (vec_len as i64 + idx) as usize
             }
         })
         .map_err(|_| obj_error("Could not parse index in file"))
@@ -71,23 +71,23 @@ fn parse_idx(token: &str, vec_len: usize) -> Result<usize> {
 /* these thigs below could be optimized alot...
  * but its boring work for little? gain */
 
-fn _get_url(url: &str) -> Result<Vec<u8>> {
-    let mut bytes = Vec::new();
+fn _get_url(url: &str, bytes: &mut Vec<u8>) -> Result<()> {
+    let mut curl = curl::easy::Easy::new();
+    curl.url(url)
+        .map_err(|e| obj_error(e.description()))?;
 
-    ureq::get(url)
-        .call()
-        .map_err(|_| obj_error("Error during HTTP, error parsing not implemented"))?
-        .into_reader()
-        .read_to_end(&mut bytes)?;
+    let mut transfer = curl.transfer();
+    transfer.write_function(|data| { bytes.extend_from_slice(data); Ok(data.len()) })
+        .map_err(|e| obj_error(e.description()))?;
 
-    Ok(bytes)
+    transfer.perform()
+        .map_err(|e| obj_error(e.description()))?;
+
+    Ok(())
 }
 
 /// Extracts file matching `re` from zip file in `bytes`
-fn _extract_zip(bytes: Vec<u8>, re_str: &str) -> Result<Vec<u8>> {
-    let re = Regex::new(re_str)
-        .map_err(|e| obj_error(&e.to_string()))?;
-
+fn _extract_zip(bytes: Vec<u8>, end_match: &str) -> Result<Vec<u8>> {
     println!("Reading .zip");
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     let mut data = Vec::new();
@@ -95,7 +95,7 @@ fn _extract_zip(bytes: Vec<u8>, re_str: &str) -> Result<Vec<u8>> {
     for i in 0..zip.len() {
         let mut file = zip.by_index(i)?;
 
-        if re.is_match(file.name()) {
+        if file.name().ends_with(end_match) {
             println!("Extracting \"{}\"", file.name());
             file.read_to_end(&mut data)?;
             break;
@@ -111,12 +111,16 @@ fn _extract_zip(bytes: Vec<u8>, re_str: &str) -> Result<Vec<u8>> {
 
 /// Maps `Vec<u8>` to `File`
 fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
-    let mut tmp_file = tempfile::tempfile()?;
+    if !fs::exists(TMP_DIR)? {
+        fs::create_dir(TMP_DIR)?;
+    }
+    let fname = format!("{}parser_{}", TMP_DIR, crate::rng::gen_seed());
+    let mut tmp_file = File::create(&fname)?;
 
     tmp_file.write_all(&bytes)?;
-    tmp_file.rewind()?;
 
-    Ok(tmp_file)
+    // re open in read only mode
+    File::open(&fname)
 }
 
 /// Loads `tex_name` from `zip` to an `Image`
@@ -144,7 +148,7 @@ pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
 
     if url.ends_with(".zip") {
         println!("Found zip archive, searching for .OBJ files");
-        bytes = _extract_zip(bytes, r".+\.obj$")?;
+        bytes = _extract_zip(bytes, ".obj")?;
     } else if !url.ends_with(".obj") {
         return Err(obj_error(
             "Bad URL, or at least does not end with .zip or .obj",
@@ -159,14 +163,13 @@ fn _check_cached(url: &str) -> Result<String> {
     if !fs::exists(SCENE_DIR)? {
         fs::create_dir(SCENE_DIR)?;
     }
-    let re = Regex::new("[^/]*$")
-        .map_err(|e| obj_error(&e.to_string()))?;
-    let fname = re.find(url)
-        .ok_or(obj_error("couldn't regex parse url"))?.as_str();
+    let fname = url.rsplit('/').next()
+        .ok_or(obj_error("couldn't regex parse url"))?;
     let path = format!("{}{}", SCENE_DIR, fname);
     if !fs::exists(&path)? {
         println!("\"{}\" not found, downloading from \"{}\"", path, url);
-        let resp = _get_url(url)?;
+        let mut resp = Vec::new();
+        _get_url(url, &mut resp)?;
         let mut file = fs::File::create(&path)?;
         file.write_all(&resp)?;
     }
@@ -213,7 +216,7 @@ fn _scene_from_file(f: Vec<u8>, obj_name: &str) -> Result<Scene> {
     let obj_file = _bytes_to_file(obj_bytes.clone())?;
 
     // parse materials first
-    let mut materials = HashMap::<String, MtlConfig>::new();
+    let mut materials = FxHashMap::<String, MtlConfig>::default();
     let reader = BufReader::new(obj_file);
     for line in reader.lines() {
         let line = line?.trim().to_string();

@@ -72,7 +72,7 @@ impl MtlConfig {
 pub fn load_file(
     file: File,
     zip_file: Option<Vec<u8>>,
-    materials: &mut HashMap<String, MtlConfig>,
+    materials: &mut FxHashMap<String, MtlConfig>,
 ) -> Result<()> {
     let reader = BufReader::new(file);
 

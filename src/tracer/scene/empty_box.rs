@@ -35,7 +35,7 @@ impl Scene {
         let light: Spectrum = 32.0 * Spectrum::from_srgb(252, 201, 138);
         /* rectangular area light */
         scene.add_light(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front + l_dim),
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
                 Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
@@ -45,7 +45,7 @@ impl Scene {
 
         /* left wall */
         scene.add(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(left, ground, back),
                 Point::new(left, ground, front),
                 Point::new(left, ceiling, front),
@@ -55,7 +55,7 @@ impl Scene {
 
         /* right wall */
         scene.add(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(right, ground, front),
                 Point::new(right, ground, back),
                 Point::new(right, ceiling, back),
@@ -65,7 +65,7 @@ impl Scene {
 
         /* floor */
         scene.add(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(left, ground, back),
                 Point::new(right, ground, back),
                 Point::new(right, ground, front),
@@ -75,7 +75,7 @@ impl Scene {
 
         /* roof */
         scene.add(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(left, ceiling, front),
                 Point::new(right, ceiling, front),
                 Point::new(right, ceiling, back),
@@ -85,7 +85,7 @@ impl Scene {
 
         /* front wall */
         scene.add(Rectangle::new(
-            Mat3::from_cols(
+            Mat3::new(
                 Point::new(left, ground, front),
                 Point::new(right, ground, front),
                 Point::new(right, ceiling, front),

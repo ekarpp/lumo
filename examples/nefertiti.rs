@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* floor */
     scene.add(Plane::new(
-        Vec3::NEG_Y,
+        -Vec3::Y,
         Vec3::Y,
         Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
@@ -18,13 +18,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* roof */
     scene.add(Plane::new(
         Vec3::Y,
-        Vec3::NEG_Y,
+        -Vec3::Y,
         Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* left wall */
     scene.add(Plane::new(
-        Vec3::NEG_X,
+        -Vec3::X,
         Vec3::X,
         Material::diffuse(Texture::from(Spectrum::BLACK)),
     ));
@@ -32,13 +32,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* right wall */
     scene.add(Plane::new(
         Vec3::X,
-        Vec3::NEG_X,
+        -Vec3::X,
         Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
     /* front */
     scene.add(Plane::new(
-        2.0 * Vec3::NEG_Z,
+        2.0 * -Vec3::Z,
         Vec3::Z,
         Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* back */
     scene.add(Plane::new(
         Vec3::Z,
-        Vec3::NEG_Z,
+        -Vec3::Z,
         Material::diffuse(Texture::from(Spectrum::BLACK))
     ));
 
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	    );
     }
 
-    let xy_rect = Mat3::from_cols(
+    let xy_rect = Mat3::new(
         Vec3::ZERO,
         Vec3::X,
         Vec3::X + Vec3::Y,
@@ -124,24 +124,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     scene.add_light(Rectangle::new(
-        xy_rect,
+        xy_rect.clone(),
         Material::Light(Texture::from(2.0 * Spectrum::WHITE)))
                     .scale(0.4, 0.4, 1.0)
                     .rotate_y(-theta)
-		            .rotate_axis(Vec3::new(theta.cos(), 0.0, theta.sin()), PI / 8.0)
+                    .rotate_x(theta / 2.0)
+                    .rotate_z(theta / 2.0)
                     .translate(0.6, 0.2, -1.7)
     );
 
     // behind
     scene.add_light(Rectangle::new(
-        xy_rect,
+        xy_rect.clone(),
         Material::Light(Texture::from(Spectrum::WHITE)))
                     .scale(0.3, 0.3, 1.0)
                     .rotate_x(2.0 * PI - 2.0 * theta)
                     .translate(-0.15, 0.5, -0.8)
     );
     scene.add_light(Rectangle::new(
-	    xy_rect,
+	    xy_rect.clone(),
 	    Material::Light(Texture::from(2.0 * Spectrum::WHITE)))
 		            .scale(0.3, 0.3, 1.0)
 		            .rotate_x(PI)
@@ -159,13 +160,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let camera = if cfg!(debug_assertions) {
 	    Camera::builder()
-	        .origin(0.5 * Vec3::Z)
+	        .origin(0.0, 0.0, 0.5)
             .resolution((1000, 1000))
             .build()
     } else {
 	    Camera::builder()
-            .origin(Vec3::new(0.12, -0.23, -1.205))
-            .towards(Vec3::new(0.0, -0.26, -1.45))
+            .origin(0.12, -0.23, -1.205)
+            .towards(0.0, -0.26, -1.45)
             .zoom(5.0)
             .resolution((641, 939))
             .camera_type(CameraType::Orthographic)

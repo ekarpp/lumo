@@ -1,8 +1,8 @@
 use crate::{
     Point, Direction, Float, Vec2, Transform, Normal,
-    Mat3, Mat4, Vec4, Vec3, rng, spherical_utils
+    Mat3, Vec3, rng, math::spherical_utils
 };
-use glam::IVec2;
+use crate::math::vec2::UVec2;
 use crate::tracer::{ Color, ray::Ray };
 
 mod matrices;
@@ -15,17 +15,17 @@ pub use builder::CameraType;
 /// Common configuration for cameras
 pub struct CameraConfig {
     /// Image resolution
-    pub resolution: IVec2,
+    pub resolution: UVec2,
     /// Focal length i.e. distance to focal point behind camera
     pub focal_length: Float,
     /// Radius of the camera lens
     pub lens_radius: Float,
-    /// Screen space to camera space transformation
-    pub screen_to_camera: Mat4,
-    /// Raster space to screen space transformation
-    pub raster_to_screen: Transform,
-    /// Camera space to world space transformation
-    camera_to_world: Transform,
+    /// Screen space to camera space (or vice-versa) transformation
+    pub camera_to_screen: Transform,
+    /// Raster space to screen space (or vice-versa) transformation
+    pub screen_to_raster: Transform,
+    /// Camera space to world space (or vice-versa) transformation
+    world_to_camera: Transform,
     /// Image plane area in camera space
     pub image_plane_area: Float,
 }
@@ -35,24 +35,24 @@ impl CameraConfig {
     pub fn new(
         lens_radius: Float,
         focal_length: Float,
-        resolution: (i32, i32),
-        camera_to_world: Transform,
-        raster_to_screen: Transform,
-        screen_to_camera: Mat4,
+        resolution: (u64, u64),
+        world_to_camera: Transform,
+        screen_to_raster: Transform,
+        camera_to_screen: Transform,
     ) -> Self {
         assert!(lens_radius >= 0.0);
 
         let (width, height) = resolution;
-        let resolution = IVec2::new(width, height);
+        let resolution = UVec2::new(width, height);
         // in screen space
-        let p_min = raster_to_screen
-            .transform_point3(Vec3::ZERO);
-        let p_max = raster_to_screen
-            .transform_point3(Vec3::new(width as Float, height as Float, 0.0));
+        let p_min = screen_to_raster
+            .transform_pt_inv(Vec3::ZERO);
+        let p_max = screen_to_raster
+            .transform_pt_inv(Vec3::new(width as Float, height as Float, 0.0));
 
         // in camera space
-        let p_min = screen_to_camera.project_point3(p_min);
-        let p_max = screen_to_camera.project_point3(p_max);
+        let p_min = camera_to_screen.transform_pt_inv(p_min);
+        let p_max = camera_to_screen.transform_pt_inv(p_max);
 
         let p_min = p_min.truncate() / (if p_min.z == 0.0 { 1.0 } else { p_min.z });
         let p_max = p_max.truncate() / (if p_max.z == 0.0 { 1.0 } else { p_max.z });
@@ -63,49 +63,47 @@ impl CameraConfig {
         Self {
             lens_radius,
             focal_length,
-            screen_to_camera,
-            camera_to_world,
-            raster_to_screen,
+            camera_to_screen,
+            world_to_camera,
+            screen_to_raster,
             resolution,
             image_plane_area,
         }
     }
 
     pub fn point_to_local(&self, xo: Point) -> Point {
-        self.camera_to_world.inverse().transform_point3(xo)
+        self.world_to_camera.transform_pt(xo)
     }
 
     pub fn point_to_world(&self, xo_local: Point) -> Point {
-        self.camera_to_world.transform_point3(xo_local)
+        self.world_to_camera.transform_pt_inv(xo_local)
     }
 
     pub fn direction_to_local(&self, wi: Direction) -> Direction {
-        self.camera_to_world.inverse().transform_vector3(wi)
+        self.world_to_camera.transform_dir(wi)
     }
 
     pub fn direction_to_world(&self, wi_local: Direction) -> Direction {
-        self.camera_to_world.transform_vector3(wi_local)
+        self.world_to_camera.transform_dir_inv(wi_local)
     }
 
     pub fn normal_to_local(&self, no: Normal) -> Normal {
-        let m = self.camera_to_world.matrix3.transpose();
-        no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis
+        self.world_to_camera.to_normal().mul_vec3(no)
     }
 
     pub fn normal_to_world(&self, no: Normal) -> Normal {
-        let m = self.camera_to_world.matrix3.inverse().transpose();
-        no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis
+        self.world_to_camera.to_normal_inv().mul_vec3(no)
     }
 
     pub fn raster_to_camera(&self, raster_xy: Vec2) -> Point {
         let raster_xyz = raster_xy.extend(0.0);
-        let screen_xyz = self.raster_to_screen.transform_point3(raster_xyz);
-        self.screen_to_camera.project_point3(screen_xyz)
+        let screen_xyz = self.screen_to_raster.transform_pt_inv(raster_xyz);
+        self.camera_to_screen.transform_pt_inv(screen_xyz)
     }
 
     pub fn camera_to_raster(&self, xo_local: Point) -> Vec2 {
-        let screen_xyz = self.screen_to_camera.inverse().project_point3(xo_local);
-        let raster_xyz = self.raster_to_screen.inverse().transform_point3(screen_xyz);
+        let screen_xyz = self.camera_to_screen.transform_pt(xo_local);
+        let raster_xyz = self.screen_to_raster.transform_pt(screen_xyz);
         raster_xyz.truncate()
     }
 }
@@ -178,7 +176,7 @@ impl Camera {
     }
 
     /// Returns the resolution of the image
-    pub fn get_resolution(&self) -> IVec2 {
+    pub fn get_resolution(&self) -> UVec2 {
         self.get_cfg().resolution
     }
 

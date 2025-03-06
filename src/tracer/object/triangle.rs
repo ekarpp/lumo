@@ -240,9 +240,9 @@ mod triangle_tests {
     fn mesh() -> TriangleMesh {
         TriangleMesh {
             vertices: vec![
-                Point::NEG_Y + Point::X,
+                -Point::Y + Point::X,
                 Point::Y + Point::X,
-                Point::Y + Point::NEG_X,
+                Point::Y + -Point::X,
             ],
             normals: vec![],
             uvs: vec![],

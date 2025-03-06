@@ -1,5 +1,5 @@
 use super::*;
-use crate::simpson_integration;
+use crate::math::simpson_integration;
 
 const MAX_R: Float = 5.0;
 const STEPS: usize = 1_000;

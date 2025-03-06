@@ -35,7 +35,8 @@ pub fn sample(
 
     let phi = 2.0 * crate::PI * rand_sq.y;
 
-    let uvw = Onb::new(wo);
+    // wo can be from instance?
+    let uvw = Onb::new(wo.normalize());
     let wi = uvw.to_world(Direction::new(
         sin_theta * phi.cos(),
         sin_theta * phi.sin(),

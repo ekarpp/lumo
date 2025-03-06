@@ -1,5 +1,4 @@
 use crate::{Float, Vec2, rng::Xorshift};
-use glam::UVec2;
 use std::{ fmt, cell::RefCell };
 
 mod sobol_seq;
@@ -24,7 +23,7 @@ impl Default for SamplerType {
 impl SamplerType {
     /// Returns a sampler with `samples` corresponding to `self`
     #[allow(clippy::new_ret_no_self)]
-    pub fn new<'a>(&'a self, samples: u32, rng: &'a RefCell<Xorshift>) -> Box<dyn Sampler + 'a> {
+    pub fn new<'a>(&'a self, samples: u64, rng: &'a RefCell<Xorshift>) -> Box<dyn Sampler + 'a> {
         match self {
             Self::Uniform => Box::new(UniformSampler::new(samples, rng)),
             Self::Jittered => Box::new(JitteredSampler::new(samples, rng)),
@@ -54,14 +53,14 @@ impl Sampler for SobolSampler<'_> { }
 /// Choose each sample point uniformly at random
 struct UniformSampler<'a> {
     /// How many samples have been given?
-    state: u32,
+    state: u64,
     /// How many samples was asked?
-    samples: u32,
+    samples: u64,
     rng: &'a RefCell<Xorshift>,
 }
 
 impl<'a> UniformSampler<'a> {
-    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
+    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
         assert!(samples > 0);
         Self { samples, rng, state: 0 }
     }
@@ -85,19 +84,19 @@ struct JitteredSampler<'a> {
     /// Width of one strata
     scale: Vec2,
     /// How many samples have been given?
-    state: u32,
+    state: u64,
     /// How many strata per dimension?
-    strata_dim: u32,
+    strata_dim: u64,
     /// How many samples have been asked for? Should be a square,
     /// otherwise gets rounded down to the nearest square.
-    samples: u32,
+    samples: u64,
     rng: &'a RefCell<Xorshift>,
 }
 
 impl<'a> JitteredSampler<'a> {
     /// Constructs a jittered sampler
-    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
-        let dim = (samples as Float).sqrt().ceil() as u32;
+    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
+        let dim = (samples as Float).sqrt().ceil() as u64;
         let scale = Vec2::new(
             1.0 / (dim as Float),
             (dim as Float) / (samples as Float),
@@ -131,19 +130,19 @@ impl Iterator for JitteredSampler<'_> {
 }
 
 struct MultiJitteredSampler<'a> {
-    samples: u32,
-    state: u32,
+    samples: u64,
+    state: u64,
     perm_x: Vec<usize>,
     perm_y: Vec<usize>,
     scale0: Vec2,
     scale1: Vec2,
-    strata_dim: u32,
+    strata_dim: u64,
     rng: &'a RefCell<Xorshift>,
 }
 
 impl<'a> MultiJitteredSampler<'a> {
-    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
-        let dim = (samples as Float).sqrt().ceil() as u32;
+    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
+        let dim = (samples as Float).sqrt().ceil() as u64;
         let scale = Vec2::new(
             1.0 / (dim as Float),
             (dim as Float) / (samples as Float),
@@ -193,17 +192,16 @@ impl Iterator for MultiJitteredSampler<'_> {
 
 struct SobolSampler<'a> {
     _rng: &'a RefCell<Xorshift>,
-    samples: u32,
-    state: u32,
-    seed: u32,
-    prev: UVec2,
+    samples: u64,
+    state: u64,
+    seed: u64,
+    prev: (u64, u64),
 }
 
 impl<'a> SobolSampler<'a> {
-    fn new(samples: u32, rng: &'a RefCell<Xorshift>) -> Self {
+    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
         assert!(samples > 0);
-        let samples = samples as usize;
-        assert!(samples <= sobol_seq::SOBOL_MAX_LEN);
+        assert!(samples as usize <= sobol_seq::SOBOL_MAX_LEN);
 
         let seed = {
             rng.borrow_mut().gen_u64()
@@ -211,22 +209,22 @@ impl<'a> SobolSampler<'a> {
 
         Self {
             _rng: rng,
-            samples: samples as u32,
+            samples,
             state: 0,
-            seed: seed as u32,
-            prev: UVec2::ZERO,
+            seed,
+            prev: (0, 0),
         }
     }
 
     fn step(&mut self) {
         self.state += 1;
-        self.prev = UVec2::new(
-            self.prev.x ^ sobol_seq::VS1[self.state.trailing_zeros() as usize],
-            self.prev.y ^ sobol_seq::VS2[self.state.trailing_zeros() as usize],
+        self.prev = (
+            self.prev.0 ^ sobol_seq::VS1[self.state.trailing_zeros() as usize],
+            self.prev.1 ^ sobol_seq::VS2[self.state.trailing_zeros() as usize],
         );
     }
 
-    fn shuffle(&self, v: u32) -> u32 {
+    fn shuffle(&self, v: u64) -> u64 {
         v ^ self.seed
     }
 }
@@ -241,8 +239,8 @@ impl Iterator for SobolSampler<'_> {
             self.step();
 
             let xy = Vec2::new(
-                Float::from(self.shuffle(self.prev.x)) * Float::powi(2.0, -32),
-                Float::from(self.shuffle(self.prev.y)) * Float::powi(2.0, -32),
+                self.shuffle(self.prev.0) as Float * Float::powi(2.0, -32),
+                self.shuffle(self.prev.1) as Float * Float::powi(2.0, -32),
             );
 
             Some( xy )

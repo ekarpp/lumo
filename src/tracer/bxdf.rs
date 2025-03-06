@@ -1,5 +1,8 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2, rng, spherical_utils };
-use crate::tracer::{ Color, ColorWavelength, Spectrum, hit::Hit, microfacet::MfDistribution, onb::Onb };
+use crate::{ Direction, Normal, Transport, Float, Vec2, rng, math::spherical_utils };
+use crate::tracer::{
+    Color, ColorWavelength, Spectrum, hit::Hit,
+    microfacet::MfDistribution, onb::Onb
+};
 
 mod microfacet;
 mod scatter;

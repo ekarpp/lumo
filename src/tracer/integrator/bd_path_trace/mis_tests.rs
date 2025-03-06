@@ -1,7 +1,7 @@
 use super::*;
 use crate::tracer::{
     bxdf::BxDF, bsdf::BSDF, CameraBuilder, Spectrum,
-    Instanceable, Sphere, Texture
+    Instanceable, Sphere, Texture, CameraType
 };
 
 const NUM_PATHS: usize = 10_000;
@@ -22,6 +22,16 @@ fn scene() -> Scene {
 fn all_sum_to_one_diffuse() {
     let sce = scene();
     test_scene(sce, camera())
+}
+
+#[test]
+fn all_sum_to_one_orthographic() {
+    let sce = scene();
+    let cam = Camera::builder()
+        .camera_type(CameraType::Orthographic)
+        .build();
+
+    test_scene(sce, cam)
 }
 
 #[test]
@@ -77,8 +87,8 @@ fn all_sum_to_one_specular_rough() {
 fn all_sum_to_one_big_scale() {
     let sce = Scene::cornell_box();
     let cam = CameraBuilder::new()
-        .origin(Vec3::new(278.0, 273.0, -800.0))
-        .towards(Vec3::new(278.0, 273.0, 0.0))
+        .origin(278.0, 273.0, -800.0)
+        .towards(278.0, 273.0, 0.0)
         .zoom(2.8)
         .focal_length(0.035)
         .resolution((512, 512))

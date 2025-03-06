@@ -27,7 +27,7 @@ macro_rules! test_material {
                         $mat
                     );
                     let xo = Point::Z;
-                    let wi = Direction::NEG_Z;
+                    let wi = -Direction::Z;
                     let r = Ray::new(xo, wi);
                     for _ in 0..NUM_RUNS {
                         let wo = rng::maps::square_to_hemisphere(rng.gen_vec2());

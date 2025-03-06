@@ -146,7 +146,7 @@ mod cylinder_tests {
     #[test]
     fn no_hit_middle() {
         let c = cylinder();
-        let r = Ray::new(0.5 * Point::NEG_ONE, Direction::Y);
+        let r = Ray::new(-0.5 * Point::ONE, Direction::Y);
         assert!(c.hit(&r, 0.0, crate::INF).is_none());
     }
 }

@@ -15,16 +15,19 @@ pub struct Complex {
 
 impl Complex {
     #[allow(non_snake_case)]
+    #[inline]
     pub fn new(Re: Float, Im: Float) -> Self {
         Self { Re, Im }
     }
 
     /// Squared norm
+    #[inline]
     pub fn norm_sqr(&self) -> Float {
         self.Re * self.Re + self.Im * self.Im
     }
 
     /// Complement: Co(x + iy) = x - iy
+    #[inline]
     pub fn co(&self) -> Complex {
         Self {
             Re: self.Re,
@@ -33,6 +36,7 @@ impl Complex {
     }
 
     /// sqrt(re^(ix)) = sqrt(r) e^(ix/2)
+    #[inline]
     pub fn sqrt(&self) -> Complex {
         Complex {
             Re: self.norm().sqrt() * (self.arg() / 2.0).cos(),
@@ -40,16 +44,19 @@ impl Complex {
         }
     }
 
+    #[inline]
     fn norm(&self) -> Float {
         self.norm_sqr().sqrt()
     }
 
+    #[inline]
     fn arg(&self) -> Float {
         libm::atan2(self.Im, self.Re)
     }
 }
 
 impl From<Float> for Complex {
+    #[inline]
     fn from(v: Float) -> Self {
         Self {
             Re: v,
@@ -61,6 +68,7 @@ impl From<Float> for Complex {
 impl Add<Complex> for Complex {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Complex) -> Self::Output {
         Self {
             Re: self.Re + rhs.Re,
@@ -72,6 +80,7 @@ impl Add<Complex> for Complex {
 impl Add<Complex> for Float {
     type Output = Complex;
 
+    #[inline]
     fn add(self, rhs: Complex) -> Self::Output {
         Complex {
             Re: self + rhs.Re,
@@ -83,6 +92,7 @@ impl Add<Complex> for Float {
 impl Sub<Complex> for Complex {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Complex) -> Self::Output {
         Self {
             Re: self.Re - rhs.Re,
@@ -94,6 +104,7 @@ impl Sub<Complex> for Complex {
 impl Sub<Complex> for Float {
     type Output = Complex;
 
+    #[inline]
     fn sub(self, rhs: Complex) -> Self::Output {
         Complex {
             Re: self - rhs.Re,
@@ -105,6 +116,7 @@ impl Sub<Complex> for Float {
 impl Mul<Complex> for Complex {
     type Output = Self;
 
+    #[inline]
     fn mul(self, rhs: Complex) -> Self::Output {
         Self {
             Re: self.Re * rhs.Re - self.Im * rhs.Im,
@@ -116,6 +128,7 @@ impl Mul<Complex> for Complex {
 impl Mul<Float> for Complex {
     type Output = Self;
 
+    #[inline]
     fn mul(self, rhs: Float) -> Self::Output {
         Self {
             Re: self.Re * rhs,
@@ -127,6 +140,7 @@ impl Mul<Float> for Complex {
 impl Mul<Complex> for Float {
     type Output = Complex;
 
+    #[inline]
     fn mul(self, rhs: Complex) -> Self::Output {
         Complex {
             Re: self * rhs.Re,
@@ -138,6 +152,7 @@ impl Mul<Complex> for Float {
 impl Div<Complex> for Complex {
     type Output = Self;
 
+    #[inline]
     fn div(self, rhs: Complex) -> Self::Output {
         if rhs.Re == 0.0 && rhs.Im == 0.0 {
             Self {
@@ -153,6 +168,7 @@ impl Div<Complex> for Complex {
 impl Div<Float> for Complex {
     type Output = Self;
 
+    #[inline]
     fn div(self, rhs: Float) -> Self::Output {
         if rhs == 0.0 {
             Complex {
@@ -171,6 +187,7 @@ impl Div<Float> for Complex {
 impl Div<Complex> for Float {
     type Output = Complex;
 
+    #[inline]
     fn div(self, rhs: Complex) -> Self::Output {
         if rhs.Re == 0.0 && rhs.Im == 0.0 {
             Complex {
