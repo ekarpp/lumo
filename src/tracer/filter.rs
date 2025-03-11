@@ -65,6 +65,7 @@ impl PixelFilter {
 
     /// Returns the discretized radius of the filter
     /// i.e. how many pixels in each direction we should look for
+    #[inline]
     pub fn r_disc(&self) -> u64 {
         match self {
             Self::Square(r)
@@ -77,6 +78,7 @@ impl PixelFilter {
     }
 
     /// Evaluate the filter at `px`
+    #[inline]
     pub fn eval(&self, px: Vec2) -> Float {
         match self {
             Self::Square(r) => if px.x.abs() < *r && px.y.abs() < *r { 1.0 } else { 0.0 },
@@ -99,6 +101,7 @@ impl PixelFilter {
     }
 
     /// Integral of the filter over the whole space
+    #[inline]
     pub fn integral(&self) -> Float {
         match self {
             Self::Square(r) => 2.0 * r * 2.0 * r,
@@ -112,18 +115,23 @@ impl PixelFilter {
         }
     }
 
+    #[inline]
     fn gauss(x: Float, sigma: &Float) -> Float {
-        // assert!(sigma > 0.0)
+        #[cfg(debug_assertions)]
+        assert!(sigma > &0.0);
+
         (-x.powi(2) / (2.0 * sigma * sigma)).exp()
             / (2.0 * crate::PI * sigma * sigma).max(0.0).sqrt()
     }
 
+    #[inline]
     fn gauss_ig(x0: Float, x1: &Float, sigma: &Float) -> Float {
         let denom = sigma * Float::sqrt(2.0);
 
-        0.5 * (libm::erf(-x0 / denom) - libm::erf(-x1 / denom))
+        0.5 * (libm::erf((-x0 / denom) as f64) - libm::erf((-x1 / denom) as f64)) as Float
     }
 
+    #[inline]
     fn mitch(x: Float, b: &Float, c: Float) -> Float {
         let x = x.abs();
         let p = if x < 1.0 {

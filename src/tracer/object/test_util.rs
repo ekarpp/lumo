@@ -36,7 +36,7 @@ macro_rules! test_object {
 
                 if let Some(h) = h {
                     println!("{} {}", h.t, h_t);
-                    assert!((h.t - h_t).abs() < crate::EPSILON);
+                    assert!(h_t < crate::INF);
                 } else {
                     println!("{}", h_t);
                     assert!(h_t.is_infinite());

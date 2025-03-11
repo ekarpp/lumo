@@ -24,21 +24,21 @@ impl Mat3 {
     pub const ID: Self = Self { y0: Vec3::X, y1: Vec3::Y, y2: Vec3::Z };
 
     #[inline]
-    pub fn new(y0: Vec3, y1: Vec3, y2: Vec3) -> Self {
+    pub const fn new(y0: Vec3, y1: Vec3, y2: Vec3) -> Self {
         Self { y0, y1, y2, }
     }
 
     #[inline]
-    pub fn diag(d: Vec3) -> Self {
+    pub const fn diag(d: Vec3) -> Self {
         Self::new(
-            Vec3::X * d.x,
-            Vec3::Y * d.y,
-            Vec3::Z * d.z,
+            Vec3::new(d.x, 0.0, 0.0),
+            Vec3::new(0.0, d.y, 0.0),
+            Vec3::new(0.0, 0.0, d.z),
         )
     }
 
     #[inline]
-    pub fn det(&self) -> Float {
+    pub const fn det(&self) -> Float {
         // sarrus
         let pos = self.y0.x * self.y1.y * self.y2.z
             + self.y0.y * self.y1.z * self.y2.x
@@ -52,7 +52,7 @@ impl Mat3 {
     }
 
     #[inline]
-    pub fn transpose(&self) -> Mat3 {
+    pub const fn transpose(&self) -> Mat3 {
         Self::new(
             Vec3::new(self.y0.x, self.y1.x, self.y2.x),
             Vec3::new(self.y0.y, self.y1.y, self.y2.y),
@@ -61,25 +61,43 @@ impl Mat3 {
     }
 
     #[inline]
-    pub fn inv(&self) -> Mat3 {
-        let det = self.det();
+    pub const fn inv(&self) -> Mat3 {
+        let inv_det = 1.0 / self.det();
 
-        let a = Self::new(
-            self.y1.cross(self.y2),
-            self.y2.cross(self.y0),
-            self.y0.cross(self.y1)
-        ).transpose();
-
-        a * (1.0 / det)
+        Self::new(
+            self.y1.cross(self.y2).scale(inv_det),
+            self.y2.cross(self.y0).scale(inv_det),
+            self.y0.cross(self.y1).scale(inv_det),
+        ).transpose()
     }
 
     #[inline]
-    pub fn mul_vec3(&self, rhs: Vec3) -> Vec3 {
+    pub const fn mul_vec3(&self, rhs: Vec3) -> Vec3 {
         Vec3::new(
             self.y0.dot(rhs),
             self.y1.dot(rhs),
             self.y2.dot(rhs),
         )
+    }
+
+    pub const fn mul_mat3(&self, rhs: Mat3) -> Mat3 {
+        let t = rhs.transpose();
+        let y0 = Vec3::new(
+            self.y0.dot(t.y0),
+            self.y0.dot(t.y1),
+            self.y0.dot(t.y2),
+        );
+        let y1 = Vec3::new(
+            self.y1.dot(t.y0),
+            self.y1.dot(t.y1),
+            self.y1.dot(t.y2),
+        );
+        let y2 = Vec3::new(
+            self.y2.dot(t.y0),
+            self.y2.dot(t.y1),
+            self.y2.dot(t.y2),
+        );
+        Self::new(y0, y1, y2)
     }
 }
 
@@ -114,22 +132,6 @@ impl Mul for Mat3 {
 
     #[inline]
     fn mul(self, rhs: Mat3) -> Mat3 {
-        let t = rhs.transpose();
-        let y0 = Vec3::new(
-            self.y0.dot(t.y0),
-            self.y0.dot(t.y1),
-            self.y0.dot(t.y2),
-        );
-        let y1 = Vec3::new(
-            self.y1.dot(t.y0),
-            self.y1.dot(t.y1),
-            self.y1.dot(t.y2),
-        );
-        let y2 = Vec3::new(
-            self.y2.dot(t.y0),
-            self.y2.dot(t.y1),
-            self.y2.dot(t.y2),
-        );
-        Self::new(y0, y1, y2)
+        self.mul_mat3(rhs)
     }
 }

@@ -68,10 +68,10 @@ pub mod conductor {
         wo: Direction,
         wi: Direction,
         lambda: &ColorWavelength,
-        h: &Hit,
+        uv: Vec2,
         mfd: &MfDistribution,
     ) -> Color {
-        let ks = mfd.ks(lambda, h);
+        let ks = mfd.ks(lambda, uv);
         if mfd.is_delta() {
             let f = mfd.f(wo, Normal::Z);
             ks * f / spherical_utils::cos_theta(wi).abs()
@@ -128,7 +128,7 @@ pub mod diffuse {
         wo: Direction,
         wi: Direction,
         lambda: &ColorWavelength,
-        h: &Hit,
+        uv: Vec2,
         mfd: &MfDistribution,
     ) -> Color {
         let wh = (wo + wi).normalize();
@@ -145,8 +145,8 @@ pub mod diffuse {
         let fd = mfd.disney_diffuse(cos_wo, cos_wi, cos_wh);
 
 
-        let ks = mfd.ks(lambda, h);
-        let kd = mfd.kd(lambda, h);
+        let ks = mfd.ks(lambda, uv);
+        let kd = mfd.kd(lambda, uv);
 
         fr * ks + kd * (1.0 - f) * fd / crate::PI
     }
@@ -161,9 +161,12 @@ pub mod diffuse {
         let pr = mfd.f_schlick(0.04, 1.0, spherical_utils::cos_theta(wo));
         let ps = 1.0 - pr;
 
-        // we assume diffuse can't be delta
         if rand_u < pr / (pr + ps) {
-            let wh = mfd.sample_normal(wo, rand_sq);
+            let wh = if mfd.is_delta() {
+                Normal::Z
+            } else {
+                mfd.sample_normal(wo, rand_sq)
+            };
             util::reflect(wo, wh)
         } else {
             scatter::lambertian::sample(rand_sq)
@@ -180,13 +183,16 @@ pub mod diffuse {
             return 0.0;
         }
 
-        // we assume diffuse can't be delta
         let wh = (wo + wi).normalize();
         let pr = mfd.f_schlick(0.04, 1.0, spherical_utils::cos_theta(wo));
         let ps = 1.0 - pr;
 
         let wh_dot_wo = wo.dot(wh);
-        let p_ref = mfd.sample_normal_pdf(wh, wo) / (4.0 * wh_dot_wo.abs());
+        let p_ref = if mfd.is_delta() {
+            if 1.0 - spherical_utils::cos_theta(wh) < crate::EPSILON { 1.0 } else { 0.0 }
+        } else {
+            mfd.sample_normal_pdf(wh, wo) / (4.0 * wh_dot_wo.abs())
+        };
 
         let p_sct = scatter::lambertian::pdf(wo, wi);
 
@@ -205,7 +211,7 @@ pub mod dielectric {
         wi: Direction,
         lambda: &ColorWavelength,
         reflection: bool,
-        h: &Hit,
+        uv: Vec2,
         mfd: &MfDistribution,
         mode: Transport,
     ) -> Color {
@@ -228,7 +234,7 @@ pub mod dielectric {
         };
 
         if reflection {
-            let ks = mfd.ks(lambda, h);
+            let ks = mfd.ks(lambda, uv);
             if mfd.eta() == 1.0 || mfd.is_delta() {
                 let f = mfd.f(wo, wh);
                 ks * f / cos_theta_wi.abs()
@@ -245,7 +251,7 @@ pub mod dielectric {
                 Transport::Importance => 1.0,
             };
 
-            let tf = mfd.tf(lambda, h);
+            let tf = mfd.tf(lambda, uv);
 
             if mfd.eta() == 1.0 || mfd.is_delta() {
                 tf * (1.0 - f) / (scale * cos_theta_wi.abs())
@@ -338,7 +344,7 @@ pub mod dielectric {
             // reflection with rough surface
             mfd.sample_normal_pdf(wh, wo) / (4.0 * wh_dot_wo.abs())
                 * pr / (pr + pt)
-        } else if mfd.eta() == 0.0 || mfd.is_delta() {
+        } else if mfd.eta() == 1.0 || mfd.is_delta() {
             // transmission with delta
             if 1.0 - spherical_utils::cos_theta(wh) < crate::EPSILON {
                 pt / (pr + pt)

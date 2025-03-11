@@ -32,7 +32,7 @@ impl Scene {
 
         let mut scene = Self::default();
 
-        let light: Spectrum = 32.0 * Spectrum::from_srgb(252, 201, 138);
+        let light_tex = Texture::from(Spectrum::from_srgb(252, 201, 138));
         /* rectangular area light */
         scene.add_light(Rectangle::new(
             Mat3::new(
@@ -40,7 +40,7 @@ impl Scene {
                 Point::new(-l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
                 Point::new(l_dim, ceiling - Self::LIGHT_EPS, 0.6 * front - l_dim),
             ),
-            Material::Light(Texture::from(light))
+            Material::light(light_tex),
         ));
 
         /* left wall */

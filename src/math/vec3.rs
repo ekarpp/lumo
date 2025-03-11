@@ -1,4 +1,4 @@
-use crate::{ Float, Vec2, Vec4 };
+use crate::{ Axis, Float, Vec2, Vec4 };
 use std::fmt;
 use std::ops::{
     Add, AddAssign, Sub, Mul, Div, Neg
@@ -18,7 +18,7 @@ pub struct Vec3 {
 macro_rules! ew_ops {
     ( $( $op_name:ident ),* ) => {
         $(
-            #[inline]
+            #[inline(always)]
             pub fn $op_name(&self) -> Self {
                 Self {
                     x: self.x.$op_name(),
@@ -33,7 +33,7 @@ macro_rules! ew_ops {
 macro_rules! pw_ops {
     ( $( $op_name:ident ),* ) => {
         $(
-            #[inline]
+            #[inline(always)]
             pub fn $op_name(&self, other: Self) -> Self {
                 Self {
                     x: self.x.$op_name(other.x),
@@ -79,6 +79,15 @@ impl Vec3 {
     }
 
     #[inline]
+    pub fn axis(&self, axis: Axis) -> Float {
+        match axis {
+            Axis::X => self.x,
+            Axis::Y => self.y,
+            Axis::Z => self.z,
+        }
+    }
+
+    #[inline]
     pub fn length(&self) -> Float {
         self.length_squared().max(0.0).sqrt()
     }
@@ -99,7 +108,16 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn cross(&self, rhs: Self) -> Self {
+    pub const fn scale(&self, s: Float) -> Self {
+        Self {
+            x: self.x * s,
+            y: self.y * s,
+            z: self.z * s,
+        }
+    }
+
+    #[inline]
+    pub const fn cross(&self, rhs: Self) -> Self {
         Self {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
@@ -108,7 +126,7 @@ impl Vec3 {
     }
 
     #[inline(always)]
-    pub fn dot(&self, rhs: Self) -> Float {
+    pub const fn dot(&self, rhs: Self) -> Float {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
@@ -130,12 +148,12 @@ impl Vec3 {
     ew_ops! { abs, floor, fract }
     pw_ops! { min, max }
 
-    #[inline]
+    #[inline(always)]
     pub fn min_element(&self) -> Float {
         self.x.min(self.y.min(self.z))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn max_element(&self) -> Float {
         self.x.max(self.y.max(self.z))
     }

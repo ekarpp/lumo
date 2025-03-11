@@ -1,7 +1,7 @@
 use crate::{Vec2, Vec3, Image, Float, Normal, Point};
 use crate::tracer::{
     Scene, Material, Texture,
-    TriangleMesh, Face, Mesh
+    TriangleMesh, Face, Mesh, Spectrum
 };
 use std::fs::{ self, File };
 use std::sync::Arc;
@@ -11,7 +11,6 @@ use std::io::{
 };
 use rustc_hash::FxHashMap;
 use zip::ZipArchive;
-use mtl::MtlConfig;
 
 /// .obj parser
 mod obj;
@@ -19,7 +18,6 @@ mod obj;
 mod mtl;
 
 const SCENE_DIR: &str = "./scenes/";
-const TMP_DIR: &str = "./tmp/";
 
 /*
  * BEWARE WHO ENTERS! HERE BE DRAGONS!
@@ -87,49 +85,39 @@ fn _get_url(url: &str, bytes: &mut Vec<u8>) -> Result<()> {
 }
 
 /// Extracts file matching `re` from zip file in `bytes`
-fn _extract_zip(bytes: Vec<u8>, end_match: &str) -> Result<Vec<u8>> {
+fn _extract_zip(bytes: &[u8], end_match: &str) -> Result<Vec<u8>> {
     println!("Reading .zip");
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     let mut data = Vec::new();
+    let end_match = end_match.to_lowercase();
 
     for i in 0..zip.len() {
         let mut file = zip.by_index(i)?;
 
-        if file.name().ends_with(end_match) {
-            println!("Extracting \"{}\"", file.name());
-            file.read_to_end(&mut data)?;
-            break;
+        if file.name().to_lowercase().ends_with(&end_match) {
+            if data.is_empty() {
+                println!("Extracting \"{}\"", file.name());
+                file.read_to_end(&mut data)?;
+            } else {
+                return Err(
+                    obj_error(&format!("Found multiple {} in the archive", end_match))
+                );
+            }
         }
     }
 
     if data.is_empty() {
-        Err(obj_error("Could not find file in the archive"))
+        Err(obj_error(&format!("Could not find {} in the archive", end_match)))
     } else {
         Ok(data)
     }
 }
 
-/// Maps `Vec<u8>` to `File`
-fn _bytes_to_file(bytes: Vec<u8>) -> Result<File> {
-    if !fs::exists(TMP_DIR)? {
-        fs::create_dir(TMP_DIR)?;
-    }
-    let fname = format!("{}parser_{}", TMP_DIR, crate::rng::gen_seed());
-    let mut tmp_file = File::create(&fname)?;
-
-    tmp_file.write_all(&bytes)?;
-
-    // re open in read only mode
-    File::open(&fname)
-}
-
 /// Loads `tex_name` from `zip` to an `Image`
-fn _img_from_zip(zip: Vec<u8>, tex_name: &str) -> Result<Image> {
+fn _img_from_zip(zip: &[u8], tex_name: &str) -> Result<Image<Spectrum>> {
     let file_bytes = _extract_zip(zip, tex_name)?;
-    let file = _bytes_to_file(file_bytes)?;
-
     println!("Decoding texture");
-    Image::from_file(file)
+    Image::from_file(file_bytes.as_slice())
         .map_err(|decode_error| obj_error(&decode_error.to_string()))
 }
 
@@ -148,15 +136,14 @@ pub fn mesh_from_url(url: &str, material: Material) -> Result<Mesh> {
 
     if url.ends_with(".zip") {
         println!("Found zip archive, searching for .OBJ files");
-        bytes = _extract_zip(bytes, ".obj")?;
+        bytes = _extract_zip(&bytes, ".obj")?;
     } else if !url.ends_with(".obj") {
         return Err(obj_error(
             "Bad URL, or at least does not end with .zip or .obj",
         ));
     }
 
-    let obj_file = _bytes_to_file(bytes)?;
-    obj::load_file(obj_file, material)
+    obj::load_file(bytes.as_slice(), material)
 }
 
 fn _check_cached(url: &str) -> Result<String> {
@@ -178,7 +165,7 @@ fn _check_cached(url: &str) -> Result<String> {
 }
 
 /// Loads `tex_name` from .zip at `url`. zip cached to `SCENE_DIR`
-pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
+pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image<Spectrum>> {
     if !tex_name.ends_with(".png") {
         return Err(obj_error("Can only load .png files"));
     }
@@ -189,13 +176,18 @@ pub fn texture_from_url(url: &str, tex_name: &str) -> Result<Image> {
     let path = _check_cached(url)?;
     println!("Loading texture \"{}\" from \"{}\"", tex_name, path);
 
-    _img_from_zip(fs::read(path)?, tex_name)
+    _img_from_zip(&fs::read(path)?, tex_name)
 }
 
 /// Parses a whole scene from a .obj file specified by `name`
 /// in a .zip archive at `url`. Cache `url` to `SCENE_DIR`
-#[allow(clippy::single_match)]
-pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
+pub fn scene_from_url(
+    url: &str,
+    obj_name: &str,
+    map_ks: bool,
+    mtllib: Option<&str>,
+    env_map: Option<(&str, Float)>
+) -> Result<Scene> {
     if !url.ends_with(".zip") {
         return Err(obj_error("Can only load scenes from .zip"));
     }
@@ -205,19 +197,37 @@ pub fn scene_from_url(url: &str, obj_name: &str) -> Result<Scene> {
 
     let path = _check_cached(url)?;
 
-    println!("Loading scene \"{}\" from \"{}\"", obj_name, path);
-    _scene_from_file(fs::read(path)?, obj_name)
+    scene_from_file(&path, obj_name, map_ks, mtllib, env_map)
 }
 
-#[allow(clippy::single_match)]
-fn _scene_from_file(f: Vec<u8>, obj_name: &str) -> Result<Scene> {
-    let obj_bytes = _extract_zip(f.clone(), obj_name)?;
-
-    let obj_file = _bytes_to_file(obj_bytes.clone())?;
+/// Load a scene from zip file at `pth`
+pub fn scene_from_file(
+    path: &str,
+    obj_name: &str,
+    map_ks: bool,
+    mtllib: Option<&str>,
+    env_map: Option<(&str, Float)>
+) -> Result<Scene> {
+    println!("Loading scene \"{}\" from \"{}\"", obj_name, path);
+    let f = fs::read(path)?;
+    let obj_bytes = _extract_zip(&f, obj_name)?;
 
     // parse materials first
-    let mut materials = FxHashMap::<String, MtlConfig>::default();
-    let reader = BufReader::new(obj_file);
+    let mut materials = Vec::new();
+    let mut material_indices = FxHashMap::<String, usize>::default();
+
+    if let Some(mtllib_name) = mtllib {
+        let mtl_bytes = _extract_zip(&f, mtllib_name)?;
+        mtl::load_file(
+            mtl_bytes.as_slice(),
+            map_ks,
+            Some(&f),
+            &mut materials,
+            &mut material_indices,
+        )?;
+    }
+
+    let reader = BufReader::new(obj_bytes.as_slice());
     for line in reader.lines() {
         let line = line?.trim().to_string();
         if line.starts_with('#') || line.is_empty() {
@@ -225,19 +235,31 @@ fn _scene_from_file(f: Vec<u8>, obj_name: &str) -> Result<Scene> {
         }
         let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
 
-        match tokens[0] {
-            "mtllib" => {
-                let mtllib_name = tokens[1];
-                let mtl_bytes = _extract_zip(f.clone(), mtllib_name)?;
-                let mtl_file = _bytes_to_file(mtl_bytes)?;
-
-                mtl::load_file(mtl_file, Some(f.clone()), &mut materials)?;
-            }
-            _ => (),
+        if tokens[0] == "mtllib" {
+            let mtllib_name = tokens[1];
+            let mtl_bytes = _extract_zip(&f, mtllib_name)?;
+            mtl::load_file(
+                mtl_bytes.as_slice(),
+                map_ks,
+                Some(&f),
+                &mut materials,
+                &mut material_indices,
+            )?;
         }
     }
 
-    let obj_file = _bytes_to_file(obj_bytes)?;
+    let mut scene = obj::load_scene(
+        obj_bytes.as_slice(),
+        materials,
+        material_indices,
+    )?;
 
-    obj::load_scene(obj_file, materials)
+    if let Some((map_file, scale)) = env_map {
+        let map_bytes = _extract_zip(&f, map_file)?;
+        scene.set_environment_map(
+            Texture::Image(Image::from_hdri_bytes(map_bytes.as_slice())?), scale,
+        );
+    }
+
+    Ok(scene)
 }

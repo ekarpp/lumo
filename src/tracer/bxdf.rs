@@ -1,6 +1,9 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2, rng, math::spherical_utils };
+use crate::{
+    Direction, Normal, Transport, Float,
+    Vec2, rng, math::spherical_utils,
+};
 use crate::tracer::{
-    Color, ColorWavelength, Spectrum, hit::Hit,
+    Color, ColorWavelength, Spectrum,
     microfacet::MfDistribution, onb::Onb
 };
 
@@ -22,12 +25,13 @@ pub enum BxDF {
     MfConductor(MfDistribution),
     /// Microfacet glass
     MfDielectric(MfDistribution),
-    /// Volumetric medium
-    Volumetric(Float, Spectrum, Spectrum),
+    /// Volumetric medium[scattering_parameter, t_scale, sigma_t, sigma_s]
+    Volumetric(Float, Float, Spectrum, Spectrum),
     None,
 }
 
 impl BxDF {
+    #[inline]
     pub fn is_specular(&self) -> bool {
         match self {
             Self::Volumetric(..) | Self::MfDielectric(_) => true,
@@ -36,9 +40,11 @@ impl BxDF {
         }
     }
 
+    #[inline]
     pub fn is_diffuse(&self) -> bool { !self.is_specular() }
 
     #[allow(clippy::match_like_matches_macro)]
+    #[inline]
     pub fn is_transmission(&self) -> bool {
         match self {
             Self::MfDielectric(_) | Self::Volumetric(..) => true,
@@ -46,41 +52,53 @@ impl BxDF {
         }
     }
 
+    #[inline]
     pub fn is_reflection(&self) -> bool { !self.is_transmission() }
 
+    #[inline]
     pub fn is_delta(&self) -> bool {
         match self {
-            Self::MfConductor(mfd) | Self::MfDielectric(mfd) => mfd.is_delta(),
+            Self::MfConductor(mfd) => mfd.is_delta(),
+            Self::MfDielectric(mfd) => mfd.is_delta() || mfd.eta() == 1.0,
             _ => false,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    #[inline]
     pub fn f(
         &self,
         wo: Direction,
         wi: Direction,
         lambda: &ColorWavelength,
         reflection: bool,
-        h: &Hit,
+        backface: bool,
+        t: Float,
+        uv: Vec2,
         mode: Transport
     ) -> Color {
-        if (!reflection || h.backface) && self.is_reflection() {
+        if (!reflection || backface) && self.is_reflection() {
             return Color::BLACK;
         }
         match self {
             Self::Lambertian(spec) => scatter::lambertian::f(spec, lambda),
-            Self::MfDiffuse(mfd) => microfacet::diffuse::f(wo, wi, lambda, h, mfd),
-            Self::MfConductor(mfd) => microfacet::conductor::f(wo, wi, lambda, h, mfd),
-            Self::MfDielectric(mfd) => {
-                microfacet::dielectric::f(wo, wi, lambda, reflection, h, mfd, mode)
+            Self::MfDiffuse(mfd) => {
+                microfacet::diffuse::f(wo, wi, lambda, uv, mfd)
             }
-            Self::Volumetric(_, sigma_t, sigma_s) => {
-                volumetric::f(lambda, h, sigma_t, sigma_s)
+            Self::MfConductor(mfd) => {
+                microfacet::conductor::f(wo, wi, lambda, uv, mfd)
+            }
+            Self::MfDielectric(mfd) => {
+                microfacet::dielectric::f(wo, wi, lambda, reflection, uv, mfd, mode)
+            }
+            Self::Volumetric(_, t_scale, sigma_t, sigma_s) => {
+                volumetric::f(lambda, *t_scale * t, sigma_t, sigma_s)
             }
             Self::None => Color::BLACK,
         }
     }
 
+    #[inline]
     pub fn sample(
         &self,
         wo: Direction,
@@ -93,8 +111,8 @@ impl BxDF {
         }
         match self {
             Self::Lambertian(_) => scatter::lambertian::sample(rand_sq),
-            Self::MfDiffuse(_) => scatter::lambertian::sample(rand_sq),
-//          Self::MfDiffuse(mfd) => microfacet::diffuse::sample(wo, mfd, rand_u, rand_sq),
+            //Self::MfDiffuse(_) => scatter::lambertian::pdf(wo, wi),
+            Self::MfDiffuse(mfd) => microfacet::diffuse::sample(wo, mfd, rand_u, rand_sq),
             Self::MfConductor(mfd) => microfacet::conductor::sample(wo, mfd, rand_sq),
             Self::MfDielectric(mfd) => {
                 microfacet::dielectric::sample(wo, mfd, rand_u, rand_sq)
@@ -104,6 +122,7 @@ impl BxDF {
         }
     }
 
+    #[inline]
     pub fn pdf(&self, wo: Direction, wi: Direction, reflection: bool) -> Float {
         if !reflection && self.is_reflection() {
             // backfaces too? or explicitly in pdfs?
@@ -111,8 +130,8 @@ impl BxDF {
         }
         match self {
             Self::Lambertian(_) => scatter::lambertian::pdf(wo, wi),
-            Self::MfDiffuse(_) => scatter::lambertian::pdf(wo, wi),
-//          Self::MfDiffuse(mfd) => microfacet::diffuse::pdf(wo, wi, mfd),
+            //Self::MfDiffuse(_) => scatter::lambertian::pdf(wo, wi),
+            Self::MfDiffuse(mfd) => microfacet::diffuse::pdf(wo, wi, mfd),
             Self::MfConductor(mfd) => microfacet::conductor::pdf(wo, wi, mfd),
             Self::MfDielectric(mfd) => {
                 microfacet::dielectric::pdf(wo, wi, reflection, mfd)

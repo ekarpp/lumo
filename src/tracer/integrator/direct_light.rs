@@ -30,15 +30,14 @@ fn _integrate(
                 None => material.emit(lambda, &ho),
                 Some(wi) => {
                     if !material.is_specular() {
-                        let radiance = shadow_ray(
+                        shadow_rays(
                             scene,
                             -ro.dir,
+                            scene.transmittance(lambda, ho.t),
                             lambda,
                             &ho,
                             rng,
-                        );
-
-                        scene.transmittance(lambda, ho.t) * radiance
+                        )
                     } else {
                         if depth > MAX_RECURSION {
                             return Color::BLACK;

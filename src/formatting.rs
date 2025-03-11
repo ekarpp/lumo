@@ -1,30 +1,20 @@
 use crate::Float;
+use std::time::Duration;
 
 pub fn fmt_si(val: u64) -> String {
-    let val = val as Float;
-
-    if val > 1e9 {
-        format!("{:.2} G", val / 1e9)
-    } else if val > 1e6 {
-        format!("{:.2} M", val / 1e6)
-    } else if val > 1e3 {
-        format!("{:.2} k", val / 1e3)
-    } else {
-        format!("{:.2}", val)
+    match val as Float {
+        x if x < 1e3 => format!("{:.2}",   x),
+        x if x < 1e6 => format!("{:.2} k", x / 1e3),
+        x if x < 1e9 => format!("{:.2} M", x / 1e6),
+        x            => format!("{:.2} G", x / 1e9),
     }
 }
 
-pub fn fmt_ms(ms: Float, accurate: bool) -> String {
-    let sec = ms / 1e3;
-    if sec <= 60.0 {
-        if accurate {
-            format!("{:.3} s", sec)
-        } else {
-            format!("{:.0} s", sec)
-        }
-    } else if sec <= 60.0 * 60.0 {
-        format!("{:.1} m", sec / 60.0)
-    } else {
-        format!("{:.1} h", sec / 3600.0)
+pub fn fmt_elapsed(dt: Duration) -> String {
+    match dt.as_micros() as Float {
+        x if x < 1e6    => format!("{:.1} ms", x / 1e3),
+        x if x < 60e6   => format!("{:.1} s",  x / 1e6),
+        x if x < 3600e6 => format!("{:.1} m",  x / 60e6),
+        x               => format!("{:.1} h",  x / 3600e6),
     }
 }

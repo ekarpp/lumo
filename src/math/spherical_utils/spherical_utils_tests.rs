@@ -45,7 +45,7 @@ macro_rules! test_func {
                         let rlx = w.z.abs().min(1.0 - w.z.abs());
                         let threshold = crate::EPSILON / rlx.sqrt();
 
-                        assert!(threshold < 1e-5);
+                        assert!(threshold < crate::EPSILON.sqrt());
                         assert!(($ref(w) - $call(w)).abs() < threshold);
                     }
                 }

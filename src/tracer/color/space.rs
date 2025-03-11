@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-#![allow(non_camel_case_types)]
 use super::*;
 
 enum TransferFunction {
@@ -36,15 +34,10 @@ impl TransferFunction {
 
 /// Represents a color space
 pub struct ColorSpace {
-    XYZ_to_RGB: Mat3,
+    XYZ_to_RGB: &'static Mat3,
+    W: &'static XYZ,
     trc: TransferFunction,
-    name: String,
-}
-
-impl Default for ColorSpace {
-    fn default() -> Self {
-        Self::dci_p3()
-    }
+    name: &'static str,
 }
 
 impl fmt::Display for ColorSpace {
@@ -54,12 +47,88 @@ impl fmt::Display for ColorSpace {
 }
 
 impl ColorSpace {
-    /// Transform `color` sampled at `lambda` to the colorspace of `self`
-    pub fn from_color(&self, color: &Color, lambda: &ColorWavelength) -> RGB {
-        let xyz = color.xyz(lambda);
-        let rgb = self.XYZ_to_RGB.mul_vec3(xyz);
+    /// Return reference to the default color space DCI-P3
+    #[allow(clippy::should_implement_trait)]
+    pub fn default() -> &'static Self {
+        &Self::DCI_P3
+    }
 
-        RGB::from(rgb)
+    /// White point in XYZ of sRGB color space
+    pub const sRGB_W: XYZ = xyz::from_xyY(xyz::w_D65, 1.0);
+
+    /// White point in XYZ of DCI-P3 color space
+    pub const DCI_P3_W: XYZ = xyz::from_xyY(xyz::w_D65, 1.0);
+
+    /// White point in XYZ of Rec. 2020  color space
+    pub const Rec_2020_W: XYZ = xyz::from_xyY(xyz::w_D65, 1.0);
+
+    /// XYZ to RGB conversion matrix for the sRGB color space
+    pub const sRGB_XYZ_to_RGB: Mat3 = Self::xyz_to_rgb(
+        Vec2::new(0.64, 0.33),
+        Vec2::new(0.3, 0.6),
+        Vec2::new(0.15, 0.06),
+        Self::sRGB_W,
+    );
+
+    /// XYZ to RGB conversion matrix for the DCI-P3 color space
+    pub const DCI_P3_XYZ_to_RGB: Mat3 = Self::xyz_to_rgb(
+        Vec2::new(0.68, 0.32),
+        Vec2::new(0.265, 0.69),
+        Vec2::new(0.15, 0.06),
+        Self::DCI_P3_W,
+    );
+
+    /// XYZ to RGB conversion matrix for the Rec. 2020 color space
+    pub const Rec_2020_XYZ_to_RGB: Mat3 = Self::xyz_to_rgb(
+        Vec2::new(0.708, 0.292),
+        Vec2::new(0.170, 0.797),
+        Vec2::new(0.131, 0.046),
+        Self::Rec_2020_W,
+    );
+
+    /// Conversion matrix from XYZ to the LMS color space, Stockamn & Sharpe 2000
+    pub const XYZ_to_LMS: Mat3 = Mat3::new(
+        Vec3::new( 0.210576, 0.855098, -0.0396983),
+        Vec3::new(-0.417076, 1.177260,  0.0786283),
+        Vec3::new( 0.0,      0.0,       0.5168350),
+    );
+
+    /// Conversion matrix from the LMS color space to XYZ
+    pub const LMS_to_XYZ: Mat3 = Self::XYZ_to_LMS.inv();
+
+    /// DCI-P3 color space
+    pub const sRGB: Self = Self::new(
+        &Self::sRGB_XYZ_to_RGB,
+        &Self::sRGB_W,
+        TransferFunction::sRGB,
+        "sRGB",
+    );
+
+    /// DCI-P3 color space
+    pub const DCI_P3: Self = Self::new(
+        &Self::DCI_P3_XYZ_to_RGB,
+        &Self::DCI_P3_W,
+        TransferFunction::sRGB,
+        "DCI-P3",
+    );
+
+    /// Rec. 2020 color space
+    pub const Rec_2020: Self = Self::new(
+        &Self::Rec_2020_XYZ_to_RGB,
+        &Self::Rec_2020_W,
+        TransferFunction::rec_2020,
+        "Rec. 2020",
+    );
+
+    /// Transform `color` sampled at `lambda` to the colorspace of `self`
+    #[inline]
+    pub fn from_color(&self, color: &Color, lambda: &ColorWavelength, wb: &Mat3) -> RGB {
+        self.from_XYZ(wb.mul_vec3(color.xyz(lambda)))
+    }
+
+    /// Transform XYZ vector to the color space
+    pub const fn from_XYZ(&self, xyz: Vec3) -> RGB {
+        RGB::from(self.XYZ_to_RGB.mul_vec3(xyz))
     }
 
     /// Apply the tone reproduction curve of `self` to the linear `rgb`
@@ -71,55 +140,39 @@ impl ColorSpace {
         )
     }
 
-    fn init(
+    /// Von Kries transformation matrix for the color space and `illuminant`
+    pub fn wb_matrix(&self, illuminant: &'static DenseSpectrum) -> Mat3 {
+        let illum_xy = xyz::to_xyY(illuminant.to_xyz());
+
+        let diagonal = Self::XYZ_to_LMS.mul_vec3(*self.W)
+            / Self::XYZ_to_LMS.mul_vec3(xyz::from_xyY(illum_xy, 1.0));
+
+        Self::LMS_to_XYZ * Mat3::diag(diagonal) * Self::XYZ_to_LMS
+    }
+
+    const fn new(
+        XYZ_to_RGB: &'static Mat3,
+        W: &'static Vec3,
+        trc: TransferFunction,
+        name: &'static str
+    ) -> Self {
+        Self { XYZ_to_RGB, W, trc, name }
+    }
+
+    const fn xyz_to_rgb(
         r: Vec2,
         g: Vec2,
         b: Vec2,
-        w: Vec2,
-        trc: TransferFunction,
-        name: String
-    ) -> Self {
+        W: XYZ,
+    ) -> Mat3 {
         let R = xyz::from_xyY(r, 1.0);
         let G = xyz::from_xyY(g, 1.0);
         let B = xyz::from_xyY(b, 1.0);
-        let W = xyz::from_xyY(w, 1.0);
 
         let RGB_c = Mat3::new(R, G, B).transpose();
         let C = RGB_c.inv().mul_vec3(W);
 
-        let RGB_to_XYZ = RGB_c * Mat3::diag(C);
-        let XYZ_to_RGB = RGB_to_XYZ.inv();
-
-        Self { XYZ_to_RGB, trc, name }
-    }
-
-    /// sRGB color space creator
-    pub fn sRGB() -> Self {
-        let r = Vec2::new(0.64, 0.33);
-        let g = Vec2::new(0.3, 0.6);
-        let b = Vec2::new(0.15, 0.06);
-        let w = xyz::w_D65;
-
-        Self::init(r, g, b, w, TransferFunction::sRGB, "sRGB".to_string())
-    }
-
-    /// DCI-P3 color space creator
-    pub fn dci_p3() -> Self {
-        let r = Vec2::new(0.68, 0.32);
-        let g = Vec2::new(0.265, 0.69);
-        let b = Vec2::new(0.15, 0.06);
-        let w = xyz::w_D65;
-
-        Self::init(r, g, b, w, TransferFunction::sRGB, "DCI-P3".to_string())
-    }
-
-    /// Rec. 2020 color space creator
-    pub fn rec_2020() -> Self {
-        let r = Vec2::new(0.708, 0.292);
-        let g = Vec2::new(0.170, 0.797);
-        let b = Vec2::new(0.131, 0.046);
-        let w = xyz::w_D65;
-
-        Self::init(r, g, b, w, TransferFunction::rec_2020, "Rec. 2020".to_string())
+        let RGB_to_XYZ = RGB_c.mul_mat3(Mat3::diag(C));
+        RGB_to_XYZ.inv()
     }
 }

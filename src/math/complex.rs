@@ -7,14 +7,12 @@ use std::ops::{
 mod complex_tests;
 
 #[derive(Clone, Copy)]
-#[allow(non_snake_case)]
 pub struct Complex {
     Re: Float,
     Im: Float,
 }
 
 impl Complex {
-    #[allow(non_snake_case)]
     #[inline]
     pub fn new(Re: Float, Im: Float) -> Self {
         Self { Re, Im }
@@ -51,7 +49,7 @@ impl Complex {
 
     #[inline]
     fn arg(&self) -> Float {
-        libm::atan2(self.Im, self.Re)
+        libm::atan2(self.Im as f64, self.Re as f64) as Float
     }
 }
 

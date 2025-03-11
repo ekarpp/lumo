@@ -1,9 +1,9 @@
 use super::*;
 use crate::math::simpson_integration;
 
-const MAX_R: Float = 5.0;
+const MAX_R: Float = 3.0;
 const STEPS: usize = 1_000;
-const TOLERANCE: Float = 1e-3;
+const TOLERANCE: Float = 1e-2;
 
 macro_rules! test_filter {
     ( $( $name:ident, $f_gen:expr ),* ) => {

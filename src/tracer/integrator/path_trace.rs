@@ -26,14 +26,14 @@ pub fn integrate(
             }
             Some(wi) => {
                 if !material.is_delta() {
-                    radiance += gathered
-                        * shadow_ray(
-                            scene,
-                            -ro.dir,
-                            &lambda,
-                            &ho,
-                            rng,
-                        );
+                    radiance += shadow_rays(
+                        scene,
+                        -ro.dir,
+                        gathered,
+                        &lambda,
+                        &ho,
+                        rng,
+                    );
                 }
 
                 let ri = ho.generate_ray(wi);

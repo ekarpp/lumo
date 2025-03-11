@@ -10,6 +10,7 @@ pub struct Ray {
 
 impl Ray {
     /// Constructs a ray. Normalize direction?
+    #[inline]
     pub fn new(origin: Point, dir: Direction) -> Self {
         Self {
             origin,
@@ -19,19 +20,23 @@ impl Ray {
 
     /// Applies `transformation` to `self`. Direction unnormalized to guarantee
     /// correct ray distances in Instance.
-    pub fn transform(&self, transformation: &Transform) -> Self {
-        Self {
-            origin: transformation.transform_pt_inv(self.origin),
-            dir: transformation.transform_dir_inv(self.dir),
-        }
+    #[inline]
+    pub fn transform<const NORMALIZE: bool>(&self, transformation: &Transform) -> Self {
+        let origin = transformation.transform_pt_inv(self.origin);
+        let dir = transformation.transform_dir_inv(self.dir);
+        let dir = if NORMALIZE { dir.normalize() } else { dir };
+
+        Self { origin, dir }
     }
 
     /// Position of the ray at time `t`
+    #[inline]
     pub fn at(&self, t: Float) -> Point {
         self.origin + t * self.dir
     }
 
     /// Coordinate of origin along axis
+    #[inline]
     pub fn o(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.origin.x,
@@ -41,6 +46,7 @@ impl Ray {
     }
 
     /// Coordinate of direction along axis
+    #[inline]
     pub fn d(&self, axis: Axis) -> Float {
         match axis {
             Axis::X => self.dir.x,

@@ -83,25 +83,28 @@ macro_rules! test_mesh {
                 fn splits() {
                     let mesh = $mesh;
 
-                    let mut stack = VecDeque::from([(mesh.root, mesh.boundary)]);
-                    while let Some((node, aabb)) = stack.pop_front() {
-                        match *node {
-                            KdNode::Leaf(indices) => {
-                                assert!(indices.iter().all(|idx| {
-                                    util::_aabb_contains_triangle(aabb, &mesh.objects[*idx])
-                                }));
+                    let mut stack = VecDeque::new();
+                    stack.push_front((0, mesh.boundary));
+                    while let Some((idx, bounds)) = stack.pop_front() {
+                        if idx == IDX_NAN { continue }
+                        let node = &mesh.nodes[idx];
+                        if !node.leaf {
+                            let (bounds_left, bounds_right) = bounds.split(
+                                node.axis,
+                                node.point,
+                            );
+                            stack.push_front((idx + 1, bounds_left));
+                            stack.push_front((node.right, bounds_right));
+                        } else {
+                            assert!(node.indices.iter().all(|idx| {
+                                util::_aabb_contains_triangle(bounds, &mesh.objects[*idx])
+                            }));
 
-                                assert!(mesh.objects.iter().enumerate()
-                                        .all(|(idx, triangle)| {
-                                            !util::_aabb_contains_triangle(aabb, triangle)
-                                                || indices.contains(&idx)
-                                        }));
-                            }
-                            KdNode::Split(axis, split, left, right) => {
-                                let (aabb_left, aabb_right) = aabb.split(axis, split);
-                                stack.push_front((left, aabb_left));
-                                stack.push_front((right, aabb_right));
-                            }
+                            assert!(mesh.objects.iter().enumerate()
+                                    .all(|(idx, triangle)| {
+                                        !util::_aabb_contains_triangle(bounds, triangle)
+                                            || node.indices.contains(&idx)
+                                    }));
                         }
                     }
                 }
@@ -110,17 +113,16 @@ macro_rules! test_mesh {
                 fn contains() {
                     let mesh = $mesh;
                     let mut found = HashSet::new();
-                    let mut stack = VecDeque::from([mesh.root]);
+                    let mut stack = VecDeque::from([0]);
 
-                    while let Some(node) = stack.pop_front() {
-                        match *node {
-                            KdNode::Leaf(indices) => {
-                                indices.iter().for_each(|idx| { found.insert(*idx); })
-                            }
-                            KdNode::Split(_, _, left, right) => {
-                                stack.push_back(left);
-                                stack.push_back(right);
-                            }
+                    while let Some(idx) = stack.pop_front() {
+                        if idx == IDX_NAN { continue }
+                        let node = &mesh.nodes[idx];
+                        if !node.leaf {
+                            stack.push_front(idx + 1);
+                            stack.push_front(node.right);
+                        } else {
+                            node.indices.iter().for_each(|i| { found.insert(*i); })
                         }
                     }
 

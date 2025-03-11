@@ -23,7 +23,6 @@ impl KdEvent {
         Self { p, a, t, idx }
     }
 
-    #[allow(clippy::collapsible_else_if)]
     pub fn cmp(&self, other: &KdEvent) -> Ordering {
         if self.p < other.p {
             Ordering::Less

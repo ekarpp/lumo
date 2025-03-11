@@ -23,13 +23,6 @@ impl Sphere {
     }
 }
 
-impl Bounded for Sphere {
-    fn bounding_box(&self) -> AaBoundingBox {
-        let r_vec = Point::splat(self.radius);
-        AaBoundingBox::new(- r_vec, r_vec)
-    }
-}
-
 impl Object for Sphere {
     /// Solve the quadratic
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
@@ -100,12 +93,19 @@ impl Object for Sphere {
             t1
         }
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        let r_vec = Point::splat(self.radius);
+        AaBoundingBox::new(-r_vec, r_vec)
+    }
 }
 
 impl Sampleable for Sphere {
     fn area(&self) -> Float {
         4.0 * crate::PI * self.radius * self.radius
     }
+
+    fn material(&self) -> &Material { &self.material }
 
     /// Sample on unit sphere and scale
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
@@ -141,9 +141,10 @@ impl Sampleable for Sphere {
             let xi = self.sample_on(rand_sq).p;
             xi
         } else {
+            /* sample a direction from the cone of visible areas */
             /* uvw-orthonormal basis,
              * where w is the direction from xo to origin of this sphere. */
-            let uvw = Onb::new(xo.normalize());
+            let uvw = Onb::new(-xo.normalize());
 
             let dist_origin = dist_origin2.sqrt();
 
@@ -156,13 +157,11 @@ impl Sampleable for Sphere {
             let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
             let phi = 2.0 * crate::PI * rand_sq.y;
 
-            // we have a point on the disk base of the cone.
-            // consider disk origin to be at the sphere origin, say `xs`.
-            // we compute normal at the point on the sphere where the direction
-            // `xs - xo` from `xo` intersects the sphere. then add the normal
-            // scaled to radius to the origin of the sphere to get the point
-            // on the spherical cap.
+            /* we have a point on the disk base of the cone.
+             * project it to the spherical cap w.r.t the cone with trigonometry
+             */
 
+            // distance to point projected on the spherical cap
             let dist_sampled = dist_origin * cos_theta
                 - (radius2 - dist_origin2 * sin_theta * sin_theta).max(0.0).sqrt();
 
@@ -171,13 +170,14 @@ impl Sampleable for Sphere {
                 / (2.0 * dist_origin * self.radius);
             let sin_alpha = (1.0 - cos_alpha * cos_alpha).max(0.0).sqrt();
 
+            // normal at projected point in local coordinates
             let ng_local = Normal::new(
                 phi.cos() * sin_alpha,
                 phi.sin() * sin_alpha,
                 cos_alpha,
             );
 
-            let ng = uvw.to_world(ng_local);
+            let ng = uvw.to_world(-ng_local).normalize();
 
             ng * self.radius
         };
@@ -193,34 +193,17 @@ impl Sampleable for Sphere {
         let radius2 = self.radius * self.radius;
         let dist_origin2 = xo.length_squared();
 
-        let area = if dist_origin2 < radius2 {
-            4.0 * crate::PI * radius2
+        if dist_origin2 < radius2 {
+            let p_area = 1.0 / self.area();
+            let wi = ri.dir;
+            p_area * xo.distance_squared(xi) / ng.dot(wi).abs()
         } else {
-            /* this computes the area of the spherical cap of the visible
-             * area. slightly faster way is to directly compute the
-             * solid angle of the visible cone. the area is then with
-             * respect to the disk at the base of the spherical cap though
-             */
-
-            let dist_origin = dist_origin2.sqrt();
-
+            /* compute solid angle of the visible cone */
             let sin2_theta_max = radius2 / dist_origin2;
             let cos_theta_max = (1.0 - sin2_theta_max).max(0.0).sqrt();
 
-            let dist_tangent = cos_theta_max * dist_origin;
-
-            let cos_alpha_max =
-                (dist_origin2 + radius2 - dist_tangent * dist_tangent)
-                / (2.0 * dist_origin * self.radius);
-
-            2.0 * crate::PI * (1.0 - cos_alpha_max) * radius2
-        };
-
-        let p_area = 1.0 / area;
-
-        let wi = ri.dir;
-
-        p_area * xo.distance_squared(xi) / ng.dot(wi).abs()
+            1.0 / (2.0 * crate::PI * (1.0 - cos_theta_max))
+        }
     }
 }
 

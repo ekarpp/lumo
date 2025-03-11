@@ -1,71 +1,79 @@
-use crate::{ Direction, Transport, Float, Vec2 };
-use crate::tracer::{ Color, ColorWavelength, bxdf::BxDF, onb::Onb, hit::Hit };
+use crate::{ Direction, Transport, Float, Vec2, Normal };
+use crate::tracer::{ Color, ColorWavelength, bxdf::BxDF, onb::Onb };
 
-#[allow(non_snake_case, clippy::upper_case_acronyms)]
 pub struct BSDF {
     BxDF: BxDF
 }
 
 impl BSDF {
     /// Construct new empty BSDF
-    #[allow(non_snake_case)]
+    #[inline]
     pub fn new(BxDF: BxDF) -> Self {
         Self { BxDF }
     }
 
+    #[inline]
     pub fn is_specular(&self) -> bool {
         self.BxDF.is_specular()
     }
 
+    #[inline]
     pub fn is_delta(&self) -> bool {
         self.BxDF.is_delta()
     }
 
     /// Evaluate the BSDF
+    #[allow(clippy::too_many_arguments)]
+    #[inline]
     pub fn f(
         &self,
         wo: Direction,
         wi: Direction,
         lambda: &ColorWavelength,
-        h: &Hit,
+        backface: bool,
+        t: Float,
+        ng: Normal,
+        ns: Normal,
+        uv: Vec2,
         mode: Transport
     ) -> Color {
-        let reflection = self.reflection(wo, wi, h);
-        let ns = h.ns;
+        let reflection = Self::is_reflection(wo, wi, ng);
         let uvw = Onb::new(ns);
 
         let wo_local = uvw.to_local(wo);
         let wi_local = uvw.to_local(wi);
 
-        self.BxDF.f(wo_local, wi_local, lambda, reflection, h, mode)
+        self.BxDF.f(wo_local, wi_local, lambda, reflection, backface, t, uv, mode)
     }
 
     /// Sample direction from a random BxDF
+    #[inline]
     pub fn sample(
         &self,
         wo: Direction,
-        h: &Hit,
+        ns: Normal,
+        backface: bool,
         rand_u: Float,
         rand_sq: Vec2,
     ) -> Option<Direction> {
-        let ns = h.ns;
         let uvw = Onb::new(ns);
 
         let wo_local = uvw.to_local(wo);
 
-        self.BxDF.sample(wo_local, h.backface, rand_u, rand_sq)
+        self.BxDF.sample(wo_local, backface, rand_u, rand_sq)
             .map(|wi| uvw.to_world(wi))
     }
 
     /// PDF for the BSDF
+    #[inline]
     pub fn pdf(
         &self,
         wo: Direction,
         wi: Direction,
-        h: &Hit,
+        ng: Normal,
+        ns: Normal,
     ) -> Float {
-        let reflection = self.reflection(wo, wi, h);
-        let ns = h.ns;
+        let reflection = Self::is_reflection(wo, wi, ng);
         let uvw = Onb::new(ns);
 
         let wo_local = uvw.to_local(wo);
@@ -74,9 +82,8 @@ impl BSDF {
         self.BxDF.pdf(wo_local, wi_local, reflection)
     }
 
-    fn reflection(&self, wo: Direction, wi: Direction, h: &Hit) -> bool {
-        let ng = h.ng;
-
+    #[inline(always)]
+    fn is_reflection(wo: Direction, wi: Direction, ng: Normal) -> bool {
         ng.dot(wi) * ng.dot(wo) >= 0.0
     }
 }

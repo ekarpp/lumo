@@ -1,6 +1,14 @@
 //! Just a path tracer :)
 #![warn(missing_docs)]
 #![allow(clippy::needless_range_loop)]
+#![allow(clippy::unnecessary_cast)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::manual_range_contains)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::upper_case_acronyms)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 
 pub use image::Image;
 pub use perlin::Perlin;
@@ -35,19 +43,24 @@ mod tone_mapping;
 type Transform = math::transform::Transform;
 type Vec4 = math::mat4::Vec4;
 type Mat4 = math::mat4::Mat4;
-type Vec2 = math::vec2::Vec2;
-/// 3x3 matrix type alias
+/// 2 element float vector type
+pub type Vec2 = math::vec2::Vec2;
+/// 3x3 float matrix type
 pub type Mat3 = math::mat3::Mat3;
-/// 3 element vector type alias
+/// 3 element float vector type
 pub type Vec3 = math::vec3::Vec3;
 /// Float type alias
 pub type Float = f64;
 
 /// easy as ...
-pub const PI: Float = std::f64::consts::PI;
-const INF: Float = f64::INFINITY;
-const NEG_INF: Float = f64::NEG_INFINITY;
-const EPSILON: Float = 1e-10;
+pub const PI: Float = if Float::DIGITS == 6 {
+    std::f32::consts::PI as Float
+} else {
+    std::f64::consts::PI as Float
+};
+const INF: Float = Float::INFINITY;
+const NEG_INF: Float = Float::NEG_INFINITY;
+const EPSILON: Float = if Float::DIGITS == 6 { 1e-5 } else { 1e-10 };
 
 type Normal = Vec3;
 type Direction = Vec3;

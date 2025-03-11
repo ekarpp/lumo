@@ -29,6 +29,8 @@ pub struct TriangleMesh {
     pub normals: Vec<Normal>,
     /// All texture coordinates of the mesh
     pub uvs: Vec<Vec2>,
+    /// All materials used in the mesh
+    pub materials: Vec<Material>,
 }
 
 impl TriangleMesh {
@@ -46,14 +48,14 @@ impl TriangleMesh {
             vertices,
             normals,
             uvs,
+            materials: vec!(material),
         });
 
-        Self::new_from_faces(mesh, faces, material)
+        KdTree::new(Self::triangles_from_faces(mesh, faces, 0))
     }
 
-    /// Helper function that constructs triangles in kdtree
-    /// given mesh, faces and material
-    pub fn new_from_faces(mesh: Arc<Self>, faces: Vec<Face>, material: Material) -> Mesh {
+    /// Constructs the triangles defined by `faces` using material with `midx`
+    pub fn triangles_from_faces(mesh: Arc<Self>, faces: Vec<Face>, midx: usize) -> Vec<Triangle> {
         let mut triangles = Vec::with_capacity(faces.len());
 
         for face in faces {
@@ -81,11 +83,11 @@ impl TriangleMesh {
                     Some((face.tidx[a], face.tidx[b], face.tidx[c]))
                 };
 
-                triangles.push(Triangle::new(mesh.clone(), vidx, nidx, tidx));
+                triangles.push(Triangle::new(Arc::clone(&mesh), vidx, midx, nidx, tidx));
             }
         }
 
-        KdTree::new(triangles, material)
+        triangles
     }
 
     fn degenerate_triangle(a: Point, b: Point, c: Point) -> bool {

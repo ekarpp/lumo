@@ -1,6 +1,6 @@
 use super::*;
 use crate::{ Mat3, Vec3 };
-use crate::tracer::{ Face, Spectrum, TriangleMesh };
+use crate::tracer::{ Face, Spectrum, TriangleMesh, color::illuminants };
 
 impl Scene {
 
@@ -26,7 +26,12 @@ impl Scene {
         let big_box = material(box_spec.clone());
         let small_box = material(box_spec);
 
-        let light = Material::Light(Texture::from(light_spec));
+        let light = Material::Light(
+            Texture::from(light_spec),
+            illuminants::CORNELL,
+            1.0,
+            false,
+        );
 
         let mut scene = Scene::default();
 

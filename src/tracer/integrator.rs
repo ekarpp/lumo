@@ -4,7 +4,6 @@ use crate::{
 };
 use crate::tracer::{
     camera::Camera, ColorWavelength, film::FilmSample, hit::Hit,
-    object::Sampleable,
     ray::Ray, scene::Scene, Color
 };
 use std::{ fmt, cell::RefCell };
@@ -68,7 +67,21 @@ impl Integrator {
 }
 
 /// Shoots a shadow ray towards random light from `ho`. MIS with `pdf_scatter`.
-fn shadow_ray(
+#[inline]
+fn shadow_rays(
+    scene: &Scene,
+    wo: Direction,
+    gathered: Color,
+    lambda: &ColorWavelength,
+    ho: &Hit,
+    rng: &mut Xorshift,
+) -> Color {
+    (0..scene.num_shadow_rays()).fold(Color::BLACK, |acc, _| {
+        acc + gathered * single_shadow_ray(scene, wo, lambda, ho, rng)
+    }) / scene.num_shadow_rays() as Float
+}
+
+fn single_shadow_ray(
     scene: &Scene,
     wo: Direction,
     lambda: &ColorWavelength,
@@ -79,7 +92,7 @@ fn shadow_ray(
     let xo = ho.p;
     let ns = ho.ns;
 
-    let light = scene.uniform_random_light(rng.gen_float());
+    let (light, pdf_light) = scene.get_light(scene.sample_light(rng.gen_float()));
 
     let mut radiance = Color::BLACK;
 
@@ -152,5 +165,5 @@ fn shadow_ray(
         }
     };
 
-    radiance * scene.num_lights() as Float
+    radiance / pdf_light
 }

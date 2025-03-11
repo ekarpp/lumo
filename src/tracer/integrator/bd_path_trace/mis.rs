@@ -1,11 +1,11 @@
 use super::*;
 
 /// PDF for light leaving from `curr` to `next` w.r.t. surface area
-fn pdf_light_leaving(curr: &Vertex, next: &Vertex) -> Float {
+fn pdf_light_leaving(curr: &Vertex, next: &Vertex, scene: &Scene) -> Float {
     if next.is_delta() {
         return 0.0;
     }
-    if let Some(light) = curr.h.light {
+    if let Some(light_idx) = curr.light {
         let ho = &curr.h;
         let hi = &next.h;
         let xo = ho.p;
@@ -15,6 +15,7 @@ fn pdf_light_leaving(curr: &Vertex, next: &Vertex) -> Float {
         // normalized
         let wi = ri.dir;
         let ng = ho.ng;
+        let (light, _) = scene.get_light(light_idx);
         let (_, pdf_dir) = light.sample_leaving_pdf(&ri, ng);
         let ngi = if !next.is_surface() { wi } else { hi.ng };
 
@@ -43,8 +44,13 @@ fn pdf_camera_leaving(curr: &Vertex, next: &Vertex, camera: &Camera) -> Float {
 }
 
 /// PDF for starting at `v`
-fn pdf_light_origin(v: &Vertex) -> Float {
-    v.h.light.map_or(0.0, |light| 1.0 / (light.area() /* * scene.num_lights() */))
+fn pdf_light_origin(v: &Vertex, scene: &Scene) -> Float {
+    if let Some(light_idx) = v.light {
+        let (light, pdf_light) = scene.get_light(light_idx);
+        pdf_light / light.area()
+    } else {
+        0.0
+    }
 }
 
 /// Helper to compute updated PDF at the connection. If `prev` is `Some` then it is
@@ -80,16 +86,19 @@ pub fn heuristic(ri: Float) -> Float { ri * ri }
 
 /// Computes the MIS weight for the chosen sample strategy. PBRT, what orig paper
 pub fn weight(
+    scene: &Scene,
     camera: &Camera,
     light_path: &[Vertex],
-    s: usize,
     camera_path: &[Vertex],
-    t: usize,
-    sampled_vertex: Option<Vertex>,
 ) -> Float {
-    // assert!(t != 0)
-    // assert!((t == 1 && s > 1) || t > 1)
-    // if `sampled_vertex.is_some()` then t == 1 XOR s == 1
+    let s = light_path.len();
+    let t = camera_path.len();
+    #[cfg(debug_assertions)]
+    {
+        assert!(t != 0);
+        assert!((t == 1 && s > 1) || t > 1);
+    }
+
     if s + t == 2 {
         return 1.0;
     }
@@ -98,16 +107,12 @@ pub fn weight(
         if pdf == 0.0 { 1.0 } else { pdf }
     };
 
-    let ct1 = if t == 1 {
-        sampled_vertex.as_ref().unwrap()
+    let ct1 = &camera_path[t - 1];
+    let ls1 = if s == 0 {
+        // if s == 0 ls never gets called but we need a value here
+        &camera_path[0]
     } else {
-        &camera_path[t - 1]
-    };
-    let ls1 = if s == 1 {
-        sampled_vertex.as_ref().unwrap()
-    } else {
-        // if s == 0 ls never gets called
-        &light_path[s.max(1) - 1]
+        &light_path[s - 1]
     };
 
     /* combine light and camera paths to one, starting from the light.
@@ -145,9 +150,9 @@ pub fn weight(
     }
     if t > 0 {
         let pdf_bck = if s == 0 {
-            pdf_light_origin(ct1)
+            pdf_light_origin(ct1, scene)
         } else if s == 1 {
-            pdf_light_leaving(ls1, ct1)
+            pdf_light_leaving(ls1, ct1, scene)
         } else {
             pdf_connection(ls1, ct1, None)
         };
@@ -158,7 +163,7 @@ pub fn weight(
     if t > 1 {
         let ct2 = &camera_path[t - 2];
         let pdf_bck = if s == 0 {
-            pdf_light_leaving(ct1, ct2)
+            pdf_light_leaving(ct1, ct2, scene)
         } else {
             pdf_connection(ct1, ct2, Some(ls1))
         };

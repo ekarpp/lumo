@@ -2,11 +2,13 @@ use super::*;
 use crate::formatting;
 use std::{ cmp::Ordering, sync::mpsc, thread, time::Instant };
 use rustc_hash::{FxHashMap, FxHashSet};
-use node::KdNode;
+use node::{KdNode, KdNodeBuilder};
 use event::{ KdEvent, KdEventType };
 
 /// Triangle mesh constructed as a kD-tree
 pub type Mesh = KdTree<Triangle>;
+
+const IDX_NAN: usize = usize::MAX;
 
 mod node;
 mod event;
@@ -18,9 +20,15 @@ mod kdtree_tests;
 /// subobjects.
 pub struct KdTree<T> {
     objects: Vec<T>,
+    nodes: Vec<KdNode>,
     boundary: AaBoundingBox,
-    root: Box<KdNode>,
-    material: Material,
+}
+
+impl KdTree<Triangle> {
+    /// Return the material of the first triangle of the tree
+    pub fn material(&self) -> &Material {
+        self.objects[0].material()
+    }
 }
 
 /// Implementation of a SAH based kd-tree
@@ -29,16 +37,10 @@ pub struct KdTree<T> {
 /// [fogleman/pt](https://github.com/fogleman/pt/blob/master/pt/tree.go),
 /// [Article by Amsallem](https://www.flomonster.fr/articles/kdtree.html)
 /// [Wald & Havran](https://www.irisa.fr/prive/kadi/Sujets_CTR/kadi/Kadi_sujet2_article_Kdtree.pdf)
-impl<T: Bounded> KdTree<T> {
+impl<T: Object> KdTree<T> {
     /// Constructs a kD-tree of the given objects with the given material.
     /// Should each object have their own material instead?
-    pub fn new(objects: Vec<T>, material: Material) -> Self {
-        // don't warn for rectangles, they work
-        if matches!(material, Material::Light(_)) && objects.len() > 2 {
-            // TODO: fix them, issues in sampling,
-            // probably have to add each triangle separately as a light to the scene?
-            println!("Rendering meshes as lights may produce incorrect results.")
-        }
+    pub fn new(objects: Vec<T>) -> Self {
         let start = Instant::now();
         if objects.len() > 10_000 {
             println!("Creating kd-tree of {} triangles", objects.len());
@@ -69,25 +71,21 @@ impl<T: Bounded> KdTree<T> {
         events.sort_by(|a, b| a.cmp(b));
 
         let (tx, rx) = mpsc::channel();
-        KdNode::construct(events, objects.len(), &boundary, 0, Some(tx));
+        KdNodeBuilder::construct(events, objects.len(), &boundary, 0, Some(tx));
         let root = rx.recv().unwrap();
 
+        let mut nodes = Vec::with_capacity(root.num_nodes());
+        root.build(&mut nodes, IDX_NAN);
+
         if objects.len() > 10_000 {
-            let dt = start.elapsed().as_millis() as Float;
-            println!("Created kd-tree in {} seconds", formatting::fmt_ms(dt, true));
-        }
+            println!("Created kd-tree in {}", formatting::fmt_elapsed(start.elapsed()));
+        };
 
         Self {
-            root,
+            nodes,
             objects,
             boundary,
-            material,
         }
-    }
-
-    /// Reference to material of `self`
-    pub fn material(&self) -> &Material {
-        &self.material
     }
 
     /// Returns self uniformly scaled as an instance with largest dimension
@@ -100,114 +98,90 @@ impl<T: Bounded> KdTree<T> {
         self.scale_uniform(s)
     }
 
-    fn _hit<const GEO: bool>(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
-        let (t_start, t_end) = self.boundary.intersect(r);
-        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
-        // box missed / is behind
-        if t_start > t_end {
-            None
-        } else {
-            self.hit_subtree::<GEO>(&self.root, r, t_min, t_end, &self.boundary)
-        }
-    }
-
-    fn hit_subtree<const GEO: bool>(
+    fn _hit<const GEO: bool>(
         &self,
-        node: &KdNode,
         r: &Ray,
         t_min: Float,
-        t_max: Float,
-        aabb: &AaBoundingBox,
+        t_max: Float
     ) -> Option<Hit> {
-        // extract split info or check for hit at leaf node
-        let (axis, point, mut node_first, mut node_second) = match node {
-            KdNode::Split(axis, point, left, right) => (*axis, *point, left, right),
-            KdNode::Leaf(indices) => {
-                let mut tt = t_max;
-                let mut idx = None;
+        let origin = [r.origin.x, r.origin.y, r.origin.z];
+        let inv_dir = [1.0 / r.dir.x, 1.0 / r.dir.y, 1.0 / r.dir.z];
 
-                for i in indices {
-                    let t = self.objects[*i].hit_t(r, t_min, tt);
-                    if t < tt { tt = t; idx = Some(i); }
-                }
+        let mut stack = [(0, t_min, t_max); 64];
+        let mut stack_ptr = 0;
+        let mut t_hit = crate::INF;
+        let mut curr = 0;
+        let mut idx = None;
+        let (t_start, t_end) = self.boundary.intersect(r.origin, 1.0 / r.dir);
+        let (mut t_start, mut t_end) = (t_start.max(t_min), t_end.min(t_max));
 
-                let idx = idx?;
+        loop {
+            if t_hit < t_start { break; }
+            let node = &self.nodes[curr];
 
-                return if GEO {
-                    self.objects[*idx].hit(r, t_min, t_max)
-                        .map(|mut h| { h.material = &self.material; h })
-                } else {
-                    Hit::from_t(tt)
-                };
-            }
-        };
-
-        let t_split = (point - r.o(axis)) / r.d(axis);
-
-        let (mut aabb_first, mut aabb_second) = aabb.split(axis, point);
-
-        let left_first = r.o(axis) < point || (r.o(axis) == point && r.d(axis) <= 0.0);
-        // intersect first the AABB that we reach first
-        if !left_first {
-            std::mem::swap(&mut aabb_first, &mut aabb_second);
-            std::mem::swap(&mut node_first, &mut node_second);
-        }
-
-        let (t_start, t_end) = aabb.intersect(r);
-        let (t_start, t_end) = (t_start.max(t_min), t_end.min(t_max));
-
-        // PBR Figure 4.19 (a). we hit only the first aabb.
-        if t_split > t_end || t_split <= 0.0 {
-            self.hit_subtree::<GEO>(node_first, r, t_min, t_end, &aabb_first)
-        // PBR Figure 4.19 (b). we hit only the second aabb.
-        } else if t_split < t_start {
-            self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second)
-        } else {
-            match self.hit_subtree::<GEO>(node_first, r, t_min, t_end, &aabb_first) {
-                None => self.hit_subtree::<GEO>(node_second, r, t_min, t_end, &aabb_second),
-                Some(h1) => {
-                    /* if we hit something in the first AABB before the split,
-                     * there is no need to process the other subtree. */
-                    if h1.t < t_split {
-                        Some(h1)
+            if node.leaf {
+                for i in &node.indices {
+                    let t = self.objects[*i].hit_t(r, t_min, t_end);
+                    if GEO {
+                        if t < t_end { t_end = t; t_hit = t; idx = Some(i); }
                     } else {
-                        self.hit_subtree::<GEO>(node_second, r, t_min, h1.t, &aabb_second)
-                            .or(Some(h1))
+                        if t < t_end { return Hit::from_t(t); }
                     }
                 }
+                if stack_ptr == 0 { break; }
+                stack_ptr -= 1;
+                (curr, t_start, t_end) = stack[stack_ptr];
+            } else {
+                let point = node.point;
+                let axis = node.axis;
+                let t_split = (point - origin[axis as usize]) * inv_dir[axis as usize];
+                let left_first = origin[axis as usize] < point
+                    || (origin[axis as usize] == point && inv_dir[axis as usize] <= 0.0);
+
+                let (first, second) = if left_first {
+                    (curr + 1, node.right)
+                } else {
+                    (node.right, curr + 1)
+                };
+
+                if t_split > t_end || t_split <= 0.0 {
+                    // PBR Figure 4.19 (a). we hit only the first aabb.
+                    curr = first;
+                } else if t_split < t_start {
+                    // PBR Figure 4.19 (b). we hit only the second aabb.
+                    curr = second;
+                } else {
+                    curr = first;
+                    stack[stack_ptr] = (second, t_split, t_end);
+                    t_end = t_split;
+                    stack_ptr += 1;
+                }
             }
+        }
+
+        let idx = idx?;
+
+        if GEO {
+            self.objects[*idx].hit(r, t_min, t_max)
+        } else {
+            Hit::from_t(crate::INF)
         }
     }
 }
 
-impl<T: Bounded> Bounded for KdTree<T> {
-    fn bounding_box(&self) -> AaBoundingBox {
-        self.boundary
-    }
-}
-
-impl<T: Bounded> Object for KdTree<T> {
+impl<T: Object> Object for KdTree<T> {
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         self._hit::<true>(r, t_min, t_max)
     }
 
     fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
-        self._hit::<false>(r, t_min, t_max).map_or(crate::INF, |h| h.t)
-    }
-}
-
-impl<T: Sampleable + Bounded> Sampleable for KdTree<T> {
-    fn area(&self) -> Float {
-        // maybe sloooow for big ones
-        self.objects.iter().fold(0.0, |sum, obj| sum + obj.area())
+        self._hit::<false>(r, t_min, t_max)
+            .map_or(crate::INF, |h| h.t)
     }
 
-    fn sample_on(&self, rand_sq: Vec2) -> Hit {
-        // TODO: this is not correct
-        let rand_u = rand_sq.x;
-        let n = rand_u * self.objects.len() as Float;
-        let mut ho = self.objects[n.floor() as usize].sample_on(rand_sq);
-        ho.material = &self.material;
-        ho
+    fn bounding_box(&self) -> AaBoundingBox {
+        self.boundary
     }
+
+    fn num_primitives(&self) -> usize { self.objects.len() }
 }

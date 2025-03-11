@@ -48,7 +48,6 @@ fn inv() {
         let ptp = a.transform_pt_inv(ptp);
         assert!(p.distance_squared(ptp) < crate::EPSILON);
 
-
         if a.row(3).w == 1.0 {
             let ptd = a.transform_dir(p);
             let ptd = a.transform_dir_inv(ptd);

@@ -2,7 +2,9 @@ use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), std::io::Error> {
-    let camera = Camera::builder().build();
+    let camera = Camera::builder()
+        .pixel_filter(PixelFilter::gaussian(2.5, 2.5 / 4.0))
+        .build();
     let def_color = Spectrum::from_srgb(242, 242, 242);
     let mut scene = Scene::empty_box(
         def_color,
@@ -20,7 +22,6 @@ fn main() -> Result<(), std::io::Error> {
 
     Renderer::new(scene, camera)
         .integrator(Integrator::BDPathTrace)
-        .filter(PixelFilter::gaussian(2.5, 2.5 / 4.0))
         .samples(64)
         .render()
         .save("box.png")?;

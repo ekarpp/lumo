@@ -1,4 +1,4 @@
-use crate::tracer::FilmSample;
+use crate::tracer::{ Color, FilmSample };
 use crate::Float;
 use std::fmt;
 
@@ -35,25 +35,27 @@ impl Default for ToneMap {
 
 impl ToneMap {
     /// Tone maps the `rgb` sample with channels in `\[0,∞\]`
-    pub fn map(&self, sample: &mut FilmSample) {
+    pub fn map(&self, sample: &FilmSample) -> Color {
         let color = sample.color;
         let lambda = &sample.lambda;
+
         #[cfg(debug_assertions)]
-        if color.is_nan() {
-            println!("Found NaN during tone mapping.");
-            sample.color = Spectrum::GREEN.sample(lambda);
+        {
+            if color.is_nan() {
+                println!("Found NaN during tone mapping: {}", color);
+                return 32.0 * Spectrum::GREEN.sample(lambda);
+            }
+            if color.is_neg() {
+                println!("Found negative value during tone mapping: {}", color);
+                return 32.0 * Spectrum::RED.sample(lambda);
+            }
+            if color.max() > SUSPICIOUSLY_LARGE_VALUE {
+                println!("Found suspiciously large value during tone mapping: {}", color);
+                return 32.0 * Spectrum::BLUE.sample(lambda);
+            }
         }
-        #[cfg(debug_assertions)]
-        if color.is_neg() {
-            println!("Found negative value during tone mapping.");
-            sample.color = Spectrum::RED.sample(lambda);
-        }
-        #[cfg(debug_assertions)]
-        if color.max() > SUSPICIOUSLY_LARGE_VALUE {
-            println!("Found suspiciously large value during tone mapping.");
-            sample.color = Spectrum::BLUE.sample(lambda);
-        }
-        sample.color = match self {
+
+        match self {
             Self::NoMap => color,
             Self::Clamp(mx) => color.clamp(0.0, *mx),
             Self::Reinhard => color / (1.0 + color.luminance(lambda)),

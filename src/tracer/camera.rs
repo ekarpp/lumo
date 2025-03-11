@@ -3,7 +3,10 @@ use crate::{
     Mat3, Vec3, rng, math::spherical_utils
 };
 use crate::math::vec2::UVec2;
-use crate::tracer::{ Color, ray::Ray };
+use crate::tracer::{
+    Color, ColorSpace, color::{DenseSpectrum, illuminants},
+    Film, PixelFilter, ray::Ray
+};
 
 mod matrices;
 mod builder;
@@ -28,14 +31,21 @@ pub struct CameraConfig {
     world_to_camera: Transform,
     /// Image plane area in camera space
     pub image_plane_area: Float,
+    pixel_filter: PixelFilter,
+    color_space: &'static ColorSpace,
+    illuminant: &'static DenseSpectrum,
 }
 
 impl CameraConfig {
     /// Creates a new config with the given arguments
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         lens_radius: Float,
         focal_length: Float,
         resolution: (u64, u64),
+        color_space: &'static ColorSpace,
+        pixel_filter: PixelFilter,
+        illuminant: &'static DenseSpectrum,
         world_to_camera: Transform,
         screen_to_raster: Transform,
         camera_to_screen: Transform,
@@ -68,6 +78,9 @@ impl CameraConfig {
             screen_to_raster,
             resolution,
             image_plane_area,
+            pixel_filter,
+            color_space,
+            illuminant,
         }
     }
 
@@ -120,6 +133,30 @@ impl Camera {
     /// Return a new `CameraBuilder`
     pub fn builder() -> CameraBuilder {
         CameraBuilder::default()
+    }
+
+    /// Camera for the ported Cornell box scene
+    pub fn cornell_box() -> Camera {
+        CameraBuilder::new()
+            .origin(278.0, 273.0, -800.0)
+            .towards(278.0, 273.0, 0.0)
+            .zoom(2.8)
+            .focal_length(0.035)
+            .resolution((512, 512))
+            .illuminant(illuminants::CORNELL)
+            .build()
+    }
+
+    /// Create a film for the camera
+    pub fn create_film(&self, samples: u64) -> Film {
+        let cfg = self.get_cfg();
+        Film::new(
+            cfg.resolution,
+            samples,
+            cfg.color_space,
+            cfg.pixel_filter,
+            cfg.illuminant,
+        )
     }
 
     fn get_cfg(&self) -> &CameraConfig {

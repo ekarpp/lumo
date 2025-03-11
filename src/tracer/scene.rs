@@ -1,7 +1,7 @@
 use crate::{ Float, rng::Xorshift };
 use crate::tracer::{
-    hit::Hit, ray::Ray, Material, Texture, Color,
-    ColorWavelength, Medium, Object, Rectangle, Sampleable
+    hit::Hit, ray::Ray, Material, Texture, Color, BVH, Sphere, color::illuminants,
+    ColorWavelength, Medium, Object, Rectangle, Sampleable, Instanceable
 };
 
 #[cfg(test)]
@@ -16,24 +16,51 @@ mod cornell_box;
 #[derive(Default)]
 pub struct Scene {
     /// All of the objects in the scene.
-    pub objects: Vec<Box<dyn Object>>,
+    pub objects: BVH<Box<dyn Object>>,
     /// Contains all lights in the scene.
-    pub lights: Vec<Box<dyn Sampleable>>,
+    pub lights: BVH<Box<dyn Sampleable>>,
     /// Medium that the scene is filled with
     pub medium: Option<Medium>,
+    /// Texture to use for environmental light
+    pub environment_map: Option<Material>,
 }
 
 impl Scene {
+    /// Build the scene
+    pub fn build(&mut self) {
+        self.objects.build();
+
+        if let Some(env_map) = self.environment_map.take() {
+            let bounds = self.objects.bounding_box()
+                .merge(&self.lights.bounding_box());
+            let center = bounds.center();
+            let radius = center.distance(bounds.ax_min);
+            self.add_light(
+                Sphere::new(radius, env_map).translate(center.x, center.y, center.z)
+            );
+        }
+
+        self.lights.build();
+
+        if let Some(medium) = self.medium.as_mut() {
+            let bounds = self.objects.bounding_box()
+                .merge(&self.lights.bounding_box());
+            let extent = bounds.extent();
+            medium.set_extent(extent);
+        }
+    }
+
     /// Add a non-light object to the scene
     pub fn add(&mut self, obj: Box<dyn Object>) {
         // how to check material is not light?
-        self.objects.push(obj);
+        self.objects.add(obj);
     }
 
     /// Adds a light to the scene
     pub fn add_light(&mut self, light: Box<dyn Sampleable>) {
         // how to check material is light?
-        self.lights.push(light);
+        // trait upcasting experimental, store lights and objects in separate BVHs
+        self.lights.add(light);
     }
 
     /// Sets the volumetric medium of the scene
@@ -41,15 +68,42 @@ impl Scene {
         self.medium = Some(medium);
     }
 
-    /// Returns number of lights in the scene
-    pub fn num_lights(&self) -> usize {
-        self.lights.len()
+    /// Set the texture to use for environment light
+    pub fn set_environment_map(&mut self, env_map: Texture, scale: Float) {
+        self.environment_map = Some(
+            Material::Light(env_map, illuminants::D65, scale, true)
+        );
     }
 
-    /// Choose one of the lights uniformly at random. Crash if no lights.
-    pub fn uniform_random_light(&self, rand_u: Float) -> &dyn Sampleable {
-        let idx = (rand_u * self.lights.len() as Float).floor() as usize;
-        self.lights[idx].as_ref()
+    /// Returns number of lights in the scene
+    pub fn num_lights(&self) -> usize {
+        self.lights.num_objects()
+    }
+
+    /// Return the number of objects in the scene
+    pub fn num_primitives(&self) -> usize {
+        self.objects.num_primitives() + self.lights.num_primitives()
+    }
+
+    /// Number of shadow rays that should be shot in the scene
+    pub fn num_shadow_rays(&self) -> usize {
+        self.num_lights().ilog2().max(1) as usize
+    }
+
+    /// Choose one of the lights uniformly at random.
+    /// Return reference and probability of sample.
+    pub fn sample_light(&self, rand_u: Float) -> usize {
+        self.lights.sample_light(rand_u)
+    }
+
+    /// Get light with BVH index `idx` and probability for it to get samped
+    pub fn get_light(&self, idx: usize) -> (&dyn Sampleable, Float) {
+        self.lights.get_light(idx)
+    }
+
+    /// Get light from BVH at hit `h` and probability for it to get sampled
+    pub fn get_light_at(&self, h: &Hit) -> Option<usize> {
+        self.lights.get_light_at(h)
     }
 
     /// Returns the transmittance due to volumetric medium
@@ -72,27 +126,15 @@ impl Scene {
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }
 
-        for object in &self.objects {
-            // if we hit an object, it must be closer than what we have
-            h = object.hit(r, 0.0, t_max).or(h);
-            // update distance to closest found so far
-            t_max = h.as_ref().map_or(t_max, |hit| hit.t);
-        }
+        h = self.objects.hit(r, 0.0, t_max).or(h);
+        t_max = h.as_ref().map_or(t_max, |hit| hit.t);
 
-        // lazy, something better should be done.
-        // use enum wrapper? have issues with instances..
-        for light in &self.lights {
-            h = light.hit(r, 0.0, t_max).map(|mut hit| {
-                t_max = hit.t;
-                hit.light = Some(light.as_ref());
-                hit
-            }).or(h);
-        }
+        h = self.lights.hit(r, 0.0, t_max).or(h);
 
         #[cfg(debug_assertions)]
         {
             h = h.inspect(|h| {
-                if self.medium.is_none() && h.t < crate::EPSILON {
+                if self.medium.is_none() && h.t < crate::EPSILON.powf(1.5) {
                     println!("Suspiciously close hit ({}) at {}", h.t, h.p);
                 }
             });
@@ -109,13 +151,9 @@ impl Scene {
             t = t.min(medium.hit_t(r, rng, 0.0, t));
         }
 
-        for object in &self.objects {
-            t = t.min(object.hit_t(r, 0.0, t));
-        }
+        t = t.min(self.objects.hit_t(r, 0.0, t));
 
-        for light in &self.lights {
-            t = t.min(light.hit_t(r, 0.0, t));
-        }
+        t = t.min(self.lights.hit_t(r, 0.0, t));
 
         t
     }
@@ -136,16 +174,12 @@ impl Scene {
             }
         }
 
-        for object in &self.objects {
-            if object.hit_t(r, 0.0, t_max) < t_max {
-                return None;
-            }
+        if self.objects.hit_t(r, 0.0, t_max) < t_max {
+            return None;
         }
 
-        for light in &self.lights {
-            if light.hit_t(r, 0.0, t_max) < t_max {
-                return None;
-            }
+        if self.lights.hit_t(r, 0.0, t_max) < t_max {
+            return None;
         }
 
         Some( light_hit )

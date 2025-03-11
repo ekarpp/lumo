@@ -5,8 +5,8 @@ pub use integrator::Integrator;
 pub use material::Material;
 pub use medium::Medium;
 pub use object::{
-    Bounded, Disk, Instance, Instanceable, KdTree, Object,
-    Cone, Cube, Cylinder, Plane, Rectangle, Sphere, Triangle,
+    Disk, Instance, Instanceable, KdTree, Object, BVH,
+    Cone, Cube, Cylinder, Rectangle, Sphere, Triangle,
     Sampleable, TriangleMesh, Face, Mesh
 };
 pub use scene::Scene;

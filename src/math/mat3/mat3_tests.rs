@@ -60,7 +60,7 @@ fn inv() {
                     && c.y1.y.is_nan()
                     && c.y2.z.is_nan());
         } else {
-            assert!((1.0 - c.det()).abs() < 1e-5);
+            assert!((1.0 - c.det()).abs() < crate::EPSILON.sqrt());
         }
     }
 }

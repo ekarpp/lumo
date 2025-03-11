@@ -3,12 +3,12 @@ use crate::{
 };
 use crate::tracer::{
     Camera, Film, FilmSample,
-    Integrator, Scene, PixelFilter, FilmTile, ColorSpace
+    Integrator, Scene, FilmTile
 };
 use crate::math::vec2::UVec2;
 use std::{
     sync::{Arc, mpsc, Mutex}, cell::RefCell,
-    io::Write, time::Instant
+    io::Write, time::{Duration, Instant}
 };
 use itertools::Itertools;
 
@@ -35,7 +35,6 @@ pub struct Renderer {
     num_samples: u64,
     integrator: Integrator,
     tone_map: ToneMap,
-    film: Film,
     sampler: SamplerType,
     threads: usize,
     seed: u64,
@@ -43,7 +42,8 @@ pub struct Renderer {
 
 impl Renderer {
     /// Constructs a new renderer.
-    pub fn new(scene: Scene, camera: Camera) -> Self {
+    pub fn new(mut scene: Scene, camera: Camera) -> Self {
+        scene.build();
         assert!(scene.num_lights() != 0);
 
         let scene = Arc::new(scene);
@@ -51,12 +51,6 @@ impl Renderer {
 
         let resolution = camera.get_resolution();
         let num_samples = DEFAULT_NUM_SAMPLES;
-        let film = Film::new(
-            resolution,
-            num_samples,
-            ColorSpace::default(),
-            PixelFilter::default(),
-        );
 
         let seed = crate::rng::gen_seed();
 
@@ -64,7 +58,6 @@ impl Renderer {
             scene,
             camera,
             resolution,
-            film,
             num_samples,
             seed,
             threads: DEFAULT_THREADS,
@@ -80,16 +73,9 @@ impl Renderer {
         self
     }
 
-    /// Sets the pixel filter
-    pub fn filter(mut self, filter: PixelFilter) -> Self {
-        self.film.set_filter(filter);
-        self
-    }
-
     /// Sets number of samples per pixel
     pub fn samples(mut self, samples: u64) -> Self {
         self.num_samples = samples;
-        self.film.set_samples(samples);
         self
     }
 
@@ -117,13 +103,7 @@ impl Renderer {
         self
     }
 
-    /// Sets the color space used to develop the film
-    pub fn color_space(mut self, color_space: ColorSpace) -> Self {
-        self.film.set_color_space(color_space);
-        self
-    }
-
-    fn output_begin(&self) {
+    fn output_begin(&self, film: &Film) {
         #[cfg(debug_assertions)]
         println!("Debug assertions enabled");
 
@@ -135,7 +115,10 @@ impl Renderer {
         println!("Starting to render the scene:\n\
                   \t Resolution: {} x {}\n\
                   \t Samples: {}\n\
+                  \t Shadow rays: {}\n\
                   \t Integrator: {}\n\
+                  \t Primitives: {}\n\
+                  \t Lights: {}\n\
                   \t Sampler: {}\n\
                   \t Tone map: {}\n\
                   \t Film: [{}] \n\
@@ -143,10 +126,17 @@ impl Renderer {
                   \t Threads: {}",
                  self.resolution.x, self.resolution.y,
                  self.num_samples,
+                 if matches!(self.integrator, Integrator::BDPathTrace) {
+                     1
+                 } else {
+                     self.scene.num_shadow_rays()
+                 },
                  self.integrator,
+                 self.scene.num_primitives(),
+                 self.scene.num_lights(),
                  self.sampler,
                  self.tone_map,
-                 self.film,
+                 film,
                  self.seed,
                  self.threads,
         );
@@ -156,7 +146,7 @@ impl Renderer {
         &self,
         rays_traced: u64,
         rays_total: u64,
-        dt: Float,
+        dt: Duration,
     ) {
         let bar_step = rays_total / PROGRESS_BAR_LEN as u64;
         let steps = rays_traced / bar_step;
@@ -165,7 +155,7 @@ impl Renderer {
         print!("\r[{}{}] (~{} left)",
                "+".repeat(steps as usize),
                "-".repeat(PROGRESS_BAR_LEN - steps as usize),
-               formatting::fmt_ms(dt as Float * (prog - 1.0), false),
+               formatting::fmt_elapsed(dt.mul_f64(prog as f64 - 1.0)),
         );
         let _ = std::io::stdout().flush();
     }
@@ -191,7 +181,7 @@ impl Renderer {
                                 integrator.integrate(scene, camera, rng, raster_xy)
                             })
                             .for_each(|mut sample: FilmSample| {
-                                tone_map.map(&mut sample);
+                                sample.color = tone_map.map(&sample);
                                 tile.add_sample(&sample)
                             })
                     });
@@ -204,9 +194,11 @@ impl Renderer {
 
 
     /// Starts the rendering process and returns the rendered image
-    pub fn render(&mut self) -> &Film {
-        self.output_begin();
+    pub fn render(&mut self) -> Film {
         let start = Instant::now();
+
+        let mut film = self.camera.create_film(self.num_samples);
+        self.output_begin(&film);
 
         let pool = pool::ThreadPool::new(
             self.threads,
@@ -229,7 +221,7 @@ impl Renderer {
             (0..tiles_y).cartesian_product(0..tiles_x).for_each(|(y, x): (u64, u64)| {
                 let px_min = UVec2::new(x, y) * TILE_SIZE;
                 let px_max = (px_min + TILE_SIZE).min(self.resolution);
-                let tile = self.film.create_tile(px_min, px_max);
+                let tile = film.create_tile(px_min, px_max);
 
                 let task = task::RenderTask::new(tile, samples);
                 pool.publish(task);
@@ -247,14 +239,13 @@ impl Renderer {
         while finished < self.threads {
             let result = pool.pop_result();
             if let Some(tile) = result.tile {
-                self.film.add_tile(tile);
+                film.add_tile(tile);
                 rays_traced += result.num_rays;
                 tiles_added += 1;
                 let output = tiles_added % self.resolution.x == 0
                     || tiles_added == self.threads as u64;
                 if output {
-                    let dt = start.elapsed().as_millis() as Float;
-                    self.output_progress(rays_traced, rays_total, dt);
+                    self.output_progress(rays_traced, rays_total, start.elapsed());
                 }
             } else {
                 finished += 1;
@@ -262,10 +253,10 @@ impl Renderer {
         }
 
         println!("\rFinished rendering in {} ({} camera rays)",
-                 formatting::fmt_ms(start.elapsed().as_millis() as Float, true),
+                 formatting::fmt_elapsed(start.elapsed()),
                  formatting::fmt_si(rays_total),
         );
 
-        &self.film
+        film
     }
 }

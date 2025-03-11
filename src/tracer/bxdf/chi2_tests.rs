@@ -45,7 +45,11 @@ fn mfd(roughness: Float, eta: Float) -> MfDistribution {
 
 test_bxdf!{
     lambertian, BxDF::Lambertian(Spectrum::WHITE),
-    diffuse,    BxDF::MfDiffuse(mfd(1.0, 1.5)),
+
+    diffuse75,    BxDF::MfDiffuse(mfd(0.75, 1.5)),
+    diffuse50,    BxDF::MfDiffuse(mfd(0.50, 1.5)),
+    diffuse25,    BxDF::MfDiffuse(mfd(0.25, 1.5)),
+    diffuse10,    BxDF::MfDiffuse(mfd(0.10, 1.5)),
 
     conductor75, BxDF::MfConductor(mfd(0.75, 1.5)),
     conductor50, BxDF::MfConductor(mfd(0.50, 1.5)),

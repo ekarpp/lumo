@@ -2,11 +2,11 @@ use super::*;
 
 pub fn f(
     lambda: &ColorWavelength,
-    h: &Hit,
+    t: Float,
     sigma_t: &Spectrum,
     sigma_s: &Spectrum,
 ) -> Color {
-    let transmittance = (-sigma_t.sample(lambda) * h.t).exp();
+    let transmittance = (-sigma_t.sample(lambda) * t).exp();
     // cancel out the transmittance pdf taken from scene transmitance
     let pdf = (transmittance * sigma_t.sample(lambda)).mean()
         / transmittance.mean();

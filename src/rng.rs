@@ -18,7 +18,7 @@ pub fn gen_seed() -> u64 {
     seed ^= seed >> 7;
     seed ^= seed << 17;
 
-    seed
+    seed.max(1)
 }
 
 pub struct Xorshift {
@@ -38,8 +38,8 @@ impl Xorshift {
 
     pub fn new(seed: u64) -> Self {
         let mut rng = Self {
-            lo: seed,
-            hi: seed,
+            lo: seed.max(1),
+            hi: seed.max(1),
         };
 
         // step three times to seed properly
@@ -71,7 +71,7 @@ impl Xorshift {
     pub fn gen_float(&mut self) -> Float {
         let v = self.step() as Float;
 
-        v * Float::powi(2.0, -64)
+        (v * Float::powi(2.0, -64)).min(1.0 - crate::EPSILON)
     }
 
     /// Random vector in `[0,1)^2`

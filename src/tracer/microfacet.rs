@@ -1,6 +1,6 @@
 use crate::{ Normal, Direction, Float, Vec2 };
 use crate::math::{ complex::Complex, spherical_utils };
-use crate::tracer::{ Color, ColorWavelength, hit::Hit, Texture };
+use crate::tracer::{ Color, ColorWavelength, Texture };
 
 /// Configurable parameters for a microsurface
 pub struct MicrofacetConfig {
@@ -69,48 +69,57 @@ impl MfDistribution {
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
+    #[inline]
     pub fn is_specular(&self) -> bool {
         let roughness = self.roughness();
         (roughness.x + roughness.y) / 2.0 < 0.01
     }
 
     /// Does the material have delta scattering distribution?
+    #[inline]
     pub fn is_delta(&self) -> bool {
         let roughness = self.roughness();
         (roughness.x + roughness.y) / 2.0 < 1e-3
     }
 
     /// Get refraction index from config
+    #[inline]
     pub fn eta(&self) -> Float {
         self.get_config().eta
     }
 
     /// Get absorption coefficient from config
+    #[inline]
     pub fn k(&self) -> Float {
         self.get_config().k
     }
 
     /// Get roughness from config
+    #[inline]
     pub fn roughness(&self) -> Vec2 {
         self.get_config().roughness
     }
 
     /// Get Kd value at `h`
-    pub fn kd(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
-        self.get_config().kd.albedo_at(lambda, h)
+    #[inline]
+    pub fn kd(&self, lambda: &ColorWavelength, uv: Vec2) -> Color {
+        self.get_config().kd.albedo_at(lambda, uv)
     }
 
     /// Get Ks value at `h`
-    pub fn ks(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
-        self.get_config().ks.albedo_at(lambda, h)
+    #[inline]
+    pub fn ks(&self, lambda: &ColorWavelength, uv: Vec2) -> Color {
+        self.get_config().ks.albedo_at(lambda, uv)
     }
 
     /// Get Tf value at `h`
-    pub fn tf(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
-        self.get_config().tf.albedo_at(lambda, h)
+    #[inline]
+    pub fn tf(&self, lambda: &ColorWavelength, uv: Vec2) -> Color {
+        self.get_config().tf.albedo_at(lambda, uv)
     }
 
     /// Getter, better way to do this?
+    #[inline]
     fn get_config(&self) -> &MicrofacetConfig {
         match self {
             Self::Ggx(cfg) | Self::Beckmann(cfg) => cfg,
@@ -119,6 +128,7 @@ impl MfDistribution {
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
     /// as done in Frostbite (Lagarde et al. 2014)
+    #[inline]
     pub fn disney_diffuse(
         &self,
         cos_theta_wo: Float,
@@ -187,6 +197,7 @@ impl MfDistribution {
     }
 
     /// Schlicks approximation for Fresnel term
+    #[inline]
     pub fn f_schlick(&self, f0: Float, f90: Float, cos_theta: Float) -> Float {
         f0 + (f90 - f0) * (1.0 - cos_theta).powi(5)
     }
@@ -203,6 +214,7 @@ impl MfDistribution {
         }
     }
 
+    #[inline]
     fn fr_complex(&self, wo: Direction, wh: Normal) -> Float {
         // this is a complex number: n + ik
         let eta = Complex::new(self.eta(), self.k());
@@ -218,6 +230,7 @@ impl MfDistribution {
         (r_par.norm_sqr() + r_per.norm_sqr()) / 2.0
     }
 
+    #[inline]
     fn fr_real(&self, wo: Direction, wh: Normal) -> Float {
         let cos_o = wo.dot(wh);
         let inside = cos_o < 0.0;
@@ -240,6 +253,7 @@ impl MfDistribution {
         (r_par * r_par + r_per * r_per) / 2.0
     }
 
+    #[inline]
     fn chi_pass(&self, wo: Direction, wh: Normal) -> bool {
         // signum to fix refraction
         let cos_theta_wh = spherical_utils::cos_theta(wh);
@@ -256,6 +270,7 @@ impl MfDistribution {
     /// * `v`  - View direction in shading space
     /// * `wi` - Direction of ray away from the point of impact in shading space
     /// * `wh` - Microsurface normal in shading space
+    #[inline]
     pub fn g(&self, wo: Direction, wi: Direction, wh: Normal) -> Float {
         if !self.chi_pass(wo, wh) {
             0.0
@@ -264,6 +279,7 @@ impl MfDistribution {
         }
     }
 
+    #[inline]
     pub fn g1(&self, wo: Direction, wh: Normal) -> Float {
         if !self.chi_pass(wo, wh) {
             0.0
@@ -313,6 +329,7 @@ impl MfDistribution {
     }
 
     /// Probability that `wh` got sampled. `wh` and `wo` in shading space.
+    #[inline]
     pub fn sample_normal_pdf(
         &self,
         wh: Normal,

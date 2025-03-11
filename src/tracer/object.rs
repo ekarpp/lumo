@@ -13,13 +13,13 @@ use std::sync::Arc;
 use crate::rng::Xorshift;
 
 pub use aabb::AaBoundingBox;
+pub use bvh::BVH;
 pub use cone::Cone;
 pub use cube::Cube;
 pub use cylinder::Cylinder;
 pub use disk::Disk;
 pub use instance::{Instance, Instanceable};
 pub use kdtree::{KdTree, Mesh};
-pub use plane::Plane;
 pub use rectangle::Rectangle;
 pub use sphere::Sphere;
 pub use triangle::Triangle;
@@ -27,6 +27,8 @@ pub use triangle_mesh::{TriangleMesh, Face};
 
 /// Axis aligned bounding boxes
 mod aabb;
+/// Bounding volume hierarchies
+mod bvh;
 /// Defines cones
 mod cone;
 /// Defines a unit cube. Transform to desired shape with instances.
@@ -40,8 +42,6 @@ mod disk;
 mod instance;
 /// kD-trees, used for complex meshes
 mod kdtree;
-/// Defines infinite planes
-mod plane;
 /// Defines rectangles. Built from two triangles.
 mod rectangle;
 /// Defines spheres.
@@ -86,18 +86,21 @@ pub trait Object: Sync + Send {
         let t = self.hit(r, 0.0, crate::INF).map_or(crate::INF, |h| h.t);
         if t <= t_min || t >= t_max { crate::INF } else { t }
     }
-}
 
-/// Objects that can be contained within an AABB
-pub trait Bounded: Object {
     /// Axis aligned box that contains the object
     fn bounding_box(&self) -> AaBoundingBox;
+
+    /// Number of geometric primitives the object consists of
+    fn num_primitives(&self) -> usize { 1 }
 }
 
 /// Object towards which rays can be sampled
 pub trait Sampleable: Object {
-    /// Returns surface area of the object
+    /// Return the area of the object
     fn area(&self) -> Float;
+
+    /// Material of the sampleable object
+    fn material(&self) -> &Material;
 
     /// Samples a ray leaving at random point on the surface of the object.
     /// Direction cos weighed on the hemisphere. Returns also normal at ray origin

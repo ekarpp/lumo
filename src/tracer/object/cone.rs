@@ -119,6 +119,13 @@ impl Object for Cone {
             crate::INF
         }
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        AaBoundingBox::new(
+            Point::new(-self.radius, -self.radius, 0.0),
+            Point::new(self.radius, self.radius, self.height),
+        )
+    }
 }
 
 #[cfg(test)]

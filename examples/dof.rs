@@ -3,9 +3,9 @@ use lumo::*;
 
 const TEAPOT_URL: &str = "https://casual-effects.com/g3d/data10/common/model/teapot/teapot.zip";
 
-fn marble_texture() -> Texture {
+fn marble_texture(seed: u64) -> Texture {
     Texture::Marble(
-        Perlin::new(4747430103121057286),
+        Perlin::new(seed),
         Spectrum::from_srgb(255, 245, 255)
     )
 }
@@ -23,26 +23,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
     let mut scene = Scene::default();
 
-    scene.add(Plane::new(
-        -Vec3::Y,
-        Vec3::Y,
-        Material::diffuse(Texture::Checkerboard(
-            Box::new(Texture::from(Spectrum::BLACK)),
-            Box::new(Texture::from(Spectrum::WHITE)),
-            10.0,
-        ))
+    let checkerboard = Material::diffuse(Texture::Checkerboard(
+        Box::new(Texture::from(Spectrum::BLACK)),
+        Box::new(Texture::from(Spectrum::WHITE)),
+        100.0,
     ));
+    scene.add(Rectangle::unit_xz(checkerboard)
+              .scale_uniform(10.0)
+              .translate(0.0, -1.0, 0.0)
+    );
 
-    scene.add_light(Sphere::new(
-        4.0,
-        Material::Light(Texture::from(Spectrum::WHITE)))
+    scene.add_light(
+        Rectangle::unit_xz(Material::light(Texture::from(0.25 * Spectrum::WHITE)))
+                    .rotate_z(PI)
+                    .scale_uniform(3.0)
                     .translate(0.0, 8.0, -1.5)
     );
 
+    let teapot = parser::mesh_from_url(TEAPOT_URL, Material::Blank)?
+        .to_unit_size();
+
     for i in 0..3 {
         scene.add(
-            parser::mesh_from_url(TEAPOT_URL, Material::diffuse(marble_texture()))?
-                .to_unit_size()
+            teapot
+                .clone(Some( Material::diffuse(marble_texture(3 * (i + 2))) ))
                 .to_origin()
                 .rotate_y(-PI / 4.0)
                 .translate(0.0, -0.75, -1.0 * i as Float)

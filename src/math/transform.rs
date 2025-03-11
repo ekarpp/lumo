@@ -6,9 +6,19 @@ use std::fmt;
 mod transform_tests;
 
 // TODO: separate projection from affine
+#[derive(Clone)]
 pub struct Transform {
     m: Mat4,
     inv: Mat4,
+}
+
+impl Default for Transform {
+    fn default() -> Transform {
+        Transform {
+            m: Mat4::ID,
+            inv: Mat4::ID,
+        }
+    }
 }
 
 impl fmt::Display for Transform {
@@ -39,7 +49,7 @@ impl Transform {
 
     #[inline]
     pub fn to_normal(&self) -> Mat3 {
-        self.m.to_mat3().inv().transpose()
+        self.inv.to_mat3().transpose()
     }
 
     #[inline]
@@ -58,6 +68,17 @@ impl Transform {
             self.m.y0.w,
             self.m.y1.w,
             self.m.y2.w,
+        )
+    }
+
+    #[inline]
+    pub fn to_scale(&self) -> Vec3 {
+        let mt = self.m.to_mat3().transpose();
+
+        Vec3::new(
+            mt.y0.length(),
+            mt.y1.length(),
+            mt.y2.length(),
         )
     }
 
@@ -163,7 +184,6 @@ impl Transform {
             Vec3::new(0.0, 0.0, 1.0),
         ))
     }
-
 }
 
 impl Mul for Transform {

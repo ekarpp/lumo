@@ -6,6 +6,8 @@ pub struct Triangle {
     mesh: Arc<TriangleMesh>,
     /// Indices of the vertices in the mesh
     vidx: (usize, usize, usize),
+    /// Index of the material of the triangle
+    midx: usize,
     /// Indices of the shading normals in the mesh
     nidx: Option<(usize, usize, usize)>,
     /// Indices of the texture coordinates in the mesh
@@ -23,19 +25,24 @@ impl Triangle {
     pub fn new(
         mesh: Arc<TriangleMesh>,
         vidx: (usize, usize, usize),
+        midx: usize,
         nidx: Option<(usize, usize, usize)>,
         tidx: Option<(usize, usize, usize)>,
     ) -> Self {
         Self {
             mesh,
             vidx,
+            midx,
             nidx,
             tidx,
         }
     }
 
+    #[inline(always)]
     fn a(&self) -> Point { self.mesh.vertices[self.vidx.0] }
+    #[inline(always)]
     fn b(&self) -> Point { self.mesh.vertices[self.vidx.1] }
+    #[inline(always)]
     fn c(&self) -> Point { self.mesh.vertices[self.vidx.2] }
 
     fn shading_normal(&self, barycentrics: Vec3, ng: Normal) -> Normal {
@@ -45,9 +52,9 @@ impl Triangle {
                 let na = self.mesh.normals[nidx.0];
                 let nb = self.mesh.normals[nidx.1];
                 let nc = self.mesh.normals[nidx.2];
-                barycentrics.x * na
+                (barycentrics.x * na
                     + barycentrics.y * nb
-                    + barycentrics.z * nc
+                    + barycentrics.z * nc).normalize()
             }
         }
     }
@@ -152,6 +159,7 @@ impl Triangle {
 
         let ng = (self.b() - self.a()).cross(self.c() - self.a()).normalize();
         let ns = self.shading_normal(barycentrics, ng);
+
         let xi = alpha * self.a() + beta * self.b() + gamma * self.c();
 
         let (ta, tb, tc) = if let Some(tidx) = self.tidx {
@@ -175,16 +183,7 @@ impl Triangle {
         );
 
         // material will be set by parent object
-        Hit::new(t, &Material::Blank, r.dir, xi, err, ns, ng, uv)
-    }
-}
-
-impl Bounded for Triangle {
-    fn bounding_box(&self) -> AaBoundingBox {
-        AaBoundingBox::new(
-            self.a().min(self.b().min(self.c())),
-            self.a().max(self.b().max(self.c())),
-        )
+        Hit::new(t, self.material(), r.dir, xi, err, ns, ng, uv)
     }
 }
 
@@ -196,12 +195,21 @@ impl Object for Triangle {
     fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
         self._hit::<false>(r, t_min, t_max).map_or(crate::INF, |h| h.t)
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        AaBoundingBox::new(
+            self.a().min(self.b().min(self.c())),
+            self.a().max(self.b().max(self.c())),
+        )
+    }
 }
 
 impl Sampleable for Triangle {
     fn area(&self) -> Float {
         (self.b() - self.a()).cross(self.c() - self.a()).length() / 2.0
     }
+
+    fn material(&self) -> &Material { &self.mesh.materials[self.midx] }
 
     /// Random point with barycentrics.
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
@@ -222,8 +230,7 @@ impl Sampleable for Triangle {
 
         Hit::new(
             0.0,
-            // set by parent
-            &Material::Blank,
+            self.material(),
             -ng,
             xo,
             err,
@@ -246,8 +253,9 @@ mod triangle_tests {
             ],
             normals: vec![],
             uvs: vec![],
+            materials: vec![Material::Blank],
         }
     }
 
-    test_util::test_sampleable!(Triangle::new(Arc::new(mesh()), (0, 1, 2), None, None));
+    test_util::test_sampleable!(Triangle::new(Arc::new(mesh()), (0, 1, 2), 0, None, None));
 }

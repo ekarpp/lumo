@@ -10,16 +10,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .towards(500.0, 0.0, 250.0)
         .build();
 
-    let mut scene = parser::scene_from_url(SCENE_URL, SCENE_NAME)?;
+    let mut scene = parser::scene_from_url(SCENE_URL, SCENE_NAME, true, None, None)?;
 
     scene.add_light(
-        Sphere::new(100.0, Material::Light(Texture::from(Spectrum::WHITE)))
+        Sphere::new(10.0, Material::light(Texture::from(Spectrum::WHITE)))
             .translate(-200.0, 40.0, -400.0)
     );
 
 
     scene.add_light(
-        Sphere::new(100.0, Material::Light(Texture::from(Spectrum::WHITE)))
+        Sphere::new(10.0, Material::light(Texture::from(Spectrum::WHITE)))
             .translate(900.0, 300.0, -600.0)
     );
 

@@ -5,7 +5,7 @@ use std::fmt;
 #[cfg(test)]
 mod mat4_tests;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 #[repr(C)]
 pub struct Vec4 {
     pub x: Float,
@@ -104,7 +104,7 @@ impl Mul<Float> for Vec4 {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 #[repr(C)]
 pub struct Mat4 {
     pub y0: Vec4,

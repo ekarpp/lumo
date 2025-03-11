@@ -12,6 +12,8 @@ pub struct Vertex<'a> {
     pub pdf_bck: Float,
     /// Direction from previous vertex (if exists)
     pub wo: Direction,
+    /// Light index, if we are a light vertex
+    pub light: Option<usize>,
 }
 
 impl<'a> Vertex<'a> {
@@ -33,16 +35,17 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_bck: 0.0,
             pdf_fwd,
+            light: None,
             wo: Direction::ZERO,
         }
     }
 
     /// Light vertex
-    pub fn light(mut h: Hit<'a>, light: &'a dyn Sampleable, gathered: Color, pdf_fwd: Float) -> Self {
-        h.light = Some(light);
+    pub fn light(h: Hit<'a>, light: usize, gathered: Color, pdf_fwd: Float) -> Self {
         Self {
             h,
             gathered,
+            light: Some(light),
             pdf_bck: 0.0,
             pdf_fwd,
             wo: Direction::ZERO,
@@ -77,6 +80,7 @@ impl<'a> Vertex<'a> {
             h,
             gathered,
             pdf_fwd,
+            light: None,
             pdf_bck: 0.0,
             wo,
         }
@@ -93,7 +97,7 @@ impl<'a> Vertex<'a> {
 
     /// Are we on a light?
     pub fn is_light(&self) -> bool {
-        self.h.is_light()
+        self.light.is_some()
     }
 
     /// Are we on a surface with delta material?

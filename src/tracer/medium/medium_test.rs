@@ -3,7 +3,7 @@ use crate::{ Point, Direction };
 
 #[test]
 fn zero_medium_has_no_effect() {
-    let m = Medium::new(Vec3::ZERO, Vec3::ZERO, 0.0);
+    let m = Medium::new(RGB::BLACK, RGB::BLACK, 0.0);
     let mut rng = Xorshift::default();
 
     let r = Ray::new(Point::ZERO, Direction::Z);
@@ -26,7 +26,11 @@ fn zero_medium_has_no_effect() {
 
 #[test]
 fn medium_gets_hit() {
-    let m = Medium::new(Vec3::splat(crate::EPSILON), Vec3::splat(crate::EPSILON), 0.0);
+    let m = Medium::new(
+        RGB::from(Vec3::splat(crate::EPSILON)),
+        RGB::from(Vec3::splat(crate::EPSILON)),
+        0.0
+    );
     let mut rng = Xorshift::default();
 
     let r = Ray::new(Point::ZERO, Direction::Z);

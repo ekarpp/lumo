@@ -19,10 +19,13 @@ pub fn chi2_cdf(dof: usize, stat: Float) -> Float {
 
 /// Normalized lower incomplete gamma function. Implementation from PBRT/Cepeh.
 fn gamma_p(a: Float, x: Float) -> Float {
-    // assert!(x > 0)
-    // assert!(a > 0 && a != 1)
+    #[cfg(debug_assertions)]
+    {
+        assert!(x > 0.0);
+        assert!(a > 0.0 && a != 1.0);
+    }
 
-    let ax = a * x.ln() - x - libm::lgamma(a);
+    let ax = a * x.ln() - x - libm::lgamma(a as f64) as Float;
     if ax < -MAXLOG {
         return if x < a { 0.0 } else { 1.0 };
     }

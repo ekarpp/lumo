@@ -83,7 +83,8 @@ impl Object for Disk {
             let xi_local = (xi - self.origin) / self.radius;
             let u = self.uvw.u.dot(xi_local);
             let v = self.uvw.v.dot(xi_local);
-            let uv = (Vec2::new(u, v) + Vec2::ONE) / 2.0;
+            let uv = Vec2::new(u, v);
+
             Hit::new(
                 t.value,
                 &self.material,
@@ -116,12 +117,22 @@ impl Object for Disk {
             t
         }
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        // TODO: use normal
+        AaBoundingBox::new(
+            self.origin - self.radius,
+            self.origin + self.radius,
+        )
+    }
 }
 
 impl Sampleable for Disk {
     fn area(&self) -> Float {
         crate::PI * self.radius * self.radius
     }
+
+    fn material(&self) -> &Material { &self.material }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let rand_disk = rng::maps::square_to_disk(rand_sq);

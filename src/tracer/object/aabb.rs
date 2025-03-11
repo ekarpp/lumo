@@ -29,9 +29,10 @@ impl AaBoundingBox {
     }
 
     /// Find `t_start` and `t_end` for ray intersection
-    pub fn intersect(&self, r: &Ray) -> (Float, Float) {
-        let ro_min = (self.ax_min - r.origin) / r.dir;
-        let ro_max = (self.ax_max - r.origin) / r.dir;
+    #[inline(always)]
+    pub fn intersect(&self, origin: Point, inv_dir: Direction) -> (Float, Float) {
+        let ro_min = (self.ax_min - origin) * inv_dir;
+        let ro_max = (self.ax_max - origin) * inv_dir;
 
         let t_start = ro_min.min(ro_max);
         let t_end = ro_max.max(ro_min);
@@ -40,6 +41,10 @@ impl AaBoundingBox {
         let t_end = t_end.min_element();
 
         (t_start, t_end * (1.0 + 2.0 * efloat::gamma(3)))
+    }
+
+    pub fn center(&self) -> Vec3 {
+        self.ax_min + (self.ax_max - self.ax_min) / 2.0
     }
 
     /// Combine self and other to a new bigger AABB
@@ -61,6 +66,10 @@ impl AaBoundingBox {
             Axis::Y => self.ax_min.y < point && point < self.ax_max.y,
             Axis::Z => self.ax_min.z < point && point < self.ax_max.z,
         }
+    }
+
+    pub fn extent(&self) -> Vec3 {
+        self.ax_max - self.ax_min
     }
 
     /// Maximum value along `axis`

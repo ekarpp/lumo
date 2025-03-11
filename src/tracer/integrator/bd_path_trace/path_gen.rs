@@ -23,8 +23,8 @@ pub fn light_path<'a>(
     rng: &mut Xorshift,
     lambda: &'a ColorWavelength
 ) -> Vec<Vertex<'a>> {
-    let light = scene.uniform_random_light(rng.gen_float());
-    let pdf_light = 1.0 / scene.num_lights() as Float;
+    let light_idx = scene.sample_light(rng.gen_float());
+    let (light, pdf_light) = scene.get_light(light_idx);
     let (ri, ho) = light.sample_leaving(
         rng.gen_vec2(),
         rng.gen_vec2(),
@@ -35,7 +35,7 @@ pub fn light_path<'a>(
     let emit = ho.material.emit(lambda, &ho);
     let root = Vertex::light(
         ho,
-        light,
+        light_idx,
         emit,
         pdf_origin * pdf_light
     );
@@ -83,9 +83,14 @@ fn walk<'a>(
 
         match material.bsdf_sample(wo, ho, rng.gen_float(), rng.gen_vec2()) {
             None => {
-                // we hit a light. if tracing from a light, discard latest vertex
+                /* we hit a light.
+                 * if tracing from a light, discard latest vertex.
+                 * if tracing from a camera, update light pointer.
+                 */
                 if matches!(mode, Transport::Importance) {
                     vertices.pop();
+                } else {
+                    vertices[curr].light = scene.get_light_at(ho);
                 }
                 break;
             }

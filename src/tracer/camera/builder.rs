@@ -18,6 +18,9 @@ pub struct CameraBuilder {
     focal_length: Float,
     resolution: (u64, u64),
     camera_type: CameraType,
+    pixel_filter: PixelFilter,
+    color_space: &'static ColorSpace,
+    illuminant: &'static DenseSpectrum,
     vfov: Float,
 }
 
@@ -40,6 +43,9 @@ impl CameraBuilder {
             resolution: (1024, 768),
             camera_type: CameraType::Perspective,
             vfov: 90.0,
+            color_space: ColorSpace::default(),
+            pixel_filter: PixelFilter::default(),
+            illuminant: illuminants::D65,
         }
     }
 
@@ -97,6 +103,24 @@ impl CameraBuilder {
         self
     }
 
+    /// Set the color space of the camera
+    pub fn color_space(mut self, color_space: &'static ColorSpace) -> Self {
+        self.color_space = color_space;
+        self
+    }
+
+    /// Set the pixel filter of the camera
+    pub fn pixel_filter(mut self, pixel_filter: PixelFilter) -> Self {
+        self.pixel_filter = pixel_filter;
+        self
+    }
+
+    /// Set the illuminant of the camera sensor
+    pub fn illuminant(mut self, illuminant: &'static DenseSpectrum) -> Self {
+        self.illuminant = illuminant;
+        self
+    }
+
     /// Build the camera
     pub fn build(&self) -> Camera {
         let cts = match self.camera_type {
@@ -111,6 +135,9 @@ impl CameraBuilder {
             self.lens_radius,
             self.focal_length,
             self.resolution,
+            self.color_space,
+            self.pixel_filter,
+            self.illuminant,
             wtc,
             sctr,
             cts,

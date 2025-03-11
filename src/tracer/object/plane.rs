@@ -106,6 +106,17 @@ impl Object for Plane {
         let t = -(self.d.value + self.normal.dot(xo)) / self.normal.dot(wi);
         if t <= t_min || t >= t_max { crate::INF } else { t }
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        AaBoundingBox::new(
+            Point::splat(crate::NEG_INF),
+            Point::splat(crate::INF),
+        )
+    }
+
+    fn area(&self) -> Float {
+        crate::INF
+    }
 }
 
 #[cfg(test)]

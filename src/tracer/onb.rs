@@ -56,6 +56,7 @@ impl Onb {
     ///
     /// # Arguments
     /// * `v` - The vector in ONB basis.
+    #[inline]
     pub fn to_world(&self, v: Direction) -> Direction {
         v.x * self.u + v.y * self.v + v.z * self.w
     }
@@ -64,6 +65,7 @@ impl Onb {
     ///
     /// # Arguments
     /// * `v` - The vector in canonical basis
+    #[inline]
     pub fn to_local(&self, v: Direction) -> Direction {
         Direction::new(
             v.dot(self.u),

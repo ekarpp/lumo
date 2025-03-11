@@ -9,9 +9,9 @@ const COST_INTERSECT: Float = 20.0;
 const EMPTY_BONUS: Float = 0.2;
 
 /// A node in the kD-tree. Can be either a plane split or a leaf node.
-pub enum KdNode {
+pub enum KdNodeBuilder {
     /// X-split, axis (x = 0, y = 1, z = 2), split point and child nodes
-    Split(Axis, Float, Box<KdNode>, Box<KdNode>),
+    Split(Axis, Float, Box<KdNodeBuilder>, Box<KdNodeBuilder>),
     /// Stores indices to the object vector in the kD-tree
     Leaf(Vec<usize>),
 }
@@ -21,7 +21,68 @@ enum KdSide {
     Left = -1, Both = 0, Right = 1,
 }
 
+pub struct KdNode {
+    pub axis: Axis,
+    pub point: Float,
+    pub indices: Vec<usize>,
+    pub right: usize,
+    pub leaf: bool,
+}
+
 impl KdNode {
+
+    pub fn split(axis: Axis, point: Float) -> Self {
+        Self {
+            axis,
+            point,
+            indices: vec!(),
+            right: IDX_NAN,
+            leaf: false,
+        }
+    }
+
+    pub fn leaf(indices: Vec<usize>) -> Self {
+        Self {
+            axis: Axis::X,
+            point: crate::INF,
+            indices,
+            right: IDX_NAN,
+            leaf: true,
+        }
+    }
+}
+
+impl KdNodeBuilder {
+    pub fn num_nodes(&self) -> usize {
+        match self {
+            Self::Leaf(_) => 1,
+            Self::Split(_, _, left, right) => 1 + left.num_nodes() + right.num_nodes(),
+        }
+    }
+
+    pub fn build(&self, nodes: &mut Vec<KdNode>, parent: usize) {
+        match self {
+            Self::Leaf(indices) => {
+                let node = KdNode::leaf(indices.to_vec());
+                nodes.push(node);
+                if parent != IDX_NAN {
+                    nodes[parent].right = nodes.len() - 1;
+                }
+            }
+            Self::Split(axis, point, left, right) => {
+                let node = KdNode::split(*axis, *point);
+
+                nodes.push(node);
+                let pos = nodes.len() - 1;
+                if parent != IDX_NAN {
+                    nodes[parent].right = nodes.len() - 1;
+                }
+                left.build(nodes, IDX_NAN);
+                right.build(nodes, pos);
+            }
+        }
+    }
+
     /// Computes the cost for split along `axis` at `point`.
     fn cost(
         boundary: &AaBoundingBox,
@@ -65,51 +126,72 @@ impl KdNode {
         events: &[KdEvent],
         boundary: &AaBoundingBox,
         primitives: usize,
-    ) -> (Axis, Float, Float, usize, usize, KdSide) {
+    ) -> (Axis, Float, Float, KdSide) {
         let mut best_cost = crate::INF;
         let mut best_point = crate::INF;
         let mut best_axis = Axis::X;
         let mut best_side = KdSide::Both;
-        let mut best_left = 0;
-        let mut best_right = 0;
 
-        for axis in [Axis::X, Axis::Y, Axis::Z] {
-            let mut num_left = 0;
-            let mut num_right = primitives;
-            events.iter()
-                .filter(|ev| ev.a == axis)
-                .for_each(|ev| {
-                    let end = matches!(ev.t, KdEventType::End);
-                    let planar = matches!(ev.t, KdEventType::Planar);
-                    let start = matches!(ev.t, KdEventType::Start);
-                    let num_planar = if planar { 1 } else { 0 };
+        let mut num_left = [0 ; 3];
+        let mut num_planar = [0 ; 3];
+        let mut num_right = [primitives ; 3];
 
-                    if end || planar { num_right -= 1; }
+        let mut i = 0;
+        while i < events.len() {
+            let (mut s, mut p, mut e) = (0, 0, 0);
+            let event = &events[i];
+            while i < events.len()
+                && events[i].a == event.a
+                && events[i].p == event.p
+                && events[i].t == KdEventType::End
+            {
+                e += 1; i += 1
+            }
 
-                    let (cost, cut_side) = Self::cost(
-                        boundary, ev.a, ev.p,
-                        num_left, num_planar, num_right,
-                    );
+            while i < events.len()
+                && events[i].a == event.a
+                && events[i].p == event.p
+                && events[i].t == KdEventType::Planar
+            {
+                p += 1; i += 1
+            }
 
-                    if cost < best_cost {
-                        best_cost = cost;
-                        best_point = ev.p;
-                        best_axis = axis;
-                        best_side = cut_side;
-                        best_left = num_left;
-                        best_right = num_right;
-                        if matches!(best_side, KdSide::Left) {
-                            best_left += num_planar;
-                        } else {
-                            best_right += num_planar;
-                        }
-                    }
+            while i < events.len()
+                && events[i].a == event.a
+                && events[i].p == event.p
+                && events[i].t == KdEventType::Start
+            {
+                s += 1; i += 1
+            }
 
-                    if start || planar { num_left += 1; }
-                })
+
+            let axis = event.a as usize;
+            num_planar[axis] = p;
+            num_right[axis] -= p;
+            num_right[axis] -= e;
+
+            let (cost, cut_side) = Self::cost(
+                boundary,
+                event.a,
+                event.p,
+                num_left[axis],
+                num_planar[axis],
+                num_right[axis],
+            );
+
+            if cost < best_cost {
+                best_cost = cost;
+                best_point = event.p;
+                best_axis = event.a;
+                best_side = cut_side;
+            }
+
+            num_left[axis] += s;
+            num_left[axis] += p;
+            num_planar[axis] = 0;
         }
 
-        (best_axis, best_point, best_cost, best_left, best_right, best_side)
+        (best_axis, best_point, best_cost, best_side)
     }
 
     /// Partitions indices to left and right parts along `axis` at `point`
@@ -118,7 +200,7 @@ impl KdNode {
         primitives: usize,
         axis: Axis,
         point: Float,
-        side: KdSide,
+        _side: KdSide,
     ) -> FxHashMap<usize, KdSide> {
         let mut partition = FxHashMap::default();
         partition.reserve(primitives);
@@ -134,9 +216,10 @@ impl KdNode {
                     if ev.p >= point { partition.insert(ev.idx, KdSide::Right);  }
                 }
                 KdEventType::Planar => {
-                    if ev.p < point || (ev.p == point && side == KdSide::Left) {
+                    // TODO: handle the planar side properly, currently breaks bistro
+                    if ev.p < point {//|| (ev.p == point && side == KdSide::Left) {
                         partition.insert(ev.idx, KdSide::Left);
-                    } else if ev.p > point || (ev.p == point && side == KdSide::Right) {
+                    } else if ev.p > point {//|| (ev.p == point && side == KdSide::Right) {
                         partition.insert(ev.idx, KdSide::Right);
                     }
                 }
@@ -156,7 +239,7 @@ impl KdNode {
         depth: usize,
         tx: Option<mpsc::Sender<Box<Self>>>,
     ) -> Option<Box<Self>> {
-        let (axis, point, cost, n_l, n_r, side) =
+        let (axis, point, cost, side) =
             Self::find_best_split(&events, boundary, primitives);
 
         let cost_leaf = COST_INTERSECT * primitives as Float;
@@ -179,8 +262,8 @@ impl KdNode {
                 point,
                 side,
             );
-            let mut events_l = Vec::with_capacity(2 * n_l);
-            let mut events_r = Vec::with_capacity(2 * n_r);
+            let mut events_l = Vec::with_capacity(3 * primitives);
+            let mut events_r = Vec::with_capacity(3 * primitives);
 
             // TODO: hashmap is slow here
             for ev in events {
@@ -198,6 +281,17 @@ impl KdNode {
                 }
             }
             drop(partition);
+
+            let filt = |e: &&KdEvent| {
+                e.a == Axis::X
+                    && (e.t == KdEventType::Planar || e.t == KdEventType::Start)
+            };
+            let n_l = events_l.iter()
+                .filter(filt)
+                .count();
+            let n_r = events_r.iter()
+                .filter(filt)
+                .count();
 
             let (bound_l, bound_r) = boundary.split(axis, point);
 

@@ -46,6 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Renderer::new(scene, camera)
         .integrator(Integrator::BDPathTrace)
         .samples(2048)
+        .tone_map(ToneMap::Reinhard)
         .render()
         .save("caustics.png")?;
     Ok(())

@@ -1,6 +1,6 @@
-use crate::{ Float, Image, Point, perlin::Perlin };
+use crate::{ Float, Image, Point, perlin::Perlin, Vec2 };
 use crate::math::complex::Complex;
-use crate::tracer::{Color, ColorWavelength, Spectrum, hit::Hit};
+use crate::tracer::{Color, ColorWavelength, Spectrum };
 
 /// Scale of points in perlin. bigger = more noticeable effect
 const MARBLE_SCALE: Float = 4.0;
@@ -33,7 +33,7 @@ pub enum Texture {
     /// Underlying color as argument.
     Marble(Perlin, Spectrum),
     /// Image texture loaded from a .png
-    Image(Image),
+    Image(Image<Spectrum>),
     /// Cheap render of the Mandelbrot set
     Mandelbrot,
 }
@@ -50,38 +50,31 @@ impl From<Spectrum> for Texture {
 
 impl Texture {
     /// Colour at hit `h`
-    pub fn albedo_at(&self, lambda: &ColorWavelength, h: &Hit) -> Color {
+    pub fn albedo_at(&self, lambda: &ColorWavelength, uv: Vec2) -> Color {
         match self {
             Texture::Solid(spec) => spec.sample(lambda),
             Texture::Marble(pn, spec) => {
-                let xo = h.p;
-                let turb = Self::turbulence(pn, 0.0, MARBLE_SCALE * xo.abs(), 0);
+                let uvw = uv.extend(0.0);
+                let turb = Self::turbulence(pn, 0.0, MARBLE_SCALE * uvw.abs(), 0);
                 let scaled = 1.0 -
-                    (0.5 + 0.5 * (MARBLE_FREQ * xo.x + MARBLE_AMP * turb).sin())
+                    (0.5 + 0.5 * (MARBLE_FREQ * uvw.x + MARBLE_AMP * turb).sin())
                     .powi(6);
 
                 spec.sample(lambda) * scaled
             }
             Texture::Checkerboard(t1, t2, s) => {
-                let uv = h.uv * (*s);
-                if (uv.x.floor() + uv.y.floor()) as u64 % 2 == 0 {
-                    t1.albedo_at(lambda, h)
+                let uvs = uv * (*s);
+                if (uvs.x.floor() + uvs.y.floor()) as u64 % 2 == 0 {
+                    t1.albedo_at(lambda, uv)
                 } else {
-                    t2.albedo_at(lambda, h)
+                    t2.albedo_at(lambda, uv)
                 }
             }
-            Texture::Image(img) => {
-                let uv = h.uv;
-                let x = uv.x * img.width as Float;
-                let x = x.floor() as usize;
-                let y = uv.y * img.height as Float;
-                let y = img.height - y.floor() as u32 - 1;
-                img.buffer[x + (y*img.width) as usize].sample(lambda)
-            }
+            Texture::Image(img) => img.value_at(uv, lambda),
             Texture::Mandelbrot => {
                 let mut depth = 0;
                 // [-1.5,0.5] x [-1.0,1.0]
-                let c = 2.0 * Complex::new(h.uv.x - 0.75, h.uv.y - 0.5);
+                let c = 2.0 * Complex::new(uv.x - 0.75, uv.y - 0.5);
                 let mut z = Complex::new(0.0, 0.0);
 
                 while depth < MANDELBROT_DEPTH && z.norm_sqr() < MANDELBROT_R2 {
@@ -95,6 +88,15 @@ impl Texture {
                     Color::BLACK
                 }
             }
+        }
+    }
+
+    /// "Power" of the texture
+    pub fn power(&self, lambda: &ColorWavelength) -> Color {
+        match self {
+            Texture::Solid(spec) => spec.sample(lambda),
+            Texture::Image(img) => img.power(lambda),
+            _ => unimplemented!(),
         }
     }
 

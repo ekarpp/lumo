@@ -1,5 +1,5 @@
 use crate::{ Point, Float, Direction, Normal, efloat, Vec2, Vec3 };
-use crate::tracer::{ material::Material, object::Sampleable, ray::Ray };
+use crate::tracer::{ material::Material, ray::Ray };
 
 /// Stores information about a hit between a ray and an object
 #[derive(Clone)]
@@ -10,8 +10,6 @@ pub struct Hit<'a> {
     pub material: &'a Material,
     /// 3D point where object was hit
     pub p: Point,
-    /// Optional reference to light if we hit one
-    pub light: Option<&'a dyn Sampleable>,
     /// Floating point error bounds of the impact point
     pub fp_error: Vec3,
     /// Normal of the surface used for shading calculations
@@ -47,17 +45,26 @@ impl<'a> Hit<'a> {
         uv: Vec2,
     ) -> Option<Self> {
         let backface = wo.dot(ng) > 0.0;
+
         Some(Self {
             t,
             material,
             backface,
             p: xi,
-            light: None,
             fp_error,
             ns,
             ng,
-            uv,
+            uv: Self::wrap_uv(uv),
         })
+    }
+
+    #[inline(always)]
+    pub fn wrap_uv(uv: Vec2) -> Vec2 {
+        let uv = uv.fract();
+        Vec2::new(
+            if uv.x < 0.0 { uv.x + 1.0 } else { uv.x },
+            if uv.y < 0.0 { uv.y + 1.0 } else { uv.y },
+        )
     }
 
     pub fn from_t(t: Float) -> Option<Self> {
@@ -73,13 +80,12 @@ impl<'a> Hit<'a> {
         )
     }
 
-    /// Generates a ray at point of impact. Would be better to use accurate
-    /// error bounds instead of `EPSILON`.
-    pub fn generate_ray(&self, wi: Direction) -> Ray {
+    /// Robustly offset ray origin using floating point error boundaries
+    pub fn ray_origin(&self, outside: bool) -> Point {
         let ne = self.ng;
         let scaled_err = self.fp_error.dot(ne.abs());
 
-        let offset = if wi.dot(self.ng) >= 0.0 {
+        let offset = if outside {
             ne * scaled_err
         } else {
             -ne * scaled_err
@@ -97,11 +103,17 @@ impl<'a> Hit<'a> {
             }
         };
 
-        let xi = Point::new(
+        Point::new(
             move_double(xi.x, offset.x),
             move_double(xi.y, offset.y),
             move_double(xi.z, offset.z),
-        );
+        )
+    }
+
+    /// Generates a ray at point of impact. Would be better to use accurate
+    /// error bounds instead of `EPSILON`.
+    pub fn generate_ray(&self, wi: Direction) -> Ray {
+        let xi = self.ray_origin(wi.dot(self.ng) >= 0.0);
 
         Ray::new(
             xi,
@@ -110,12 +122,8 @@ impl<'a> Hit<'a> {
     }
 
     /// Did we hit a medium?
+    #[inline]
     pub fn is_medium(&self) -> bool {
         matches!(self.material, Material::Volumetric(..))
-    }
-
-    /// Did we hit a light?
-    pub fn is_light(&self) -> bool {
-        matches!(self.material, Material::Light(..))
     }
 }

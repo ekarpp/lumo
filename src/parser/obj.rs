@@ -1,8 +1,9 @@
 use super::*;
+use crate::tracer::KdTree;
 
 /// https://github.com/ekzhang/rpt/blob/master/src/io.rs
 /// https://www.cs.cmu.edu/~mbz/personal/graphics/obj.html
-pub fn load_file(file: File, material: Material) -> Result<Mesh> {
+pub fn load_file<T: Read + Sized>(file: T, material: Material) -> Result<Mesh> {
     let mut vertices: Vec<Point> = Vec::new();
     let mut normals: Vec<Normal> = Vec::new();
     let mut uvs: Vec<Vec2> = Vec::new();
@@ -23,14 +24,19 @@ pub fn load_file(file: File, material: Material) -> Result<Mesh> {
 }
 
 
-pub fn load_scene(file: File, materials: FxHashMap<String, MtlConfig>) -> Result<Scene> {
+pub fn load_scene<T: Read + Sized>(
+    file: T,
+    materials: Vec<Material>,
+    material_indices: FxHashMap<String, usize>,
+) -> Result<Scene> {
     let mut scene = Scene::default();
     let mut vertices: Vec<Point> = Vec::new();
     let mut normals: Vec<Normal> = Vec::new();
     let mut uvs: Vec<Vec2> = Vec::new();
+
     let mut faces: Vec<Face> = Vec::new();
-    let mut meshes: Vec<(Vec<Face>, Material)> = Vec::new();
-    let mut material = Material::Blank;
+    let mut meshes: Vec<(Vec<Face>, usize)> = Vec::new();
+    let mut midx = usize::MAX;
 
     let reader = BufReader::new(file);
     for line in reader.lines() {
@@ -43,18 +49,18 @@ pub fn load_scene(file: File, materials: FxHashMap<String, MtlConfig>) -> Result
         match tokens[0] {
             "g" | "o" => {
                 if !faces.is_empty() {
-                    meshes.push((faces, material));
+                    meshes.push((faces, midx));
                     faces = Vec::new();
-                    material = Material::Blank;
+                    midx = usize::MAX;
                 }
             }
             "usemtl" => {
                 if !faces.is_empty() {
-                    meshes.push((faces, material));
+                    meshes.push((faces, midx));
                     faces = Vec::new();
                 }
-                match materials.get(tokens[1]) {
-                    Some(mtl_cfg) => material = mtl_cfg.build_material(),
+                match material_indices.get(tokens[1]) {
+                    Some(idx) => midx = *idx,
                     None => {
                         return Err(obj_error(
                             &format!("Could not find material {}", tokens[1])
@@ -74,28 +80,29 @@ pub fn load_scene(file: File, materials: FxHashMap<String, MtlConfig>) -> Result
         }
     }
 
-    meshes.push((faces, material));
+    meshes.push((faces, midx));
 
-    normalize_uvs(&mut uvs);
-
-    let triangle_mesh = Arc::new(TriangleMesh {
+    let mesh = Arc::new(TriangleMesh {
         vertices,
         normals,
         uvs,
+        materials,
     });
 
-    for (faces, mtl) in meshes {
-        let is_light = matches!(mtl, Material::Light(_));
-        let object = Box::new(TriangleMesh::new_from_faces(
-            triangle_mesh.clone(),
+    for (faces, midx) in meshes {
+        let is_light = mesh.materials[midx].is_light();
+        let triangles = TriangleMesh::triangles_from_faces(
+            Arc::clone(&mesh),
             faces,
-            mtl,
-        ));
+            midx,
+        );
 
         if is_light {
-            scene.add_light(object);
+            for triangle in triangles {
+                scene.add_light(Box::new(triangle));
+            }
         } else {
-            scene.add(object);
+            scene.add(Box::new(KdTree::new(triangles)));
         }
     }
 
@@ -116,6 +123,13 @@ fn parse_tokens(
         }
         "vn" => {
             let normal = parse_vec3(&tokens)?;
+            let normal = if normal.length_squared() == 0.0 {
+                #[cfg(debug_assertions)]
+                println!("Found degenerate normal in mesh");
+                Normal::Z
+            } else {
+                normal.normalize()
+            };
             normals.push(normal);
         }
         "vt" => {
@@ -181,28 +195,4 @@ fn parse_face(
     }
 
     Ok(faces)
-}
-
-/// Normalize `uvs` to [0, 1]
-fn normalize_uvs(uvs: &mut [Vec2]) {
-    let mut mx = Vec2::splat(-crate::INF);
-    let mut mi = Vec2::splat(crate::INF);
-
-    for i in 0..uvs.len() {
-        mx = mx.max(uvs[i]);
-        mi = mi.min(uvs[i]);
-    }
-
-    if mi.x < 0.0 || mi.y < 0.0 {
-        // assume if one is negative both are
-        for i in 0..uvs.len() {
-            uvs[i] = uvs[i] - mi;
-        }
-    }
-    let d = mx - mi;
-    if d.x > 1.0 || d.y > 1.0 {
-        for i in 0..uvs.len() {
-            uvs[i] = uvs[i] / d;
-        }
-    }
 }

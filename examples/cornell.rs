@@ -2,14 +2,7 @@ use lumo::tracer::*;
 use lumo::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let camera = CameraBuilder::new()
-        .origin(278.0, 273.0, -800.0)
-        .towards(278.0, 273.0, 0.0)
-        .zoom(2.8)
-        .focal_length(0.035)
-        .resolution((512, 512))
-        .build();
-
+    let camera = Camera::cornell_box();
     let scene = Scene::cornell_box();
 
     Renderer::new(scene, camera)
@@ -17,5 +10,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .samples(512)
         .render()
         .save("cornell.png")?;
+
     Ok(())
 }

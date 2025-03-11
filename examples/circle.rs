@@ -15,30 +15,27 @@ fn hsv_to_rgb(h: Float) -> Spectrum {
 
 fn main() -> Result<(), std::io::Error> {
     let camera = Camera::builder()
-        .origin(0.0, 1.5, 1.5)
-        .towards(0.0, 0.0, 0.0)
+        .origin(0.0, 1.0, 1.5)
+        .towards(0.0, -0.5, 0.0)
         .up(0.0, 1.0, -1.0)
+        .resolution((512, 512))
         .build();
 
     let mut scene = Scene::default();
     let ground = -0.2;
 
     // ground
-    scene.add(Plane::new(
+    scene.add(Disk::new(
         ground * Vec3::Y,
         Vec3::Y,
-        Material::metal(
-            Texture::from(Spectrum::from_srgb(150, 40, 39)),
-            0.009999,
-            2.5,
-            0.0
-        ),
+        100.0,
+        Material::mirror(),
     ));
 
     let r = 0.2;
     scene.add_light(Sphere::new(
         r,
-        Material::Light(Texture::from(Spectrum::WHITE)))
+        Material::light(Texture::from(0.01 * Spectrum::WHITE)))
                     .translate(0.0, ground + r + 0.1, 0.0)
     );
 
@@ -58,15 +55,9 @@ fn main() -> Result<(), std::io::Error> {
         );
     }
 
-    scene.set_medium(
-        Medium::new(
-            Vec3::new(0.002, 0.003, 0.0001),
-            Vec3::new(0.175, 0.125, 0.11),
-            0.9,
-        )
-    );
-
     Renderer::new(scene, camera)
+        .integrator(Integrator::PathTrace)
+        .samples(512)
         .render()
         .save("circle.png")?;
     Ok(())

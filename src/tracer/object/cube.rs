@@ -39,13 +39,6 @@ impl Cube {
     }
 }
 
-impl Bounded for Cube {
-    fn bounding_box(&self) -> AaBoundingBox {
-        // we only support unit cubes, so... let instances do the job.
-        AaBoundingBox::new(Point::ZERO, Point::ONE)
-    }
-}
-
 impl Object for Cube {
     fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<Hit> {
         self.mesh.hit(r, t_min, t_max)
@@ -54,6 +47,13 @@ impl Object for Cube {
     fn hit_t(&self, r: &Ray, t_min: Float, t_max: Float) -> Float {
         self.mesh.hit_t(r, t_min, t_max)
     }
+
+    fn bounding_box(&self) -> AaBoundingBox {
+        // we only support unit cubes, so... let instances do the job.
+        AaBoundingBox::new(Point::ZERO, Point::ONE)
+    }
+
+    fn num_primitives(&self) -> usize { 12 }
 }
 
 impl Sampleable for Cube {
@@ -61,6 +61,8 @@ impl Sampleable for Cube {
         // unit cube
         6.0
     }
+
+    fn material(&self) -> &Material { self.mesh.material() }
 
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let rand_sphere = 0.5 * rng::maps::square_to_sphere(rand_sq);
