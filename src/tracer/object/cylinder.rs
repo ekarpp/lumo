@@ -128,8 +128,8 @@ impl Object for Cylinder {
 
     fn bounding_box(&self) -> AaBoundingBox {
         AaBoundingBox::new(
-            Point::new(-self.radius, -self.radius, 0.0),
-            Point::new(self.radius, self.radius, self.height),
+            Point::new(-self.radius, 0.0, -self.radius),
+            Point::new(self.radius, self.height, self.radius),
         )
     }
 }

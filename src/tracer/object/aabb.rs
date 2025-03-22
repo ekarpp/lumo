@@ -68,6 +68,10 @@ impl AaBoundingBox {
         }
     }
 
+    pub fn contains(&self, point: Point) -> bool {
+        [Axis::X, Axis::Y, Axis::Z].iter().all(|ax| self.cuts(*ax, point.axis(*ax)))
+    }
+
     pub fn extent(&self) -> Vec3 {
         self.ax_max - self.ax_min
     }

@@ -1,27 +1,5 @@
 use super::*;
 
-#[derive(Clone)]
-pub struct TilePixel {
-    pub color: RGB,
-    pub color_weight: Float,
-}
-
-impl Default for TilePixel {
-    fn default() -> Self {
-        TilePixel {
-            color: RGB::BLACK,
-            color_weight: 0.0,
-        }
-    }
-}
-
-impl AddAssign<&TilePixel> for Pixel {
-    fn add_assign(&mut self, rhs: &TilePixel) {
-        self.color += &rhs.color;
-        self.color_weight += rhs.color_weight;
-    }
-}
-
 pub struct TileSplat {
     /// Filter weighed sRGB color of the splat
     pub color: RGB,
@@ -46,7 +24,7 @@ pub struct FilmTile {
     /// Width of the tile
     pub width: u64,
     /// Pixels of the tile
-    pub pixels: Vec<TilePixel>,
+    pub pixels: Vec<Pixel>,
     /// Splat samples of the tile
     pub splats: Vec<TileSplat>,
     resolution: UVec2,
@@ -78,7 +56,7 @@ impl FilmTile {
             width,
             white_balance,
             resolution,
-            pixels: vec![TilePixel::default(); (width * height) as usize],
+            pixels: vec![Pixel::default(); (width * height) as usize],
             splats: vec![],
         }
     }
@@ -125,8 +103,7 @@ impl FilmTile {
                         let px_x = flt_x - self.px_min.x;
                         let px_y = flt_y - self.px_min.y;
                         let idx = (px_x + self.width * px_y) as usize;
-                        self.pixels[idx].color += &(rgb.clone() * w);
-                        self.pixels[idx].color_weight += w;
+                        self.pixels[idx].add(rgb.clone() * w, w);
                     }
                 }
             }

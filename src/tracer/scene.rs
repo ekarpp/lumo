@@ -1,7 +1,8 @@
 use crate::{ Float, rng::Xorshift };
 use crate::tracer::{
-    hit::Hit, ray::Ray, Material, Texture, Color, BVH, Sphere, color::illuminants,
-    ColorWavelength, Medium, Object, Rectangle, Sampleable, Instanceable
+    object::AaBoundingBox, hit::Hit, ray::Ray, Material, Texture, Color,
+    BVH, Sphere, ColorWavelength, Medium, Object, Rectangle,
+    Sampleable, Instanceable, color::illuminants
 };
 
 #[cfg(test)]
@@ -23,6 +24,8 @@ pub struct Scene {
     pub medium: Option<Medium>,
     /// Texture to use for environmental light
     pub environment_map: Option<Material>,
+    /// Bounds of the scene
+    pub bounds: AaBoundingBox,
 }
 
 impl Scene {
@@ -30,23 +33,21 @@ impl Scene {
     pub fn build(&mut self) {
         self.objects.build();
 
+        self.bounds = self.objects.bounding_box().merge(&self.lights.bounding_box());
+
         if let Some(env_map) = self.environment_map.take() {
-            let bounds = self.objects.bounding_box()
-                .merge(&self.lights.bounding_box());
-            let center = bounds.center();
-            let radius = center.distance(bounds.ax_min);
-            self.add_light(
-                Sphere::new(radius, env_map).translate(center.x, center.y, center.z)
-            );
+            let center = self.bounds.center();
+            let radius = center.distance(self.bounds.ax_min);
+            let env_light = Sphere::new(radius, env_map)
+                .translate(center.x, center.y, center.z);
+            self.bounds = self.bounds.merge(&env_light.bounding_box());
+            self.add_light(env_light);
         }
 
         self.lights.build();
 
         if let Some(medium) = self.medium.as_mut() {
-            let bounds = self.objects.bounding_box()
-                .merge(&self.lights.bounding_box());
-            let extent = bounds.extent();
-            medium.set_extent(extent);
+            medium.set_extent(self.bounds.extent());
         }
     }
 
@@ -121,7 +122,9 @@ impl Scene {
 
         if let Some(medium) = &self.medium {
             // if we hit an object, it must be closer than what we have
-            h = medium.hit(r, rng, 0.0, t_max).or(h);
+            h = medium.hit(r, rng, 0.0, t_max)
+                .filter(|h| self.bounds.contains(h.p))
+                .or(h);
             // update distance to closest found so far
             t_max = h.as_ref().map_or(t_max, |hit| hit.t);
         }

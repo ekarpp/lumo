@@ -11,6 +11,8 @@ pub use tile::FilmTile;
 
 mod tile;
 
+const PIXEL_BUFFERS: usize = 1;
+
 /// Sample for the film
 pub struct FilmSample {
     /// Raster coordinate `x` of the sample
@@ -21,6 +23,8 @@ pub struct FilmSample {
     pub lambda: ColorWavelength,
     /// "Splat" sample i.e. from sampling camera
     pub splat: bool,
+    /// "Cost" to compute the sample
+    pub cost: usize,
 }
 
 impl Default for FilmSample {
@@ -30,32 +34,67 @@ impl Default for FilmSample {
             color: Color::BLACK,
             lambda: ColorWavelength::default(),
             splat: true,
+            cost: 0,
         }
     }
 }
 
 impl FilmSample {
     /// Creates a sample of `color` at raster `(x,y)`
-    pub fn new(color: Color, lambda: ColorWavelength, raster_xy: Vec2, splat: bool) -> Self {
+    pub fn new(
+        color: Color,
+        lambda: ColorWavelength,
+        raster_xy: Vec2,
+        splat: bool,
+        cost: usize,
+    ) -> Self {
         Self {
-            raster_xy, color, splat, lambda,
+            raster_xy, color, splat, lambda, cost
         }
     }
 }
 
 #[derive(Clone)]
-struct Pixel {
-    pub color: RGB,
-    pub splat: RGB,
-    pub color_weight: Float,
+pub struct Pixel {
+    pub color: [RGB; PIXEL_BUFFERS],
+    pub color_weight: [Float; PIXEL_BUFFERS],
+    state: usize,
 }
 
 impl Default for Pixel {
     fn default() -> Self {
         Pixel {
-            color: RGB::BLACK,
-            splat: RGB::BLACK,
-            color_weight: 0.0,
+            color: [RGB::BLACK; PIXEL_BUFFERS],
+            color_weight: [0.0; PIXEL_BUFFERS],
+            state: 0,
+        }
+    }
+}
+
+impl Pixel {
+    pub fn add(&mut self, rgb: RGB, w: Float) {
+        self.color[self.state] += &rgb;
+        self.color_weight[self.state] += w;
+        self.state += 1;
+        self.state %= PIXEL_BUFFERS;
+    }
+
+    pub fn value(&self) -> RGB {
+        let mut c = RGB::BLACK;
+        let mut w = 0.0;
+        for i in 0..PIXEL_BUFFERS {
+            c += &self.color[i];
+            w += self.color_weight[i];
+        }
+        c / w
+    }
+}
+
+impl AddAssign<&Pixel> for Pixel {
+    fn add_assign(&mut self, rhs: &Pixel) {
+        for i in 0..PIXEL_BUFFERS {
+            self.color[i] += &rhs.color[i];
+            self.color_weight[i] += rhs.color_weight[i];
         }
     }
 }
@@ -63,6 +102,7 @@ impl Default for Pixel {
 /// Film that contains the image being rendered
 pub struct Film {
     pixels: Vec<Pixel>,
+    splats: Vec<RGB>,
     /// Image resolution
     pub resolution: UVec2,
     splat_scale: Float,
@@ -93,6 +133,7 @@ impl Film {
 
         Self {
             pixels: vec![Pixel::default(); n as usize],
+            splats: vec![RGB::BLACK; n as usize],
             splat_scale: 1.0 / samples as Float,
             filter,
             cs,
@@ -125,7 +166,7 @@ impl Film {
 
         for splat in tile.splats {
             let idx = (splat.x + self.resolution.x * splat.y) as usize;
-            self.pixels[idx].splat += &splat.color;
+            self.splats[idx] += &splat.color;
         }
     }
 
@@ -135,15 +176,10 @@ impl Film {
         for y in 0..self.resolution.y {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
-                let pix = &self.pixels[idx];
-
-                let dir = if pix.color_weight == 0.0 {
-                    RGB::BLACK
-                } else {
-                    pix.color.clone() / pix.color_weight
-                };
-                let splt = self.splat_scale * pix.splat.clone() / self.filter.integral();
-                let col = dir + splt;
+                let direct = self.pixels[idx].value();
+                let splat = self.splat_scale * self.splats[idx].clone()
+                    / self.filter.integral();
+                let col = direct + splat;
 
                 let (r, g, b) = self.cs.encode(col);
                 img.push(r);

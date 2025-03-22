@@ -1,6 +1,6 @@
 use super::*;
 use crate::{ math::simpson_integration, rng::Xorshift };
-use crate::tracer::{ Spectrum, Texture };
+use crate::tracer::{ DenseSpectrum, Spectrum, Texture };
 
 // used for numerically integrating PDF over whole space
 const THETA_BINS: usize = 80;
@@ -55,7 +55,9 @@ macro_rules! test_bxdf {
 
 fn mfd(roughness: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
-        roughness, eta, 0.0,
+        roughness,
+        DenseSpectrum::from_constant(eta),
+        DenseSpectrum::from_constant(0.0),
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
@@ -87,16 +89,18 @@ fn do_sampling(rng: &mut Xorshift, bxdf: BxDF) -> Vec<Vec<Float>> {
             bins[i].push(0.0);
         }
     }
+
+    let mut lambda = ColorWavelength::sample(rng.gen_float());
     // let wo face directly the normal
     let wo = Direction::Z;
     for _ in 0..NUM_SAMPLES {
-        let wi = bxdf.sample(wo, false, rng.gen_float(), rng.gen_vec2());
+        let wi = bxdf.sample(wo, false, &mut lambda, rng.gen_float(), rng.gen_vec2());
         match wi {
             None => num_failed += 1,
             Some(wi) => {
                 let reflection = spherical_utils::cos_theta(wo)
                     * spherical_utils::cos_theta(wi) >= 0.0;
-                let pdf = bxdf.pdf(wo, wi, reflection);
+                let pdf = bxdf.pdf(wo, wi, reflection, &lambda);
                 if pdf == 0.0 {
                     panic!("Sampled direction with 0 probability");
                 }
@@ -111,7 +115,7 @@ fn do_sampling(rng: &mut Xorshift, bxdf: BxDF) -> Vec<Vec<Float>> {
     }
     let good_samples = NUM_SAMPLES - num_failed;
 
-    let integral = integrate_sphere(wo, &bxdf);
+    let integral = integrate_sphere(wo, &lambda, &bxdf);
     println!("integral over whole space: {}", integral);
     /* scale bins properly based on samples and integral over whole space of PDF.
      * (PDF for sampling microfacets does not always integrate to 1 over whole space)
@@ -127,7 +131,7 @@ fn do_sampling(rng: &mut Xorshift, bxdf: BxDF) -> Vec<Vec<Float>> {
     bins
 }
 
-fn integrate_sphere(wo: Direction, bxdf: &BxDF) -> Float {
+fn integrate_sphere(wo: Direction, lambda: &ColorWavelength, bxdf: &BxDF) -> Float {
     let mut integral = 0.0;
 
     let theta_factor = crate::PI / THETA_BINS as Float;
@@ -148,7 +152,7 @@ fn integrate_sphere(wo: Direction, bxdf: &BxDF) -> Float {
                 let reflection = spherical_utils::cos_theta(wo)
                     * spherical_utils::cos_theta(wi) >= 0.0;
                 // pdf in solid angle, change to spherical coordinates
-                bxdf.pdf(wo, wi, reflection) * theta.sin()
+                bxdf.pdf(wo, wi, reflection, lambda) * theta.sin()
             };
             integral += simpson_integration::simpson2d(f, theta0, theta1, phi0, phi1);
         }

@@ -1,5 +1,5 @@
 use crate::{Float, Vec2, rng::Xorshift};
-use std::{ fmt, cell::RefCell };
+use std::fmt;
 
 mod sobol_seq;
 
@@ -23,12 +23,16 @@ impl Default for SamplerType {
 impl SamplerType {
     /// Returns a sampler with `samples` corresponding to `self`
     #[allow(clippy::new_ret_no_self)]
-    pub fn new<'a>(&'a self, samples: u64, rng: &'a RefCell<Xorshift>) -> Box<dyn Sampler + 'a> {
+    pub fn new(&self, batch: u64, samples: u64, seed: u64) -> Box<dyn Sampler> {
+        let rng = || Xorshift::new(seed);
+        let s0 = batch * crate::renderer::SAMPLES_INCREMENT;
+        let s1 = (batch + 1) * crate::renderer::SAMPLES_INCREMENT;
+        let s1 = s1.min(samples);
         match self {
-            Self::Uniform => Box::new(UniformSampler::new(samples, rng)),
-            Self::Jittered => Box::new(JitteredSampler::new(samples, rng)),
-            Self::MultiJittered => Box::new(MultiJitteredSampler::new(samples, rng)),
-            Self::Sobol => Box::new(SobolSampler::new(samples, rng)),
+            Self::Uniform => Box::new(UniformSampler::new(s1 - s0, rng())),
+            Self::Jittered => Box::new(JitteredSampler::new(s0, s1, samples, rng())),
+            Self::MultiJittered => Box::new(MultiJitteredSampler::new(s0, s1, samples, rng())),
+            Self::Sobol => Box::new(SobolSampler::new(batch, s0, s1, seed)),
         }
     }
 }
@@ -45,28 +49,28 @@ impl fmt::Display for SamplerType {
 }
 
 pub trait Sampler: Iterator<Item=Vec2> { }
-impl Sampler for UniformSampler<'_> { }
-impl Sampler for JitteredSampler<'_> { }
-impl Sampler for MultiJitteredSampler<'_> { }
-impl Sampler for SobolSampler<'_> { }
+impl Sampler for UniformSampler { }
+impl Sampler for JitteredSampler { }
+impl Sampler for MultiJitteredSampler { }
+impl Sampler for SobolSampler { }
 
 /// Choose each sample point uniformly at random
-struct UniformSampler<'a> {
+struct UniformSampler {
     /// How many samples have been given?
     state: u64,
     /// How many samples was asked?
     samples: u64,
-    rng: &'a RefCell<Xorshift>,
+    rng: Xorshift,
 }
 
-impl<'a> UniformSampler<'a> {
-    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
+impl UniformSampler {
+    fn new(samples: u64, rng: Xorshift) -> Self {
         assert!(samples > 0);
         Self { samples, rng, state: 0 }
     }
 }
 
-impl Iterator for UniformSampler<'_> {
+impl Iterator for UniformSampler {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -74,28 +78,27 @@ impl Iterator for UniformSampler<'_> {
             None
         } else {
             self.state += 1;
-            Some( self.rng.borrow_mut().gen_vec2() )
+            Some( self.rng.gen_vec2() )
         }
     }
 }
 
 /// Divide unit square to `n`x`n` strata and provide one sample from each strata.
-struct JitteredSampler<'a> {
+struct JitteredSampler {
     /// Width of one strata
     scale: Vec2,
     /// How many samples have been given?
     state: u64,
+    /// At which state terminate the current batch
+    batch_end: u64,
     /// How many strata per dimension?
     strata_dim: u64,
-    /// How many samples have been asked for? Should be a square,
-    /// otherwise gets rounded down to the nearest square.
-    samples: u64,
-    rng: &'a RefCell<Xorshift>,
+    rng: Xorshift,
 }
 
-impl<'a> JitteredSampler<'a> {
+impl JitteredSampler {
     /// Constructs a jittered sampler
-    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
+    fn new(s0: u64, s1: u64, samples: u64, rng: Xorshift) -> Self {
         let dim = (samples as Float).sqrt().ceil() as u64;
         let scale = Vec2::new(
             1.0 / (dim as Float),
@@ -104,18 +107,19 @@ impl<'a> JitteredSampler<'a> {
         Self {
             rng,
             scale,
-            samples,
             strata_dim: dim,
-            state: 0,
+            state: s0,
+            batch_end: s1,
+
         }
     }
 }
 
-impl Iterator for JitteredSampler<'_> {
+impl Iterator for JitteredSampler {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.state == self.samples {
+        if self.state == self.batch_end {
             None
         } else {
             let offset = self.scale
@@ -124,41 +128,39 @@ impl Iterator for JitteredSampler<'_> {
                     (self.state / self.strata_dim) as Float,
                 );
             self.state += 1;
-            Some(self.scale * self.rng.borrow_mut().gen_vec2() + offset)
+            Some(self.scale * self.rng.gen_vec2() + offset)
         }
     }
 }
 
-struct MultiJitteredSampler<'a> {
-    samples: u64,
+struct MultiJitteredSampler {
     state: u64,
+    batch_end: u64,
     perm_x: Vec<usize>,
     perm_y: Vec<usize>,
     scale0: Vec2,
     scale1: Vec2,
     strata_dim: u64,
-    rng: &'a RefCell<Xorshift>,
+    rng: Xorshift,
 }
 
-impl<'a> MultiJitteredSampler<'a> {
-    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
+impl MultiJitteredSampler {
+    fn new(s0: u64, s1: u64, samples: u64, mut rng: Xorshift) -> Self {
         let dim = (samples as Float).sqrt().ceil() as u64;
         let scale = Vec2::new(
             1.0 / (dim as Float),
             (dim as Float) / (samples as Float),
         );
 
-        let (perm_x, perm_y) = {
-            let mut rng_mut = rng.borrow_mut();
-            (rng_mut.gen_perm(dim as usize), rng_mut.gen_perm(dim as usize))
-        };
+        let perm_x = rng.gen_perm(dim as usize);
+        let perm_y = rng.gen_perm(dim as usize);
 
         Self {
             rng,
-            samples,
             perm_x,
             perm_y,
-            state: 0,
+            state: s0,
+            batch_end: s1,
             scale0: scale,
             scale1: scale / dim as Float,
             strata_dim: dim,
@@ -166,11 +168,11 @@ impl<'a> MultiJitteredSampler<'a> {
     }
 }
 
-impl Iterator for MultiJitteredSampler<'_> {
+impl Iterator for MultiJitteredSampler {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.state == self.samples {
+        if self.state == self.batch_end {
             None
         } else {
             let x0 = self.state % self.strata_dim;
@@ -181,7 +183,7 @@ impl Iterator for MultiJitteredSampler<'_> {
             let y1 = self.perm_y[x0 as usize];
             let offset1 = self.scale1 * Vec2::new(x1 as Float, y1 as Float);
 
-            let rand_sq = self.scale1 * self.rng.borrow_mut().gen_vec2();
+            let rand_sq = self.scale1 * self.rng.gen_vec2();
 
             self.state += 1;
             Some( offset0 + offset1 + rand_sq )
@@ -190,29 +192,26 @@ impl Iterator for MultiJitteredSampler<'_> {
 }
 
 
-struct SobolSampler<'a> {
-    _rng: &'a RefCell<Xorshift>,
-    samples: u64,
+struct SobolSampler {
     state: u64,
+    batch_end: u64,
     seed: u64,
     prev: (u64, u64),
 }
 
-impl<'a> SobolSampler<'a> {
-    fn new(samples: u64, rng: &'a RefCell<Xorshift>) -> Self {
-        assert!(samples > 0);
-        assert!(samples as usize <= sobol_seq::SOBOL_MAX_LEN);
-
-        let seed = {
-            rng.borrow_mut().gen_u64()
-        };
+impl SobolSampler {
+    fn new(batch: u64, s0: u64, s1: u64, seed: u64) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            assert!(s1 > 0);
+            assert!(s1 as usize <= sobol_seq::SOBOL_MAX_LEN);
+        }
 
         Self {
-            _rng: rng,
-            samples,
-            state: 0,
+            state: s0,
+            batch_end: s1,
             seed,
-            prev: (0, 0),
+            prev: sobol_seq::BATCH_STATES[batch as usize],
         }
     }
 
@@ -229,18 +228,18 @@ impl<'a> SobolSampler<'a> {
     }
 }
 
-impl Iterator for SobolSampler<'_> {
+impl Iterator for SobolSampler {
     type Item = Vec2;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.state == self.samples {
+        if self.state == self.batch_end {
             None
         } else {
             self.step();
 
             let xy = Vec2::new(
-                self.shuffle(self.prev.0) as Float * Float::powi(2.0, -32),
-                self.shuffle(self.prev.1) as Float * Float::powi(2.0, -32),
+                self.shuffle(self.prev.0) as Float * Float::powi(2.0, -64),
+                self.shuffle(self.prev.1) as Float * Float::powi(2.0, -64),
             );
 
             Some( xy )

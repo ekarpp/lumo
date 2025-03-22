@@ -1,15 +1,15 @@
 use crate::{ Normal, Direction, Float, Vec2 };
 use crate::math::{ complex::Complex, spherical_utils };
-use crate::tracer::{ Color, ColorWavelength, Texture };
+use crate::tracer::{ Color, ColorWavelength, DenseSpectrum, Texture };
 
 /// Configurable parameters for a microsurface
 pub struct MicrofacetConfig {
     /// Roughness of the surface (α) [0,1]
     pub roughness: Vec2,
     /// Refraction index of the material >= 1.0
-    pub eta: Float,
+    pub eta: DenseSpectrum,
     /// Absoprtion coefficient
-    pub k: Float,
+    pub k: DenseSpectrum,
     /// Diffuse reflectance
     pub kd: Texture,
     /// Specular reflectance
@@ -21,15 +21,15 @@ pub struct MicrofacetConfig {
 impl MicrofacetConfig {
     pub fn new(
         roughness: Float,
-        eta: Float,
-        k: Float,
+        eta: DenseSpectrum,
+        k: DenseSpectrum,
         kd: Texture,
         ks: Texture,
         tf: Texture,
     ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
-        assert!(eta > 0.0);
-        assert!(k >= 0.0);
+        // assert!(eta > 0.0);
+        // assert!(k >= 0.0);
 
         Self {
             roughness: Vec2::splat(roughness.max(1e-5)),
@@ -52,8 +52,8 @@ pub enum MfDistribution {
 impl MfDistribution {
     pub fn new(
         roughness: Float,
-        eta: Float,
-        k: Float,
+        eta: DenseSpectrum,
+        k: DenseSpectrum,
         kd: Texture,
         ks: Texture,
         tf: Texture,
@@ -82,16 +82,31 @@ impl MfDistribution {
         (roughness.x + roughness.y) / 2.0 < 1e-3
     }
 
+    #[inline]
+    pub fn constant_eta(&self) -> bool {
+        self.get_config().eta.is_constant()
+    }
+
     /// Get refraction index from config
     #[inline]
-    pub fn eta(&self) -> Float {
-        self.get_config().eta
+    pub fn eta(&self, lambda: &ColorWavelength) -> Color {
+        self.get_config().eta.sample(lambda)
+    }
+
+    #[inline]
+    pub fn eta_at(&self, wl: Float) -> Float {
+        self.get_config().eta.sample_one(wl)
     }
 
     /// Get absorption coefficient from config
     #[inline]
-    pub fn k(&self) -> Float {
-        self.get_config().k
+    pub fn k(&self, lambda: &ColorWavelength) -> Color {
+        self.get_config().k.sample(lambda)
+    }
+
+    #[inline]
+    pub fn k_at(&self, wl: Float) -> Float {
+        self.get_config().k.sample_one(wl)
     }
 
     /// Get roughness from config
@@ -206,18 +221,31 @@ impl MfDistribution {
     /// # Arguments
     /// * `wo`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
-    pub fn f(&self, wo: Direction, wh: Normal) -> Float {
-        if self.k() == 0.0 {
-            self.fr_real(wo, wh)
+    pub fn f(&self, wo: Direction, wh: Normal, lambda: &ColorWavelength) -> Color {
+        let samples = lambda.iter()
+            .map(|wl| self.f_at(wo, wh, *wl))
+            .collect::<Vec<Float>>().try_into().unwrap();
+        Color::from_array(samples)
+    }
+
+    pub fn f_at(&self, wo: Direction, wh: Normal, wl: Float) -> Float {
+        let eta = self.eta_at(wl);
+        let k = self.k_at(wl);
+        if k == 0.0 {
+            if eta == 0.0 {
+                0.0
+            } else {
+                self.fr_real(wo, wh, eta)
+            }
         } else {
-            self.fr_complex(wo, wh)
+            self.fr_complex(wo, wh, eta, k)
         }
     }
 
     #[inline]
-    fn fr_complex(&self, wo: Direction, wh: Normal) -> Float {
+    fn fr_complex(&self, wo: Direction, wh: Normal, eta: Float, k: Float) -> Float {
         // this is a complex number: n + ik
-        let eta = Complex::new(self.eta(), self.k());
+        let eta = Complex::new(eta, k);
         let cos_o = wo.dot(wh).clamp(0.0, 1.0);
         let sin2_o = 1.0 - cos_o * cos_o;
 
@@ -231,10 +259,10 @@ impl MfDistribution {
     }
 
     #[inline]
-    fn fr_real(&self, wo: Direction, wh: Normal) -> Float {
+    fn fr_real(&self, wo: Direction, wh: Normal, eta: Float) -> Float {
         let cos_o = wo.dot(wh);
         let inside = cos_o < 0.0;
-        let eta = if inside { 1.0 / self.eta() } else { self.eta() };
+        let eta = if inside { 1.0 / eta } else { eta };
 
         let cos_o = cos_o.abs();
         let sin2_o = 1.0 - cos_o * cos_o;

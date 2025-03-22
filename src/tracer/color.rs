@@ -12,7 +12,6 @@ pub use space::ColorSpace;
 pub use dense_spectrum::DenseSpectrum;
 use xyz::XYZ;
 
-pub mod illuminants;
 mod samples;
 mod space;
 mod spectrum;
@@ -20,6 +19,39 @@ mod dense_spectrum;
 mod rgb;
 mod xyz;
 mod wavelength;
+
+pub mod illuminants {
+    #![allow(dead_code)]
+    use super::*;
+
+    macro_rules! illuminants {
+        ( $( $name:ident ),* ) => {
+            $(
+                pub const $name: &'static DenseSpectrum =
+                    &DenseSpectrum::new(samples::illuminants::$name::SAMPLES);
+            )*
+        }
+    }
+
+    illuminants! { A, D50, D65, F2, F7, CORNELL }
+}
+
+
+pub mod materials {
+    #![allow(dead_code)]
+    use super::*;
+
+    macro_rules! materials {
+        ( $( $name:ident ),* ) => {
+            $(
+                pub const $name: &'static DenseSpectrum =
+                    &DenseSpectrum::new(samples::materials::$name::SAMPLES);
+            )*
+        }
+    }
+
+    materials! { diamond_eta, glass_eta, mirror_eta, mirror_k }
+}
 
 const LAMBDA_MIN: Float = 360.0;
 const LAMBDA_MAX: Float = 830.0;
@@ -48,6 +80,11 @@ impl Color {
     pub const WHITE: Self = Self { samples: [1.0; SPECTRUM_SAMPLES] };
     /// Color sampled from the constant 0.0 spectrum
     pub const BLACK: Self = Self { samples: [0.0; SPECTRUM_SAMPLES] };
+
+    /// Construc color from sample array
+    pub fn from_array(samples: [Float; SPECTRUM_SAMPLES]) -> Self {
+        Self::from(samples)
+    }
 
     /// Maps linear RGB value to luminance
     #[inline]
@@ -216,7 +253,7 @@ impl Div<Float> for Color {
 
     fn div(self, rhs: Float) -> Self::Output {
         let samples: [Float; SPECTRUM_SAMPLES] = self.samples.iter()
-            .map(|v| v / rhs)
+            .map(|v| if rhs == 0.0 { 0.0 } else { v / rhs })
             .collect::<Vec<Float>>().try_into().unwrap();
         Self { samples }
     }

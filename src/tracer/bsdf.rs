@@ -18,8 +18,8 @@ impl BSDF {
     }
 
     #[inline]
-    pub fn is_delta(&self) -> bool {
-        self.BxDF.is_delta()
+    pub fn is_delta(&self, lambda: &ColorWavelength) -> bool {
+        self.BxDF.is_delta(lambda)
     }
 
     /// Evaluate the BSDF
@@ -53,6 +53,7 @@ impl BSDF {
         wo: Direction,
         ns: Normal,
         backface: bool,
+        lambda: &mut ColorWavelength,
         rand_u: Float,
         rand_sq: Vec2,
     ) -> Option<Direction> {
@@ -60,7 +61,7 @@ impl BSDF {
 
         let wo_local = uvw.to_local(wo);
 
-        self.BxDF.sample(wo_local, backface, rand_u, rand_sq)
+        self.BxDF.sample(wo_local, backface, lambda, rand_u, rand_sq)
             .map(|wi| uvw.to_world(wi))
     }
 
@@ -72,6 +73,7 @@ impl BSDF {
         wi: Direction,
         ng: Normal,
         ns: Normal,
+        lambda: &ColorWavelength,
     ) -> Float {
         let reflection = Self::is_reflection(wo, wi, ng);
         let uvw = Onb::new(ns);
@@ -79,7 +81,7 @@ impl BSDF {
         let wo_local = uvw.to_local(wo);
         let wi_local = uvw.to_local(wi);
 
-        self.BxDF.pdf(wo_local, wi_local, reflection)
+        self.BxDF.pdf(wo_local, wi_local, reflection, lambda)
     }
 
     #[inline(always)]

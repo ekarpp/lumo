@@ -6,6 +6,12 @@ pub struct RGB {
     rgb: Vec3,
 }
 
+impl fmt::Display for RGB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RGB[{}]", self.rgb)
+    }
+}
+
 impl RGB {
     /// Linear rgb values from vec3
     pub const fn from(rgb: Vec3) -> Self {

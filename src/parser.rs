@@ -209,19 +209,19 @@ pub fn scene_from_file(
     env_map: Option<(&str, Float)>
 ) -> Result<Scene> {
     println!("Loading scene \"{}\" from \"{}\"", obj_name, path);
-    let f = fs::read(path)?;
-    let obj_bytes = _extract_zip(&f, obj_name)?;
+    let zip_file = Arc::new(fs::read(path)?);
+    let obj_bytes = _extract_zip(&zip_file, obj_name)?;
 
     // parse materials first
     let mut materials = Vec::new();
     let mut material_indices = FxHashMap::<String, usize>::default();
 
     if let Some(mtllib_name) = mtllib {
-        let mtl_bytes = _extract_zip(&f, mtllib_name)?;
+        let mtl_bytes = _extract_zip(&zip_file, mtllib_name)?;
         mtl::load_file(
             mtl_bytes.as_slice(),
             map_ks,
-            Some(&f),
+            Arc::clone(&zip_file),
             &mut materials,
             &mut material_indices,
         )?;
@@ -237,11 +237,11 @@ pub fn scene_from_file(
 
         if tokens[0] == "mtllib" {
             let mtllib_name = tokens[1];
-            let mtl_bytes = _extract_zip(&f, mtllib_name)?;
+            let mtl_bytes = _extract_zip(&zip_file, mtllib_name)?;
             mtl::load_file(
                 mtl_bytes.as_slice(),
                 map_ks,
-                Some(&f),
+                Arc::clone(&zip_file),
                 &mut materials,
                 &mut material_indices,
             )?;
@@ -255,7 +255,7 @@ pub fn scene_from_file(
     )?;
 
     if let Some((map_file, scale)) = env_map {
-        let map_bytes = _extract_zip(&f, map_file)?;
+        let map_bytes = _extract_zip(&zip_file, map_file)?;
         scene.set_environment_map(
             Texture::Image(Image::from_hdri_bytes(map_bytes.as_slice())?), scale,
         );

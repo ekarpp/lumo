@@ -108,16 +108,16 @@ fn furnace_sample(wo: Direction, h: Hit, rng: &mut Xorshift, mode: Transport) ->
 
     let mut misses = 0;
     let mut radiance = Color::BLACK;
-    let lambda = ColorWavelength::sample(rng.gen_float());
+    let mut lambda = ColorWavelength::sample(rng.gen_float());
 
     for _ in 0..NUM_SAMPLES {
-        match m.bsdf_sample(wo, &h, rng.gen_float(), rng.gen_vec2()) {
+        match m.bsdf_sample(wo, &h, &mut lambda, rng.gen_float(), rng.gen_vec2()) {
             None => misses += 1,
             Some(wi) => radiance += m.bsdf_f(wo, wi, &lambda, mode, &h)
                 * m.shading_cosine(wi, h.ns)
-                / m.bsdf_pdf(wo, wi, &h, false),
+                / m.bsdf_pdf(wo, wi, &h, &lambda, false),
         }
     }
 
-    radiance / (NUM_SAMPLES - misses) as Float
+    radiance * lambda.pdf() / (lambda.pdf() * (NUM_SAMPLES - misses) as Float)
 }

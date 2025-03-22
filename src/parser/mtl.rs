@@ -1,5 +1,10 @@
 use super::*;
+use crate::pool::{Executor, ThreadPool};
 use crate::tracer::{RGB, Spectrum};
+
+use task::{MtlTask, MtlTaskExecutor};
+
+mod task;
 
 /// Holds the properties of a microfacet material
 pub struct MtlConfig {
@@ -88,121 +93,53 @@ impl MtlConfig {
 pub fn load_file<T: Read + Sized>(
     bytes: T,
     map_ks: bool,
-    zip_file: Option<&Vec<u8>>,
+    zip_file: Arc<Vec<u8>>,
     materials: &mut Vec<Material>,
     material_indices: &mut FxHashMap<String, usize>,
 ) -> Result<()> {
     let reader = BufReader::new(bytes);
+    let mut block = Vec::new();
 
-    let mut mtl = MtlConfig::default();
-    let mut mtl_name = String::default();
+    let executor = MtlTaskExecutor::new(zip_file, map_ks);
+    let threads = 4;
+    let pool = ThreadPool::new(
+        threads,
+        executor,
+    );
 
     for line in reader.lines() {
         let line = line?.trim().to_string();
         if line.starts_with('#') || line.is_empty() {
             continue;
         }
-        let tokens: Vec<&str> = line.split_ascii_whitespace().collect();
+        let cmd = line.split_ascii_whitespace().nth(0).unwrap();
 
-        match tokens[0] {
-            "newmtl" => {
-                if !mtl_name.is_empty() {
-                    materials.push(mtl.build_material());
-                    material_indices.insert(mtl_name, materials.len() - 1);
-                }
-                mtl = MtlConfig::default();
-                mtl_name = tokens[1].to_string();
-                if material_indices.contains_key(&mtl_name) {
-                    mtl_name.clear();
-                }
-            }
-            /* diffuse color */
-            "Kd" => {
-                let kd = parse_vec3(&tokens)?;
-                mtl.Kd = Spectrum::from_rgb(RGB::from(kd));
-            }
-            /* texture map */
-            "map_Kd" => {
-                if let Some(zip) = zip_file {
-                    let tex_name = tokens[1..].join(" ").replace('\\', "/");
-                    let img = super::_img_from_zip(zip, &tex_name)?;
-                    mtl.map_Kd = Some(img);
-                }
-            }
-            /* emission color */
-            "Ke" => {
-                let ke = parse_vec3(&tokens)?;
-                mtl.Ke = Spectrum::from_rgb(RGB::from(ke));
-            }
-            "map_Ke" => {
-                if let Some(zip) = zip_file {
-                    let tex_name = tokens[1..].join(" ").replace('\\', "/");
-                    let img = super::_img_from_zip(zip, &tex_name)?;
-                    mtl.map_Ke = Some(img);
-                }
-            }
-            /* specular color */
-            "Ks" => {
-                let ks = parse_vec3(&tokens)?;
-                mtl.Ks = Spectrum::from_rgb(RGB::from(ks));
-            }
-            "map_Ks" => {
-                if let Some(zip) = zip_file {
-                    let tex_name = tokens[1..].join(" ").replace('\\', "/");
-                    let bytes = super::_extract_zip(zip, &tex_name)?;
-                    if !map_ks {
-                        // occlusion, roughness, metalness
-                        let orm = Image::<Vec3>::mean_vec3_from_file(bytes.as_slice())?;
-                        mtl.roughness = orm.y;
-                        mtl.k = orm.z;
-                        mtl.Ks = Spectrum::WHITE;
-                    } else {
-                        let img = super::_img_from_zip(zip, &tex_name)?;
-                        mtl.map_Ks = Some(img);
-                    }
-                }
-            }
-            /* bump map */
-            "map_Bump" => {
-                if let Some(zip) = zip_file {
-                    let map_name = tokens[1..].join(" ").replace('\\', "/");
-                    let bytes = super::_extract_zip(zip, &map_name)?;
-                    mtl.map_Bump = Some(Image::bump_from_file(bytes.as_slice())?);
-                }
-            }
-            /* transmission filter */
-            "Tf" => {
-                let tf = parse_vec3(&tokens)?;
-                mtl.Tf = Spectrum::from_rgb(RGB::from(tf));
-            }
-            /* refraction index */
-            "Ni" => {
-                let ni = parse_double(tokens[1])?;
-                mtl.eta = ni;
-            }
-            /* roughness */
-            "Ns" => {
-                let ns = parse_double(tokens[1])?;
-                // blender uses this mapping
-                mtl.roughness = 1.0 - ns.min(900.0).sqrt() / 30.0;
-            }
-            /* illumination model */
-            "illum" => {
-                let illum = parse_double(tokens[1])? as usize;
-                match illum {
-                    5 => mtl.fresnel_enabled = true,
-                    6 => mtl.is_transparent = true,
-                    7 => { mtl.fresnel_enabled = true; mtl.is_transparent = true; },
-                    _ => (),
-                }
-            }
-            _ => (),
+        if cmd == "newmtl" && !block.is_empty() {
+            pool.publish(MtlTask::new(block));
+            block = Vec::new();
         }
+
+        block.push(line);
     }
 
-    if !mtl_name.is_empty() {
-        materials.push(mtl.build_material());
-        material_indices.insert(mtl_name, materials.len() - 1);
+    if !block.is_empty() {
+        pool.publish(MtlTask::new(block));
+    }
+
+    pool.all_published();
+
+    let mut finished = 0;
+    while finished < threads {
+        let result = pool.pop_result();
+        if let Some(result) = result {
+            if !material_indices.contains_key(&result.mtl_name) {
+                println!("{}", result.mtl_name);
+                materials.push(result.mtl_cfg.build_material());
+                material_indices.insert(result.mtl_name, materials.len() - 1);
+            }
+        } else {
+            finished += 1;
+        }
     }
 
     Ok(())

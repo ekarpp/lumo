@@ -33,6 +33,8 @@ mod math;
 mod perlin;
 /// Random number generator and utility functions to sample different geometrics
 mod rng;
+/// Thread pool
+mod pool;
 /// Configures and computes the image.
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
@@ -51,16 +53,18 @@ pub type Mat3 = math::mat3::Mat3;
 pub type Vec3 = math::vec3::Vec3;
 /// Float type alias
 pub type Float = f64;
+/// Do we use 32 bit or 64 bit floats
+const IS_F64: bool = Float::DIGITS == 15;
 
 /// easy as ...
-pub const PI: Float = if Float::DIGITS == 6 {
-    std::f32::consts::PI as Float
-} else {
+pub const PI: Float = if IS_F64 {
     std::f64::consts::PI as Float
+} else {
+    std::f32::consts::PI as Float
 };
 const INF: Float = Float::INFINITY;
 const NEG_INF: Float = Float::NEG_INFINITY;
-const EPSILON: Float = if Float::DIGITS == 6 { 1e-5 } else { 1e-10 };
+const EPSILON: Float = if IS_F64 { 1e-10 } else { 1e-5 };
 
 type Normal = Vec3;
 type Direction = Vec3;

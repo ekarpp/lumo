@@ -1,6 +1,6 @@
 use super::*;
 use crate::{ math::simpson_integration, rng::Xorshift };
-use crate::tracer::{ Spectrum, Texture };
+use crate::tracer::{ DenseSpectrum, Spectrum, Texture };
 use std::io::Write;
 use std::fs::{self, File};
 use std::path::Path;
@@ -36,7 +36,9 @@ macro_rules! test_bxdf {
 
 fn mfd(roughness: Float, eta: Float) -> MfDistribution {
     MfDistribution::new(
-        roughness, eta, 0.0, /* k has no effect on sampling */
+        roughness,
+        DenseSpectrum::from_constant(eta),
+        DenseSpectrum::from_constant(0.0), /* k has no effect on sampling */
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
         Texture::from(Spectrum::WHITE),
@@ -90,8 +92,9 @@ fn write_tables(
 }
 
 fn chi2_pass(wo: Direction, rng: &mut Xorshift, bxdf: BxDF) -> bool {
-    let actual_freq = sample_frequencies(wo, rng, &bxdf);
-    let expected_freq = compute_frequencies(wo, &bxdf);
+    let mut lambda = ColorWavelength::sample(rng.gen_float());
+    let actual_freq = sample_frequencies(wo, &mut lambda, rng, &bxdf);
+    let expected_freq = compute_frequencies(wo, &lambda, &bxdf);
 
     // degrees of freedom
     let mut dof = 0;
@@ -168,6 +171,7 @@ fn chi2_pass(wo: Direction, rng: &mut Xorshift, bxdf: BxDF) -> bool {
 
 fn sample_frequencies(
     wo: Direction,
+    lambda: &mut ColorWavelength,
     rng: &mut Xorshift,
     bxdf: &BxDF
 ) -> [usize; THETA_BINS*PHI_BINS] {
@@ -177,7 +181,7 @@ fn sample_frequencies(
     let phi_factor = PHI_BINS as Float / (2.0 * crate::PI);
 
     for _ in 0..NUM_SAMPLES {
-        match bxdf.sample(wo, false, rng.gen_float(), rng.gen_vec2()) {
+        match bxdf.sample(wo, false, lambda, rng.gen_float(), rng.gen_vec2()) {
             None => (),
             Some(wi) => {
                 let theta = spherical_utils::theta(wi);
@@ -194,7 +198,11 @@ fn sample_frequencies(
     samples
 }
 
-fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [Float; THETA_BINS*PHI_BINS] {
+fn compute_frequencies(
+    wo: Direction,
+    lambda: &ColorWavelength,
+    bxdf: &BxDF
+) -> [Float; THETA_BINS*PHI_BINS] {
     let mut samples = [0.0; THETA_BINS*PHI_BINS];
     let mut ig = 0.0;
     let theta_factor = crate::PI / THETA_BINS as Float;
@@ -215,7 +223,7 @@ fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [Float; THETA_BINS*PHI_BIN
                 let reflection = spherical_utils::cos_theta(wo)
                     * spherical_utils::cos_theta(wi) >= 0.0;
                 // pdf in solid angle, change to spherical coordinates
-                bxdf.pdf(wo, wi, reflection) * theta.sin()
+                bxdf.pdf(wo, wi, reflection, lambda) * theta.sin()
             };
             let integral = simpson_integration::simpson2d(f, theta0, theta1, phi0, phi1);
             ig += integral;

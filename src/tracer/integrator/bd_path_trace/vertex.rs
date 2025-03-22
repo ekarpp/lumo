@@ -58,13 +58,14 @@ impl<'a> Vertex<'a> {
         h: Hit<'a>,
         gathered: Color,
         pdf_sa: Float,
+        lambda: &ColorWavelength,
         prev: &Vertex,
     ) -> Self {
         let ho = &h;
         let hp = &prev.h;
         let xp = hp.p;
         let xo = ho.p;
-        let pdf_fwd = if ho.material.is_delta() {
+        let pdf_fwd = if ho.material.is_delta(lambda) {
             0.0
         } else {
             let ng = if matches!(ho.material, Material::Volumetric(..)) {
@@ -101,8 +102,8 @@ impl<'a> Vertex<'a> {
     }
 
     /// Are we on a surface with delta material?
-    pub fn is_delta(&self) -> bool {
-        self.material().is_delta()
+    pub fn is_delta(&self, lambda: &ColorWavelength) -> bool {
+        self.material().is_delta(lambda)
     }
 
     /// Helper to get emittance at hit
@@ -134,16 +135,21 @@ impl<'a> Vertex<'a> {
     }
 
     /// PDF w.r.t SA from BSDF at self with `wi` sampled
-    pub fn bsdf_pdf(&self, wi: Direction, swap_dir: bool) -> Float {
-        self.material().bsdf_pdf(self.wo, wi, &self.h, swap_dir)
+    pub fn bsdf_pdf(
+        &self,
+        wi: Direction,
+        lambda: &ColorWavelength,
+        swap_dir: bool
+    ) -> Float {
+        self.material().bsdf_pdf(self.wo, wi, &self.h, lambda, swap_dir)
     }
 
     /// PDF from `self` to `prev` with respect to surface area
-    pub fn pdf_prev(&self, prev: &Vertex, wi: Direction) -> Float {
-        if self.is_delta() || prev.is_delta() {
+    pub fn pdf_prev(&self, prev: &Vertex, wi: Direction, lambda: &ColorWavelength) -> Float {
+        if self.is_delta(lambda) || prev.is_delta(lambda) {
             0.0
         } else {
-            let pdf_sa = self.bsdf_pdf(wi, true);
+            let pdf_sa = self.bsdf_pdf(wi, lambda, true);
             // v.dot(v) = 1, cancels out the dot product for mediums
             let ngp = if !prev.is_surface() { -self.wo }  else { prev.h.ng };
 

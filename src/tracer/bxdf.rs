@@ -56,10 +56,12 @@ impl BxDF {
     pub fn is_reflection(&self) -> bool { !self.is_transmission() }
 
     #[inline]
-    pub fn is_delta(&self) -> bool {
+    pub fn is_delta(&self, lambda: &ColorWavelength) -> bool {
         match self {
             Self::MfConductor(mfd) => mfd.is_delta(),
-            Self::MfDielectric(mfd) => mfd.is_delta() || mfd.eta() == 1.0,
+            Self::MfDielectric(mfd) => {
+                mfd.is_delta() || mfd.eta_at(lambda.leading_sample()) == 1.0
+            }
             _ => false,
         }
     }
@@ -103,6 +105,7 @@ impl BxDF {
         &self,
         wo: Direction,
         backface: bool,
+        lambda: &mut ColorWavelength,
         rand_u: Float,
         rand_sq: Vec2,
     ) -> Option<Direction> {
@@ -115,7 +118,7 @@ impl BxDF {
             Self::MfDiffuse(mfd) => microfacet::diffuse::sample(wo, mfd, rand_u, rand_sq),
             Self::MfConductor(mfd) => microfacet::conductor::sample(wo, mfd, rand_sq),
             Self::MfDielectric(mfd) => {
-                microfacet::dielectric::sample(wo, mfd, rand_u, rand_sq)
+                microfacet::dielectric::sample(wo, mfd, lambda, rand_u, rand_sq)
             }
             Self::Volumetric(g, ..) => volumetric::sample(wo, *g, rand_sq),
             Self::None => None,
@@ -123,7 +126,13 @@ impl BxDF {
     }
 
     #[inline]
-    pub fn pdf(&self, wo: Direction, wi: Direction, reflection: bool) -> Float {
+    pub fn pdf(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        reflection: bool,
+        lambda: &ColorWavelength
+    ) -> Float {
         if !reflection && self.is_reflection() {
             // backfaces too? or explicitly in pdfs?
             return 0.0;
@@ -134,7 +143,7 @@ impl BxDF {
             Self::MfDiffuse(mfd) => microfacet::diffuse::pdf(wo, wi, mfd),
             Self::MfConductor(mfd) => microfacet::conductor::pdf(wo, wi, mfd),
             Self::MfDielectric(mfd) => {
-                microfacet::dielectric::pdf(wo, wi, reflection, mfd)
+                microfacet::dielectric::pdf(wo, wi, reflection, lambda, mfd)
             }
             Self::Volumetric(g, ..) => volumetric::pdf(wo, wi, *g),
             Self::None => 0.0,

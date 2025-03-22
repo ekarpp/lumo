@@ -72,7 +72,8 @@ impl Spectrum {
         Self { c0, c1, c2, scale, }
     }
 
-    const fn from_XYZ(xyz: XYZ) -> Self {
+    /// Spectrum from XYZ vector
+    pub const fn from_XYZ(xyz: XYZ) -> Self {
         Self::from_rgb(ColorSpace::sRGB.from_XYZ(xyz))
     }
 

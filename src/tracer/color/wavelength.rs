@@ -22,11 +22,13 @@ impl Default for ColorWavelength {
 impl ColorWavelength {
     /// PDF for the sampled wavelengths
     pub fn pdf(&self) -> Color {
-        let samples: [Float; SPECTRUM_SAMPLES] = self.lambda.iter()
-            .map(|lambda| Self::pdf_one(*lambda))
-            .collect::<Vec<Float>>().try_into().unwrap();
-
-        Color::from(samples)
+        let mut samples: [Float; SPECTRUM_SAMPLES] = self.lambda.iter()
+                .map(|lambda| Self::pdf_one(*lambda))
+                .collect::<Vec<Float>>().try_into().unwrap();
+        if self.is_terminated() {
+            samples[0] /= SPECTRUM_SAMPLES as Float;
+        }
+        Color::from_array(samples)
     }
 
     /// Sample `SPECTRUM_SAMPLES` wavelengths with the visible spectrum weighed
@@ -54,12 +56,34 @@ impl ColorWavelength {
         LAMBDA_MIN + rand_v * (LAMBDA_MAX - LAMBDA_MIN)
     }
 
+    #[inline]
     fn pdf_one(lambda: Float) -> Float {
         if lambda < LAMBDA_MIN || lambda > LAMBDA_MAX {
             0.0
         } else {
             1.0 / (SAMPLE_VISIBLE_INTEGRAL * (0.0072 * (lambda - 538.05)).cosh().powi(2))
         }
+    }
+
+    #[inline]
+    fn is_terminated(&self) -> bool {
+        (1..SPECTRUM_SAMPLES)
+            .all(|i| self.lambda[i] == 0.0)
+    }
+
+    #[inline]
+    /// Terminate all but the leading sample
+    pub fn terminate(&mut self) -> Float {
+        for i in 1..SPECTRUM_SAMPLES {
+            self.lambda[i] = 0.0;
+        }
+        self.leading_sample()
+    }
+
+    #[inline]
+    /// Get the wavelength of the leading sample
+    pub fn leading_sample(&self) -> Float {
+        self.lambda[0]
     }
 
     /// Iterator to the sampled wavelengths

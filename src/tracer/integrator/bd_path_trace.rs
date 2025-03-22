@@ -2,7 +2,9 @@ use super::*;
 use crate::tracer::material::Material;
 
 const RR_DEPTH: usize = 5;
-const RR_MIN: Float = 0.05;
+// prevent running out of memory if path gets "stuck"
+// TODO: causes slight bias
+const BDPT_MAX_DEPTH: usize = 1024;
 
 use vertex::Vertex;
 
@@ -23,17 +25,22 @@ pub fn integrate(
     camera: &Camera,
     r: Ray,
     rng: &mut Xorshift,
-    lambda: ColorWavelength,
+    mut lambda: ColorWavelength,
+    delta: Float,
     raster_xy: Vec2
 ) -> Vec<FilmSample> {
-    let light_path = path_gen::light_path(scene, rng, &lambda);
-    let camera_path = path_gen::camera_path(scene, camera, r, rng, &lambda);
+    let light_path = path_gen::light_path(scene, rng, delta, &mut lambda);
+    let camera_path = path_gen::camera_path(scene, camera, r, rng, delta, &mut lambda);
 
     let mut radiance = Color::BLACK;
     let mut samples = vec![];
+    let mut cost = light_path.len() + camera_path.len();
 
     // handle t == 1 cases
     for s in 2..=light_path.len() {
+        if !light_path[s - 1].is_delta(&lambda) {
+            cost += 1;
+        }
         match connect_light_path(scene, camera, rng, &lambda, &light_path[..s]) {
             None => (),
             Some(sample) => samples.push(sample),
@@ -45,12 +52,16 @@ pub fn integrate(
 
     // handle s == 1 cases
     for t in 2..=camera_path.len() {
-        radiance += connect_camera_path(scene, camera, rng, &lambda, &camera_path[..t])
+        if !camera_path[t - 1].is_delta(&lambda) && camera_path[t - 1].is_light() {
+            cost += 1;
+        }
+        radiance += connect_camera_path(scene, camera, rng, &lambda, &camera_path[..t]);
     }
 
     // handle rest of the cases
     for t in 2..=camera_path.len() {
         for s in 2..=light_path.len() {
+            cost += 1;
             radiance += connect_paths(
                 scene, camera, rng, &lambda,
                 &light_path[..s],
@@ -59,7 +70,7 @@ pub fn integrate(
         }
     }
 
-    samples.push( FilmSample::new(radiance, lambda, raster_xy, false) );
+    samples.push( FilmSample::new(radiance, lambda, raster_xy, false, cost) );
     samples
 }
 
@@ -77,7 +88,7 @@ fn connect_light_path(
 
     let light_last = &light_path[s - 1];
     // delta BxDFs don't work too well here
-    if light_last.is_delta() {
+    if light_last.is_delta(lambda) {
         return None;
     }
     // sample direction
@@ -87,7 +98,7 @@ fn connect_light_path(
     let xo = ri.origin;
     let wi = ri.dir;
     // MIS checks this too
-    let p_sct = light_last.bsdf_pdf(-wi, false);
+    let p_sct = light_last.bsdf_pdf(-wi, lambda, false);
     let p_imp = camera.pdf_importance(&ri, xi);
     if p_sct == 0.0 || p_imp == 0.0 {
         return None;
@@ -116,9 +127,9 @@ fn connect_light_path(
                 * light_last.shading_cosine(-wi)
                 * light_last.shading_correction(-wi)
                 * light_last.f(&camera_last, lambda, Transport::Importance)
-                * mis::weight(scene, camera, light_path, &[camera_last]);
+                * mis::weight(scene, camera, lambda, light_path, &[camera_last]);
 
-            Some( FilmSample::new(color, lambda.clone(), raster_xy, true) )
+            Some( FilmSample::new(color, lambda.clone(), raster_xy, true, 0) )
         }
     }
 }
@@ -139,7 +150,7 @@ fn add_camera_path(
         if rad.is_black() {
             Color::BLACK
         } else {
-            rad * mis::weight(scene, camera, &[], camera_path)
+            rad * mis::weight(scene, camera, lambda, &[], camera_path)
         }
     }
 }
@@ -152,7 +163,7 @@ fn connect_camera_path(
     camera_path: &[Vertex],
 ) -> Color {
     let t = camera_path.len();
-    if camera_path[t - 1].is_delta() || camera_path[t - 1].is_light() {
+    if camera_path[t - 1].is_delta(lambda) || camera_path[t - 1].is_light() {
         return Color::BLACK;
     }
 
@@ -165,7 +176,7 @@ fn connect_camera_path(
 
     let wi = light.sample_towards(xo, rng.gen_vec2());
     // alternatively let MIS take care of this
-    let p_sct = camera_last.bsdf_pdf(wi, false);
+    let p_sct = camera_last.bsdf_pdf(wi, lambda, false);
     if p_sct == 0.0 {
         return Color::BLACK;
     }
@@ -196,7 +207,7 @@ fn connect_camera_path(
             let radiance = camera_last.gathered * bsdf * emittance * tr * cos_wi
                 / p_lig;
 
-            radiance * mis::weight(scene, camera, &[light_last], camera_path)
+            radiance * mis::weight(scene, camera, lambda, &[light_last], camera_path)
         }
     }
 }
@@ -225,9 +236,9 @@ fn connect_paths(
     let light_last = &light_path[s - 1];
     let camera_last = &camera_path[t - 1];
 
-    if camera_last.is_delta()
+    if camera_last.is_delta(lambda)
         || camera_last.is_light()
-        || light_last.is_delta()
+        || light_last.is_delta(lambda)
         || !visible(scene, rng, &light_last.h, &camera_last.h) {
             return Color::BLACK;
         }
@@ -235,8 +246,8 @@ fn connect_paths(
     let xl = light_last.h.p;
     let wi = (xl - xc).normalize();
     // MIS checks these too
-    let p_sct = camera_last.bsdf_pdf(wi, false)
-        * light_last.bsdf_pdf(-wi, false);
+    let p_sct = camera_last.bsdf_pdf(wi, lambda, false)
+        * light_last.bsdf_pdf(-wi, lambda, false);
     if p_sct == 0.0 {
         return Color::BLACK;
     }
@@ -260,7 +271,7 @@ fn connect_paths(
     if radiance.is_black() {
         Color::BLACK
     } else {
-        radiance * mis::weight(scene, camera, light_path, camera_path)
+        radiance * mis::weight(scene, camera, lambda, light_path, camera_path)
     }
 }
 

@@ -105,13 +105,13 @@ fn test_scene(mut sce: Scene, cam: Camera) {
     };
 
     for i in 0..NUM_PATHS {
-        let lambda = ColorWavelength::sample(rng.gen_float());
+        let mut lambda = ColorWavelength::sample(rng.gen_float());
+        let l = lambda.clone();
         let (cp, lp) = if i % 2 == 0 {
-            _from_light(&mut rng, &lambda, &sce, &cam)
+            _from_light(&mut rng, &mut lambda, &sce, &cam)
         } else {
-            _from_camera(&mut rng, &lambda, &sce, &cam)
+            _from_camera(&mut rng, &mut lambda, &sce, &cam)
         };
-
         let mut pis = vec!();
         let mut wis = vec!();
         let mut sump = 0.0;
@@ -121,19 +121,19 @@ fn test_scene(mut sce: Scene, cam: Camera) {
             let t = lp.len() - s;
             if t == 1 && s < 2 { continue; }
 
-            if lp[s].is_delta() || (s > 0 && lp[s - 1].is_delta()) {
+            if lp[s].is_delta(&l) || (s > 0 && lp[s - 1].is_delta(&l)) {
                 continue;
             }
 
             println!("s = {:>2}", s);
             let mut pi = 1.0;
             for i in 0..s {
-                if !lp[i].is_delta() {
+                if !lp[i].is_delta(&l) {
                     pi *= map0(lp[i].pdf_fwd);
                 }
             }
             for i in s..(s + t - 1) {
-                if !lp[i].is_delta() {
+                if !lp[i].is_delta(&l) {
                     pi *= map0(lp[i].pdf_bck);
                 }
             }
@@ -141,7 +141,7 @@ fn test_scene(mut sce: Scene, cam: Camera) {
             pis.push((s, pi));
             sump += pi;
 
-            let wi = mis::weight(&sce, &cam, &lp[..s], &cp[..t]);
+            let wi = mis::weight(&sce, &cam, &l, &lp[..s], &cp[..t]);
             wis.push(wi);
             sumw += wi;
         }
@@ -160,7 +160,7 @@ fn test_scene(mut sce: Scene, cam: Camera) {
 
 fn _from_camera<'a>(
     rng: &'a mut Xorshift,
-    lambda: &'a ColorWavelength,
+    lambda: &'a mut ColorWavelength,
     sce: &'a Scene,
     cam: &'a Camera
 ) -> (Vec<Vertex<'a>>, Vec<Vertex<'a>>) {
@@ -175,7 +175,7 @@ fn _from_camera<'a>(
 
     'outer: loop {
         let ro = cam.generate_ray(res * rng.gen_vec2(), rng.gen_vec2());
-        pth = path_gen::camera_path(sce, cam, ro, rng, lambda);
+        pth = path_gen::camera_path(sce, cam, ro, rng, 0.0, lambda);
         let ct = &pth[pth.len() - 1];
         if pth.len() < min_len { continue; }
         if ct.is_light() { break; }
@@ -184,7 +184,7 @@ fn _from_camera<'a>(
         while pth.len() > min_len - 1 {
             pth.remove(pth.len() - 1);
             let ct = &pth[pth.len() - 1];
-            if ct.is_delta() { continue; }
+            if ct.is_delta(lambda) { continue; }
             let ho = &ct.h;
             let xo = ho.p;
 
@@ -197,10 +197,11 @@ fn _from_camera<'a>(
             let hi = sce.hit_light(&r, rng, light);
             if hi.is_none() { continue; }
 
-            let pdf_sa = ct.bsdf_pdf(wi, false);
+            let pdf_sa = ct.bsdf_pdf(wi, lambda, false);
             if pdf_sa == 0.0 { continue; }
 
-            let mut vert = Vertex::surface(-wi, hi.unwrap(), Color::WHITE, pdf_sa, ct);
+            let mut vert =
+                Vertex::surface(-wi, hi.unwrap(), Color::WHITE, pdf_sa, lambda, ct);
             vert.light = Some(light_idx);
             pth.push(vert);
             break 'outer;
@@ -236,13 +237,13 @@ fn _from_camera<'a>(
 
     pth[len - 1].pdf_bck = light_pdf * pdf_origin;
 
-    if !pth[len - 2].is_delta() {
+    if !pth[len - 2].is_delta(lambda) {
         let ngo = if !pth[len - 2].is_surface() { -wi } else { ngo };
         pth[len - 2].pdf_bck = measure::sa_to_area(pdf_dir, xi, xo, -wi, ngo);
     }
 
-    if !pth[len - 3].is_delta() {
-        let pdf_sa = pth[len - 2].bsdf_pdf(wi, true);
+    if !pth[len - 3].is_delta(lambda) {
+        let pdf_sa = pth[len - 2].bsdf_pdf(wi, lambda, true);
         let wo = pth[len - 2].wo;
         let ngp = if !pth[len - 3].is_surface() { wo } else { ngp };
         pth[len - 3].pdf_bck = measure::sa_to_area(pdf_sa, xo, xp, wo, ngp);
@@ -250,14 +251,14 @@ fn _from_camera<'a>(
 
     let cp = pth;
     println!("from camera");
-    let lp = _reverse(cp.clone());
+    let lp = _reverse(cp.clone(), lambda);
 
     (cp, lp)
 }
 
 fn _from_light<'a>(
     rng: &'a mut Xorshift,
-    lambda: &'a ColorWavelength,
+    lambda: &'a mut ColorWavelength,
     sce: &'a Scene,
     cam: &'a Camera
 ) -> (Vec<Vertex<'a>>, Vec<Vertex<'a>>) {
@@ -265,12 +266,12 @@ fn _from_light<'a>(
     let r = cam.generate_ray(Vec2::ZERO, rng.gen_vec2());
     let xc = r.origin;
     loop {
-        pth = path_gen::light_path(sce, rng, lambda);
+        pth = path_gen::light_path(sce, rng, 0.0, lambda);
         // too short, try another path
         if pth.len() <= 2 { continue; }
         let ls = &pth[pth.len() - 1];
         // last is delta, try another path
-        if ls.is_delta() { continue; }
+        if ls.is_delta(lambda) { continue; }
 
         let ls_m = &pth[pth.len() - 2];
         let ho = &ls_m.h;
@@ -304,8 +305,8 @@ fn _from_light<'a>(
         pth[len - 2].pdf_bck = measure::sa_to_area(pdf_sa, xc, xi, wi, ngi);
 
         // update ls_m connection pdf with added camera vertex
-        if !pth[len - 3].is_delta() {
-            let pdf_sa = pth[len - 2].bsdf_pdf(-wi, true);
+        if !pth[len - 3].is_delta(lambda) {
+            let pdf_sa = pth[len - 2].bsdf_pdf(-wi, lambda, true);
             let ngo = if !pth[len - 3].is_surface() { wo } else { ngo };
             pth[len - 3].pdf_bck = measure::sa_to_area(pdf_sa, xo, xi, wo, ngo);
         }
@@ -314,12 +315,12 @@ fn _from_light<'a>(
 
     let lp = pth;
     println!("from light");
-    let cp = _reverse(lp.clone());
+    let cp = _reverse(lp.clone(), lambda);
     (cp, lp)
 }
 
 #[allow(clippy::manual_swap)]
-fn _reverse(mut pth: Vec<Vertex>) -> Vec<Vertex> {
+fn _reverse<'a>(mut pth: Vec<Vertex<'a>>, lambda: &'a ColorWavelength) -> Vec<Vertex<'a>> {
     pth.reverse();
     for i in (1..pth.len()).rev() {
         pth[i].wo = -pth[i - 1].wo;
@@ -327,7 +328,7 @@ fn _reverse(mut pth: Vec<Vertex>) -> Vec<Vertex> {
     pth[0].wo = Vec3::ZERO;
     print!("path type: ");
     for i in 0..pth.len() {
-        print!("{}", if pth[i].is_delta() { 'd' }
+        print!("{}", if pth[i].is_delta(lambda) { 'd' }
                else if pth[i].is_surface() { 's' }
                else { 'm' }
         );

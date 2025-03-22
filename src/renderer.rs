@@ -5,27 +5,22 @@ use crate::tracer::{
     Camera, Film, FilmSample,
     Integrator, Scene, FilmTile
 };
+use crate::pool::{Executor, ThreadPool};
 use crate::math::vec2::UVec2;
 use std::{
-    sync::{Arc, mpsc, Mutex}, cell::RefCell,
-    io::Write, time::{Duration, Instant}
+    sync::Arc, io::Write, time::{Duration, Instant}
 };
 use itertools::Itertools;
 
 const TILE_SIZE: u64 = 16;
 // should be a square for samplers
-const SAMPLES_INCREMENT: u64 = 256;
+pub const SAMPLES_INCREMENT: u64 = 256;
 const PROGRESS_BAR_LEN: usize = 16;
 
 const DEFAULT_NUM_SAMPLES: u64 = 1;
 const DEFAULT_THREADS: usize = 4;
 
-use task::{ RenderTask, RenderTaskResult, RenderTaskExecutor };
-
-mod pool;
-mod queue;
 mod task;
-mod worker;
 
 /// Configures the image to be rendered
 pub struct Renderer {
@@ -160,39 +155,6 @@ impl Renderer {
         let _ = std::io::stdout().flush();
     }
 
-    fn render_executor(&self) -> Arc<RenderTaskExecutor> {
-        let integrator = self.integrator.clone();
-        let sampler = self.sampler.clone();
-        let tone_map = self.tone_map.clone();
-
-        Arc::new(
-            move |task, rng, camera, scene| -> RenderTaskResult {
-                let Some(mut tile) = task.tile else { return RenderTaskResult::null(); };
-
-                let (mi_y, mx_y) = (tile.px_min.y, tile.px_max.y);
-                let (mi_x, mx_x) = (tile.px_min.x, tile.px_max.x);
-
-                (mi_y..mx_y).cartesian_product(mi_x..mx_x)
-                    .for_each(|(y, x): (u64, u64)| {
-                        let xy = Vec2::new(x as Float, y as Float);
-                        sampler.new(task.samples, rng)
-                            .flat_map(|rand_sq: Vec2| {
-                                let raster_xy = xy + rand_sq;
-                                integrator.integrate(scene, camera, rng, raster_xy)
-                            })
-                            .for_each(|mut sample: FilmSample| {
-                                sample.color = tone_map.map(&sample);
-                                tile.add_sample(&sample)
-                            })
-                    });
-
-                let num_rays = (mx_x - mi_x) * (mx_y - mi_y) * task.samples;
-                RenderTaskResult::new(tile, num_rays)
-            }
-        )
-    }
-
-
     /// Starts the rendering process and returns the rendered image
     pub fn render(&mut self) -> Film {
         let start = Instant::now();
@@ -200,12 +162,18 @@ impl Renderer {
         let mut film = self.camera.create_film(self.num_samples);
         self.output_begin(&film);
 
-        let pool = pool::ThreadPool::new(
-            self.threads,
-            Xorshift::new(self.seed),
+        let mut rng = Xorshift::new(self.seed);
+        let executor = task::RenderTaskExecutor::new(
             Arc::clone(&self.camera),
             Arc::clone(&self.scene),
-            self.render_executor(),
+            self.sampler.clone(),
+            self.integrator.clone(),
+            self.tone_map.clone(),
+        );
+
+        let pool = ThreadPool::new(
+            self.threads,
+            executor,
         );
 
         let tiles_x = self.resolution.x.div_ceil(TILE_SIZE);
@@ -214,6 +182,7 @@ impl Renderer {
         let mut samples_taken = 0;
         while samples_taken < self.num_samples {
             let prev = samples_taken;
+            let batch = samples_taken / SAMPLES_INCREMENT;
             samples_taken += SAMPLES_INCREMENT;
             samples_taken = samples_taken.min(self.num_samples);
             let samples = samples_taken - prev;
@@ -223,38 +192,52 @@ impl Renderer {
                 let px_max = (px_min + TILE_SIZE).min(self.resolution);
                 let tile = film.create_tile(px_min, px_max);
 
-                let task = task::RenderTask::new(tile, samples);
+                let task = task::RenderTask::new(
+                    tile,
+                    batch,
+                    samples,
+                    self.num_samples,
+                    rng.gen_u64()
+                );
                 pool.publish(task);
             });
         }
 
         pool.all_published();
 
-        let rays_total = self.num_samples
+        let camera_rays_total = self.num_samples
             * self.resolution.x
             * self.resolution.y;
-        let mut rays_traced = 0;
+        let mut camera_rays_traced = 0;
+        let mut rays_total = 0;
         let mut finished = 0;
         let mut tiles_added = 0;
         while finished < self.threads {
             let result = pool.pop_result();
-            if let Some(tile) = result.tile {
+            if let Some(result) = result {
+                let tile = result.tile;
                 film.add_tile(tile);
-                rays_traced += result.num_rays;
+                camera_rays_traced += result.num_camera_rays;
+                rays_total += result.num_rays;
                 tiles_added += 1;
                 let output = tiles_added % self.resolution.x == 0
                     || tiles_added == self.threads as u64;
                 if output {
-                    self.output_progress(rays_traced, rays_total, start.elapsed());
+                    self.output_progress(
+                        camera_rays_traced,
+                        camera_rays_total,
+                        start.elapsed()
+                    );
                 }
             } else {
                 finished += 1;
             }
         }
 
-        println!("\rFinished rendering in {} ({} camera rays)",
+        println!("\rFinished rendering in {} ({} camera rays, {} total rays)",
                  formatting::fmt_elapsed(start.elapsed()),
-                 formatting::fmt_si(rays_total),
+                 formatting::fmt_si(camera_rays_total),
+                 formatting::fmt_si(rays_total)
         );
 
         film

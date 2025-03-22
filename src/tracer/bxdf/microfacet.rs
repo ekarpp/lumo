@@ -44,14 +44,15 @@ mod util {
     pub fn reflect_coeff(
         wo: Direction,
         wi: Direction,
+        lambda: &ColorWavelength,
         mfd: &MfDistribution,
-    ) -> Float {
+    ) -> Color {
         let cos_theta_wo = spherical_utils::cos_theta(wo);
         let cos_theta_wi = spherical_utils::cos_theta(wi);
         let wh = (wi + wo).normalize();
 
         let d = mfd.d(wh);
-        let f = mfd.f(wo, wh);
+        let f = mfd.f(wo, wh, lambda);
         let g = mfd.g(wo, wi, wh);
 
         d * f * g / (4.0 * cos_theta_wo.abs() * cos_theta_wi.abs())
@@ -73,10 +74,10 @@ pub mod conductor {
     ) -> Color {
         let ks = mfd.ks(lambda, uv);
         if mfd.is_delta() {
-            let f = mfd.f(wo, Normal::Z);
+            let f = mfd.f(wo, Normal::Z, lambda);
             ks * f / spherical_utils::cos_theta(wi).abs()
         } else {
-            ks * util::reflect_coeff(wo, wi, mfd)
+            ks * util::reflect_coeff(wo, wi, lambda, mfd)
         }
     }
 
@@ -138,7 +139,7 @@ pub mod diffuse {
         let cos_wh = spherical_utils::cos_theta(wh);
 
         let d = mfd.d(wh);
-        let f = mfd.f(wo, wh);
+        let f = mfd.f(wo, wh, lambda);
         let g = mfd.g(wo, wi, wh);
 
         let fr = d * f * g / (4.0 * cos_wo.abs() * cos_wi.abs());
@@ -148,7 +149,7 @@ pub mod diffuse {
         let ks = mfd.ks(lambda, uv);
         let kd = mfd.kd(lambda, uv);
 
-        fr * ks + kd * (1.0 - f) * fd / crate::PI
+        fr * ks + kd * (Color::WHITE - f) * fd / crate::PI
     }
 
     #[allow(dead_code)]
@@ -218,16 +219,18 @@ pub mod dielectric {
         let cos_theta_wo = spherical_utils::cos_theta(wo);
         let cos_theta_wi = spherical_utils::cos_theta(wi);
         let wo_inside = cos_theta_wo < 0.0;
+        let wl = lambda.leading_sample();
+        let eta = mfd.eta_at(wl);
 
         let eta_ratio = if reflection {
             1.0
         } else if wo_inside {
-            1.0 / mfd.eta()
+            1.0 / eta
         } else {
-            mfd.eta()
+            eta
         };
 
-        let wh = if mfd.eta() == 1.0 || mfd.is_delta() {
+        let wh = if eta == 1.0 || mfd.is_delta() {
             Normal::Z
         } else {
             (wi * eta_ratio + wo).normalize()
@@ -235,14 +238,14 @@ pub mod dielectric {
 
         if reflection {
             let ks = mfd.ks(lambda, uv);
-            if mfd.eta() == 1.0 || mfd.is_delta() {
-                let f = mfd.f(wo, wh);
+            if eta == 1.0 || mfd.is_delta() {
+                let f = mfd.f(wo, wh, lambda);
                 ks * f / cos_theta_wi.abs()
             } else {
-                ks * util::reflect_coeff(wo, wi, mfd)
+                ks * util::reflect_coeff(wo, wi, lambda, mfd)
             }
         } else {
-            let f = mfd.f(wo, wh);
+            let f = mfd.f(wo, wh, lambda);
             let wh = if spherical_utils::cos_theta(wh) < 0.0 { -wh } else { wh };
 
             // scale coefficient if transporting radiance
@@ -253,8 +256,8 @@ pub mod dielectric {
 
             let tf = mfd.tf(lambda, uv);
 
-            if mfd.eta() == 1.0 || mfd.is_delta() {
-                tf * (1.0 - f) / (scale * cos_theta_wi.abs())
+            if eta == 1.0 || mfd.is_delta() {
+                tf * (Color::WHITE - f) / (scale * cos_theta_wi.abs())
             } else {
                 let d = mfd.d(wh);
                 let g = mfd.g(wo, wi, wh);
@@ -262,7 +265,7 @@ pub mod dielectric {
                 let wh_dot_wo = wh.dot(wo);
                 let wh_dot_wi = wh.dot(wi);
 
-                tf * d * (1.0 - f) * g / scale
+                tf * d * (Color::WHITE - f) * g / scale
                     * (wh_dot_wi * wh_dot_wo / (cos_theta_wi * cos_theta_wo)).abs()
                     / (eta_ratio * wh_dot_wi + wh_dot_wo).powi(2)
             }
@@ -272,23 +275,30 @@ pub mod dielectric {
     pub fn sample(
         wo: Direction,
         mfd: &MfDistribution,
+        lambda: &mut ColorWavelength,
         rand_u: Float,
         rand_sq: Vec2,
     ) -> Option<Direction> {
-        let wh = if mfd.eta() == 1.0 || mfd.is_delta() {
+        let wl = if mfd.constant_eta() {
+            lambda.leading_sample()
+        } else {
+            lambda.terminate()
+        };
+        let eta = mfd.eta_at(wl);
+        let wh = if eta == 1.0 || mfd.is_delta() {
             Normal::Z
         } else {
             mfd.sample_normal(wo, rand_sq)
         };
 
         // importance sample reflection/transmission with fresnel
-        let pr = mfd.f(wo, wh);
+        let pr = mfd.f_at(wo, wh, wl);
         let pt = 1.0 - pr;
 
         if rand_u < pr / (pr + pt) {
             util::reflect(wo, wh)
         } else {
-            util::refract(mfd.eta(), wo, wh)
+            util::refract(eta, wo, wh)
         }
     }
 
@@ -296,21 +306,24 @@ pub mod dielectric {
         wo: Direction,
         wi: Direction,
         reflection: bool,
+        lambda: &ColorWavelength,
         mfd: &MfDistribution,
     ) -> Float {
         let cos_theta_wo = spherical_utils::cos_theta(wo);
         let cos_theta_wi = spherical_utils::cos_theta(wi);
         let wo_inside = cos_theta_wo < 0.0;
+        let wl = lambda.leading_sample();
+        let eta = mfd.eta_at(wl);
 
         let eta_ratio = if reflection {
             1.0
         } else if wo_inside {
-            1.0 / mfd.eta()
+            1.0 / eta
         } else {
-            mfd.eta()
+            eta
         };
 
-        let wh = if mfd.eta() == 1.0 {
+        let wh = if eta == 1.0 {
             // PBRT just returns 0.0 for delta and index matched dielectrics (in f too)
             Normal::Z
         } else {
@@ -330,10 +343,10 @@ pub mod dielectric {
             return 0.0;
         }
 
-        let pr = mfd.f(wo, wh);
+        let pr = mfd.f_at(wo, wh, wl);
         let pt = 1.0 - pr;
 
-        if reflection && (mfd.eta() == 1.0 || mfd.is_delta()) {
+        if reflection && (eta == 1.0 || mfd.is_delta()) {
             // reflection with delta
             if 1.0 - spherical_utils::cos_theta(wh) < crate::EPSILON {
                 pr / (pr + pt)
@@ -344,7 +357,7 @@ pub mod dielectric {
             // reflection with rough surface
             mfd.sample_normal_pdf(wh, wo) / (4.0 * wh_dot_wo.abs())
                 * pr / (pr + pt)
-        } else if mfd.eta() == 1.0 || mfd.is_delta() {
+        } else if eta == 1.0 || mfd.is_delta() {
             // transmission with delta
             if 1.0 - spherical_utils::cos_theta(wh) < crate::EPSILON {
                 pt / (pr + pt)

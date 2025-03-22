@@ -1,8 +1,13 @@
 use super::*;
 
 /// PDF for light leaving from `curr` to `next` w.r.t. surface area
-fn pdf_light_leaving(curr: &Vertex, next: &Vertex, scene: &Scene) -> Float {
-    if next.is_delta() {
+fn pdf_light_leaving(
+    curr: &Vertex,
+    next: &Vertex,
+    scene: &Scene,
+    lambda: &ColorWavelength
+) -> Float {
+    if next.is_delta(lambda) {
         return 0.0;
     }
     if let Some(light_idx) = curr.light {
@@ -27,8 +32,13 @@ fn pdf_light_leaving(curr: &Vertex, next: &Vertex, scene: &Scene) -> Float {
 }
 
 /// PDF for direction from camera at `curr` to `next` w.r.t. surface area
-fn pdf_camera_leaving(curr: &Vertex, next: &Vertex, camera: &Camera) -> Float {
-    if next.is_delta() {
+fn pdf_camera_leaving(
+    curr: &Vertex,
+    next: &Vertex,
+    camera: &Camera,
+    lambda: &ColorWavelength,
+) -> Float {
+    if next.is_delta(lambda) {
         return 0.0;
     }
     let ho = &curr.h;
@@ -56,8 +66,13 @@ fn pdf_light_origin(v: &Vertex, scene: &Scene) -> Float {
 /// Helper to compute updated PDF at the connection. If `prev` is `Some` then it is
 /// on a different path from `curr` and `next`. Otherwise `curr` and `next` are from
 /// different paths.
-fn pdf_connection(curr: &Vertex, next: &Vertex, prev: Option<&Vertex>) -> Float {
-    if next.is_delta() {
+fn pdf_connection(
+    curr: &Vertex,
+    next: &Vertex,
+    lambda: &ColorWavelength,
+    prev: Option<&Vertex>
+) -> Float {
+    if next.is_delta(lambda) {
         return 0.0;
     }
     let ho = &curr.h;
@@ -70,10 +85,10 @@ fn pdf_connection(curr: &Vertex, next: &Vertex, prev: Option<&Vertex>) -> Float 
         let hp = &prev.h;
         let xp = hp.p;
         let wo = (xp - xo).normalize();
-        (curr.bsdf_pdf(wo, true), curr.wo)
+        (curr.bsdf_pdf(wo, lambda, true), curr.wo)
     } else {
         let wi = (xi - xo).normalize();
-        (curr.bsdf_pdf(wi, false), wi)
+        (curr.bsdf_pdf(wi, lambda, false), wi)
     };
 
     let ngi = if !next.is_surface() { wi } else { hi.ng };
@@ -88,6 +103,7 @@ pub fn heuristic(ri: Float) -> Float { ri * ri }
 pub fn weight(
     scene: &Scene,
     camera: &Camera,
+    lambda: &ColorWavelength,
     light_path: &[Vertex],
     camera_path: &[Vertex],
 ) -> Float {
@@ -128,21 +144,21 @@ pub fn weight(
     for i in 0..(s.max(2) - 2) {
         pdf_rad.push(light_path[i].pdf_bck);
         pdf_imp.push(light_path[i].pdf_fwd);
-        is_delta.push(light_path[i].is_delta());
+        is_delta.push(light_path[i].is_delta(lambda));
     }
     // apply updated values, if available, near the connection
     if s > 1 {
         let ls2 = &light_path[s - 2];
-        let pdf_bck = pdf_connection(ls1, ls2, Some(ct1));
+        let pdf_bck = pdf_connection(ls1, ls2, lambda, Some(ct1));
         pdf_rad.push(pdf_bck);
         pdf_imp.push(ls2.pdf_fwd);
-        is_delta.push(ls2.is_delta());
+        is_delta.push(ls2.is_delta(lambda));
     }
     if s > 0 {
         let pdf_bck = if t == 1 {
-            pdf_camera_leaving(ct1, ls1, camera)
+            pdf_camera_leaving(ct1, ls1, camera, lambda)
         } else {
-            pdf_connection(ct1, ls1, None)
+            pdf_connection(ct1, ls1, lambda, None)
         };
         pdf_rad.push(pdf_bck);
         pdf_imp.push(ls1.pdf_fwd);
@@ -152,9 +168,9 @@ pub fn weight(
         let pdf_bck = if s == 0 {
             pdf_light_origin(ct1, scene)
         } else if s == 1 {
-            pdf_light_leaving(ls1, ct1, scene)
+            pdf_light_leaving(ls1, ct1, scene, lambda)
         } else {
-            pdf_connection(ls1, ct1, None)
+            pdf_connection(ls1, ct1, lambda, None)
         };
         pdf_rad.push(ct1.pdf_fwd);
         pdf_imp.push(pdf_bck);
@@ -163,20 +179,20 @@ pub fn weight(
     if t > 1 {
         let ct2 = &camera_path[t - 2];
         let pdf_bck = if s == 0 {
-            pdf_light_leaving(ct1, ct2, scene)
+            pdf_light_leaving(ct1, ct2, scene, lambda)
         } else {
-            pdf_connection(ct1, ct2, Some(ls1))
+            pdf_connection(ct1, ct2, lambda, Some(ls1))
         };
         pdf_rad.push(ct2.pdf_fwd);
         pdf_imp.push(pdf_bck);
-        is_delta.push(ct2.is_delta());
+        is_delta.push(ct2.is_delta(lambda));
     }
 
     // read probabilities on the camera path starting from the end
     for i in (0..(t.max(2) - 2)).rev() {
         pdf_rad.push(camera_path[i].pdf_fwd);
         pdf_imp.push(camera_path[i].pdf_bck);
-        is_delta.push(camera_path[i].is_delta());
+        is_delta.push(camera_path[i].is_delta(lambda));
     }
 
     #[cfg(test)]

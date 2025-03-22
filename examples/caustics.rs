@@ -17,36 +17,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Material::diffuse(Texture::from(Spectrum::CYAN)),
     );
 
-    scene.add(
-        parser::mesh_from_url(
-            OBJ_URL,
-            Material::mirror(),
-        )?
-            .to_unit_size()
-            .to_origin()
-            .rotate_y(-PI / 8.0)
-            .rotate_z(PI / 8.0)
-            .rotate_x(-PI / 8.0)
-            .translate(0.5, -0.3, -1.0),
+    let suzanne = parser::mesh_from_url(OBJ_URL, Material::Blank)?
+        .to_unit_size();
+
+    scene.add(suzanne.clone(Some(Material::mirror()))
+              .to_origin()
+              .rotate_y(-PI / 8.0)
+              .rotate_z(PI / 8.0)
+              .rotate_x(-PI / 8.0)
+              .translate(0.5, -0.3, -1.0),
     );
 
-    scene.add(
-        parser::mesh_from_url(
-            OBJ_URL,
-            Material::glass(),
-        )?
-            .to_unit_size()
-            .to_origin()
-            .rotate_y(PI / 8.0)
-            .rotate_z(-PI / 8.0)
-            .rotate_x(PI / 16.0)
-            .translate(-0.35, 0.25, -1.25),
+    scene.add(suzanne.clone(Some(Material::glass()))
+              .to_origin()
+              .rotate_y(PI / 8.0)
+              .rotate_z(-PI / 8.0)
+              .rotate_x(PI / 16.0)
+              .translate(-0.35, 0.25, -1.25),
     );
 
     Renderer::new(scene, camera)
         .integrator(Integrator::BDPathTrace)
         .samples(2048)
-        .tone_map(ToneMap::Reinhard)
         .render()
         .save("caustics.png")?;
     Ok(())

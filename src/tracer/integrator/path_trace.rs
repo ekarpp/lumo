@@ -1,10 +1,13 @@
 use super::*;
 
+const RR_DEPTH: usize = 5;
+
 pub fn integrate(
     scene: &Scene,
     mut ro: Ray,
     rng: &mut Xorshift,
-    lambda: ColorWavelength,
+    mut lambda: ColorWavelength,
+    delta: Float,
     raster_xy: Vec2
 ) -> FilmSample {
     let mut last_specular = true;
@@ -17,7 +20,7 @@ pub fn integrate(
         gathered *= scene.transmittance(&lambda, ho.t);
         let wo = -ro.dir;
 
-        match material.bsdf_sample(wo, &ho, rng.gen_float(), rng.gen_vec2()) {
+        match material.bsdf_sample(wo, &ho, &mut lambda, rng.gen_float(), rng.gen_vec2()) {
             None => {
                 if last_specular {
                     radiance += gathered * material.emit(&lambda, &ho)
@@ -25,12 +28,12 @@ pub fn integrate(
                 break;
             }
             Some(wi) => {
-                if !material.is_delta() {
+                if !material.is_delta(&lambda) {
                     radiance += shadow_rays(
                         scene,
                         -ro.dir,
                         gathered,
-                        &lambda,
+                        &mut lambda,
                         &ho,
                         rng,
                     );
@@ -39,7 +42,7 @@ pub fn integrate(
                 let ri = ho.generate_ray(wi);
                 let wi = ri.dir;
 
-                let p_scatter = material.bsdf_pdf(wo, wi, &ho, false);
+                let p_scatter = material.bsdf_pdf(wo, wi, &ho, &mut lambda, false);
                 // resample bad sample?
                 if p_scatter <= 0.0 {
                     break;
@@ -59,13 +62,13 @@ pub fn integrate(
                     / p_scatter;
 
                 // russian roulette
-                if depth > 3 {
+                if depth >= RR_DEPTH {
                     let luminance = gathered.luminance(&lambda);
-                    let rr_prob = (1.0 - luminance).max(0.05);
-                    if rng.gen_float() < rr_prob {
+                    let rr_prob = (luminance / delta).min(1.0);
+                    if rng.gen_float() > rr_prob {
                         break;
                     }
-                    gathered /= 1.0 - rr_prob;
+                    gathered /= rr_prob;
                 }
 
                 last_specular = material.is_specular();
@@ -75,5 +78,5 @@ pub fn integrate(
         }
     }
 
-    FilmSample::new(radiance, lambda, raster_xy, false)
+    FilmSample::new(radiance, lambda, raster_xy, false, depth)
 }

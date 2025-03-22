@@ -147,8 +147,8 @@ impl<T: Sampleable> Sampleable for Instance<T> {
     fn sample_on(&self, rand_sq: Vec2) -> Hit {
         let mut ho = self.object.sample_on(rand_sq);
 
-        ho.ng = self.normal_transform.mul_vec3(ho.ng);
-        ho.ns = self.normal_transform.mul_vec3(ho.ns);
+        ho.ng = self.normal_transform.mul_vec3(ho.ng).normalize();
+        ho.ns = self.normal_transform.mul_vec3(ho.ns).normalize();
         ho.p = self.transform.transform_pt(ho.p);
         ho.fp_error = self.propagate_fp_err(ho.p, ho.fp_error);
 

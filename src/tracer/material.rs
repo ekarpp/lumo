@@ -1,6 +1,7 @@
 use crate::{ Normal, Direction, Transport, Float, Vec2, Image };
 use crate::tracer::{
-    Color, ColorWavelength, color::illuminants, Spectrum, hit::Hit, microfacet::MfDistribution,
+    Color, ColorWavelength, color::illuminants, Spectrum, hit::Hit,
+    microfacet::MfDistribution, color::materials,
     color::DenseSpectrum, texture::Texture, bsdf::BSDF, bxdf::BxDF, onb::Onb,
 };
 
@@ -33,7 +34,26 @@ impl Material {
         tf: Texture,
         bump_map: Option<Image<Normal>>,
     ) -> Self {
+        let eta = if !is_transparent {
+            DenseSpectrum::from_constant(eta)
+        } else {
+            match eta {
+                1.5 => materials::glass_eta.clone(),
+                2.5 => materials::diamond_eta.clone(),
+                _ => DenseSpectrum::from_constant(eta),
+            }
+        };
+        let k = DenseSpectrum::from_constant(k);
         let mfd = MfDistribution::new(roughness, eta, k, kd, ks, tf);
+        Self::from_mfd(is_transparent, fresnel_enabled, bump_map, mfd)
+    }
+
+    fn from_mfd(
+        is_transparent: bool,
+        fresnel_enabled: bool,
+        bump_map: Option<Image<Normal>>,
+        mfd: MfDistribution
+    ) -> Self {
         // dirty dirty...
         let bsdf = if is_transparent {
             BSDF::new(BxDF::MfDielectric(mfd))
@@ -113,48 +133,43 @@ impl Material {
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        let kd = Texture::from(Spectrum::WHITE);
+        let kd = Texture::from(Spectrum::BLACK);
         let ks = Texture::from(Spectrum::WHITE);
         let tf = Texture::from(Spectrum::BLACK);
 
         let roughness = 0.0;
-        let eta = 1e5;
-        let k = 0.0;
         let is_transparent = false;
         let fresnel_enabled = true;
 
-        Self::microfacet(
+        let mfd = MfDistribution::new(
             roughness,
-            eta,
-            k,
-            is_transparent,
-            fresnel_enabled,
+            materials::mirror_eta.clone(),
+            materials::mirror_k.clone(),
             kd, ks, tf,
-            None,
-        )
+        );
+
+        Self::from_mfd(is_transparent, fresnel_enabled, None, mfd)
     }
 
     /// Perfect refraction
     pub fn glass() -> Self {
-        let kd = Texture::from(Spectrum::WHITE);
+        let kd = Texture::from(Spectrum::BLACK);
         let ks = Texture::from(Spectrum::WHITE);
         let tf = Texture::from(Spectrum::WHITE);
 
-        let eta = 1.5;
         let roughness = 0.0;
         let k = 0.0;
         let is_transparent = true;
         let fresnel_enabled = true;
 
-        Self::microfacet(
+        let mfd = MfDistribution::new(
             roughness,
-            eta,
-            k,
-            is_transparent,
-            fresnel_enabled,
-            kd, ks, tf,
-            None,
-        )
+            materials::glass_eta.clone(),
+            DenseSpectrum::from_constant(k),
+            kd, ks, tf
+        );
+
+        Self::from_mfd(is_transparent, fresnel_enabled, None, mfd)
     }
 
     /// Volumetric material for mediums
@@ -196,9 +211,9 @@ impl Material {
     /// Does the material scattering follow delta distribution?
     /// Dumb hack to make delta things not have shadows in path trace.
     #[inline]
-    pub fn is_delta(&self) -> bool {
+    pub fn is_delta(&self, lambda: &ColorWavelength) -> bool {
         match self {
-            Self::Standard(bsdf, _) => bsdf.is_delta(),
+            Self::Standard(bsdf, _) => bsdf.is_delta(lambda),
             _ => false,
         }
     }
@@ -259,14 +274,17 @@ impl Material {
         &self,
         wo: Direction,
         h: &Hit,
+        lambda: &mut ColorWavelength,
         rand_u: Float,
         rand_sq: Vec2,
     ) -> Option<Direction> {
         match self {
-            Self::Volumetric(bsdf) => bsdf.sample(wo, h.ns, h.backface, rand_u, rand_sq),
+            Self::Volumetric(bsdf) => {
+                bsdf.sample(wo, h.ns, h.backface, lambda, rand_u, rand_sq)
+            }
             Self::Standard(bsdf, normal_map) => {
                 let ns = Self::map_normal(h.ns, h.uv, normal_map.as_ref());
-                bsdf.sample(wo, ns, h.backface, rand_u, rand_sq)
+                bsdf.sample(wo, ns, h.backface, lambda, rand_u, rand_sq)
             }
             _ => None,
         }
@@ -279,14 +297,15 @@ impl Material {
         wo: Direction,
         wi: Direction,
         h: &Hit,
+        lambda: &ColorWavelength,
         swap_dir: bool
     ) -> Float {
         let (wo, wi) = if swap_dir { (wi, wo) } else { (wo, wi) };
         match self {
-            Self::Volumetric(bsdf) => bsdf.pdf(wo, wi, h.ng, h.ns),
+            Self::Volumetric(bsdf) => bsdf.pdf(wo, wi, h.ng, h.ns, lambda),
             Self::Standard(bsdf, normal_map) => {
                 let ns = Self::map_normal(h.ns, h.uv, normal_map.as_ref());
-                bsdf.pdf(wo, wi, h.ng, ns)
+                bsdf.pdf(wo, wi, h.ng, ns, lambda)
             }
             _ => 0.0,
         }

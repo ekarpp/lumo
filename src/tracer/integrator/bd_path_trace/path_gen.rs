@@ -6,7 +6,8 @@ pub fn camera_path<'a>(
     camera: &'a Camera,
     r: Ray,
     rng: &mut Xorshift,
-    lambda: &ColorWavelength,
+    delta: Float,
+    lambda: &mut ColorWavelength,
 ) -> Vec<Vertex<'a>> {
     let gathered = Color::WHITE;
     let xo = r.origin;
@@ -14,14 +15,15 @@ pub fn camera_path<'a>(
     let pdf_xo = camera.pdf_xo(&r);
     let root = Vertex::camera(xo, pdf_xo, gathered);
 
-    walk(scene, r, rng, lambda, root, gathered, pdf_wi, Transport::Radiance)
+    walk(scene, r, rng, lambda, delta, root, gathered, pdf_wi, Transport::Radiance)
 }
 
 /// Generates a ray path strating from a light
 pub fn light_path<'a>(
     scene: &'a Scene,
     rng: &mut Xorshift,
-    lambda: &'a ColorWavelength
+    delta: Float,
+    lambda: &mut ColorWavelength
 ) -> Vec<Vertex<'a>> {
     let light_idx = scene.sample_light(rng.gen_float());
     let (light, pdf_light) = scene.get_light(light_idx);
@@ -43,7 +45,7 @@ pub fn light_path<'a>(
     let wi = ri.dir;
     let gathered = emit * wi.dot(ns).abs() / (pdf_light * pdf_origin * pdf_dir);
 
-    walk(scene, ri, rng, lambda, root, gathered, pdf_dir, Transport::Importance)
+    walk(scene, ri, rng, lambda, delta, root, gathered, pdf_dir, Transport::Importance)
 }
 
 /// Ray that randomly scatters around from the given root vertex
@@ -52,7 +54,8 @@ fn walk<'a>(
     scene: &'a Scene,
     mut ro: Ray,
     rng: &mut Xorshift,
-    lambda: &ColorWavelength,
+    lambda: &mut ColorWavelength,
+    delta: Float,
     root: Vertex<'a>,
     mut gathered: Color,
     pdf_dir: Float,
@@ -75,13 +78,14 @@ fn walk<'a>(
             ho,
             gathered,
             pdf_fwd,
+            lambda,
             &vertices[prev],
         ));
         depth += 1;
         let curr = depth;
         let ho = &vertices[curr].h;
 
-        match material.bsdf_sample(wo, ho, rng.gen_float(), rng.gen_vec2()) {
+        match material.bsdf_sample(wo, ho, lambda, rng.gen_float(), rng.gen_vec2()) {
             None => {
                 /* we hit a light.
                  * if tracing from a light, discard latest vertex.
@@ -98,7 +102,7 @@ fn walk<'a>(
                 let ri = ho.generate_ray(wi);
                 let wi = ri.dir;
 
-                pdf_fwd = material.bsdf_pdf(wo, wi, ho, false);
+                pdf_fwd = material.bsdf_pdf(wo, wi, ho, lambda, false);
 
                 if pdf_fwd == 0.0 {
                     break;
@@ -123,18 +127,24 @@ fn walk<'a>(
                     / pdf_fwd;
 
                 // only MIS cares about this
-                vertices[prev].pdf_bck = vertices[curr].pdf_prev(&vertices[prev], wi);
+                vertices[prev].pdf_bck
+                    = vertices[curr].pdf_prev(&vertices[prev], wi, lambda);
 
                 if depth >= RR_DEPTH {
                     let luminance = gathered.luminance(lambda);
-                    let rr_prob = (1.0 - luminance).max(RR_MIN);
-                    if rng.gen_float() < rr_prob {
+                    let rr_prob = (luminance / delta).min(1.0);
+                    if rng.gen_float() > rr_prob {
                         break;
                     }
-                    gathered /= 1.0 - rr_prob;
+                    if depth >= BDPT_MAX_DEPTH {
+                        #[cfg(debug_assertions)]
+                        println!("\rReached maximum depth in BDPT");
+                        break;
+                    }
+                    gathered /= rr_prob;
                 }
 
-                if material.is_delta() {
+                if material.is_delta(lambda) {
                     pdf_fwd = 0.0;
                 }
 
